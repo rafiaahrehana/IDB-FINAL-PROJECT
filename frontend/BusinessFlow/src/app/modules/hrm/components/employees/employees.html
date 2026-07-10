@@ -1,0 +1,308 @@
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h4 class="mb-0">Employees</h4>
+    <div class="d-flex gap-2">
+      <select
+        class="form-select form-select-sm"
+        style="width: 180px"
+        [(ngModel)]="departmentFilter"
+        (change)="page = 0; load()"
+      >
+        <option value="">All departments</option>
+        @for (d of departments; track d.id) {
+          <option [ngValue]="d.id">{{ d.name }}</option>
+        }
+      </select>
+      <select
+        class="form-select form-select-sm"
+        style="width: 160px"
+        [(ngModel)]="statusFilter"
+        (change)="page = 0; load()"
+      >
+        <option value="">All statuses</option>
+        @for (s of statuses; track s) {
+          <option [value]="s">{{ s }}</option>
+        }
+      </select>
+      <button class="btn btn-primary btn-sm text-nowrap" (click)="showForm = true">
+        <i class="bi bi-person-plus me-1"></i>Add Employee
+      </button>
+    </div>
+  </div>
+
+  @if (error) {
+    <div class="alert alert-danger py-2">{{ error }}</div>
+  }
+  @if (success) {
+    <div class="alert alert-success py-2">{{ success }}</div>
+  }
+  @if (loading) {
+    <app-loader />
+  }
+
+  @if (!loading && employees.length) {
+    <div class="card">
+      <div class="table-responsive">
+        <table class="table table-hover table-sm align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Employee</th>
+              <th>Emp. No</th>
+              <th>Department</th>
+              <th>Designation</th>
+              <th>Type</th>
+              <th>Status</th>
+              <th>Hired</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (emp of employees; track emp.id) {
+              <tr>
+                <td>
+                  <a [routerLink]="['/hrm/employees', emp.id]"
+                    >{{ emp.firstName }} {{ emp.lastName }}</a
+                  >
+                  <div class="text-muted small">{{ emp.officialEmail || emp.email }}</div>
+                </td>
+                <td>{{ emp.employeeNumber || '-' }}</td>
+                <td>{{ emp.departmentName || '-' }}</td>
+                <td>{{ emp.designationName || emp.jobTitle || '-' }}</td>
+                <td>
+                  <span class="badge text-bg-light border">{{ emp.employmentType }}</span>
+                </td>
+                <td>
+                  <span
+                    class="badge"
+                    [class.text-bg-success]="
+                      emp.employmentStatus === 'ACTIVE' || emp.employmentStatus === 'CONFIRMED'
+                    "
+                    [class.text-bg-warning]="
+                      emp.employmentStatus === 'PROBATION' || emp.employmentStatus === 'ON_LEAVE'
+                    "
+                    [class.text-bg-danger]="
+                      emp.employmentStatus === 'TERMINATED' || emp.employmentStatus === 'SUSPENDED'
+                    "
+                    [class.text-bg-secondary]="
+                      emp.employmentStatus === 'RESIGNED' || emp.employmentStatus === 'RETIRED'
+                    "
+                  >
+                    {{ emp.employmentStatus }}
+                  </span>
+                </td>
+                <td>{{ emp.hireDate ? (emp.hireDate | date: 'mediumDate') : '-' }}</td>
+                <td class="text-end">
+                  @if (emp.employmentStatus !== 'TERMINATED') {
+                    <button
+                      class="btn btn-outline-danger btn-sm py-0"
+                      title="Terminate"
+                      (click)="terminateTarget = emp"
+                    >
+                      <i class="bi bi-person-x"></i>
+                    </button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <div class="card-footer d-flex justify-content-end">
+        <app-pagination [page]="page" [totalPages]="totalPages" (pageChange)="goToPage($event)" />
+      </div>
+    </div>
+  }
+
+  @if (!loading && !employees.length) {
+    <app-empty-state icon="bi-people" message="No employees found." />
+  }
+</div>
+
+<!-- Create employee modal -->
+@if (showForm) {
+  <div class="modal d-block" tabindex="-1" style="background: rgba(0, 0, 0, 0.4)">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <form #f="ngForm" (ngSubmit)="f.valid && save()">
+          <div class="modal-header">
+            <h5 class="modal-title">Add Employee</h5>
+            <button type="button" class="btn-close" (click)="showForm = false"></button>
+          </div>
+          <div class="modal-body">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">First Name *</label>
+                <input
+                  class="form-control form-control-sm"
+                  name="firstName"
+                  [(ngModel)]="form.firstName"
+                  required
+                  minlength="2"
+                  maxlength="50"
+                />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Last Name *</label>
+                <input
+                  class="form-control form-control-sm"
+                  name="lastName"
+                  [(ngModel)]="form.lastName"
+                  required
+                  minlength="2"
+                  maxlength="50"
+                />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Email *</label>
+                <input
+                  type="email"
+                  class="form-control form-control-sm"
+                  name="email"
+                  [(ngModel)]="form.email"
+                  required
+                  email
+                />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Password *</label>
+                <input
+                  type="password"
+                  class="form-control form-control-sm"
+                  name="password"
+                  [(ngModel)]="form.password"
+                  required
+                  minlength="8"
+                />
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Employment Type *</label>
+                <select
+                  class="form-select form-select-sm"
+                  name="employmentType"
+                  [(ngModel)]="form.employmentType"
+                  required
+                >
+                  @for (t of types; track t) {
+                    <option [value]="t">{{ t }}</option>
+                  }
+                </select>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Department</label>
+                <select
+                  class="form-select form-select-sm"
+                  name="departmentId"
+                  [(ngModel)]="form.departmentId"
+                >
+                  <option [ngValue]="undefined">-</option>
+                  @for (d of departments; track d.id) {
+                    <option [ngValue]="d.id">{{ d.name }}</option>
+                  }
+                </select>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Designation</label>
+                <select
+                  class="form-select form-select-sm"
+                  name="designationId"
+                  [(ngModel)]="form.designationId"
+                >
+                  <option [ngValue]="undefined">-</option>
+                  @for (d of designations; track d.id) {
+                    <option [ngValue]="d.id">{{ d.name }}</option>
+                  }
+                </select>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Employee No</label>
+                <input
+                  class="form-control form-control-sm"
+                  name="employeeNumber"
+                  [(ngModel)]="form.employeeNumber"
+                  maxlength="30"
+                />
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Job Title</label>
+                <input
+                  class="form-control form-control-sm"
+                  name="jobTitle"
+                  [(ngModel)]="form.jobTitle"
+                  maxlength="100"
+                />
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Basic Salary</label>
+                <input
+                  type="number"
+                  class="form-control form-control-sm"
+                  name="basicSalary"
+                  [(ngModel)]="form.basicSalary"
+                  min="0"
+                />
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Custom Role</label>
+                <select
+                  class="form-select form-select-sm"
+                  name="customRoleId"
+                  [(ngModel)]="form.customRoleId"
+                >
+                  <option [ngValue]="undefined">None</option>
+                  @for (r of customRoles; track r.id) {
+                    <option [ngValue]="r.id">{{ r.name }}</option>
+                  }
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Official Email</label>
+                <input
+                  type="email"
+                  class="form-control form-control-sm"
+                  name="officialEmail"
+                  [(ngModel)]="form.officialEmail"
+                  email
+                />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Hire Date</label>
+                <input
+                  type="date"
+                  class="form-control form-control-sm"
+                  name="hireDate"
+                  [(ngModel)]="form.hireDate"
+                />
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary btn-sm" (click)="showForm = false">
+              Cancel
+            </button>
+            <button type="submit" class="btn btn-primary btn-sm" [disabled]="f.invalid || saving">
+              @if (saving) {
+                <span class="spinner-border spinner-border-sm me-1"></span>
+              }
+              Create
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+}
+
+<app-confirm-dialog
+  [visible]="!!terminateTarget"
+  title="Terminate Employee"
+  [message]="
+    'Terminate ' +
+    $safeNavigationMigration(terminateTarget?.firstName) +
+    ' ' +
+    $safeNavigationMigration(terminateTarget?.lastName) +
+    '? This cannot be undone.'
+  "
+  confirmLabel="Terminate"
+  (confirmed)="confirmTerminate()"
+  (cancelled)="terminateTarget = null"
+/>

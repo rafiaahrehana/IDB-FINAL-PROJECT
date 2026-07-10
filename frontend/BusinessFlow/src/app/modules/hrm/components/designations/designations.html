@@ -1,0 +1,173 @@
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0">Designations</h4>
+    <button class="btn btn-primary btn-sm" (click)="openCreate()">
+      <i class="bi bi-plus-lg me-1"></i>Add Designation
+    </button>
+  </div>
+
+  @if (error) {
+    <div class="alert alert-danger py-2">{{ error }}</div>
+  }
+  @if (success) {
+    <div class="alert alert-success py-2">{{ success }}</div>
+  }
+  @if (loading) {
+    <app-loader />
+  }
+
+  @if (!loading && designations.length) {
+    <div class="card">
+      <div class="table-responsive">
+        <table class="table table-hover table-sm align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th style="width: 80px">Level</th>
+              <th>Name</th>
+              <th>Code</th>
+              <th>Description</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (d of designations; track d.id) {
+              <tr>
+                <td>
+                  <span class="badge text-bg-light border">L{{ d.level }}</span>
+                </td>
+                <td>{{ d.name }}</td>
+                <td>{{ d.code }}</td>
+                <td class="text-muted small text-truncate" style="max-width: 300px">
+                  {{ d.description || '-' }}
+                </td>
+                <td>
+                  <span
+                    class="badge"
+                    [class.text-bg-success]="d.active"
+                    [class.text-bg-secondary]="!d.active"
+                  >
+                    {{ d.active ? 'ACTIVE' : 'INACTIVE' }}
+                  </span>
+                </td>
+                <td class="text-end text-nowrap">
+                  <button
+                    class="btn btn-outline-secondary btn-sm py-0 me-1"
+                    title="Edit"
+                    (click)="openEdit(d)"
+                  >
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  <button
+                    class="btn btn-outline-secondary btn-sm py-0 me-1"
+                    [title]="d.active ? 'Deactivate' : 'Activate'"
+                    (click)="toggle(d)"
+                  >
+                    <i
+                      class="bi"
+                      [class.bi-toggle-on]="d.active"
+                      [class.bi-toggle-off]="!d.active"
+                    ></i>
+                  </button>
+                  <button
+                    class="btn btn-outline-danger btn-sm py-0"
+                    title="Delete"
+                    (click)="deleteTarget = d"
+                  >
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <div class="card-footer d-flex justify-content-end">
+        <app-pagination [page]="page" [totalPages]="totalPages" (pageChange)="goToPage($event)" />
+      </div>
+    </div>
+  }
+
+  @if (!loading && !designations.length) {
+    <app-empty-state icon="bi-award" message="No designations yet." />
+  }
+</div>
+
+@if (showForm) {
+  <div class="modal d-block" tabindex="-1" style="background: rgba(0, 0, 0, 0.4)">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form #f="ngForm" (ngSubmit)="f.valid && save()">
+          <div class="modal-header">
+            <h5 class="modal-title">{{ editingId ? 'Edit Designation' : 'Add Designation' }}</h5>
+            <button type="button" class="btn-close" (click)="showForm = false"></button>
+          </div>
+          <div class="modal-body">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Name *</label>
+                <input
+                  class="form-control form-control-sm"
+                  name="name"
+                  [(ngModel)]="form.name"
+                  required
+                  maxlength="100"
+                />
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Code *</label>
+                <input
+                  class="form-control form-control-sm"
+                  name="code"
+                  [(ngModel)]="form.code"
+                  required
+                  maxlength="30"
+                />
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Level *</label>
+                <input
+                  type="number"
+                  class="form-control form-control-sm"
+                  name="level"
+                  [(ngModel)]="form.level"
+                  required
+                  min="1"
+                />
+              </div>
+              <div class="col-12">
+                <label class="form-label">Description</label>
+                <textarea
+                  class="form-control form-control-sm"
+                  name="description"
+                  [(ngModel)]="form.description"
+                  rows="2"
+                ></textarea>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary btn-sm" (click)="showForm = false">
+              Cancel
+            </button>
+            <button type="submit" class="btn btn-primary btn-sm" [disabled]="f.invalid || saving">
+              @if (saving) {
+                <span class="spinner-border spinner-border-sm me-1"></span>
+              }
+              {{ editingId ? 'Save' : 'Create' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+}
+
+<app-confirm-dialog
+  [visible]="!!deleteTarget"
+  title="Delete Designation"
+  [message]="'Delete designation \'' + $safeNavigationMigration(deleteTarget?.name) + '\'?'"
+  confirmLabel="Delete"
+  (confirmed)="confirmDelete()"
+  (cancelled)="deleteTarget = null"
+/>

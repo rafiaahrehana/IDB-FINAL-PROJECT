@@ -1,0 +1,42 @@
+<div class="container-fluid py-3">
+  <h4 class="mb-3">Attendance Reports</h4>
+  @if (error) { <div class="alert alert-warning py-2">{{ error }}</div> }
+  @if (loading) { <app-loader /> }
+
+  <ul class="nav nav-tabs mb-3">
+    <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#daily">Daily</a></li>
+    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#monthly" (click)="loadMonthly()">Monthly</a></li>
+  </ul>
+  <div class="tab-content">
+    <div class="tab-pane fade show active" id="daily">
+      <div class="d-flex gap-2 mb-3 align-items-center">
+        <input type="date" class="form-control form-control-sm" style="width:180px" [(ngModel)]="selectedDate" />
+        <button class="btn btn-primary btn-sm" (click)="loadDaily()">Load</button>
+      </div>
+      @if (dailyReport) {
+      <div class="row g-2">
+        @for (key of objectKeys(dailyReport); track key) {
+        <div class="col-sm-6 col-md-3">
+          <div class="card"><div class="card-body py-2"><div class="text-muted small">{{ key }}</div><div class="fw-bold">{{ dailyReport[key] }}</div></div></div>
+        </div>
+        }
+      </div>
+      }
+    </div>
+    <div class="tab-pane fade" id="monthly">
+      <div class="d-flex gap-2 mb-3 align-items-center">
+        <input type="month" class="form-control form-control-sm" style="width:180px" [(ngModel)]="selectedMonth" />
+        <button class="btn btn-primary btn-sm" (click)="loadMonthly()">Load</button>
+      </div>
+      @if (monthlyReport) {
+      <div class="row g-2">
+        @for (key of objectKeys(monthlyReport); track key) {
+        <div class="col-sm-6 col-md-3">
+          <div class="card"><div class="card-body py-2"><div class="text-muted small">{{ key }}</div><div class="fw-bold">{{ monthlyReport[key] }}</div></div></div>
+        </div>
+        }
+      </div>
+      }
+    </div>
+  </div>
+</div>

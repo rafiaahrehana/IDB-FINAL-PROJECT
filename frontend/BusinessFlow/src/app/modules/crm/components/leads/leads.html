@@ -1,0 +1,64 @@
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <h4 class="mb-0">Leads</h4>
+    <div class="d-flex gap-2">
+      <input type="text" class="form-control form-control-sm" style="width: 220px" placeholder="Search leads..."
+             [(ngModel)]="keyword" (keyup.enter)="page = 0; load()" />
+      <select class="form-select form-select-sm" style="width: 160px" [(ngModel)]="statusFilter" (change)="page = 0; load()">
+        <option value="">All statuses</option>
+        <option value="NEW">New</option>
+        <option value="CONTACTED">Contacted</option>
+        <option value="QUALIFIED">Qualified</option>
+        <option value="UNQUALIFIED">Unqualified</option>
+        <option value="CONVERTED">Converted</option>
+      </select>
+    </div>
+  </div>
+
+  @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
+  @if (success) { <div class="alert alert-success py-2">{{ success }}</div> }
+  @if (loading) { <app-loader /> }
+
+  @if (!loading && leads.length) {
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table table-hover table-sm align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Contact</th><th>Company</th><th>Email</th><th>Status</th>
+            <th>Source</th><th class="text-end">Est. Value</th><th>Assigned To</th><th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (lead of leads; track lead.id) {
+          <tr>
+            <td>{{ lead.contactName }}</td>
+            <td>{{ lead.companyName || '-' }}</td>
+            <td>{{ lead.email || '-' }}</td>
+            <td><span class="badge text-bg-secondary">{{ lead.status }}</span></td>
+            <td>{{ lead.source }}</td>
+            <td class="text-end">{{ lead.estimatedValue != null ? (lead.estimatedValue | currency) : '-' }}</td>
+            <td>{{ lead.assignedToName || '-' }}</td>
+            <td class="text-end">
+              @if (!lead.converted) {
+              <button class="btn btn-outline-success btn-sm me-1" (click)="convert(lead)">
+                <i class="bi bi-arrow-repeat"></i> Convert
+              </button>
+              }
+              <button class="btn btn-outline-primary btn-sm" [disabled]="!lead.converted" (click)="createOpportunity(lead)">
+                <i class="bi bi-graph-up-arrow"></i> Opportunity
+              </button>
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <div class="card-footer d-flex justify-content-end">
+      <app-pagination [page]="page" [totalPages]="totalPages" (pageChange)="goToPage($event)" />
+    </div>
+  </div>
+  }
+
+  @if (!loading && !leads.length) { <app-empty-state icon="bi-person-plus" message="No leads found." /> }
+</div>

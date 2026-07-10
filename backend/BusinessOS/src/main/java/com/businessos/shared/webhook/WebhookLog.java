@@ -1,0 +1,44 @@
+package com.businessos.shared.webhook;
+
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "webhook_logs")
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+public class WebhookLog {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false)
+    private String provider; // BKASH, NAGAD, SSLCOMMERZ
+
+    @Column(nullable = false)
+    private String eventType;
+
+    @Column(columnDefinition = "TEXT")
+    private String payload;
+
+    @Column(nullable = false)
+    private String transactionId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private WebhookStatus status = WebhookStatus.RECEIVED;
+
+    @Builder.Default
+    private int retryCount = 0;
+    private String failureReason;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private LocalDateTime receivedAt = LocalDateTime.now();
+
+    private LocalDateTime processedAt;
+    private LocalDateTime nextRetryAt;
+}

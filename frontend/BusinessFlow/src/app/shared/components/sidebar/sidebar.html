@@ -1,0 +1,22 @@
+<div class="sidebar-nav py-3">
+  <ul class="nav flex-column">
+    <li class="nav-item">
+      <a class="nav-link" routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}">
+        <i class="bi bi-grid-1x2"></i>Dashboard
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" routerLink="/ai" routerLinkActive="active">
+        <i class="bi bi-stars"></i>AI Assistant
+      </a>
+    </li>
+    @for (group of visibleGroups; track group.label) {
+      <div class="nav-group-label">{{ group.label }}</div>
+      @for (item of group.items; track item.link) {
+        <a class="nav-link" [routerLink]="item.link" routerLinkActive="active">
+          <i class="bi {{ item.icon }}"></i>{{ item.label }}
+        </a>
+      }
+    }
+  </ul>
+</div>

@@ -1,0 +1,33 @@
+import { Injectable } from '@angular/core';
+import { CanActivate, ActivatedRouteSnapshot, RouterStateSnapshot, Router, CanActivateChild } from '@angular/router';
+import { AuthService } from '../services/auth.service';
+import { NotificationService } from '../../shared/services/notification.service';
+ 
+@Injectable({
+  providedIn: 'root'
+})
+export class AuthGuard implements CanActivate, CanActivateChild {
+  constructor(
+    private authService: AuthService,
+    private router: Router,
+    private notificationService: NotificationService
+  ) {}
+ 
+  canActivate(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): boolean {
+    return this.checkAuth(state.url);
+  }
+ 
+  canActivateChild(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): boolean {
+    return this.checkAuth(state.url);
+  }
+ 
+  private checkAuth(url: string): boolean {
+    if (this.authService.isAuthenticated()) {
+      return true;
+    }
+ 
+    this.notificationService.warning('Please log in first');
+    this.router.navigate(['/auth/login'], { queryParams: { returnUrl: url } });
+    return false;
+  }
+}

@@ -1,0 +1,135 @@
+<div class="container-fluid py-3">
+  @if (request) {
+  <div class="d-flex align-items-center gap-2 flex-wrap mb-3">
+    <h4 class="mb-0">{{ request.title }}</h4>
+    <span class="badge text-bg-secondary">{{ request.status }}</span>
+    @if (request.slaBreach) { <span class="badge text-bg-danger">SLA BREACHED</span> }
+  </div>
+  @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
+  @if (info) { <div class="alert alert-success py-2">{{ info }}</div> }
+
+  <div class="row g-3">
+    <div class="col-lg-6">
+      <div class="card h-100">
+        <div class="card-header py-2 fw-semibold">Details</div>
+        <div class="card-body p-0">
+          <table class="table table-sm mb-0">
+            <tbody>
+              <tr><td class="text-muted">Service</td><td>{{ request.hubServiceName || '-' }}</td></tr>
+              <tr><td class="text-muted">Client</td><td>{{ request.clientName || '-' }}</td></tr>
+              <tr><td class="text-muted">Priority</td><td>{{ request.priority }}</td></tr>
+              <tr><td class="text-muted">Assigned To</td><td>{{ request.assignedEmployeeName || 'Unassigned' }}</td></tr>
+              <tr><td class="text-muted">SLA Deadline</td><td>{{ request.slaDeadline ? (request.slaDeadline | date:'medium') : '-' }}</td></tr>
+              <tr><td class="text-muted">Tasks</td><td>{{ request.completedTaskCount }}/{{ request.taskCount }} done</td></tr>
+              <tr><td class="text-muted">Package</td><td>{{ request.packageName || 'Pay per request' }}</td></tr>
+            </tbody>
+          </table>
+        </div>
+        @if (request.description) { <div class="card-footer small">{{ request.description }}</div> }
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="card h-100">
+        <div class="card-header py-2 fw-semibold">Approvals</div>
+        <div class="card-body">
+          @if (hasPendingApproval()) {
+          <div class="alert alert-warning py-1 small">A stage approval is pending.</div>
+          }
+          @for (approval of approvals; track approval.id) {
+          <div class="d-flex gap-2 align-items-center small py-1">
+            <span class="badge"
+                  [class.text-bg-success]="approval.status === 'APPROVED'"
+                  [class.text-bg-danger]="approval.status === 'REJECTED'"
+                  [class.text-bg-warning]="approval.status === 'PENDING'">{{ approval.status }}</span>
+            <span>{{ approval.workflowStageName }}</span>
+            @if (approval.decidedByName) { <span class="text-muted">by {{ approval.decidedByName }}</span> }
+          </div>
+          }
+          @if (!approvals.length) { <p class="text-muted small mb-0">No approvals required so far.</p> }
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="card h-100">
+        <div class="card-header py-2 fw-semibold">Quotation</div>
+        <div class="card-body">
+          @if (request?.quotationAmount) {
+          <table class="table table-sm mb-3">
+            <tbody>
+              <tr><td class="text-muted">Amount</td><td>{{ request?.quotationCurrency }} {{ request?.quotationAmount }}</td></tr>
+              <tr><td class="text-muted">Status</td><td><span class="badge text-bg-secondary">{{ request?.quotationStatus }}</span></td></tr>
+              @if (request?.quotationValidUntil) { <tr><td class="text-muted">Valid Until</td><td>{{ request?.quotationValidUntil | date:'medium' }}</td></tr> }
+              @if (request?.quotationNotes) { <tr><td class="text-muted">Notes</td><td>{{ request?.quotationNotes }}</td></tr> }
+            </tbody>
+          </table>
+          }
+          @if (request?.quotationStatus === 'PENDING') {
+          <div class="d-flex gap-2 mb-3">
+            <button class="btn btn-success btn-sm" (click)="acceptQuotation()">Accept</button>
+            <input class="form-control form-control-sm" placeholder="Rejection reason" [(ngModel)]="rejectReason" style="max-width:200px" />
+            <button class="btn btn-outline-danger btn-sm" (click)="rejectQuotation()">Reject</button>
+          </div>
+          }
+          @if (!request?.quotationAmount || request?.quotationStatus === 'REJECTED') {
+          <h6 class="small fw-semibold">Submit a Quotation</h6>
+          <div class="row g-2">
+            <div class="col-6">
+              <input type="number" class="form-control form-control-sm" placeholder="Amount" [(ngModel)]="quotationForm.amount" />
+            </div>
+            <div class="col-6">
+              <input class="form-control form-control-sm" placeholder="Currency" [(ngModel)]="quotationForm.currency" />
+            </div>
+            <div class="col-12">
+              <textarea class="form-control form-control-sm" rows="2" placeholder="Notes" [(ngModel)]="quotationForm.notes"></textarea>
+            </div>
+            <div class="col-12">
+              <button class="btn btn-primary btn-sm" (click)="submitQuotation()">Submit Quotation</button>
+            </div>
+          </div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="card h-100">
+        <div class="card-header py-2 fw-semibold">Comments</div>
+        <div class="card-body">
+          <div class="input-group input-group-sm mb-3">
+            <input class="form-control" placeholder="Write a comment..." [(ngModel)]="newComment" (keyup.enter)="addComment()" />
+            <button class="btn btn-primary" (click)="addComment()">Post</button>
+          </div>
+          @for (comment of comments; track comment.id) {
+          <div class="border-bottom py-2 small">
+            <div class="d-flex justify-content-between">
+              <strong>{{ comment.authorName || 'Unknown' }}</strong>
+              <span class="text-muted">{{ comment.createdAt | date:'medium' }}</span>
+            </div>
+            <div>{{ comment.content }}</div>
+          </div>
+          }
+          @if (!comments.length) { <p class="text-muted small mb-0">No comments yet.</p> }
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="card h-100">
+        <div class="card-header py-2 fw-semibold">Status History</div>
+        <div class="card-body">
+          @for (event of history; track $index) {
+          <div class="d-flex gap-3 border-bottom py-1 small">
+            <span class="text-muted">{{ event.createdAt | date:'medium' }}</span>
+            <span>{{ event.fromStatus || event.oldStatus || '' }} → {{ event.toStatus || event.newStatus || '' }}</span>
+            <span class="text-muted">{{ event.changedByName || '' }}</span>
+          </div>
+          }
+          @if (!history.length) { <p class="text-muted small mb-0">No history.</p> }
+        </div>
+      </div>
+    </div>
+  </div>
+  }
+</div>

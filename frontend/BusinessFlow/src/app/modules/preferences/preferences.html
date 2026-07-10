@@ -1,0 +1,151 @@
+<div class="container-fluid py-4" style="max-width: 900px;">
+  <!-- Header -->
+  <div class="glass-panel rounded-4 p-4 mb-4 shadow-sm">
+    <h3 class="mb-1 text-dark fw-bold" style="font-family: 'Outfit', sans-serif;">Account Settings</h3>
+    <div class="text-secondary small">Manage your personal profile, address location, and notification preferences.</div>
+  </div>
+
+  <!-- Tab Navigation -->
+  <ul class="nav nav-tabs border-bottom mb-4">
+    <li class="nav-item">
+      <a class="nav-link settings-tab py-2 px-3 fs-6 border-0" 
+         [class.active]="activeTab === 'profile'" 
+         (click)="setTab('profile')">
+        <i class="bi bi-person-gear me-2"></i>My Profile
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link settings-tab py-2 px-3 fs-6 border-0" 
+         [class.active]="activeTab === 'notifications'" 
+         (click)="setTab('notifications')">
+        <i class="bi bi-bell me-2"></i>Notification Preferences
+      </a>
+    </li>
+  </ul>
+
+  <!-- Feedback Alerts -->
+  @if (error) {
+    <div class="alert alert-danger rounded-3 py-2 px-3 mb-3">{{ error }}</div>
+  }
+  @if (success) {
+    <div class="alert alert-success rounded-3 py-2 px-3 mb-3">{{ success }}</div>
+  }
+
+  <!-- Tab 1: Profile & Location -->
+  @if (activeTab === 'profile') {
+    @if (loadingProfile) {
+      <app-loader />
+    } @else {
+      <!-- Profile Card -->
+      <div class="card shadow-sm border-0 rounded-4 mb-4">
+        <div class="card-header bg-white border-bottom py-3 px-4 fw-bold text-dark">
+          <i class="bi bi-person-card-text me-2 text-primary"></i>Personal Information
+        </div>
+        <div class="card-body p-4">
+          <form (ngSubmit)="saveProfile()">
+            <div class="row g-3 mb-3">
+              <div class="col-md-6">
+                <label for="firstName" class="form-label fw-semibold small text-secondary">First Name <span class="text-danger">*</span></label>
+                <input type="text" id="firstName" class="form-control" [(ngModel)]="profileForm.firstName" name="firstName" required />
+              </div>
+              <div class="col-md-6">
+                <label for="lastName" class="form-label fw-semibold small text-secondary">Last Name <span class="text-danger">*</span></label>
+                <input type="text" id="lastName" class="form-control" [(ngModel)]="profileForm.lastName" name="lastName" required />
+              </div>
+            </div>
+
+            <div class="row g-3 mb-3">
+              <div class="col-md-6">
+                <label for="email" class="form-label fw-semibold small text-secondary">Email Address</label>
+                <input type="email" id="email" class="form-control bg-light text-secondary" [value]="profile?.email" readonly />
+                <div class="form-text small text-muted">Email cannot be changed directly.</div>
+              </div>
+              <div class="col-md-6">
+                <label for="phone" class="form-label fw-semibold small text-secondary">Phone Number</label>
+                <input type="text" id="phone" class="form-control" [(ngModel)]="profileForm.phone" name="phone" />
+              </div>
+            </div>
+
+            <div class="row g-3 mb-4">
+              <div class="col-md-6">
+                <label for="profileImage" class="form-label fw-semibold small text-secondary">Profile Image URL</label>
+                <input type="text" id="profileImage" class="form-control" [(ngModel)]="profileForm.image" name="image" placeholder="https://example.com/avatar.jpg" />
+              </div>
+              <div class="col-md-6">
+                <label for="langPref" class="form-label fw-semibold small text-secondary">Language Preference</label>
+                <select id="langPref" class="form-select" [(ngModel)]="profileForm.languagePreference" name="languagePreference">
+                  <option value="EN">English</option>
+                  <option value="BD">Bengali</option>
+                  <option value="ES">Spanish</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="d-flex justify-content-end border-top pt-3">
+              <button type="submit" class="btn btn-primary px-4 rounded-pill" [disabled]="savingProfile">
+                @if (savingProfile) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                Save Personal Info
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Location Details Component -->
+      <app-location (formSubmit)="saveProfile($event)"></app-location>
+    }
+  }
+
+  <!-- Tab 2: Notification Preferences -->
+  @if (activeTab === 'notifications') {
+    @if (loading) {
+      <app-loader />
+    } @else if (preference) {
+      <div class="card shadow-sm border-0 rounded-4 mb-4">
+        <div class="card-header bg-white border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
+          <span class="fw-bold text-dark"><i class="bi bi-envelope me-2 text-primary"></i>Email Notifications</span>
+          <button class="btn btn-outline-secondary btn-sm rounded-pill px-3" (click)="reset()">Reset to defaults</button>
+        </div>
+        <div class="list-group list-group-flush">
+          @for (row of emailRows; track row.key) {
+            <div class="list-group-item d-flex justify-content-between align-items-center gap-3 py-3 px-4 border-0 border-bottom">
+              <div>
+                <div class="fw-semibold text-dark fs-6">{{ row.label }}</div>
+                <div class="text-muted small">{{ row.description }}</div>
+              </div>
+              <div class="form-check form-switch mb-0">
+                <input class="form-check-input" type="checkbox" [id]="'pref-' + row.key" [ngModel]="preference[row.key]" (ngModelChange)="preference[row.key] = $event" />
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+
+      <div class="card shadow-sm border-0 rounded-4 mb-4">
+        <div class="card-header bg-white border-bottom py-3 px-4 fw-bold text-dark">
+          <i class="bi bi-chat-square-text me-2 text-primary"></i>In-app Notifications
+        </div>
+        <div class="list-group list-group-flush">
+          @for (row of inAppRows; track row.key) {
+            <div class="list-group-item d-flex justify-content-between align-items-center gap-3 py-3 px-4 border-0 border-bottom">
+              <div>
+                <div class="fw-semibold text-dark fs-6">{{ row.label }}</div>
+                <div class="text-muted small">{{ row.description }}</div>
+              </div>
+              <div class="form-check form-switch mb-0">
+                <input class="form-check-input" type="checkbox" [id]="'pref-' + row.key" [ngModel]="preference[row.key]" (ngModelChange)="preference[row.key] = $event" />
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+
+      <div class="d-flex justify-content-end gap-2">
+        <button class="btn btn-primary px-4 rounded-pill" [disabled]="saving" (click)="save()">
+          @if (saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
+          Save Preferences
+        </button>
+      </div>
+    }
+  }
+</div>

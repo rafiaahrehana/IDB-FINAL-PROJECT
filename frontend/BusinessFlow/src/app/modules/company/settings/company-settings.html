@@ -1,0 +1,156 @@
+<div class="container-fluid py-4">
+  <h2 class="mb-4">Company Settings</h2>
+
+  @if (error) {
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+      {{ error }}
+      <button type="button" class="btn-close" (click)="error = ''"></button>
+    </div>
+  }
+
+  @if (success) {
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+      {{ success }}
+      <button type="button" class="btn-close" (click)="success = ''"></button>
+    </div>
+  }
+
+  @if (loading) {
+    <div class="text-center py-5">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+    </div>
+  } @else if (company) {
+    <div class="row">
+      <div class="col-lg-8">
+        <div class="card mb-4">
+          <div class="card-header">
+            <h5 class="mb-0">Company Information</h5>
+          </div>
+          <div class="card-body">
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <label class="form-label text-muted">Company Name</label>
+                <p class="fw-bold">{{ company.companyName }}</p>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label text-muted">Subdomain</label>
+                <p class="fw-bold">{{ company.subdomain }}</p>
+              </div>
+            </div>
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <label class="form-label text-muted">Status</label>
+                <p><span class="badge {{ statusBadgeClass() }}">{{ company.status }}</span></p>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label text-muted">Subscription Plan</label>
+                <p class="fw-bold">{{ company.subscriptionPlan }}</p>
+              </div>
+            </div>
+            @if (company.subscriptionStart) {
+              <div class="row mb-3">
+                <div class="col-md-6">
+                  <label class="form-label text-muted">Subscription Start</label>
+                  <p class="fw-bold">{{ company.subscriptionStart }}</p>
+                </div>
+                @if (company.subscriptionEnd) {
+                  <div class="col-md-6">
+                    <label class="form-label text-muted">Subscription End</label>
+                    <p class="fw-bold">{{ company.subscriptionEnd }}</p>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+
+        <div class="card border-danger">
+          <div class="card-header bg-danger text-white">
+            <h5 class="mb-0">Danger Zone</h5>
+          </div>
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div>
+                <h6 class="mb-1">Deactivate Company</h6>
+                <small class="text-muted">Your company will be deactivated but data will be preserved. You can reactivate later.</small>
+              </div>
+              <button class="btn btn-outline-warning" (click)="openDeactivateModal()" [disabled]="!canDeactivate()">
+                Deactivate
+              </button>
+            </div>
+            <hr>
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <h6 class="mb-1">Delete Company</h6>
+                <small class="text-muted">Permanently delete company and all data. All employees and clients must be removed first.</small>
+              </div>
+              <button class="btn btn-outline-danger" (click)="openDeleteModal()" [disabled]="!canDelete()">
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Deactivate Modal -->
+  @if (showDeactivateModal) {
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5)">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Deactivate Company</h5>
+            <button type="button" class="btn-close" (click)="closeDeactivateModal()"></button>
+          </div>
+          <div class="modal-body">
+            <p>Are you sure you want to deactivate your company?</p>
+            <div class="alert alert-warning">
+              <strong>Warning:</strong> Deactivating will:
+              <ul class="mb-0 mt-2">
+                <li>Make your company inactive</li>
+                <li>Preserve all your data</li>
+                <li>You can reactivate later from platform admin</li>
+              </ul>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" (click)="closeDeactivateModal()">Cancel</button>
+            <button type="button" class="btn btn-warning" (click)="deactivateCompany()">Deactivate</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Delete Modal -->
+  @if (showDeleteModal) {
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5)">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header bg-danger text-white">
+            <h5 class="modal-title">Delete Company</h5>
+            <button type="button" class="btn-close btn-close-white" (click)="closeDeleteModal()"></button>
+          </div>
+          <div class="modal-body">
+            <p>Are you sure you want to permanently delete your company?</p>
+            <div class="alert alert-danger">
+              <strong>Danger:</strong> This action will:
+              <ul class="mb-0 mt-2">
+                <li>Permanently delete all company data</li>
+                <li>Cannot be undone</li>
+                <li>All employees and clients must be removed first</li>
+              </ul>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" (click)="closeDeleteModal()">Cancel</button>
+            <button type="button" class="btn btn-danger" (click)="deleteCompany()">Delete Permanently</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</div>

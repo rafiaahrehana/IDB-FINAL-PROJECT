@@ -1,0 +1,319 @@
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h4 class="mb-0">Payroll</h4>
+    <div class="d-flex gap-2">
+      <select
+        class="form-select form-select-sm"
+        style="width: 110px"
+        [(ngModel)]="month"
+        (change)="page = 0; load()"
+      >
+        @for (m of months; track m) {
+          <option [ngValue]="m">{{ m | number: '2.0' }}</option>
+        }
+      </select>
+      <select
+        class="form-select form-select-sm"
+        style="width: 110px"
+        [(ngModel)]="year"
+        (change)="page = 0; load()"
+      >
+        @for (y of years; track y) {
+          <option [ngValue]="y">{{ y }}</option>
+        }
+      </select>
+      <button class="btn btn-primary btn-sm text-nowrap" (click)="showForm = true">
+        <i class="bi bi-plus-lg me-1"></i>Add Payroll
+      </button>
+    </div>
+  </div>
+
+  @if (error) {
+    <div class="alert alert-danger py-2">{{ error }}</div>
+  }
+  @if (success) {
+    <div class="alert alert-success py-2">{{ success }}</div>
+  }
+  @if (loading) {
+    <app-loader />
+  }
+
+  @if (!loading && payrolls.length) {
+    <div class="card">
+      <div class="table-responsive">
+        <table class="table table-hover table-sm align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Employee</th>
+              <th>Period</th>
+              <th class="text-end">Basic</th>
+              <th class="text-end">Bonus</th>
+              <th class="text-end">Deductions</th>
+              <th class="text-end">Net</th>
+              <th>Status</th>
+              <th>Paid</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (p of payrolls; track p.id) {
+              <tr>
+                <td>{{ p.employeeName }}</td>
+                <td>{{ p.payMonth | number: '2.0' }}/{{ p.payYear }}</td>
+                <td class="text-end">{{ p.basicSalary | number: '1.2-2' }}</td>
+                <td class="text-end">{{ p.bonus ?? 0 | number: '1.2-2' }}</td>
+                <td class="text-end">
+                  {{ (p.deductions ?? 0) + (p.taxDeduction ?? 0) | number: '1.2-2' }}
+                </td>
+                <td class="text-end fw-semibold">{{ p.netSalary | number: '1.2-2' }}</td>
+                <td>
+                  <span
+                    class="badge"
+                    [class.text-bg-secondary]="p.status === 'DRAFT'"
+                    [class.text-bg-info]="p.status === 'APPROVED'"
+                    [class.text-bg-success]="p.status === 'PAID'"
+                    [class.text-bg-danger]="p.status === 'CANCELLED'"
+                  >
+                    {{ p.status }}
+                  </span>
+                </td>
+                <td class="small">
+                  {{ p.paidAt ? (p.paidAt | date: 'mediumDate') : '-' }}
+                  @if (p.paymentReference) {
+                    <div class="text-muted">{{ p.paymentReference }}</div>
+                  }
+                </td>
+                <td class="text-end text-nowrap">
+                  @if (p.status === 'DRAFT') {
+                    <button
+                      class="btn btn-outline-info btn-sm py-0 me-1"
+                      title="Approve"
+                      (click)="approve(p)"
+                    >
+                      <i class="bi bi-check2-circle"></i>
+                    </button>
+                    <button
+                      class="btn btn-outline-danger btn-sm py-0"
+                      title="Delete"
+                      (click)="deleteTarget = p"
+                    >
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  }
+                  @if (p.status === 'APPROVED') {
+                    <button
+                      class="btn btn-outline-success btn-sm py-0"
+                      title="Mark Paid"
+                      (click)="openPay(p)"
+                    >
+                      <i class="bi bi-cash-coin"></i>
+                    </button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <div class="card-footer d-flex justify-content-end">
+        <app-pagination [page]="page" [totalPages]="totalPages" (pageChange)="goToPage($event)" />
+      </div>
+    </div>
+  }
+
+  @if (!loading && !payrolls.length) {
+    <app-empty-state icon="bi-cash-stack" message="No payroll records for this period." />
+  }
+</div>
+
+<!-- Create payroll modal -->
+@if (showForm) {
+  <div class="modal d-block" tabindex="-1" style="background: rgba(0, 0, 0, 0.4)">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <form #f="ngForm" (ngSubmit)="f.valid && save()">
+          <div class="modal-header">
+            <h5 class="modal-title">Add Payroll</h5>
+            <button type="button" class="btn-close" (click)="showForm = false"></button>
+          </div>
+          <div class="modal-body">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Employee *</label>
+                <select
+                  class="form-select form-select-sm"
+                  name="employeeId"
+                  [(ngModel)]="form.employeeId"
+                  (change)="onEmployeeSelected()"
+                  required
+                >
+                  <option [ngValue]="undefined" disabled>Select employee</option>
+                  @for (e of employees; track e.id) {
+                    <option [ngValue]="e.id">{{ e.firstName }} {{ e.lastName }}</option>
+                  }
+                </select>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Month *</label>
+                <select
+                  class="form-select form-select-sm"
+                  name="payMonth"
+                  [(ngModel)]="form.payMonth"
+                  required
+                >
+                  @for (m of months; track m) {
+                    <option [ngValue]="m">{{ m | number: '2.0' }}</option>
+                  }
+                </select>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Year *</label>
+                <select
+                  class="form-select form-select-sm"
+                  name="payYear"
+                  [(ngModel)]="form.payYear"
+                  required
+                >
+                  @for (y of years; track y) {
+                    <option [ngValue]="y">{{ y }}</option>
+                  }
+                </select>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Basic Salary *</label>
+                <input
+                  type="number"
+                  class="form-control form-control-sm"
+                  name="basicSalary"
+                  [(ngModel)]="form.basicSalary"
+                  required
+                  min="0"
+                />
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">House Rent</label>
+                <input
+                  type="number"
+                  class="form-control form-control-sm"
+                  name="houseRent"
+                  [(ngModel)]="form.houseRent"
+                  min="0"
+                />
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Medical</label>
+                <input
+                  type="number"
+                  class="form-control form-control-sm"
+                  name="medicalAllowance"
+                  [(ngModel)]="form.medicalAllowance"
+                  min="0"
+                />
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Transport</label>
+                <input
+                  type="number"
+                  class="form-control form-control-sm"
+                  name="transportAllowance"
+                  [(ngModel)]="form.transportAllowance"
+                  min="0"
+                />
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Bonus</label>
+                <input
+                  type="number"
+                  class="form-control form-control-sm"
+                  name="bonus"
+                  [(ngModel)]="form.bonus"
+                  min="0"
+                />
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Deductions</label>
+                <input
+                  type="number"
+                  class="form-control form-control-sm"
+                  name="deductions"
+                  [(ngModel)]="form.deductions"
+                  min="0"
+                />
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Tax Deduction</label>
+                <input
+                  type="number"
+                  class="form-control form-control-sm"
+                  name="taxDeduction"
+                  [(ngModel)]="form.taxDeduction"
+                  min="0"
+                />
+              </div>
+              <div class="col-12">
+                <label class="form-label">Notes</label>
+                <textarea
+                  class="form-control form-control-sm"
+                  name="notes"
+                  [(ngModel)]="form.notes"
+                  rows="2"
+                ></textarea>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary btn-sm" (click)="showForm = false">
+              Cancel
+            </button>
+            <button type="submit" class="btn btn-primary btn-sm" [disabled]="f.invalid || saving">
+              @if (saving) {
+                <span class="spinner-border spinner-border-sm me-1"></span>
+              }
+              Create
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Mark paid modal -->
+@if (payTarget) {
+  <div class="modal d-block" tabindex="-1" style="background: rgba(0, 0, 0, 0.4)">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Mark as Paid</h5>
+          <button type="button" class="btn-close" (click)="payTarget = null"></button>
+        </div>
+        <div class="modal-body">
+          <p class="small mb-2">
+            {{ payTarget.employeeName }} — {{ payTarget.payMonth | number: '2.0' }}/{{
+              payTarget.payYear
+            }}, net <strong>{{ payTarget.netSalary | number: '1.2-2' }}</strong>
+          </p>
+          <label class="form-label">Payment Reference (optional)</label>
+          <input
+            class="form-control form-control-sm"
+            [(ngModel)]="paymentReference"
+            placeholder="e.g. bank transfer ID"
+          />
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary btn-sm" (click)="payTarget = null">Cancel</button>
+          <button class="btn btn-success btn-sm" (click)="confirmPay()">Mark Paid</button>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+<app-confirm-dialog
+  [visible]="!!deleteTarget"
+  title="Delete Payroll"
+  [message]="'Delete payroll for ' + $safeNavigationMigration(deleteTarget?.employeeName) + '?'"
+  confirmLabel="Delete"
+  (confirmed)="confirmDelete()"
+  (cancelled)="deleteTarget = null"
+/>

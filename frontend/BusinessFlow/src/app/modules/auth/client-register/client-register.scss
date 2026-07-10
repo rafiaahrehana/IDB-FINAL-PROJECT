@@ -1,0 +1,36 @@
+.auth-container {
+  font-family: 'Inter', sans-serif;
+
+  .brand-panel {
+    background: #2563EB;
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+  }
+
+  .form-panel {
+    min-height: 100vh;
+    background: #f8fafc;
+  }
+
+  .form-control {
+    height: 42px;
+    border-radius: 8px;
+
+    &:focus {
+      border-color: #2563EB;
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+    }
+  }
+
+  .btn-primary {
+    background: #2563EB;
+    border: none;
+    font-weight: 600;
+    font-size: 0.95rem;
+
+    &:hover, &:focus {
+      background: #1d4ed8;
+    }
+  }
+}

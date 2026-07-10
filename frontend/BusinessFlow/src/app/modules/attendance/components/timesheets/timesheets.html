@@ -1,0 +1,115 @@
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <h4 class="mb-0">My Timesheets</h4>
+    <button class="btn btn-primary btn-sm" (click)="openCreate()"><i class="bi bi-plus"></i> Log Hours</button>
+  </div>
+  @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
+  @if (success) { <div class="alert alert-success py-2">{{ success }}</div> }
+
+  @if (showForm) {
+  <div class="card mb-3"><div class="card-body">
+    <div class="row g-2">
+      <div class="col-md-2">
+        <label class="form-label small text-muted mb-1">Work Date *</label>
+        <input type="date" class="form-control form-control-sm" [(ngModel)]="form.workDate" />
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small text-muted mb-1">Hours Worked *</label>
+        <input type="number" step="0.5" class="form-control form-control-sm" [(ngModel)]="form.hoursWorked" />
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small text-muted mb-1">Billable Hours</label>
+        <input type="number" step="0.5" class="form-control form-control-sm" [(ngModel)]="form.billableHours" />
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small text-muted mb-1">Project</label>
+        <input class="form-control form-control-sm" [(ngModel)]="form.projectName" />
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small text-muted mb-1">Task Description</label>
+        <input class="form-control form-control-sm" [(ngModel)]="form.taskDescription" />
+      </div>
+      <div class="col-12">
+        <label class="form-label small text-muted mb-1">Notes</label>
+        <textarea class="form-control form-control-sm" rows="2" [(ngModel)]="form.description"></textarea>
+      </div>
+      <div class="col-12 d-flex gap-2">
+        <button class="btn btn-primary btn-sm" [disabled]="!form.workDate || !form.hoursWorked" (click)="save()">Save</button>
+        <button class="btn btn-secondary btn-sm" (click)="showForm = false">Cancel</button>
+      </div>
+    </div>
+  </div></div>
+  }
+
+  @if (loading) { <app-loader /> }
+  @if (!loading && myTimesheets.length) {
+  <div class="card"><div class="table-responsive">
+    <table class="table table-hover table-sm align-middle mb-0">
+      <thead class="table-light"><tr><th>Date</th><th>Project</th><th>Task</th><th class="text-end">Hours</th><th class="text-end">Billable</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        @for (t of myTimesheets; track t.id) {
+        <tr>
+          <td class="small text-muted">{{ t.workDate | date:'mediumDate' }}</td>
+          <td>{{ t.projectName || '-' }}</td>
+          <td class="small">{{ t.taskDescription || t.taskTitle || '-' }}</td>
+          <td class="text-end">{{ t.hoursWorked }}</td>
+          <td class="text-end">{{ t.billableHours }}</td>
+          <td>
+            @if (t.approved) { <span class="badge text-bg-success">Approved</span> }
+            @if (!t.approved) { <span class="badge text-bg-warning">Pending</span> }
+          </td>
+          <td class="text-end text-nowrap">
+            @if (!t.approved) {
+            <button class="btn btn-outline-secondary btn-sm me-1" (click)="openEdit(t)"><i class="bi bi-pencil"></i></button>
+            <button class="btn btn-outline-danger btn-sm" (click)="deleteTarget = t"><i class="bi bi-trash"></i></button>
+            }
+          </td>
+        </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  <div class="card-footer d-flex justify-content-end"><app-pagination [page]="page" [totalPages]="totalPages" (pageChange)="goToPage($event)" /></div>
+  </div>
+  }
+  @if (!loading && !myTimesheets.length && !showForm) { <app-empty-state icon="bi-clock-history" message="No timesheet entries yet." /> }
+
+  <div class="card mt-4">
+    <div class="card-header py-2 fw-semibold">Manager View - Employee Timesheets</div>
+    <div class="card-body">
+      <div class="d-flex gap-2 mb-3">
+        <input type="number" class="form-control form-control-sm" style="max-width:200px" placeholder="Employee ID" [(ngModel)]="employeeIdFilter" />
+        <button class="btn btn-primary btn-sm" [disabled]="!employeeIdFilter" (click)="employeePage = 0; loadEmployeeTimesheets()">Load</button>
+      </div>
+      @if (employeeLoading) { <app-loader /> }
+      @if (!employeeLoading && employeeTimesheets.length) {
+      <div class="table-responsive">
+        <table class="table table-hover table-sm align-middle mb-0">
+          <thead class="table-light"><tr><th>Date</th><th>Employee</th><th>Project</th><th class="text-end">Hours</th><th>Status</th><th></th></tr></thead>
+          <tbody>
+            @for (t of employeeTimesheets; track t.id) {
+            <tr>
+              <td class="small text-muted">{{ t.workDate | date:'mediumDate' }}</td>
+              <td>{{ t.employeeName || ('#' + t.employeeId) }}</td>
+              <td>{{ t.projectName || '-' }}</td>
+              <td class="text-end">{{ t.hoursWorked }}</td>
+              <td>
+                @if (t.approved) { <span class="badge text-bg-success">Approved</span> }
+                @if (!t.approved) { <span class="badge text-bg-warning">Pending</span> }
+              </td>
+              <td class="text-end">
+                @if (!t.approved) { <button class="btn btn-outline-success btn-sm" (click)="approve(t)">Approve</button> }
+              </td>
+            </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <div class="d-flex justify-content-end mt-2"><app-pagination [page]="employeePage" [totalPages]="employeeTotalPages" (pageChange)="goToEmployeePage($event)" /></div>
+      }
+      @if (!employeeLoading && !employeeTimesheets.length && employeeIdFilter) { <app-empty-state icon="bi-clock-history" message="No timesheets for this employee." /> }
+    </div>
+  </div>
+
+  <app-confirm-dialog [visible]="!!deleteTarget" title="Delete Timesheet" message="Delete this timesheet entry?" (confirmed)="doDelete()" (cancelled)="deleteTarget = null" />
+</div>

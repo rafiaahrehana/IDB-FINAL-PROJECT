@@ -1,0 +1,232 @@
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+      <h4 class="mb-0">Departments</h4>
+      <small class="text-muted">{{ filteredDepartments.length }} department{{ filteredDepartments.length !== 1 ? 's' : '' }}</small>
+    </div>
+    <div class="d-flex gap-2">
+      <div class="input-group input-group-sm" style="width: 220px">
+        <span class="input-group-text"><i class="bi bi-search"></i></span>
+        <input class="form-control" placeholder="Search departments..." [(ngModel)]="searchTerm" />
+        @if (searchTerm) {
+          <button class="btn btn-outline-secondary" (click)="searchTerm = ''"><i class="bi bi-x"></i></button>
+        }
+      </div>
+      <button class="btn btn-primary btn-sm text-nowrap" (click)="openCreate()">
+        <i class="bi bi-plus-lg me-1"></i>Add Department
+      </button>
+    </div>
+  </div>
+
+  @if (error) {
+    <div class="alert alert-danger py-2">{{ error }}</div>
+  }
+  @if (success) {
+    <div class="alert alert-success py-2">{{ success }}</div>
+  }
+  @if (loading) {
+    <app-loader />
+  }
+
+  @if (!loading && filteredDepartments.length) {
+    <div class="card border-0 shadow-sm">
+      <div class="table-responsive">
+        <table class="table table-hover table-sm align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Department</th>
+              <th>Code</th>
+              <th>Head</th>
+              <th>Parent</th>
+              <th class="text-end">Employees</th>
+              <th class="text-end">Budget</th>
+              <th>Status</th>
+              <th class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (dept of filteredDepartments; track dept.id) {
+              <tr>
+                <td>
+                  <div class="fw-medium">{{ dept.name }}</div>
+                  @if (dept.description) {
+                    <div class="text-muted small text-truncate" style="max-width: 280px">{{ dept.description }}</div>
+                  }
+                </td>
+                <td>
+                  @if (dept.code) {
+                    <span class="badge text-bg-light border">{{ dept.code }}</span>
+                  } @else {
+                    <span class="text-muted">-</span>
+                  }
+                </td>
+                <td>{{ dept.headEmployeeName || '-' }}</td>
+                <td>{{ dept.parentDepartmentName || '-' }}</td>
+                <td class="text-end">
+                  @if (dept.employeeCount > 0) {
+                    <button class="btn btn-link btn-sm p-0 text-decoration-none" (click)="viewEmployees(dept)">
+                      {{ dept.employeeCount }}
+                      <i class="bi bi-box-arrow-up-right small ms-1"></i>
+                    </button>
+                  } @else {
+                    <span class="text-muted">0</span>
+                  }
+                </td>
+                <td class="text-end">
+                  @if (dept.budget) {
+                    {{ dept.budget | number }}
+                  } @else {
+                    <span class="text-muted">-</span>
+                  }
+                </td>
+                <td>
+                  <span class="badge rounded-pill" [class.text-bg-success]="dept.active" [class.text-bg-secondary]="!dept.active">
+                    {{ dept.active ? 'Active' : 'Inactive' }}
+                  </span>
+                </td>
+                <td class="text-end text-nowrap">
+                  <button class="btn btn-outline-secondary btn-sm py-0 me-1" title="Edit" (click)="openEdit(dept)">
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  <button class="btn btn-outline-secondary btn-sm py-0 me-1" [title]="dept.active ? 'Deactivate' : 'Activate'" (click)="toggle(dept)">
+                    <i class="bi" [class.bi-toggle-on]="dept.active" [class.bi-toggle-off]="!dept.active"></i>
+                  </button>
+                  <button class="btn btn-outline-danger btn-sm py-0" title="Delete" (click)="deleteTarget = dept">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      @if (totalPages > 1) {
+        <div class="card-footer d-flex justify-content-end">
+          <app-pagination [page]="page" [totalPages]="totalPages" (pageChange)="goToPage($event)" />
+        </div>
+      }
+    </div>
+  }
+
+  @if (!loading && !filteredDepartments.length && !searchTerm) {
+    <app-empty-state icon="bi-diagram-3" message="No departments yet. Create your first department to get started." />
+  }
+
+  @if (!loading && !filteredDepartments.length && searchTerm) {
+    <div class="text-center py-5">
+      <i class="bi bi-search fs-1 text-muted"></i>
+      <p class="text-muted mt-2">No departments match "{{ searchTerm }}"</p>
+      <button class="btn btn-outline-secondary btn-sm" (click)="searchTerm = ''">Clear search</button>
+    </div>
+  }
+</div>
+
+@if (showForm) {
+  <div class="modal d-block" tabindex="-1" style="background: rgba(0, 0, 0, 0.4)">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <form #f="ngForm" (ngSubmit)="f.valid && save()">
+          <div class="modal-header">
+            <h5 class="modal-title">{{ editingId ? 'Edit Department' : 'Add Department' }}</h5>
+            <button type="button" class="btn-close" (click)="showForm = false"></button>
+          </div>
+          <div class="modal-body">
+            <div class="row g-3">
+              <div class="col-md-8">
+                <label class="form-label">Name *</label>
+                <input class="form-control form-control-sm" name="name" [(ngModel)]="form.name" required minlength="2" maxlength="100" />
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Code</label>
+                <input class="form-control form-control-sm" name="code" [(ngModel)]="form.code" maxlength="20" placeholder="e.g. HR, IT" />
+              </div>
+              <div class="col-12">
+                <label class="form-label">Description</label>
+                <textarea class="form-control form-control-sm" name="description" [(ngModel)]="form.description" rows="2" placeholder="What does this department do?"></textarea>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Parent Department</label>
+                <select class="form-select form-select-sm" name="parentDepartmentId" [(ngModel)]="form.parentDepartmentId">
+                  <option [ngValue]="undefined">None (Top level)</option>
+                  @for (d of activeDepartments; track d.id) {
+                    @if (d.id !== editingId) {
+                      <option [ngValue]="d.id">{{ d.name }}</option>
+                    }
+                  }
+                </select>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Department Head</label>
+                <select class="form-select form-select-sm" name="headEmployeeId" [(ngModel)]="form.headEmployeeId">
+                  <option [ngValue]="undefined">None</option>
+                  @for (emp of employees; track emp.id) {
+                    <option [ngValue]="emp.id">{{ emp.firstName }} {{ emp.lastName }}</option>
+                  }
+                </select>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Budget</label>
+                <input type="number" class="form-control form-control-sm" name="budget" [(ngModel)]="form.budget" min="0" placeholder="0" />
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary btn-sm" (click)="showForm = false">Cancel</button>
+            <button type="submit" class="btn btn-primary btn-sm" [disabled]="f.invalid || saving">
+              @if (saving) {
+                <span class="spinner-border spinner-border-sm me-1"></span>
+              }
+              {{ editingId ? 'Save Changes' : 'Create Department' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+}
+
+@if (showEmployees) {
+  <div class="modal d-block" tabindex="-1" style="background: rgba(0, 0, 0, 0.4)">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Employees in {{ selectedDeptName }}</h5>
+          <button type="button" class="btn-close" (click)="showEmployees = false"></button>
+        </div>
+        <div class="modal-body">
+          @if (deptEmployeesLoading) {
+            <app-loader />
+          }
+          @if (!deptEmployeesLoading && deptEmployees.length) {
+            <div class="list-group list-group-flush">
+              @for (emp of deptEmployees; track emp.id) {
+                <a class="list-group-item list-group-item-action d-flex align-items-center gap-3" [routerLink]="['/hrm/employees', emp.id]" (click)="showEmployees = false">
+                  <div class="rounded-circle bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                    <i class="bi bi-person"></i>
+                  </div>
+                  <div class="flex-grow-1">
+                    <div class="fw-medium small">{{ getEmployeeName(emp) }}</div>
+                    <div class="text-muted small">{{ emp.jobTitle || emp.employmentType }}</div>
+                  </div>
+                  <span class="badge text-bg-light border">{{ emp.employmentStatus }}</span>
+                </a>
+              }
+            </div>
+          }
+          @if (!deptEmployeesLoading && !deptEmployees.length) {
+            <div class="text-center text-muted py-3">No employees found in this department.</div>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+<app-confirm-dialog
+  [visible]="!!deleteTarget"
+  title="Delete Department"
+  [message]="'Delete department \'' + ($safeNavigationMigration(deleteTarget?.name)) + '\'? Employees in this department will not be deleted.'"
+  confirmLabel="Delete"
+  (confirmed)="confirmDelete()"
+  (cancelled)="deleteTarget = null"
+/>

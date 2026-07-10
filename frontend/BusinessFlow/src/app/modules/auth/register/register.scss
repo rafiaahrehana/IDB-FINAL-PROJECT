@@ -1,0 +1,85 @@
+.auth-container {
+  font-family: 'Inter', sans-serif;
+
+  .brand-panel {
+    background: #2563EB;
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+
+    .brand-pattern {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      opacity: 0.1;
+      background-image: radial-gradient(#ffffff 1.5px, transparent 1.5px), radial-gradient(#ffffff 1.5px, transparent 1.5px);
+      background-size: 24px 24px;
+      background-position: 0 0, 12px 12px;
+      pointer-events: none;
+      z-index: 0;
+    }
+  }
+
+  .form-panel {
+    min-height: 100vh;
+    background: #f8fafc;
+  }
+
+  .form-control {
+    height: 42px;
+    border-radius: 8px;
+
+    &:focus {
+      border-color: #2563EB;
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+    }
+  }
+
+  .btn-primary {
+    background: #2563EB;
+    border: none;
+    font-weight: 600;
+    font-size: 0.95rem;
+
+    &:hover, &:focus {
+      background: #1d4ed8;
+    }
+  }
+
+  .step-dot {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    background: #e2e8f0;
+    color: #94a3b8;
+    transition: all 0.2s;
+
+    &.active {
+      background: #2563EB;
+      color: #fff;
+    }
+
+    &.done {
+      background: #2563EB;
+      color: #fff;
+    }
+  }
+
+  .step-line {
+    width: 40px;
+    height: 2px;
+    background: #e2e8f0;
+    transition: background 0.2s;
+
+    &.active {
+      background: #2563EB;
+    }
+  }
+}

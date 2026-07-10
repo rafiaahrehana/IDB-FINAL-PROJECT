@@ -1,0 +1,145 @@
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import {
+  LeavePolicy,
+  LeavePolicyRequest,
+  LEAVE_TYPES,
+  EMPLOYMENT_TYPES
+} from '../../models/hrm.model';
+import { LeavePolicyService } from '../../services/leave-policy.service';
+import { Pagination } from '../../../../shared/components/pagination/pagination';
+import { Loader } from '../../../../shared/components/loader/loader';
+import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
+import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/confirm-dialog';
+
+@Component({
+  selector: 'app-leave-policies',
+  imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState, ConfirmDialog],
+  templateUrl: './leave-policies.html',
+})
+export class LeavePolicies implements OnInit {
+  policies: LeavePolicy[] = [];
+  totalPages = 0;
+  page = 0;
+  loading = false;
+  saving = false;
+  error = '';
+  success = '';
+
+  showForm = false;
+  isEdit = false;
+  selectedId: number | null = null;
+  form: LeavePolicyRequest = this.emptyForm();
+
+  deleteTarget: LeavePolicy | null = null;
+
+  leaveTypes = LEAVE_TYPES;
+  employmentTypes = EMPLOYMENT_TYPES;
+
+  constructor(private policyService: LeavePolicyService) {}
+
+  ngOnInit(): void {
+    this.load();
+  }
+
+  load(): void {
+    this.loading = true;
+    this.error = '';
+    this.policyService.list(this.page, 20).subscribe({
+      next: (res) => {
+        this.policies = res.content;
+        this.totalPages = res.totalPages;
+        this.loading = false;
+      },
+      error: () => {
+        this.error = 'Failed to load leave policies';
+        this.loading = false;
+      }
+    });
+  }
+
+  openCreate(): void {
+    this.form = this.emptyForm();
+    this.isEdit = false;
+    this.showForm = true;
+  }
+
+  openEdit(p: LeavePolicy): void {
+    this.form = {
+      leaveType: p.leaveType,
+      employmentType: p.employmentType,
+      annualEntitlement: p.annualEntitlement,
+      maxCarryForward: p.maxCarryForward,
+      maxConsecutiveDays: p.maxConsecutiveDays,
+      requiresApproval: p.requiresApproval,
+      canCarryForward: p.canCarryForward,
+      paid: p.paid,
+      applicableFromMonths: p.applicableFromMonths,
+    };
+    this.selectedId = p.id;
+    this.isEdit = true;
+    this.showForm = true;
+  }
+
+  save(): void {
+    this.saving = true;
+    this.error = '';
+    const payload = this.cleanPayload();
+    const request = this.isEdit && this.selectedId
+      ? this.policyService.update(this.selectedId, payload)
+      : this.policyService.create(payload);
+
+    request.subscribe({
+      next: () => {
+        this.saving = false;
+        this.showForm = false;
+        this.success = this.isEdit ? 'Leave policy updated' : 'Leave policy created';
+        this.load();
+      },
+      error: (err) => {
+        this.saving = false;
+        this.error = err?.error?.message || 'Failed to save policy';
+      }
+    });
+  }
+
+  confirmDelete(): void {
+    if (!this.deleteTarget) return;
+    this.policyService.delete(this.deleteTarget.id).subscribe({
+      next: () => {
+        this.deleteTarget = null;
+        this.success = 'Leave policy deleted';
+        this.load();
+      },
+      error: () => {
+        this.deleteTarget = null;
+        this.error = 'Failed to delete policy';
+      }
+    });
+  }
+
+  goToPage(p: number): void {
+    this.page = p;
+    this.load();
+  }
+
+  private emptyForm(): LeavePolicyRequest {
+    return {
+      leaveType: 'ANNUAL',
+      employmentType: 'FULL_TIME',
+      annualEntitlement: 14,
+      maxCarryForward: 5,
+      maxConsecutiveDays: 10,
+      requiresApproval: true,
+      canCarryForward: true,
+      paid: true,
+      applicableFromMonths: 0,
+    };
+  }
+
+  private cleanPayload(): LeavePolicyRequest {
+    const payload: any = { ...this.form };
+    return payload;
+  }
+}

@@ -1,0 +1,35 @@
+import { Injectable } from '@angular/core';
+import { Observable } from 'rxjs';
+import { ApiService, PagedResponse } from '../../../core/services/api.service';
+import { Client, ClientSelfRegisterRequest } from '../models/crm.model';
+
+@Injectable({ providedIn: 'root' })
+export class ClientService {
+  private readonly endpoint = '/clients';
+
+  constructor(private api: ApiService) {}
+
+  list(page = 0, size = 20, status?: string): Observable<PagedResponse<Client>> {
+    return this.api.getPaged<Client>(this.endpoint, page, size, status ? { status } : undefined);
+  }
+
+  getById(id: number): Observable<Client> {
+    return this.api.get<Client>(`${this.endpoint}/${id}`);
+  }
+
+  create(payload: any): Observable<Client> {
+    return this.api.post<Client>(this.endpoint, payload);
+  }
+
+  update(id: number, payload: Partial<Client>): Observable<Client> {
+    return this.api.patch<Client>(`${this.endpoint}/${id}`, payload);
+  }
+
+  delete(id: number): Observable<void> {
+    return this.api.delete<void>(`${this.endpoint}/${id}`);
+  }
+
+  selfRegister(payload: ClientSelfRegisterRequest): Observable<any> {
+    return this.api.post<any>(`${this.endpoint}/self-register`, payload);
+  }
+}

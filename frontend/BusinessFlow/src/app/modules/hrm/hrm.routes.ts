@@ -1,0 +1,39 @@
+import { Routes } from '@angular/router';
+import { Employees } from './components/employees/employees';
+import { EmployeeDetail } from './components/employee-detail/employee-detail';
+import { Departments } from './components/departments/departments';
+import { Designations } from './components/designations/designations';
+import { PayrollPage } from './components/payroll/payroll';
+import { SalaryStructures } from './components/salary-structures/salary-structures';
+import { Announcements } from './components/announcements/announcements';
+import { Holidays } from './components/holidays/holidays';
+import { LeavePolicies } from './components/leave-policies/leave-policies';
+import { Shifts } from './components/shifts/shifts';
+import { PerformanceReviews } from './components/performance-reviews/performance-reviews';
+import { JobPostings } from './components/job-postings/job-postings';
+import { OfferLetters } from './components/offer-letters/offer-letters';
+import { Leaves } from './components/leaves/leaves';
+import { Applications } from './components/applications/applications';
+import { Assets } from './components/assets/assets';
+import { Expenses } from './components/expenses/expenses';
+
+export const HRM_ROUTES: Routes = [
+  { path: 'employees', component: Employees },
+  { path: 'employees/:id', component: EmployeeDetail },
+  { path: 'departments', component: Departments },
+  { path: 'designations', component: Designations },
+  { path: 'payroll', component: PayrollPage },
+  { path: 'salary-structures', component: SalaryStructures },
+  { path: 'announcements', component: Announcements },
+  { path: 'holidays', component: Holidays },
+  { path: 'leave-policies', component: LeavePolicies },
+  { path: 'shifts', component: Shifts },
+  { path: 'performance', component: PerformanceReviews },
+  { path: 'job-postings', component: JobPostings },
+  { path: 'letters', component: OfferLetters },
+  { path: 'leaves', component: Leaves },
+  { path: 'applications', component: Applications },
+  { path: 'assets', component: Assets },
+  { path: 'expenses', component: Expenses },
+  { path: '', redirectTo: 'employees', pathMatch: 'full' }
+];

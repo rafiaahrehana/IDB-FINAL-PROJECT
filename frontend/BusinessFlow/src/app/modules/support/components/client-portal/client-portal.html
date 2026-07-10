@@ -1,0 +1,175 @@
+<div class="container-fluid py-3">
+  @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
+  @if (success) { <div class="alert alert-success py-2">{{ success }}</div> }
+
+  @switch (view) {
+    @case ('list') {
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="mb-0"><i class="bi bi-life-preserver me-2"></i>My Support Tickets</h4>
+        <button class="btn btn-primary btn-sm" (click)="showCreate()"><i class="bi bi-plus-lg me-1"></i>New Ticket</button>
+      </div>
+      @if (loading) { <app-loader /> }
+      @if (!loading && !tickets.length) { <app-empty-state icon="bi-life-preserver" message="No tickets yet. Create your first support request." /> }
+      @if (!loading && tickets.length) {
+        <div class="card">
+          <div class="table-responsive">
+            <table class="table table-hover table-sm align-middle mb-0">
+              <thead class="table-light">
+                <tr><th>Ticket #</th><th>Title</th><th>Priority</th><th>Status</th><th>Agent</th><th>Created</th><th></th></tr>
+              </thead>
+              <tbody>
+                @for (t of tickets; track t.id) {
+                  <tr role="button" (click)="showDetail(t)">
+                    <td class="small text-muted">{{ t.ticketNumber }}</td>
+                    <td>{{ t.title }}</td>
+                    <td><span class="badge {{ priorityClass(t.priority) }}">{{ t.priority }}</span></td>
+                    <td><span class="badge {{ statusClass(t.status) }}">{{ t.status }}</span></td>
+                    <td>{{ t.assignedToAgentName || 'Unassigned' }}</td>
+                    <td class="small text-muted">{{ t.createdAt | date:'short' }}</td>
+                    <td><i class="bi bi-chevron-right text-muted"></i></td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <div class="card-footer d-flex justify-content-end">
+            <app-pagination [page]="page" [totalPages]="totalPages" (pageChange)="goToPage($event)" />
+          </div>
+        </div>
+      }
+    }
+
+    @case ('create') {
+      <div class="d-flex align-items-center mb-3">
+        <button class="btn btn-link btn-sm text-decoration-none me-2" (click)="goBack()"><i class="bi bi-arrow-left"></i> Back</button>
+        <h4 class="mb-0">Create Support Ticket</h4>
+      </div>
+      <div class="card">
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-8">
+              <label class="form-label small fw-semibold">Title *</label>
+              <input class="form-control" placeholder="Brief description of your issue" [(ngModel)]="form.title" />
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold">Priority *</label>
+              <select class="form-select" [(ngModel)]="form.priority">
+                @for (p of priorities; track p) { <option [value]="p">{{ p }}</option> }
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold">Category</label>
+              <select class="form-select" [(ngModel)]="form.categoryId">
+                <option [ngValue]="undefined">Select category...</option>
+                @for (c of categories; track c.id) { <option [value]="c.id">{{ c.categoryName }}</option> }
+              </select>
+            </div>
+            <div class="col-12">
+              <label class="form-label small fw-semibold">Description *</label>
+              <textarea class="form-control" rows="5" placeholder="Please provide as much detail as possible..." [(ngModel)]="form.description"></textarea>
+            </div>
+            <div class="col-12 d-flex gap-2">
+              <button class="btn btn-primary" (click)="create()" [disabled]="!form.title || !form.priority || !form.description">
+                <i class="bi bi-send me-1"></i>Submit Ticket
+              </button>
+              <button class="btn btn-outline-secondary" (click)="goBack()">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+
+    @case ('detail') {
+      @if (selected) {
+        <div class="d-flex align-items-center mb-3">
+          <button class="btn btn-link btn-sm text-decoration-none me-2" (click)="goBack()"><i class="bi bi-arrow-left"></i> Back</button>
+          <h4 class="mb-0">{{ selected.ticketNumber }}</h4>
+          <span class="badge {{ statusClass(selected.status) }} ms-2">{{ selected.status }}</span>
+        </div>
+        <div class="row g-3">
+          <div class="col-lg-8">
+            <div class="card mb-3">
+              <div class="card-header py-2 fw-semibold">{{ selected.title }}</div>
+              <div class="card-body">
+                <p class="mb-3">{{ selected.description }}</p>
+                <dl class="row small mb-0">
+                  <dt class="col-sm-3 text-muted">Priority</dt><dd class="col-sm-9"><span class="badge {{ priorityClass(selected.priority) }}">{{ selected.priority }}</span></dd>
+                  <dt class="col-sm-3 text-muted">Status</dt><dd class="col-sm-9"><span class="badge {{ statusClass(selected.status) }}">{{ selected.status }}</span></dd>
+                  <dt class="col-sm-3 text-muted">Assigned To</dt><dd class="col-sm-9">{{ selected.assignedToAgentName || 'Waiting for assignment' }}</dd>
+                  <dt class="col-sm-3 text-muted">Created</dt><dd class="col-sm-9">{{ selected.createdAt | date:'medium' }}</dd>
+                  @if (selected.resolutionNotes) {
+                    <dt class="col-sm-3 text-muted">Resolution</dt><dd class="col-sm-9">{{ selected.resolutionNotes }}</dd>
+                  }
+                </dl>
+              </div>
+              <div class="card-footer d-flex gap-2">
+                @if (selected.status === 'RESOLVED' || selected.status === 'CLOSED') {
+                  <button class="btn btn-outline-warning btn-sm" (click)="reopen()"><i class="bi bi-arrow-repeat me-1"></i>Reopen</button>
+                }
+              </div>
+            </div>
+
+            <div class="card mb-3">
+              <div class="card-header py-2 fw-semibold"><i class="bi bi-chat-dots me-1"></i>Messages</div>
+              <div class="card-body">
+                @if (messages.length) {
+                  <div class="d-flex flex-column gap-3" style="max-height:400px;overflow-y:auto">
+                    @for (m of messages; track m.id) {
+                      <div class="border rounded p-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                          <small class="fw-semibold">{{ m.sentByName || 'Support' }}</small>
+                          <small class="text-muted">{{ m.createdAt | date:'short' }}</small>
+                        </div>
+                        <p class="mb-0 small">{{ m.message }}</p>
+                      </div>
+                    }
+                  </div>
+                } @else {
+                  <p class="text-muted small mb-0">No messages yet.</p>
+                }
+              </div>
+              <div class="card-footer">
+                <div class="input-group">
+                  <input class="form-control form-control-sm" placeholder="Type your message..." [(ngModel)]="newMessage" (keyup.enter)="sendMessage()" />
+                  <button class="btn btn-primary btn-sm" (click)="sendMessage()" [disabled]="!newMessage.trim()">Send</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-lg-4">
+            @if (selected.status === 'RESOLVED' && !selected.satisfactionRating) {
+              <div class="card mb-3">
+                <div class="card-header py-2 fw-semibold"><i class="bi bi-star me-1"></i>Rate Your Experience</div>
+                <div class="card-body">
+                  <div class="d-flex gap-1 mb-2">
+                    @for (i of [1,2,3,4,5]; track i) {
+                      <button class="btn btn-sm" [class]="i <= satisfactionRating ? 'btn-warning' : 'btn-outline-secondary'" (click)="satisfactionRating = i">
+                        <i class="bi" [class.bi-star-fill]="i <= satisfactionRating" [class.bi-star]="i > satisfactionRating"></i>
+                      </button>
+                    }
+                  </div>
+                  <textarea class="form-control form-control-sm" rows="2" placeholder="Optional feedback..." [(ngModel)]="satisfactionFeedback"></textarea>
+                  <button class="btn btn-primary btn-sm mt-2 w-100" (click)="submitSatisfaction()" [disabled]="!satisfactionRating">Submit Rating</button>
+                </div>
+              </div>
+            }
+            @if (selected.satisfactionRating) {
+              <div class="card mb-3">
+                <div class="card-header py-2 fw-semibold"><i class="bi bi-star-fill me-1"></i>Your Rating</div>
+                <div class="card-body">
+                  <div class="d-flex gap-1 mb-1">
+                    @for (i of [1,2,3,4,5]; track i) {
+                      <i class="bi" [class.bi-star-fill]="i <= selected.satisfactionRating!" [class.bi-star]="i > selected.satisfactionRating!"></i>
+                    }
+                  </div>
+                  @if (selected.satisfactionFeedback) { <p class="small text-muted mb-0">{{ selected.satisfactionFeedback }}</p> }
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      }
+    }
+  }
+</div>

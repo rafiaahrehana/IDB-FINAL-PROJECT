@@ -1,0 +1,151 @@
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { Shift, ShiftRequest, SHIFT_TYPES } from '../../models/hrm.model';
+import { ShiftService } from '../../services/shift.service';
+import { Pagination } from '../../../../shared/components/pagination/pagination';
+import { Loader } from '../../../../shared/components/loader/loader';
+import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
+import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/confirm-dialog';
+
+@Component({
+  selector: 'app-shifts',
+  imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState, ConfirmDialog],
+  templateUrl: './shifts.html',
+})
+export class Shifts implements OnInit {
+  shifts: Shift[] = [];
+  totalPages = 0;
+  page = 0;
+  loading = false;
+  saving = false;
+  error = '';
+  success = '';
+
+  showForm = false;
+  isEdit = false;
+  selectedId: number | null = null;
+  form: ShiftRequest = this.emptyForm();
+
+  deleteTarget: Shift | null = null;
+
+  shiftTypes = SHIFT_TYPES;
+
+  constructor(private shiftService: ShiftService) {}
+
+  ngOnInit(): void {
+    this.load();
+  }
+
+  load(): void {
+    this.loading = true;
+    this.error = '';
+    this.shiftService.list(this.page, 20).subscribe({
+      next: (res) => {
+        this.shifts = res.content;
+        this.totalPages = res.totalPages;
+        this.loading = false;
+      },
+      error: () => {
+        this.error = 'Failed to load shifts';
+        this.loading = false;
+      }
+    });
+  }
+
+  openCreate(): void {
+    this.form = this.emptyForm();
+    this.isEdit = false;
+    this.showForm = true;
+  }
+
+  openEdit(s: Shift): void {
+    this.form = {
+      name: s.name,
+      shiftType: s.shiftType,
+      startTime: s.startTime,
+      endTime: s.endTime,
+      gracePeriodMinutes: s.gracePeriodMinutes,
+      weeklyOffDays: s.weeklyOffDays,
+      flexible: s.flexible,
+      nightShift: s.nightShift,
+      description: s.description,
+      notes: s.notes,
+    };
+    this.selectedId = s.id;
+    this.isEdit = true;
+    this.showForm = true;
+  }
+
+  save(): void {
+    this.saving = true;
+    this.error = '';
+    const payload = this.cleanPayload();
+    const request = this.isEdit && this.selectedId
+      ? this.shiftService.update(this.selectedId, payload)
+      : this.shiftService.create(payload);
+
+    request.subscribe({
+      next: () => {
+        this.saving = false;
+        this.showForm = false;
+        this.success = this.isEdit ? 'Shift updated' : 'Shift created';
+        this.load();
+      },
+      error: (err) => {
+        this.saving = false;
+        this.error = err?.error?.message || 'Failed to save shift';
+      }
+    });
+  }
+
+  toggleActive(s: Shift): void {
+    this.shiftService.toggle(s.id).subscribe({
+      next: () => {
+        this.success = 'Shift status updated';
+        this.load();
+      },
+      error: (err) => {
+        this.error = err?.error?.message || 'Failed to toggle status';
+      }
+    });
+  }
+
+  confirmDelete(): void {
+    if (!this.deleteTarget) return;
+    this.shiftService.delete(this.deleteTarget.id).subscribe({
+      next: () => {
+        this.deleteTarget = null;
+        this.success = 'Shift deleted';
+        this.load();
+      },
+      error: () => {
+        this.deleteTarget = null;
+        this.error = 'Failed to delete shift';
+      }
+    });
+  }
+
+  goToPage(p: number): void {
+    this.page = p;
+    this.load();
+  }
+
+  private emptyForm(): ShiftRequest {
+    return {
+      name: '',
+      shiftType: 'FULL_DAY',
+      startTime: '09:00',
+      endTime: '18:00',
+      gracePeriodMinutes: 15,
+      weeklyOffDays: 'Saturday, Sunday',
+      flexible: false,
+      nightShift: false,
+    };
+  }
+
+  private cleanPayload(): ShiftRequest {
+    const payload: any = { ...this.form };
+    return payload;
+  }
+}

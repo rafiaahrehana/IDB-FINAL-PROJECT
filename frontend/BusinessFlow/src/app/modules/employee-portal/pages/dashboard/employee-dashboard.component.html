@@ -1,0 +1,292 @@
+<div class="page-header">
+  <div>
+    <h4 class="page-title">
+      @if (isOwner) { Company Dashboard }
+      @else if (isClient) { Client Portal }
+      @else { My Dashboard }
+    </h4>
+    <p class="page-subtitle">Welcome back, {{ profile?.firstName || 'Employee' }}.</p>
+  </div>
+  @if (isOwner) {
+    <div class="d-flex gap-2">
+      <a routerLink="/hrm/employees" class="btn btn-primary btn-sm"><i class="bi bi-person-plus me-1"></i>Manage Employees</a>
+      <a routerLink="/hrm/departments" class="btn btn-outline-primary btn-sm"><i class="bi bi-diagram-3 me-1"></i>Departments</a>
+    </div>
+  }
+</div>
+
+@if (loading) {
+  <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+} @else {
+
+  <!-- COMPANY OWNER: Admin Stats -->
+  @if (isOwner) {
+    <div class="row g-3 mb-4">
+      <div class="col-md-3">
+        <div class="card border-0 shadow-sm p-4">
+          <div class="d-flex align-items-center gap-3">
+            <div class="admin-stat-icon bg-primary bg-opacity-10 text-primary"><i class="bi bi-people"></i></div>
+            <div>
+              <h4 class="fw-bold mb-0">{{ totalEmployees }}</h4>
+              <small class="text-muted">Total Employees</small>
+            </div>
+          </div>
+          <a routerLink="/hrm/employees" class="stretched-link"></a>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card border-0 shadow-sm p-4">
+          <div class="d-flex align-items-center gap-3">
+            <div class="admin-stat-icon bg-success bg-opacity-10 text-success"><i class="bi bi-diagram-3"></i></div>
+            <div>
+              <h4 class="fw-bold mb-0">{{ totalDepartments }}</h4>
+              <small class="text-muted">Departments</small>
+            </div>
+          </div>
+          <a routerLink="/hrm/departments" class="stretched-link"></a>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card border-0 shadow-sm p-4">
+          <div class="d-flex align-items-center gap-3">
+            <div class="admin-stat-icon bg-warning bg-opacity-10 text-warning"><i class="bi bi-envelope-paper"></i></div>
+            <div>
+              <h4 class="fw-bold mb-0">{{ pendingLeaveRequests.length }}</h4>
+              <small class="text-muted">Pending Leaves</small>
+            </div>
+          </div>
+          <a routerLink="/hrm/leaves" class="stretched-link"></a>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card border-0 shadow-sm p-4">
+          <div class="d-flex align-items-center gap-3">
+            <div class="admin-stat-icon bg-info bg-opacity-10 text-info"><i class="bi bi-cash-stack"></i></div>
+            <div>
+              <h4 class="fw-bold mb-0">{{ latestPayroll ? ('$' + (latestPayroll.netSalary | number)) : '--' }}</h4>
+              <small class="text-muted">Last Payroll</small>
+            </div>
+          </div>
+          <a routerLink="/hrm/payroll" class="stretched-link"></a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pending Leave Requests (COMPANY_OWNER) -->
+    @if (pendingLeaveRequests.length) {
+      <div class="card border-0 shadow-sm p-4 mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h6 class="fw-bold mb-0"><i class="bi bi-envelope-paper text-warning me-2"></i>Pending Leave Requests</h6>
+          <a routerLink="/hrm/leaves" class="btn btn-sm btn-outline-primary">View All</a>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead><tr><th>Employee</th><th>Type</th><th>Duration</th><th>Days</th><th>Reason</th><th class="text-end">Action</th></tr></thead>
+            <tbody>
+              @for (leave of pendingLeaveRequests; track leave.id) {
+                <tr>
+                  <td class="fw-medium">{{ leave.employeeName || 'Employee #' + leave.employeeId }}</td>
+                  <td><span class="badge text-bg-light border">{{ leave.leaveType }}</span></td>
+                  <td class="small">{{ leave.startDate | date:'mediumDate' }} - {{ leave.endDate | date:'mediumDate' }}</td>
+                  <td>{{ leave.totalDays }}</td>
+                  <td class="text-muted small text-truncate" style="max-width: 180px">{{ leave.reason || '-' }}</td>
+                  <td class="text-end text-nowrap">
+                    <button class="btn btn-success btn-sm py-0 me-1" (click)="reviewLeave(leave.id, 'APPROVED')"><i class="bi bi-check-lg"></i></button>
+                    <button class="btn btn-danger btn-sm py-0" (click)="reviewLeave(leave.id, 'REJECTED')"><i class="bi bi-x-lg"></i></button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+  }
+
+  <!-- EMPLOYEE: Profile Summary -->
+  @if (isEmployee) {
+    <div class="row g-4 mb-4">
+      <div class="col-md-3">
+        <div class="card border-0 shadow-sm p-4 text-center">
+          <div class="avatar-lg mx-auto mb-3">
+            @if (profile?.profileImageUrl) {
+              <img [src]="profile!.profileImageUrl" class="rounded-circle" width="80" height="80" style="object-fit: cover">
+            } @else {
+              <div class="avatar-placeholder">{{ profile?.firstName?.charAt(0) || 'E' }}</div>
+            }
+          </div>
+          <h5 class="fw-bold mb-1">{{ profile?.firstName }} {{ profile?.lastName }}</h5>
+          <small class="text-muted">{{ profile?.jobTitle || 'Employee' }}</small>
+          <div class="mt-2">
+            <span class="badge bg-success">{{ profile?.employmentStatus || 'Active' }}</span>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-9">
+        <div class="row g-3">
+          <div class="col-md-3">
+            <div class="stat-card p-3 text-center">
+              <div class="stat-icon mb-2"><i class="bi bi-calendar-check"></i></div>
+              <h4 class="fw-bold mb-0">{{ daysWorked }}</h4>
+              <small class="text-muted">Days Worked</small>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="stat-card p-3 text-center">
+              <div class="stat-icon mb-2"><i class="bi bi-list-task"></i></div>
+              <h4 class="fw-bold mb-0">{{ myTasks.length }}</h4>
+              <small class="text-muted">Assigned Tasks</small>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="stat-card p-3 text-center">
+              <div class="stat-icon mb-2"><i class="bi bi-envelope-paper"></i></div>
+              <h4 class="fw-bold mb-0">{{ pendingLeaves }}</h4>
+              <small class="text-muted">Pending Leaves</small>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="stat-card p-3 text-center">
+              <div class="stat-icon mb-2"><i class="bi bi-cash-stack"></i></div>
+              <h4 class="fw-bold mb-0">{{ latestPayroll ? ('$' + (latestPayroll.netSalary | number)) : '--' }}</h4>
+              <small class="text-muted">Last Salary</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="card border-0 shadow-sm p-4 mt-3">
+          <div class="row g-3">
+            <div class="col-md-3">
+              <small class="text-muted d-block">Department</small>
+              <strong>{{ profile?.departmentName || '--' }}</strong>
+            </div>
+            <div class="col-md-3">
+              <small class="text-muted d-block">Designation</small>
+              <strong>{{ profile?.designationName || '--' }}</strong>
+            </div>
+            <div class="col-md-3">
+              <small class="text-muted d-block">Employee ID</small>
+              <strong>{{ profile?.employeeNumber || '--' }}</strong>
+            </div>
+            <div class="col-md-3">
+              <small class="text-muted d-block">Joined</small>
+              <strong>{{ profile?.hireDate | date:'mediumDate' }}</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Leave Balances (EMPLOYEE) -->
+  @if (isEmployee && leaveBalances.length) {
+    <div class="card border-0 shadow-sm p-4 mb-4">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 class="fw-bold mb-0">Leave Balances</h6>
+        <a routerLink="/dashboard/employee/leaves" class="btn btn-sm btn-outline-primary">View All</a>
+      </div>
+      <div class="row g-3">
+        @for (lb of leaveBalances; track lb.leaveType) {
+          <div class="col-md-3">
+            <div class="leave-balance-card p-3 rounded">
+              <small class="text-muted">{{ lb.leaveType }}</small>
+              <div class="d-flex align-items-end gap-2 mt-1">
+                <h5 class="fw-bold mb-0">{{ lb.remainingDays }}</h5>
+                <small class="text-muted mb-1">/ {{ lb.entitledDays }} days</small>
+              </div>
+              <div class="progress mt-2" style="height: 4px">
+                <div class="progress-bar" [style.width.%]="(lb.usedDays / lb.entitledDays) * 100"></div>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- Recent Announcements (all roles) -->
+  @if (recentAnnouncements.length) {
+    <div class="card border-0 shadow-sm p-4 mb-4">
+      <h6 class="fw-bold mb-3"><i class="bi bi-megaphone text-primary me-2"></i>Recent Announcements</h6>
+      <div class="row g-3">
+        @for (ann of recentAnnouncements; track ann.id) {
+          <div class="col-md-4">
+            <div class="card h-100 border">
+              <div class="card-body py-3">
+                <h6 class="card-title fw-semibold small mb-1">{{ ann.title }}</h6>
+                <p class="card-text text-muted small mb-2 text-truncate">{{ ann.body }}</p>
+                <small class="text-muted"><i class="bi bi-clock me-1"></i>{{ ann.createdAt | date:'medium' }}</small>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- My Tasks (EMPLOYEE/CLIENT) -->
+  @if ((isEmployee || isClient) && myTasks.length) {
+    <div class="card border-0 shadow-sm p-4 mb-4">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 class="fw-bold mb-0">My Tasks</h6>
+        <a routerLink="/dashboard/employee/tasks" class="btn btn-sm btn-outline-primary">View All</a>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead><tr><th>Task</th><th>Status</th><th>Priority</th><th>Due Date</th></tr></thead>
+          <tbody>
+            @for (t of myTasks.slice(0, 5); track t.id) {
+              <tr>
+                <td class="fw-semibold">{{ t.title }}</td>
+                <td><span class="badge" [class]="getStatusClass(t.status)">{{ t.status }}</span></td>
+                <td><span class="badge" [class]="getPriorityClass(t.priority)">{{ t.priority }}</span></td>
+                <td>{{ t.dueDate | date:'mediumDate' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <!-- Quick Links (COMPANY_OWNER) -->
+  @if (isOwner) {
+    <div class="card border-0 shadow-sm p-4 mb-4">
+      <h6 class="fw-bold mb-3"><i class="bi bi-lightning text-warning me-2"></i>Quick Actions</h6>
+      <div class="row g-2">
+        <div class="col-auto">
+          <a routerLink="/hrm/employees" class="btn btn-outline-primary btn-sm"><i class="bi bi-people me-1"></i>Employees</a>
+        </div>
+        <div class="col-auto">
+          <a routerLink="/hrm/departments" class="btn btn-outline-primary btn-sm"><i class="bi bi-diagram-3 me-1"></i>Departments</a>
+        </div>
+        <div class="col-auto">
+          <a routerLink="/hrm/leaves" class="btn btn-outline-primary btn-sm"><i class="bi bi-calendar-minus me-1"></i>Leaves</a>
+        </div>
+        <div class="col-auto">
+          <a routerLink="/hrm/payroll" class="btn btn-outline-primary btn-sm"><i class="bi bi-cash-coin me-1"></i>Payroll</a>
+        </div>
+        <div class="col-auto">
+          <a routerLink="/hrm/announcements" class="btn btn-outline-primary btn-sm"><i class="bi bi-megaphone me-1"></i>Announcements</a>
+        </div>
+        <div class="col-auto">
+          <a routerLink="/project" class="btn btn-outline-primary btn-sm"><i class="bi bi-kanban me-1"></i>Projects</a>
+        </div>
+        <div class="col-auto">
+          <a routerLink="/task" class="btn btn-outline-primary btn-sm"><i class="bi bi-check2-square me-1"></i>Tasks</a>
+        </div>
+        <div class="col-auto">
+          <a routerLink="/platform/custom-roles" class="btn btn-outline-primary btn-sm"><i class="bi bi-shield me-1"></i>Roles</a>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- CLIENT: Project Summary -->
+  @if (isClient) {
+    <div class="card border-0 shadow-sm p-4 mb-4">
+      <h6 class="fw-bold mb-3"><i class="bi bi-kanban text-primary me-2"></i>My Projects</h6>
+      <div class="text-muted small">Projects and service requests will appear here.</div>
+    </div>
+  }
+}

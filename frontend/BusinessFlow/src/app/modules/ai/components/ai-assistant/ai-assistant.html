@@ -1,0 +1,60 @@
+<div class="container-fluid py-3">
+  <h4 class="mb-3"><i class="bi bi-stars me-1"></i>AI Assistant</h4>
+  @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
+
+  <div class="row g-3">
+    <div class="col-lg-7">
+      <div class="card">
+        <div class="card-body">
+          <div class="mb-2">
+            <label class="form-label small text-muted">Feature</label>
+            <select class="form-select form-select-sm" [(ngModel)]="feature">
+              @for (f of features; track f.value) { <option [value]="f.value">{{ f.label }}</option> }
+            </select>
+          </div>
+          <div class="mb-2">
+            <label class="form-label small text-muted">Prompt</label>
+            <textarea class="form-control form-control-sm" rows="5"
+                      placeholder="Describe what you need — e.g. 'Draft an announcement about our new office opening in July'"
+                      [(ngModel)]="prompt"></textarea>
+          </div>
+          <button class="btn btn-primary btn-sm" (click)="generate()" [disabled]="generating || !prompt.trim()">
+            @if (generating) { <span class="spinner-border spinner-border-sm me-1"></span> Generating... }
+            @else { <i class="bi bi-magic"></i> Generate }
+          </button>
+        </div>
+      </div>
+
+      @if (result) {
+      <div class="card mt-3 border-primary">
+        <div class="card-header py-2 d-flex justify-content-between small">
+          <span class="fw-semibold">Result</span>
+          <span class="text-muted">{{ result.provider }} · {{ result.model }} · {{ result.executionTimeMs }}ms</span>
+        </div>
+        <div class="card-body"><div style="white-space: pre-wrap" class="small">{{ result.result }}</div></div>
+      </div>
+      }
+    </div>
+
+    <div class="col-lg-5">
+      <div class="card">
+        <div class="card-header py-2 fw-semibold">Recent Conversations</div>
+        @if (loadingHistory) { <app-loader /> }
+        <ul class="list-group list-group-flush">
+          @for (item of history; track item.conversationUuid) {
+          <li class="list-group-item py-2" role="button" (click)="reuse(item)">
+            <div class="d-flex justify-content-between">
+              <span class="badge text-bg-light border">{{ item.feature }}</span>
+              <span class="text-muted small">{{ item.executionTimeMs }}ms</span>
+            </div>
+            <div class="small text-truncate mt-1">{{ item.result }}</div>
+          </li>
+          }
+          @if (!loadingHistory && !history.length) {
+          <li class="list-group-item text-muted small py-3">No conversations yet.</li>
+          }
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>

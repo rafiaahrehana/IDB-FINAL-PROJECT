@@ -1,0 +1,58 @@
+<nav class="navbar appbar px-3 d-flex align-items-center justify-content-between">
+  <div class="d-flex align-items-center gap-3 min-w-0">
+    <button type="button" class="btn btn-light border-0 p-2 d-md-none" (click)="toggleSidebar()" aria-label="Toggle menu">
+      <i class="bi bi-list fs-5"></i>
+    </button>
+    <div class="d-flex align-items-center gap-2">
+      <div class="d-flex align-items-center justify-content-center bg-primary text-white rounded-3" style="width: 32px; height: 32px;">
+        <i class="bi bi-boxes fs-6"></i>
+      </div>
+      <span class="fw-bold text-dark mb-0" style="font-size: 1.05rem;">BusinessOS</span>
+    </div>
+    <nav aria-label="breadcrumb" class="d-none d-lg-flex align-items-center ms-1">
+      <ol class="breadcrumb mb-0">
+        @for (crumb of breadcrumb; track $index) {
+          <li class="breadcrumb-item" [class.active]="$last" [attr.aria-current]="$last ? 'page' : null">
+            @if (!$last) { <span class="text-muted small">{{ crumb }}</span> }
+            @else { <span class="small fw-semibold text-dark">{{ crumb }}</span> }
+          </li>
+        }
+      </ol>
+    </nav>
+  </div>
+
+  <form class="d-none d-md-flex position-relative mx-auto" style="width: 360px" (submit)="goSearch(); $event.preventDefault()">
+    <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
+    <input class="form-control form-control-sm ps-5" style="height: 38px" placeholder="Search everything..." [(ngModel)]="searchQuery" name="q" />
+  </form>
+
+  <div class="d-flex align-items-center gap-2">
+    <a class="btn btn-light border-0 p-2" href="/ai" aria-label="AI Assistant" title="AI Assistant">
+      <i class="bi bi-stars fs-5"></i>
+    </a>
+    <app-notification-bell />
+    <div class="dropdown">
+      <a class="btn btn-light border-0 p-2 dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-label="Profile">
+        <span class="d-flex align-items-center justify-content-center bg-primary text-white fw-semibold rounded-circle" style="width: 32px; height: 32px; font-size: 0.8rem;">
+          {{ ((auth.currentUser$ | async)?.firstName || 'U').substring(0,1).toUpperCase() }}
+        </span>
+      </a>
+      <ul class="dropdown-menu dropdown-menu-end border shadow-sm mt-2" style="min-width: 200px;">
+        <li class="dropdown-header small text-muted px-3">
+          {{ ((auth.currentUser$ | async)?.firstName || '') + ' ' + ((auth.currentUser$ | async)?.lastName || '') || 'Account' }}
+        </li>
+        <li><hr class="dropdown-divider"></li>
+        <li>
+          <a class="dropdown-item d-flex align-items-center gap-2 py-2" href="/notifications/preferences">
+            <i class="bi bi-gear text-muted"></i>Settings
+          </a>
+        </li>
+        <li>
+          <a class="dropdown-item d-flex align-items-center gap-2 py-2 text-danger" role="button" (click)="auth.logout()">
+            <i class="bi bi-box-arrow-right"></i>Logout
+          </a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>

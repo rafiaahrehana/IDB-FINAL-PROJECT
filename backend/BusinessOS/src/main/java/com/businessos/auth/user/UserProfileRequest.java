@@ -1,0 +1,14 @@
+package com.businessos.auth.user;
+
+import com.businessos.shared.location.LocationRequest;
+import lombok.Data;
+
+@Data
+public class UserProfileRequest {
+    private String firstName;
+    private String lastName;
+    private String phone;
+    private String image;
+    private String languagePreference;
+    private LocationRequest location;
+}

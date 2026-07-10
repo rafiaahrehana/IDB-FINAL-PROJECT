@@ -1,0 +1,146 @@
+<div class="auth-container d-flex vh-100 bg-white">
+  <!-- Left Side: Brand Panel -->
+  <div class="brand-panel d-none d-lg-flex flex-column justify-content-between p-5 text-white col-lg-6">
+    <div class="d-flex align-items-center gap-2">
+      <div class="d-flex align-items-center justify-content-center bg-white rounded-3 text-primary shadow-sm" style="width: 36px; height: 36px;">
+        <i class="bi bi-intersect fs-5"></i>
+      </div>
+      <span class="h4 mb-0 fw-bold">BusinessOS</span>
+    </div>
+
+    <div class="mb-5">
+      <h1 class="display-5 fw-bold mb-3">Start your workspace</h1>
+      <p class="fs-5 text-white-50">Create your company and get instant access to HRM, CRM, Service Desk, Projects and more.</p>
+    </div>
+
+    <div class="text-white-50 small">
+      &copy; 2026 BusinessOS Inc. All rights reserved.
+    </div>
+  </div>
+
+  <!-- Right Side: Register Form -->
+  <div class="form-panel d-flex align-items-center justify-content-center p-4 col-12 col-lg-6 bg-light">
+    <div class="card border-0 shadow-sm p-3 rounded-3 w-100" style="max-width: 480px;">
+      <div class="card-body">
+        <div class="text-center mb-4">
+          <div class="d-flex d-lg-none align-items-center justify-content-center gap-2 mb-3">
+            <div class="d-flex align-items-center justify-content-center bg-primary rounded-3 text-white shadow-sm" style="width: 32px; height: 32px;">
+              <i class="bi bi-intersect fs-6"></i>
+            </div>
+            <span class="h5 mb-0 fw-bold text-dark">BusinessOS</span>
+          </div>
+          <h3 class="fw-bold">Create your account</h3>
+          <p class="text-secondary small">Set up your company workspace in minutes</p>
+        </div>
+
+        <!-- Step indicator -->
+        <div class="d-flex align-items-center justify-content-center gap-2 mb-4">
+          <span class="step-dot" [class.active]="step === 1" [class.done]="step === 2">1</span>
+          <span class="step-line" [class.active]="step === 2"></span>
+          <span class="step-dot" [class.active]="step === 2">2</span>
+        </div>
+
+        @if (error) {
+          <div class="alert alert-danger d-flex align-items-center py-2 px-3 rounded-3 mb-3 small" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2 fs-6"></i>
+            <div>{{ error }}</div>
+          </div>
+        }
+
+        <!-- Step 1: Account & Company -->
+        @if (step === 1) {
+          <form [formGroup]="form" (ngSubmit)="goStep2()">
+            <div class="row">
+              <div class="col-6 mb-3">
+                <label class="form-label small fw-bold text-secondary mb-1">First Name</label>
+                <input class="form-control" formControlName="firstName" placeholder="Jane"
+                       [class.is-invalid]="form.controls.firstName.touched && form.controls.firstName.invalid" />
+                <div class="invalid-feedback">Required (2-50 chars)</div>
+              </div>
+              <div class="col-6 mb-3">
+                <label class="form-label small fw-bold text-secondary mb-1">Last Name</label>
+                <input class="form-control" formControlName="lastName" placeholder="Doe"
+                       [class.is-invalid]="form.controls.lastName.touched && form.controls.lastName.invalid" />
+                <div class="invalid-feedback">Required (2-50 chars)</div>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label small fw-bold text-secondary mb-1">Work Email</label>
+              <input type="email" class="form-control" formControlName="email" placeholder="name@company.com"
+                     [class.is-invalid]="form.controls.email.touched && form.controls.email.invalid" />
+              <div class="invalid-feedback">A valid email is required</div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label small fw-bold text-secondary mb-1">Password</label>
+              <input type="password" class="form-control" formControlName="password" placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;"
+                     [class.is-invalid]="form.controls.password.touched && form.controls.password.invalid" />
+              <div class="invalid-feedback">At least 8 characters</div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label small fw-bold text-secondary mb-1">Company Name</label>
+              <input class="form-control" formControlName="companyName" placeholder="Acme Inc."
+                     [class.is-invalid]="form.controls.companyName.touched && form.controls.companyName.invalid" />
+              <div class="invalid-feedback">Required (2-150 chars)</div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label small fw-bold text-secondary mb-1">Subdomain</label>
+              <div class="input-group">
+                <input class="form-control" formControlName="subdomain" placeholder="acme"
+                       [class.is-invalid]="form.controls.subdomain.touched && form.controls.subdomain.invalid" />
+                <span class="input-group-text">.businessos.app</span>
+              </div>
+              <div class="invalid-feedback d-block">3-50 chars, lowercase letters, numbers and hyphens</div>
+            </div>
+
+            <div class="mb-4">
+              <label class="form-label small fw-bold text-secondary mb-1">Company Phone <span class="text-muted fw-normal">(optional)</span></label>
+              <input class="form-control" formControlName="companyPhone" placeholder="+1 555 000 0000" />
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold" style="height: 44px;">
+              Next: Company Address
+            </button>
+          </form>
+        }
+
+        <!-- Step 2: Company Address -->
+        @if (step === 2) {
+          <div>
+            <div class="mb-3">
+              <label class="form-label small fw-bold text-secondary mb-1">Company Address <span class="text-muted fw-normal">(optional)</span></label>
+              <p class="text-muted small mb-2">Where is your company located? You can skip this and add it later.</p>
+            </div>
+
+            <app-location (formSubmit)="submit()"></app-location>
+
+            <div class="d-flex gap-2 mt-3">
+              <button class="btn btn-outline-secondary flex-grow-1" (click)="goStep1()">
+                <i class="bi bi-arrow-left me-1"></i>Back
+              </button>
+              <button class="btn btn-primary flex-grow-1 py-2 fw-semibold" (click)="submit()" [disabled]="loading">
+                @if (loading) {
+                  <span class="spinner-border spinner-border-sm me-2"></span>
+                  Creating...
+                } @else {
+                  Create Account
+                }
+              </button>
+            </div>
+
+            <p class="text-center mt-3">
+              <button class="btn btn-link btn-sm text-muted small" (click)="submit()">Skip for now</button>
+            </p>
+          </div>
+        }
+
+        <p class="text-center text-secondary small mt-3 mb-0">
+          Already have an account? <a routerLink="/auth/login" class="text-primary text-decoration-none fw-semibold">Sign in</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>

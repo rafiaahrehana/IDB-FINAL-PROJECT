@@ -1,0 +1,56 @@
+package com.businessos.modules.crm.opportunity;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import java.util.List;
+import java.util.Optional;
+
+public interface OpportunityRepository extends JpaRepository<Opportunity, Long> {
+
+    Optional<Opportunity> findByIdAndCompanyId(Long id, Long companyId);
+
+    Page<Opportunity> findByCompanyId(Long companyId, Pageable pageable);
+
+    Page<Opportunity> findByCompanyIdAndStage(Long companyId, OpportunityStage stage, Pageable pageable);
+
+    Page<Opportunity> findByCompanyIdAndClientId(Long companyId, Long clientId, Pageable pageable);
+
+    Page<Opportunity> findByCompanyIdAndOwnerId(Long companyId, Long ownerId, Pageable pageable);
+
+    List<Opportunity> findByCompanyIdAndStageNotInOrderByExpectedCloseDateAsc(Long companyId, List<OpportunityStage> stages);
+
+    @Query("SELECT o FROM Opportunity o WHERE o.company.id = :companyId AND " +
+           "(LOWER(o.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "LOWER(o.client.clientCompanyName) LIKE LOWER(CONCAT('%', :keyword, '%'))) AND " +
+           "o.deleted = false")
+    Page<Opportunity> searchOpportunities(@Param("companyId") Long companyId, @Param("keyword") String keyword, Pageable pageable);
+
+    // Open deals with no activity since :cutoff (or never, and created before it)
+    @Query("SELECT o FROM Opportunity o WHERE o.company.id = :companyId " +
+           "AND o.stage NOT IN :closedStages AND o.deleted = false " +
+           "AND ((o.lastActivityAt IS NOT NULL AND o.lastActivityAt < :cutoff) " +
+           "OR (o.lastActivityAt IS NULL AND o.createdAt < :cutoff)) " +
+           "ORDER BY o.lastActivityAt ASC")
+    List<Opportunity> findStaleOpenOpportunities(@Param("companyId") Long companyId,
+        @Param("closedStages") List<OpportunityStage> closedStages,
+        @Param("cutoff") java.time.LocalDateTime cutoff, Pageable pageable);
+
+    // Pipeline summary: count, total and weighted value per stage
+    @Query("SELECT o.stage AS stage, COUNT(o) AS dealCount, " +
+           "COALESCE(SUM(o.amount), 0) AS totalAmount, " +
+           "COALESCE(SUM(o.amount * o.probability / 100.0), 0) AS weightedAmount " +
+           "FROM Opportunity o WHERE o.company.id = :companyId AND o.deleted = false " +
+           "GROUP BY o.stage")
+    List<PipelineStageSummary> summarizePipeline(@Param("companyId") Long companyId);
+
+    interface PipelineStageSummary {
+        OpportunityStage getStage();
+        Long getDealCount();
+        java.math.BigDecimal getTotalAmount();
+        java.math.BigDecimal getWeightedAmount();
+    }
+}

@@ -1,0 +1,181 @@
+package com.businessos.modules.servicedesk.servicerequest;
+
+import com.businessos.modules.servicedesk.requestcomment.AddCommentRequest;
+import com.businessos.modules.servicedesk.requeststatus.ChangeRequestStatusRequest;
+import com.businessos.modules.servicedesk.task.CreateTaskRequest;
+import com.businessos.modules.servicedesk.task.UpdateTaskRequest;
+import com.businessos.modules.servicedesk.requestcomment.RequestCommentResponse;
+import com.businessos.modules.servicedesk.requeststatus.RequestStatusHistoryResponse;
+import com.businessos.modules.servicedesk.task.TaskResponse;
+import com.businessos.enums.ServiceRequestStatus;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+import io.swagger.v3.oas.annotations.Operation;
+
+import java.util.List;
+
+@RestController
+@RequiredArgsConstructor
+@RequestMapping("/api/service-requests")
+public class ServiceRequestController {
+
+    private final ServiceRequestService serviceRequestService;
+    private final com.businessos.modules.servicedesk.task.TaskService taskService;
+
+    @PreAuthorize("hasRole('CLIENT')")
+    @PostMapping
+    public ResponseEntity<ServiceRequestResponse> create(
+            @Valid @RequestBody CreateServiceRequestRequest request) {
+        return new ResponseEntity<>(serviceRequestService.create(request), HttpStatus.CREATED);
+    }
+
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
+    @GetMapping
+    public ResponseEntity<Page<ServiceRequestResponse>> listAll(
+            @RequestParam(required = false) ServiceRequestStatus status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(serviceRequestService.listAll(status,
+                PageRequest.of(page, size, Sort.by("createdAt").descending())));
+    }
+
+    @GetMapping("/my")
+    public ResponseEntity<Page<ServiceRequestResponse>> listMyRequests(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(serviceRequestService.listMyRequests(
+                PageRequest.of(page, size, Sort.by("createdAt").descending())));
+    }
+
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
+    @GetMapping("/assigned-to-me")
+    public ResponseEntity<Page<ServiceRequestResponse>> listAssignedToMe(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(serviceRequestService.listAssignedToMe(
+                PageRequest.of(page, size, Sort.by("createdAt").descending())));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ServiceRequestResponse> getById(@PathVariable Long id) {
+        return ResponseEntity.ok(serviceRequestService.getById(id));
+    }
+
+    @PatchMapping("/{id}")
+    public ResponseEntity<ServiceRequestResponse> update(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateServiceRequestRequest request) {
+        return ResponseEntity.ok(serviceRequestService.update(id, request));
+    }
+
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<ServiceRequestResponse> changeStatus(
+            @PathVariable Long id,
+            @Valid @RequestBody ChangeRequestStatusRequest request) {
+        return ResponseEntity.ok(serviceRequestService.changeStatus(id, request));
+    }
+
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
+    @PatchMapping("/{id}/assign/{employeeId}")
+    public ResponseEntity<ServiceRequestResponse> assign(
+            @PathVariable Long id,
+            @PathVariable Long employeeId) {
+        return ResponseEntity.ok(serviceRequestService.assign(id, employeeId));
+    }
+
+    @PatchMapping("/{id}/cancel")
+    public ResponseEntity<String> cancel(@PathVariable Long id) {
+        serviceRequestService.cancel(id);
+        return ResponseEntity.ok("Request cancelled");
+    }
+
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
+    @PostMapping("/{id}/tasks")
+    public ResponseEntity<TaskResponse> addTask(
+            @PathVariable Long id,
+            @Valid @RequestBody CreateTaskRequest request) {
+        return new ResponseEntity<>(taskService.addTask(id, request), HttpStatus.CREATED);
+    }
+
+    @GetMapping("/{id}/tasks")
+    public ResponseEntity<List<TaskResponse>> getTasks(@PathVariable Long id) {
+        return ResponseEntity.ok(taskService.getTasks(id));
+    }
+
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
+    @PatchMapping("/{id}/tasks/{taskId}")
+    public ResponseEntity<TaskResponse> updateTask(
+            @PathVariable Long id,
+            @PathVariable Long taskId,
+            @Valid @RequestBody UpdateTaskRequest request) {
+        return ResponseEntity.ok(taskService.updateTask(id, taskId, request));
+    }
+
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
+    @DeleteMapping("/{id}/tasks/{taskId}")
+    public ResponseEntity<String> deleteTask(
+            @PathVariable Long id,
+            @PathVariable Long taskId) {
+        taskService.deleteTask(id, taskId);
+        return ResponseEntity.ok("Deleted successfully");
+    }
+
+    @PostMapping("/{id}/comments")
+    public ResponseEntity<RequestCommentResponse> addComment(
+            @PathVariable Long id,
+            @Valid @RequestBody AddCommentRequest request) {
+        return new ResponseEntity<>(
+                serviceRequestService.addComment(id, request), HttpStatus.CREATED);
+    }
+
+    @GetMapping("/{id}/comments")
+    public ResponseEntity<Page<RequestCommentResponse>> getComments(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(
+                serviceRequestService.getComments(id, PageRequest.of(page, size)));
+    }
+
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
+    @GetMapping("/{id}/history")
+    public ResponseEntity<List<RequestStatusHistoryResponse>> getHistory(
+            @PathVariable Long id) {
+        return ResponseEntity.ok(serviceRequestService.getStatusHistory(id));
+    }
+
+    // Quotation Endpoints
+
+    @PostMapping("/{id}/quotation")
+    @PreAuthorize("hasRole('SERVICE_AGENT') or hasRole('COMPANY_ADMIN')")
+    @Operation(summary = "Submit a quotation for a service request")
+    public ResponseEntity<ServiceRequestResponse> submitQuotation(
+            @PathVariable Long id,
+            @Valid @RequestBody SubmitQuotationRequest request) {
+        return ResponseEntity.ok(serviceRequestService.submitQuotation(id, request));
+    }
+
+    @PostMapping("/{id}/quotation/accept")
+    @PreAuthorize("hasRole('CLIENT') or hasRole('COMPANY_ADMIN')")
+    @Operation(summary = "Accept a quotation")
+    public ResponseEntity<ServiceRequestResponse> acceptQuotation(@PathVariable Long id) {
+        return ResponseEntity.ok(serviceRequestService.acceptQuotation(id));
+    }
+
+    @PostMapping("/{id}/quotation/reject")
+    @PreAuthorize("hasRole('CLIENT') or hasRole('COMPANY_ADMIN')")
+    @Operation(summary = "Reject a quotation")
+    public ResponseEntity<ServiceRequestResponse> rejectQuotation(
+            @PathVariable Long id,
+            @Valid @RequestBody RejectQuotationRequest request) {
+        return ResponseEntity.ok(serviceRequestService.rejectQuotation(id, request));
+    }
+}

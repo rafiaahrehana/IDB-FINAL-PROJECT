@@ -1,0 +1,142 @@
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h4 class="mb-0">Salary Structures</h4>
+    <div class="d-flex gap-2">
+      <select class="form-select form-select-sm" style="width: 240px" [(ngModel)]="selectedEmployeeId" (change)="load()">
+        <option [ngValue]="null" disabled>Select employee</option>
+        @for (e of employees; track e.id) { <option [ngValue]="e.id">{{ e.firstName }} {{ e.lastName }}</option> }
+      </select>
+      <button class="btn btn-primary btn-sm text-nowrap" [disabled]="!selectedEmployeeId" (click)="openCreate()">
+        <i class="bi bi-plus-lg me-1"></i>New Structure
+      </button>
+    </div>
+  </div>
+
+  @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
+  @if (success) { <div class="alert alert-success py-2">{{ success }}</div> }
+  @if (loading) { <app-loader /> }
+
+  @if (!loading && selectedEmployeeId && structures.length) {
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table table-hover table-sm align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Effective From</th><th>Effective To</th>
+            <th class="text-end">Gross</th><th class="text-end">Basic</th>
+            <th class="text-end">Allowances</th><th class="text-end">PF</th>
+            <th class="text-end">Tax</th><th class="text-end">Net</th>
+            <th>Approved By</th><th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (s of structures; track s.id) {
+          <tr>
+            <td>
+              {{ s.effectiveFrom | date:'mediumDate' }}
+              @if (isCurrent(s)) { <span class="badge text-bg-success ms-1">CURRENT</span> }
+            </td>
+            <td>{{ s.effectiveTo ? (s.effectiveTo | date:'mediumDate') : '-' }}</td>
+            <td class="text-end">{{ s.grossSalary | number:'1.2-2' }}</td>
+            <td class="text-end">{{ s.basicSalary | number:'1.2-2' }}</td>
+            <td class="text-end">{{ ((s.houseRent ?? 0) + (s.medicalAllowance ?? 0) + (s.transportAllowance ?? 0) + (s.foodAllowance ?? 0) + (s.specialAllowance ?? 0)) | number:'1.2-2' }}</td>
+            <td class="text-end">{{ (s.providentFund ?? 0) | number:'1.2-2' }}</td>
+            <td class="text-end">{{ (s.taxDeduction ?? 0) | number:'1.2-2' }}</td>
+            <td class="text-end fw-semibold">{{ s.netSalary | number:'1.2-2' }}</td>
+            <td>{{ s.approvedByName || '-' }}</td>
+            <td class="text-end">
+              <button class="btn btn-outline-danger btn-sm py-0" title="Delete" (click)="deleteTarget = s"><i class="bi bi-trash"></i></button>
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+  }
+
+  @if (!loading && selectedEmployeeId && !structures.length) {
+  <app-empty-state icon="bi-cash" message="No salary structures for this employee." />
+  }
+  @if (!selectedEmployeeId) {
+  <app-empty-state icon="bi-person-lines-fill" message="Select an employee to view salary history." />
+  }
+</div>
+
+@if (showForm) {
+<div class="modal d-block" tabindex="-1" style="background: rgba(0,0,0,.4)">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <form #f="ngForm" (ngSubmit)="f.valid && save()">
+        <div class="modal-header">
+          <h5 class="modal-title">New Salary Structure</h5>
+          <button type="button" class="btn-close" (click)="showForm = false"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label">Effective From *</label>
+              <input type="date" class="form-control form-control-sm" name="effectiveFrom" [(ngModel)]="form.effectiveFrom" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Gross Salary *</label>
+              <input type="number" class="form-control form-control-sm" name="grossSalary" [(ngModel)]="form.grossSalary" required min="0.01" step="0.01">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Basic Salary *</label>
+              <input type="number" class="form-control form-control-sm" name="basicSalary" [(ngModel)]="form.basicSalary" required min="0.01" step="0.01">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">House Rent</label>
+              <input type="number" class="form-control form-control-sm" name="houseRent" [(ngModel)]="form.houseRent" min="0">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Medical</label>
+              <input type="number" class="form-control form-control-sm" name="medicalAllowance" [(ngModel)]="form.medicalAllowance" min="0">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Transport</label>
+              <input type="number" class="form-control form-control-sm" name="transportAllowance" [(ngModel)]="form.transportAllowance" min="0">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Food</label>
+              <input type="number" class="form-control form-control-sm" name="foodAllowance" [(ngModel)]="form.foodAllowance" min="0">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Special Allowance</label>
+              <input type="number" class="form-control form-control-sm" name="specialAllowance" [(ngModel)]="form.specialAllowance" min="0">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Provident Fund</label>
+              <input type="number" class="form-control form-control-sm" name="providentFund" [(ngModel)]="form.providentFund" min="0">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Tax Deduction</label>
+              <input type="number" class="form-control form-control-sm" name="taxDeduction" [(ngModel)]="form.taxDeduction" min="0">
+            </div>
+            <div class="col-12">
+              <label class="form-label">Notes</label>
+              <textarea class="form-control form-control-sm" name="notes" [(ngModel)]="form.notes" rows="2"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" (click)="showForm = false">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm" [disabled]="f.invalid || saving">
+            @if (saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
+            Create
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+}
+
+<app-confirm-dialog
+  [visible]="!!deleteTarget"
+  title="Delete Salary Structure"
+  [message]="'Delete structure effective ' + (deleteTarget?.effectiveFrom || '') + '?'"
+  confirmLabel="Delete"
+  (confirmed)="confirmDelete()"
+  (cancelled)="deleteTarget = null" />

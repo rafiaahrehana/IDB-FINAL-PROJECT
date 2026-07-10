@@ -1,0 +1,27 @@
+package com.businessos.shared.location;
+
+import jakarta.persistence.*;
+import lombok.*;
+
+@Entity
+@Table(name = "locations")
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+public class Location {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    
+    private String country;
+    private String level1;
+    private String level2;
+    private String level3;
+    private String level4;
+    
+    private String postalCode;
+    private String streetAddress;
+    private String apartment;
+    
+    private Double latitude;
+    private Double longitude;
+}

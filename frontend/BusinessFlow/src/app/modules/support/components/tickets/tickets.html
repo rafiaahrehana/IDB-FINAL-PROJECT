@@ -1,0 +1,126 @@
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <h4 class="mb-0">Support Tickets</h4>
+    <div class="d-flex gap-2 flex-wrap">
+      <div class="form-check form-switch mb-0 d-flex align-items-center gap-1">
+        <input class="form-check-input" type="checkbox" id="slaToggle" [(ngModel)]="showSlaOnly" (change)="page=0;load()" />
+        <label class="form-check-label small" for="slaToggle">SLA Breached only</label>
+      </div>
+      <select class="form-select form-select-sm" style="width:160px" [(ngModel)]="statusFilter" (change)="page=0;load()" [disabled]="showSlaOnly">
+        <option value="">All statuses</option>
+        @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
+      </select>
+      <button class="btn btn-primary btn-sm" (click)="showCreate = !showCreate; form = {}"><i class="bi bi-plus"></i> New Ticket</button>
+    </div>
+  </div>
+  @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
+  @if (success) { <div class="alert alert-success py-2">{{ success }}</div> }
+  @if (loading) { <app-loader /> }
+
+  @if (showCreate) {
+  <div class="card mb-3">
+    <div class="card-header py-2 fw-semibold">New Ticket</div>
+    <div class="card-body">
+      <div class="row g-2">
+        <div class="col-md-6"><input class="form-control form-control-sm" placeholder="Title *" [(ngModel)]="form.title" /></div>
+        <div class="col-md-3">
+          <select class="form-select form-select-sm" [(ngModel)]="form.priority">
+            <option value="">Priority</option>
+            <option value="LOW">Low</option><option value="MEDIUM">Medium</option>
+            <option value="HIGH">High</option><option value="CRITICAL">Critical</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <select class="form-select form-select-sm" [(ngModel)]="form.categoryId">
+            <option [ngValue]="undefined">Category</option>
+            @for (c of categories; track c.id) { <option [ngValue]="c.id">{{ c.categoryName }}</option> }
+          </select>
+        </div>
+        <div class="col-12"><textarea class="form-control form-control-sm" rows="2" placeholder="Description" [(ngModel)]="form.description"></textarea></div>
+        <div class="col-12 d-flex gap-2">
+          <button class="btn btn-primary btn-sm" (click)="create()">Submit</button>
+          <button class="btn btn-secondary btn-sm" (click)="showCreate = false">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  }
+
+  <div class="row g-3">
+    <div class="col-lg-7">
+      @if (!loading && tickets.length) {
+      <div class="card">
+        <div class="table-responsive">
+          <table class="table table-hover table-sm align-middle mb-0">
+            <thead class="table-light"><tr><th>#</th><th>Title</th><th>Priority</th><th>Status</th><th>Agent</th><th>SLA</th></tr></thead>
+            <tbody>
+              @for (t of tickets; track t.id) {
+              <tr role="button" (click)="view(t)" [class.table-danger]="t.slaBreached">
+                <td class="small text-muted">{{ t.ticketNumber }}</td>
+                <td>{{ t.title }}</td>
+                <td><span class="badge {{ priorityClass(t.priority) }}">{{ t.priority }}</span></td>
+                <td><span class="badge {{ statusClass(t.status) }}">{{ t.status }}</span></td>
+                <td>{{ t.assignedToAgentName || '-' }}</td>
+                <td>@if (t.slaBreached) { <span class="badge text-bg-danger">BREACHED</span> }</td>
+              </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <div class="card-footer d-flex justify-content-end">
+          <app-pagination [page]="page" [totalPages]="totalPages" (pageChange)="goToPage($event)" />
+        </div>
+      </div>
+      }
+      @if (!loading && !tickets.length) { <app-empty-state icon="bi-life-preserver" message="No tickets found." /> }
+    </div>
+
+    @if (selected) {
+    <div class="col-lg-5">
+      <div class="card">
+        <div class="card-header py-2 d-flex justify-content-between">
+          <span class="fw-semibold">{{ selected.ticketNumber }}</span>
+          <span class="badge {{ statusClass(selected.status) }}">{{ selected.status }}</span>
+        </div>
+        <div class="card-body">
+          <h6>{{ selected.title }}</h6>
+          <p class="small text-muted">{{ selected.description }}</p>
+          <dl class="row small mb-0">
+            <dt class="col-5 text-muted">Priority</dt><dd class="col-7"><span class="badge {{ priorityClass(selected.priority) }}">{{ selected.priority }}</span></dd>
+            <dt class="col-5 text-muted">Assigned To</dt><dd class="col-7">{{ selected.assignedToAgentName || 'Unassigned' }}</dd>
+            <dt class="col-5 text-muted">Category</dt><dd class="col-7">{{ selected.categoryName || '-' }}</dd>
+            <dt class="col-5 text-muted">Created By</dt><dd class="col-7">{{ selected.createdByName }}</dd>
+          </dl>
+        </div>
+        <div class="card-footer d-flex flex-column gap-2">
+          <a class="btn btn-outline-secondary btn-sm" [routerLink]="['/support/messages']" [queryParams]="{ticketId: selected.id}">
+            <i class="bi bi-chat-dots"></i> View Messages
+          </a>
+          @if (!selected.assignedToAgentId && agents.length) {
+          <div class="input-group input-group-sm">
+            <select class="form-select" [(ngModel)]="assignAgentId">
+              <option [ngValue]="undefined">Select agent...</option>
+              @for (a of agents; track a.id) { <option [ngValue]="a.id">{{ a.fullName }}</option> }
+            </select>
+            <button class="btn btn-primary" (click)="assign()">Assign</button>
+          </div>
+          }
+          @if (selected.status !== 'RESOLVED' && selected.status !== 'CLOSED') {
+          <textarea class="form-control form-control-sm" rows="2" placeholder="Resolution notes" [(ngModel)]="resolutionNotes"></textarea>
+          <div class="d-flex gap-2">
+            <button class="btn btn-success btn-sm" (click)="resolve()">Resolve</button>
+            <button class="btn btn-secondary btn-sm" (click)="close()">Close</button>
+          </div>
+          }
+          @if (selected.status === 'RESOLVED' || selected.status === 'CLOSED') {
+          <div class="input-group input-group-sm" style="width:260px">
+            <input class="form-control" placeholder="Reason for reopening" [(ngModel)]="reopenReason" />
+            <button class="btn btn-outline-warning" [disabled]="!reopenReason.trim()" (click)="reopen()">Reopen</button>
+          </div>
+          }
+        </div>
+      </div>
+    </div>
+    }
+  </div>
+</div>

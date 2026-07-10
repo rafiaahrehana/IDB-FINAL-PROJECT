@@ -1,0 +1,58 @@
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <h4 class="mb-0">Service Categories</h4>
+    <button class="btn btn-primary btn-sm" (click)="openCreate()"><i class="bi bi-plus"></i> New Category</button>
+  </div>
+  @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
+  @if (success) { <div class="alert alert-success py-2">{{ success }}</div> }
+  @if (loading) { <app-loader /> }
+
+  @if (showForm) {
+  <div class="card mb-3">
+    <div class="card-header py-2 fw-semibold">{{ editingId ? 'Edit Category' : 'New Category' }}</div>
+    <div class="card-body">
+      <div class="row g-2">
+        <div class="col-md-4"><input class="form-control form-control-sm" placeholder="Name *" [(ngModel)]="form.name" /></div>
+        <div class="col-md-4"><input class="form-control form-control-sm" placeholder="Name (Bangla)" [(ngModel)]="form.nameBn" /></div>
+        <div class="col-md-2"><input class="form-control form-control-sm" type="number" placeholder="Sort order" [(ngModel)]="form.sortOrder" /></div>
+        <div class="col-md-2"><input class="form-control form-control-sm" placeholder="Icon URL" [(ngModel)]="form.iconUrl" /></div>
+        <div class="col-12"><textarea class="form-control form-control-sm" rows="2" placeholder="Description" [(ngModel)]="form.description"></textarea></div>
+        <div class="col-12 d-flex gap-2">
+          <button class="btn btn-primary btn-sm" [disabled]="!form.name" (click)="save()">{{ editingId ? 'Update' : 'Save' }}</button>
+          <button class="btn btn-secondary btn-sm" (click)="showForm = false; editingId = null">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  }
+
+  @if (!loading && categories.length) {
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table table-hover table-sm align-middle mb-0">
+        <thead class="table-light">
+          <tr><th>Name</th><th>Description</th><th class="text-center">Order</th><th>Status</th><th></th></tr>
+        </thead>
+        <tbody>
+          @for (c of categories; track c.id) {
+          <tr>
+            <td class="fw-medium">{{ c.name }}@if (c.nameBn) { <span class="text-muted small ms-2">{{ c.nameBn }}</span> }</td>
+            <td class="text-muted small text-truncate" style="max-width:400px">{{ c.description || '-' }}</td>
+            <td class="text-center">{{ c.sortOrder }}</td>
+            <td><span class="badge" [class.text-bg-success]="c.active" [class.text-bg-secondary]="!c.active">{{ c.active ? 'Active' : 'Inactive' }}</span></td>
+            <td class="text-end text-nowrap">
+              <button class="btn btn-outline-secondary btn-sm me-1" (click)="toggle(c)">{{ c.active ? 'Disable' : 'Enable' }}</button>
+              <button class="btn btn-outline-secondary btn-sm" (click)="openEdit(c)"><i class="bi bi-pencil"></i></button>
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <div class="card-footer d-flex justify-content-end">
+      <app-pagination [page]="page" [totalPages]="totalPages" (pageChange)="goToPage($event)" />
+    </div>
+  </div>
+  }
+  @if (!loading && !categories.length && !showForm) { <app-empty-state icon="bi-tags" message="No categories yet. Create your first category to start building the service catalog." /> }
+</div>

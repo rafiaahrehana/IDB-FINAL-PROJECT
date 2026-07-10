@@ -1,0 +1,89 @@
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <h4 class="mb-0">Shift Assignments</h4>
+    <button class="btn btn-primary btn-sm" (click)="openCreate()"><i class="bi bi-plus"></i> Assign Shift</button>
+  </div>
+  @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
+  @if (success) { <div class="alert alert-success py-2">{{ success }}</div> }
+
+  <div class="card mb-3"><div class="card-body py-2">
+    <div class="d-flex gap-2 align-items-end">
+      <div>
+        <label class="form-label small mb-0">Look up by Employee ID</label>
+        <input type="number" class="form-control form-control-sm" style="width:180px" [(ngModel)]="employeeIdLookup" (keyup.enter)="lookupByEmployee()" />
+      </div>
+      <button class="btn btn-outline-primary btn-sm" [disabled]="!employeeIdLookup" (click)="lookupByEmployee()">Look up</button>
+    </div>
+    @if (lookedUpAssignment) {
+    <div class="mt-2 small">
+      <strong>{{ lookedUpAssignment.employeeName }}</strong> is currently on
+      <span class="badge text-bg-primary">{{ lookedUpAssignment.shiftName }}</span>
+      @if (lookedUpAssignment.assignmentStartDate) { since {{ lookedUpAssignment.assignmentStartDate | date:'mediumDate' }} }
+    </div>
+    }
+  </div></div>
+
+  @if (showForm) {
+  <div class="card mb-3"><div class="card-body">
+    <div class="row g-2">
+      <div class="col-md-3">
+        <label class="form-label small text-muted mb-1">Employee ID *</label>
+        <input type="number" class="form-control form-control-sm" [(ngModel)]="form.employeeId" />
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small text-muted mb-1">Shift *</label>
+        <select class="form-select form-select-sm" [(ngModel)]="form.shiftId">
+          <option [value]="0" disabled>Select shift</option>
+          @for (s of shifts; track s.id) { <option [value]="s.id">{{ s.name }} ({{ s.startTime }}-{{ s.endTime }})</option> }
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small text-muted mb-1">Start Date</label>
+        <input type="date" class="form-control form-control-sm" [(ngModel)]="form.assignmentStartDate" />
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small text-muted mb-1">End Date</label>
+        <input type="date" class="form-control form-control-sm" [(ngModel)]="form.assignmentEndDate" />
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small text-muted mb-1">Reason</label>
+        <input class="form-control form-control-sm" [(ngModel)]="form.reason" />
+      </div>
+      <div class="col-12 d-flex gap-2">
+        <button class="btn btn-primary btn-sm" [disabled]="!form.employeeId || !form.shiftId" (click)="save()">Save</button>
+        <button class="btn btn-secondary btn-sm" (click)="showForm = false">Cancel</button>
+      </div>
+    </div>
+  </div></div>
+  }
+
+  @if (loading) { <app-loader /> }
+  @if (!loading && assignments.length) {
+  <div class="card"><div class="table-responsive">
+    <table class="table table-hover table-sm align-middle mb-0">
+      <thead class="table-light"><tr><th>Employee</th><th>Shift</th><th>Start</th><th>End</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        @for (a of assignments; track a.id) {
+        <tr>
+          <td>{{ a.employeeName || ('#' + a.employeeId) }}</td>
+          <td>{{ a.shiftName || ('#' + a.shiftId) }}</td>
+          <td class="small text-muted">{{ a.assignmentStartDate | date:'mediumDate' }}</td>
+          <td class="small text-muted">{{ a.assignmentEndDate ? (a.assignmentEndDate | date:'mediumDate') : '-' }}</td>
+          <td><span class="badge" [class.text-bg-success]="a.active" [class.text-bg-secondary]="!a.active">{{ a.active ? 'Active' : 'Ended' }}</span></td>
+          <td class="text-end text-nowrap">
+            <button class="btn btn-outline-secondary btn-sm me-1" (click)="openEdit(a)"><i class="bi bi-pencil"></i></button>
+            @if (a.active) { <button class="btn btn-outline-warning btn-sm me-1" (click)="endAssignment(a)">End</button> }
+            <button class="btn btn-outline-danger btn-sm" (click)="deleteTarget = a"><i class="bi bi-trash"></i></button>
+          </td>
+        </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  <div class="card-footer d-flex justify-content-end"><app-pagination [page]="page" [totalPages]="totalPages" (pageChange)="goToPage($event)" /></div>
+  </div>
+  }
+  @if (!loading && !assignments.length && !showForm) { <app-empty-state icon="bi-diagram-3" message="No shift assignments yet." /> }
+
+  <app-confirm-dialog [visible]="!!deleteTarget" title="Delete Assignment" message="Delete this shift assignment?" (confirmed)="doDelete()" (cancelled)="deleteTarget = null" />
+</div>

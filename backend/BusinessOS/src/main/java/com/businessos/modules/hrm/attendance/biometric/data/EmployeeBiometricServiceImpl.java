@@ -1,0 +1,180 @@
+package com.businessos.modules.hrm.attendance.biometric.data;
+import com.businessos.modules.hrm.attendance.biometric.device.BiometricDevice;
+import com.businessos.modules.hrm.attendance.biometric.device.BiometricDeviceRepository;
+import com.businessos.modules.hrm.employee.Employee;
+import com.businessos.modules.hrm.employee.EmployeeRepository;
+import com.businessos.shared.exception.ResourceNotFoundException;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+public class EmployeeBiometricServiceImpl implements EmployeeBiometricService {
+
+    private final EmployeeBiometricDataRepository biometricDataRepository;
+    private final EmployeeRepository employeeRepository;
+    private final BiometricDeviceRepository deviceRepository;
+
+    @Override
+    @Transactional
+    public BiometricDataResponse enrollEmployee(BiometricEnrollmentRequest request) {
+        Employee employee = employeeRepository.findById(request.getEmployeeId())
+                .orElseThrow(() -> new ResourceNotFoundException("Employee not found"));
+
+        BiometricDevice device = deviceRepository.findById(request.getDeviceId())
+                .orElseThrow(() -> new ResourceNotFoundException("Device not found"));
+
+        // Check if at device capacity
+        if (device.isAtCapacity()) {
+            throw new RuntimeException("Device is at maximum enrollment capacity");
+        }
+
+        EmployeeBiometricData biometricData = EmployeeBiometricData.builder()
+                .employee(employee)
+                .device(device)
+                .biometricType(request.getBiometricType())
+                .biometricTemplate(request.getBiometricTemplate())
+                .templateFormat(request.getTemplateFormat())
+                .enrollmentDate(LocalDateTime.now())
+                .enrollmentQualityScore(request.getQualityScore())
+                .enrolled(true)
+                .active(true)
+                .build();
+
+        biometricData = biometricDataRepository.save(biometricData);
+
+        // Update device enrollment count
+        device.setTotalEnrollments(device.getTotalEnrollments() + 1);
+        deviceRepository.save(device);
+
+        return BiometricDataMapper.toResponse(biometricData);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public BiometricDataResponse getEnrollment(Long employeeId, Long deviceId) {
+        EmployeeBiometricData data = biometricDataRepository
+                .findByEmployeeIdAndDeviceIdAndBiometricType(employeeId, deviceId, "FINGERPRINT")
+                .orElseThrow(() -> new ResourceNotFoundException("Enrollment not found"));
+        return BiometricDataMapper.toResponse(data);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public BiometricDataResponse getById(Long id) {
+        EmployeeBiometricData data = biometricDataRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Enrollment not found"));
+        return BiometricDataMapper.toResponse(data);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<BiometricDataResponse> getByEmployee(Long employeeId) {
+        return biometricDataRepository.findByEmployeeId(employeeId)
+                .stream()
+                .map(BiometricDataMapper::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public boolean verifyBiometric(Long employeeId, Long deviceId, String template, double threshold) {
+        EmployeeBiometricData data = biometricDataRepository
+                .findByEmployeeIdAndDeviceIdAndBiometricType(employeeId, deviceId, "FINGERPRINT")
+                .orElseThrow(() -> new ResourceNotFoundException("Enrollment not found"));
+
+        double matchScore = calculateMatch(data.getBiometricTemplate(), template);
+
+        if (matchScore >= threshold) {
+            updateLastVerified(data.getId());
+            recordSuccessfulMatch(data.getId());
+            return true;
+        }
+        recordFailedMatch(data.getId());
+        return false;
+    }
+
+    @Override
+    @Transactional
+    public boolean verifyBiometric(Long id, String template, double threshold) {
+        EmployeeBiometricData data = biometricDataRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Enrollment not found"));
+
+        double matchScore = calculateMatch(data.getBiometricTemplate(), template);
+
+        if (matchScore >= threshold) {
+            updateLastVerified(id);
+            recordSuccessfulMatch(id);
+            return true;
+        }
+        recordFailedMatch(id);
+        return false;
+    }
+
+    @Override
+    @Transactional
+    public void updateEnrollmentStatus(Long id, boolean enrolled) {
+        EmployeeBiometricData data = biometricDataRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Enrollment not found"));
+        data.setEnrolled(enrolled);
+        biometricDataRepository.save(data);
+    }
+
+    @Override
+    @Transactional
+    public void updateLastVerified(Long id) {
+        EmployeeBiometricData data = biometricDataRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Enrollment not found"));
+        data.setLastVerifiedTime(LocalDateTime.now());
+        biometricDataRepository.save(data);
+    }
+
+    @Override
+    @Transactional
+    public void recordSuccessfulMatch(Long id) {
+        EmployeeBiometricData data = biometricDataRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Enrollment not found"));
+        data.setSuccessfulMatches(data.getSuccessfulMatches() + 1);
+        biometricDataRepository.save(data);
+    }
+
+    @Override
+    @Transactional
+    public void recordFailedMatch(Long id) {
+        EmployeeBiometricData data = biometricDataRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Enrollment not found"));
+        data.setFailedMatches(data.getFailedMatches() + 1);
+        biometricDataRepository.save(data);
+    }
+
+    @Override
+    @Transactional
+    public BiometricDataResponse delete(Long id) {
+        EmployeeBiometricData data = biometricDataRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Enrollment not found"));
+        data.softDelete();
+        biometricDataRepository.save(data);
+        return BiometricDataMapper.toResponse(data);
+    }
+
+    private double calculateMatch(String template1, String template2) {
+        if (template1 == null || template2 == null) return 0.0;
+
+        // Simple comparison (in production use actual fingerprint matching)
+        int matches = 0;
+        int total = Math.min(template1.length(), template2.length());
+
+        for (int i = 0; i < total; i++) {
+            if (template1.charAt(i) == template2.charAt(i)) {
+                matches++;
+            }
+        }
+
+        return total > 0 ? (matches * 100.0 / total) : 0.0;
+    }
+}
+

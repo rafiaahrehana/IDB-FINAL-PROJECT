@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Holiday, HolidayRequest, HOLIDAY_TYPES, Department } from '../../models/hrm.model';
@@ -35,7 +35,8 @@ export class Holidays implements OnInit {
 
   constructor(
     private holidayService: HolidayService,
-    private departmentService: DepartmentService
+    private departmentService: DepartmentService,
+    private cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit(): void {
@@ -45,16 +46,19 @@ export class Holidays implements OnInit {
 
   load(): void {
     this.loading = true;
+    this.cdr.markForCheck();
     this.error = '';
     this.holidayService.list(this.page, 50).subscribe({
       next: (res) => {
         this.holidays = res.content;
         this.totalPages = res.totalPages;
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.error = 'Failed to load holidays';
         this.loading = false;
+        this.cdr.markForCheck();
       }
     });
   }
@@ -87,6 +91,7 @@ export class Holidays implements OnInit {
 
   save(): void {
     this.saving = true;
+    this.cdr.markForCheck();
     this.error = '';
     const payload = this.cleanPayload();
     const request = this.isEdit && this.selectedId
@@ -96,12 +101,14 @@ export class Holidays implements OnInit {
     request.subscribe({
       next: () => {
         this.saving = false;
+        this.cdr.markForCheck();
         this.showForm = false;
         this.success = this.isEdit ? 'Holiday updated successfully' : 'Holiday created successfully';
         this.load();
       },
       error: (err) => {
         this.saving = false;
+        this.cdr.markForCheck();
         this.error = err?.error?.message || 'Failed to save holiday';
       }
     });

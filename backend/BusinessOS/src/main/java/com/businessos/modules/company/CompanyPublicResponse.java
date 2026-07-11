@@ -13,4 +13,9 @@ public class CompanyPublicResponse {
     private String primaryColor;
     private String secondaryColor;
     private String tagline;
+    private String portalAbout;
+    private String website;
+    private String location;
+    private String companyPhone;
+    private String companyEmail;
 }

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Employee, HrAsset, HrAssetRequest } from '../../models/hrm.model';
@@ -35,7 +35,8 @@ export class Assets implements OnInit {
 
   constructor(
     private assetService: HrAssetService,
-    private employeeService: EmployeeService
+    private employeeService: EmployeeService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   // LIFECYCLE HOOKS
@@ -44,10 +45,20 @@ export class Assets implements OnInit {
   // LOAD ASSETS
   load(): void {
     this.loading = true;
+    this.cdr.markForCheck();
     this.error = '';
     this.assetService.list(this.page).subscribe({
-      next: (res) => { this.assets = res.content; this.totalPages = res.totalPages; this.loading = false; },
-      error: () => { this.error = 'Failed to load assets'; this.loading = false; }
+      next: (res) => {
+        this.assets = res.content;
+        this.totalPages = res.totalPages;
+        this.loading = false;
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.error = 'Failed to load assets';
+        this.loading = false;
+        this.cdr.markForCheck();
+      }
     });
   }
 

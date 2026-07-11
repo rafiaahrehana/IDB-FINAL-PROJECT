@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -48,7 +48,8 @@ export class Services implements OnInit {
   constructor(
     private serviceService: CompanyServiceService,
     private categoryService: ServiceCategoryService,
-    private workflowService: WorkflowService
+    private workflowService: WorkflowService,
+    private cdr: ChangeDetectorRef,
   ) {}
 
   // LIFECYCLE HOOKS
@@ -57,10 +58,11 @@ export class Services implements OnInit {
   // LOAD SERVICES
   load(): void {
     this.loading = true;
+    this.cdr.markForCheck();
     this.error = '';
     this.serviceService.list(this.page).subscribe({
-      next: (res) => { this.services = res.content; this.totalPages = res.totalPages; this.loading = false; },
-      error: () => { this.error = 'Failed to load services'; this.loading = false; }
+      next: (res) => { this.services = res.content; this.totalPages = res.totalPages; this.loading = false; this.cdr.markForCheck(); },
+      error: () => { this.error = 'Failed to load services'; this.loading = false; this.cdr.markForCheck(); }
     });
   }
 

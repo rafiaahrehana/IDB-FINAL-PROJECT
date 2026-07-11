@@ -33,7 +33,7 @@ export class RoleGuard implements CanActivate, CanActivateChild {
     }
  
     this.notificationService.error('Insufficient permissions');
-    this.router.navigate(['/dashboard']);
+    this.router.navigate(['/forbidden']);
     return false;
   }
 }

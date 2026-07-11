@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AttendanceLeave } from '../../models/attendance.model';
@@ -26,7 +26,7 @@ export class LeaveManagement implements OnInit {
   rejectionReason = '';
   leaveTypes = ['ANNUAL', 'SICK', 'MATERNITY', 'PATERNITY', 'UNPAID', 'EMERGENCY', 'OTHER'];
 
-  constructor(private leaveService: LeaveService) {}
+  constructor(private leaveService: LeaveService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.load();
@@ -34,15 +34,18 @@ export class LeaveManagement implements OnInit {
 
   load(): void {
     this.loading = true;
+    this.cdr.markForCheck();
     this.leaveService.list(this.page).subscribe({
       next: (res) => {
         this.leaves = res.content;
         this.totalPages = res.totalPages;
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.error = 'Failed to load leaves';
         this.loading = false;
+        this.cdr.markForCheck();
       },
     });
   }

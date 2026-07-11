@@ -39,8 +39,8 @@ export class WorkflowService {
     return this.api.patch<WorkflowTemplate>(`${this.endpoint}/${id}/toggle`, {});
   }
 
-  delete(id: number): Observable<void> {
-    return this.api.delete<void>(`${this.endpoint}/${id}`);
+  delete(id: number): Observable<string> {
+    return this.api.deleteText(`${this.endpoint}/${id}`);
   }
 
   // STAGES
@@ -52,7 +52,7 @@ export class WorkflowService {
     return this.api.put<WorkflowStage>(`${this.endpoint}/${templateId}/stages/${stageId}`, payload);
   }
 
-  removeStage(templateId: number, stageId: number): Observable<void> {
-    return this.api.delete<void>(`${this.endpoint}/${templateId}/stages/${stageId}`);
+  removeStage(templateId: number, stageId: number): Observable<string> {
+    return this.api.deleteText(`${this.endpoint}/${templateId}/stages/${stageId}`);
   }
 }

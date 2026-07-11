@@ -1,45 +1,48 @@
-<div class="container-fluid py-3">
+<div class="page-container">
   <div class="d-flex justify-content-between align-items-center mb-3">
     <div>
       <a routerLink="/hrm/employees" class="small text-decoration-none"><i class="bi bi-arrow-left me-1"></i>Employees</a>
       <h4 class="mb-0">{{ employee ? employee.firstName + ' ' + employee.lastName : 'Employee' }}</h4>
     </div>
     @if (employee && !editing) {
-    <button class="btn btn-outline-primary btn-sm" (click)="startEdit()"><i class="bi bi-pencil me-1"></i>Edit</button>
+    <button class="btn-shadcn btn-shadcn-outline btn-shadcn-sm" (click)="startEdit()"><i class="bi bi-pencil me-1"></i>Edit</button>
     }
   </div>
 
-  @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
-  @if (success) { <div class="alert alert-success py-2">{{ success }}</div> }
+  @if (error) { <div class="badge-shadcn badge-shadcn-destructive py-2 px-3">{{ error }}</div> }
+  @if (success) { <div class="badge-shadcn badge-shadcn-success py-2 px-3">{{ success }}</div> }
   @if (loading) { <app-loader /> }
 
   @if (employee && !editing) {
   <div class="row g-3">
     <div class="col-lg-6">
-      <div class="card h-100">
-        <div class="card-header py-2 fw-semibold small text-uppercase">Employment</div>
-        <div class="card-body py-2">
+      <div class="card-shadcn h-100">
+        <div class="card-shadcn-header py-2">
+          <div class="card-shadcn-title small text-uppercase">Employment</div>
+        </div>
+        <div class="card-shadcn-content py-2">
           <dl class="row mb-0 small">
             <dt class="col-5">Employee No</dt><dd class="col-7">{{ employee.employeeNumber || '-' }}</dd>
             <dt class="col-5">Department</dt><dd class="col-7">{{ employee.departmentName || '-' }}</dd>
             <dt class="col-5">Designation</dt><dd class="col-7">{{ employee.designationName || '-' }}</dd>
             <dt class="col-5">Job Title</dt><dd class="col-7">{{ employee.jobTitle || '-' }}</dd>
             <dt class="col-5">Type</dt><dd class="col-7">{{ employee.employmentType }}</dd>
-            <dt class="col-5">Status</dt><dd class="col-7"><span class="badge text-bg-light border">{{ employee.employmentStatus }}</span></dd>
+            <dt class="col-5">Status</dt><dd class="col-7"><span class="badge-shadcn badge-shadcn-secondary">{{ employee.employmentStatus }}</span></dd>
             <dt class="col-5">Reporting Manager</dt><dd class="col-7">{{ employee.reportingManagerName || '-' }}</dd>
             <dt class="col-5">Shift</dt><dd class="col-7">{{ employee.shiftName || '-' }}</dd>
             <dt class="col-5">Hire Date</dt><dd class="col-7">{{ employee.hireDate ? (employee.hireDate | date:'mediumDate') : '-' }}</dd>
             <dt class="col-5">Office</dt><dd class="col-7">{{ employee.officeLocation || '-' }}</dd>
             <dt class="col-5">Cost Center</dt><dd class="col-7">{{ employee.costCenter || '-' }}</dd>
-            <dt class="col-5">Role</dt><dd class="col-7">{{ employee.customRoleName || 'None' }}</dd>
           </dl>
         </div>
       </div>
     </div>
     <div class="col-lg-6">
-      <div class="card h-100">
-        <div class="card-header py-2 fw-semibold small text-uppercase">Contact & Personal</div>
-        <div class="card-body py-2">
+      <div class="card-shadcn h-100">
+        <div class="card-shadcn-header py-2">
+          <div class="card-shadcn-title small text-uppercase">Contact & Personal</div>
+        </div>
+        <div class="card-shadcn-content py-2">
           <dl class="row mb-0 small">
             <dt class="col-5">Email</dt><dd class="col-7">{{ employee.email }}</dd>
             <dt class="col-5">Official Email</dt><dd class="col-7">{{ employee.officialEmail || '-' }}</dd>
@@ -48,6 +51,15 @@
             <dt class="col-5">Date of Birth</dt><dd class="col-7">{{ employee.dateOfBirth ? (employee.dateOfBirth | date:'mediumDate') : '-' }}</dd>
             <dt class="col-5">National ID</dt><dd class="col-7">{{ employee.nationalId || '-' }}</dd>
             <dt class="col-5">Tax ID</dt><dd class="col-7">{{ employee.taxId || '-' }}</dd>
+            <dt class="col-5">Location</dt>
+            <dd class="col-7">
+              @if (employee.location) {
+                {{ employee.location.level3 }}, {{ employee.location.level1 }}<br>
+                <small class="text-muted">{{ employee.location.country }}</small>
+              } @else {
+                -
+              }
+            </dd>
             <dt class="col-5">Emergency Contact</dt>
             <dd class="col-7">
               {{ employee.emergencyContactName || '-' }}
@@ -58,9 +70,11 @@
       </div>
     </div>
     <div class="col-lg-6">
-      <div class="card">
-        <div class="card-header py-2 fw-semibold small text-uppercase">Compensation</div>
-        <div class="card-body py-2">
+      <div class="card-shadcn">
+        <div class="card-shadcn-header py-2">
+          <div class="card-shadcn-title small text-uppercase">Compensation</div>
+        </div>
+        <div class="card-shadcn-content py-2">
           <dl class="row mb-0 small">
             <dt class="col-5">Basic Salary</dt><dd class="col-7">{{ employee.basicSalary ?? '-' }}</dd>
             <dt class="col-5">House Rent</dt><dd class="col-7">{{ employee.houseRent ?? '-' }}</dd>
@@ -76,138 +90,161 @@
 
   @if (employee && editing) {
   <form #f="ngForm" (ngSubmit)="save()">
-    <div class="card">
-      <div class="card-body">
+    <div class="card-shadcn">
+      <div class="card-shadcn-content">
         <div class="row g-3">
           <div class="col-md-4">
-            <label class="form-label">Job Title</label>
-            <input class="form-control form-control-sm" name="jobTitle" [(ngModel)]="form.jobTitle" maxlength="100">
+            <div class="field-group">
+              <label class="field-label">Job Title</label>
+              <input class="input-shadcn input-shadcn-sm" name="jobTitle" [(ngModel)]="form.jobTitle" maxlength="100">
+            </div>
           </div>
           <div class="col-md-4">
-            <label class="form-label">Department</label>
-            <select class="form-select form-select-sm" name="departmentId" [(ngModel)]="form.departmentId">
-              <option [ngValue]="undefined">-</option>
-              @for (d of departments; track d.id) { <option [ngValue]="d.id">{{ d.name }}</option> }
-            </select>
+            <div class="field-group">
+              <label class="field-label">Department</label>
+              <select class="select-shadcn input-shadcn-sm" name="departmentId" [(ngModel)]="form.departmentId">
+                <option [ngValue]="undefined">-</option>
+                @for (d of departments; track d.id) { <option [ngValue]="d.id">{{ d.name }}</option> }
+              </select>
+            </div>
           </div>
           <div class="col-md-4">
-            <label class="form-label">Designation</label>
-            <select class="form-select form-select-sm" name="designationId" [(ngModel)]="form.designationId">
-              <option [ngValue]="undefined">-</option>
-              @for (d of designations; track d.id) { <option [ngValue]="d.id">{{ d.name }}</option> }
-            </select>
+            <div class="field-group">
+              <label class="field-label">Designation</label>
+              <select class="select-shadcn input-shadcn-sm" name="designationId" [(ngModel)]="form.designationId">
+                <option [ngValue]="undefined">-</option>
+                @for (d of designations; track d.id) { <option [ngValue]="d.id">{{ d.name }}</option> }
+              </select>
+            </div>
           </div>
           <div class="col-md-4">
-            <label class="form-label">Employment Type</label>
-            <select class="form-select form-select-sm" name="employmentType" [(ngModel)]="form.employmentType">
-              @for (t of types; track t) { <option [value]="t">{{ t }}</option> }
-            </select>
+            <div class="field-group">
+              <label class="field-label">Employment Type</label>
+              <select class="select-shadcn input-shadcn-sm" name="employmentType" [(ngModel)]="form.employmentType">
+                @for (t of types; track t) { <option [value]="t">{{ t }}</option> }
+              </select>
+            </div>
           </div>
           <div class="col-md-4">
-            <label class="form-label">Employment Status</label>
-            <select class="form-select form-select-sm" name="employmentStatus" [(ngModel)]="form.employmentStatus">
-              @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
-            </select>
+            <div class="field-group">
+              <label class="field-label">Employment Status</label>
+              <select class="select-shadcn input-shadcn-sm" name="employmentStatus" [(ngModel)]="form.employmentStatus">
+                @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
+              </select>
+            </div>
           </div>
           <div class="col-md-4">
-            <label class="form-label">Gender</label>
-            <select class="form-select form-select-sm" name="gender" [(ngModel)]="form.gender">
-              <option [ngValue]="undefined">-</option>
-              @for (g of genders; track g) { <option [value]="g">{{ g }}</option> }
-            </select>
+            <div class="field-group">
+              <label class="field-label">Gender</label>
+              <select class="select-shadcn input-shadcn-sm" name="gender" [(ngModel)]="form.gender">
+                <option [ngValue]="undefined">-</option>
+                @for (g of genders; track g) { <option [value]="g">{{ g }}</option> }
+              </select>
+            </div>
           </div>
           <div class="col-md-4">
-            <label class="form-label">Hire Date</label>
-            <input type="date" class="form-control form-control-sm" name="hireDate" [(ngModel)]="form.hireDate">
+            <div class="field-group">
+              <label class="field-label">Hire Date</label>
+              <input type="date" class="input-shadcn input-shadcn-sm" name="hireDate" [(ngModel)]="form.hireDate">
+            </div>
           </div>
           <div class="col-md-4">
-            <label class="form-label">Date of Birth</label>
-            <input type="date" class="form-control form-control-sm" name="dateOfBirth" [(ngModel)]="form.dateOfBirth">
+            <div class="field-group">
+              <label class="field-label">Date of Birth</label>
+              <input type="date" class="input-shadcn input-shadcn-sm" name="dateOfBirth" [(ngModel)]="form.dateOfBirth">
+            </div>
           </div>
           <div class="col-md-4">
-            <label class="form-label">Official Email</label>
-            <input type="email" class="form-control form-control-sm" name="officialEmail" [(ngModel)]="form.officialEmail" email>
+            <div class="field-group">
+              <label class="field-label">Official Email</label>
+              <input type="email" class="input-shadcn input-shadcn-sm" name="officialEmail" [(ngModel)]="form.officialEmail" email>
+            </div>
+          </div>
+
+          <div class="col-md-4">
+            <div class="field-group">
+              <label class="field-label">Work Phone</label>
+              <input class="input-shadcn input-shadcn-sm" name="workPhone" [(ngModel)]="form.workPhone" maxlength="30">
+            </div>
           </div>
           <div class="col-md-4">
-            <label class="form-label">Work Phone</label>
-            <input class="form-control form-control-sm" name="workPhone" [(ngModel)]="form.workPhone" maxlength="30">
+            <div class="field-group">
+              <label class="field-label">Office Location</label>
+              <input class="input-shadcn input-shadcn-sm" name="officeLocation" [(ngModel)]="form.officeLocation" maxlength="150">
+            </div>
           </div>
           <div class="col-md-4">
-            <label class="form-label">Office Location</label>
-            <input class="form-control form-control-sm" name="officeLocation" [(ngModel)]="form.officeLocation" maxlength="150">
-          </div>
-          <div class="col-md-4">
-            <label class="form-label">Cost Center</label>
-            <input class="form-control form-control-sm" name="costCenter" [(ngModel)]="form.costCenter" maxlength="100">
+            <div class="field-group">
+              <label class="field-label">Cost Center</label>
+              <input class="input-shadcn input-shadcn-sm" name="costCenter" [(ngModel)]="form.costCenter" maxlength="100">
+            </div>
           </div>
           <div class="col-md-3">
-            <label class="form-label">Basic Salary</label>
-            <input type="number" class="form-control form-control-sm" name="basicSalary" [(ngModel)]="form.basicSalary" min="0">
+            <div class="field-group">
+              <label class="field-label">Basic Salary</label>
+              <input type="number" class="input-shadcn input-shadcn-sm" name="basicSalary" [(ngModel)]="form.basicSalary" min="0">
+            </div>
           </div>
           <div class="col-md-3">
-            <label class="form-label">House Rent</label>
-            <input type="number" class="form-control form-control-sm" name="houseRent" [(ngModel)]="form.houseRent" min="0">
+            <div class="field-group">
+              <label class="field-label">House Rent</label>
+              <input type="number" class="input-shadcn input-shadcn-sm" name="houseRent" [(ngModel)]="form.houseRent" min="0">
+            </div>
           </div>
           <div class="col-md-3">
-            <label class="form-label">Medical Allowance</label>
-            <input type="number" class="form-control form-control-sm" name="medicalAllowance" [(ngModel)]="form.medicalAllowance" min="0">
+            <div class="field-group">
+              <label class="field-label">Medical Allowance</label>
+              <input type="number" class="input-shadcn input-shadcn-sm" name="medicalAllowance" [(ngModel)]="form.medicalAllowance" min="0">
+            </div>
           </div>
           <div class="col-md-3">
-            <label class="form-label">Transport Allowance</label>
-            <input type="number" class="form-control form-control-sm" name="transportAllowance" [(ngModel)]="form.transportAllowance" min="0">
+            <div class="field-group">
+              <label class="field-label">Transport Allowance</label>
+              <input type="number" class="input-shadcn input-shadcn-sm" name="transportAllowance" [(ngModel)]="form.transportAllowance" min="0">
+            </div>
           </div>
           <div class="col-md-4">
-            <label class="form-label">Bank Name</label>
-            <input class="form-control form-control-sm" name="bankName" [(ngModel)]="form.bankName" maxlength="100">
+            <div class="field-group">
+              <label class="field-label">Bank Name</label>
+              <input class="input-shadcn input-shadcn-sm" name="bankName" [(ngModel)]="form.bankName" maxlength="100">
+            </div>
           </div>
           <div class="col-md-4">
-            <label class="form-label">Emergency Contact Name</label>
-            <input class="form-control form-control-sm" name="emergencyContactName" [(ngModel)]="form.emergencyContactName" maxlength="100">
+            <div class="field-group">
+              <label class="field-label">Emergency Contact Name</label>
+              <input class="input-shadcn input-shadcn-sm" name="emergencyContactName" [(ngModel)]="form.emergencyContactName" maxlength="100">
+            </div>
           </div>
           <div class="col-md-2">
-            <label class="form-label">Emergency Phone</label>
-            <input class="form-control form-control-sm" name="emergencyContactPhone" [(ngModel)]="form.emergencyContactPhone" maxlength="30">
+            <div class="field-group">
+              <label class="field-label">Emergency Phone</label>
+              <input class="input-shadcn input-shadcn-sm" name="emergencyContactPhone" [(ngModel)]="form.emergencyContactPhone" maxlength="30">
+            </div>
           </div>
           <div class="col-md-2">
-            <label class="form-label">Relation</label>
-            <input class="form-control form-control-sm" name="emergencyContactRelation" [(ngModel)]="form.emergencyContactRelation" maxlength="50">
+            <div class="field-group">
+              <label class="field-label">Relation</label>
+              <input class="input-shadcn input-shadcn-sm" name="emergencyContactRelation" [(ngModel)]="form.emergencyContactRelation" maxlength="50">
+            </div>
           </div>
-          <div class="col-md-4">
-            <label class="form-label">Custom Role</label>
-            <select class="form-select form-select-sm" name="customRoleId" [(ngModel)]="selectedCustomRoleId">
-              <option [ngValue]="null">None</option>
-              @for (r of customRoles; track r.id) { <option [ngValue]="r.id">{{ r.name }}</option> }
-            </select>
-          </div>
-          <div class="col-md-4">
-            <label class="form-label">National ID</label>
-            <input class="form-control form-control-sm" name="nationalId" [(ngModel)]="form.nationalId" maxlength="50">
-          </div>
-          <div class="col-md-4">
-            <label class="form-label">Tax ID</label>
-            <input class="form-control form-control-sm" name="taxId" [(ngModel)]="form.taxId" maxlength="50">
-          </div>
-          <div class="col-md-4">
-            <label class="form-label">Bank Account Number</label>
-            <input class="form-control form-control-sm" name="bankAccountNumber" [(ngModel)]="form.bankAccountNumber" maxlength="50">
-          </div>
-          <div class="col-md-4">
-            <label class="form-label">Confirmation Date</label>
-            <input type="date" class="form-control form-control-sm" name="confirmationDate" [(ngModel)]="form.confirmationDate">
-          </div>
-          <div class="col-md-4">
-            <label class="form-label">Probation End Date</label>
-            <input type="date" class="form-control form-control-sm" name="probationEndDate" [(ngModel)]="form.probationEndDate">
-          </div>
-          <div class="col-md-4">
-            <label class="form-label">Contract End Date</label>
-            <input type="date" class="form-control form-control-sm" name="contractEndDate" [(ngModel)]="form.contractEndDate">
+          <div class="col-12 mt-4">
+            <div class="field-group">
+              <label class="field-label fw-bold">Location Details</label>
+              <div class="border rounded p-3 bg-light">
+                <app-location (formSubmit)="onLocationChange($event)"></app-location>
+                @if (form.location) {
+                  <div class="badge-shadcn badge-shadcn-success mt-2 mb-0 py-1 px-2 small">
+                    <i class="bi bi-check-circle me-1"></i> Location captured: {{ form.location.country }}, {{ form.location.level1 }}
+                  </div>
+                }
+              </div>
+            </div>
           </div>
         </div>
       </div>
-      <div class="card-footer d-flex justify-content-end gap-2">
-        <button type="button" class="btn btn-secondary btn-sm" (click)="editing = false">Cancel</button>
-        <button type="submit" class="btn btn-primary btn-sm" [disabled]="f.invalid || saving">
+      <div class="card-shadcn-footer d-flex justify-content-end gap-2">
+        <button type="button" class="btn-shadcn btn-shadcn-outline btn-shadcn-sm" (click)="editing = false">Cancel</button>
+        <button type="submit" class="btn-shadcn btn-shadcn-primary btn-shadcn-sm" [disabled]="f.invalid || saving">
           @if (saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
           Save Changes
         </button>

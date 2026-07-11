@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
@@ -35,12 +35,12 @@ export class Expenses implements OnInit {
   rejectTarget: HrExpense | null = null;
   rejectionReason = '';
   approveTarget: HrExpense | null = null;
-  markAsPaidTarget: HrExpense | null = null;
+  reimburseTarget: HrExpense | null = null;
   deleteTarget: HrExpense | null = null;
 
   statuses = HR_EXPENSE_STATUSES;
 
-  constructor(private expenseService: HrExpenseService) {}
+  constructor(private expenseService: HrExpenseService, private cdr: ChangeDetectorRef) {}
 
   // LIFECYCLE HOOKS
   ngOnInit(): void { this.load(); }
@@ -48,13 +48,23 @@ export class Expenses implements OnInit {
   // LOAD EXPENSES BASED ON CURRENT VIEW
   load(): void {
     this.loading = true;
+    this.cdr.markForCheck();
     this.error = '';
     const req = this.view === 'my'
       ? this.expenseService.listMine(this.page)
       : this.expenseService.list(this.page);
     req.subscribe({
-      next: (res) => { this.expenses = res.content; this.totalPages = res.totalPages; this.loading = false; },
-      error: () => { this.error = 'Failed to load expenses'; this.loading = false; }
+      next: (res) => {
+        this.expenses = res.content;
+        this.totalPages = res.totalPages;
+        this.loading = false;
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.error = 'Failed to load expenses';
+        this.loading = false;
+        this.cdr.markForCheck();
+      }
     });
   }
 
@@ -98,12 +108,12 @@ export class Expenses implements OnInit {
     });
   }
 
-  // MARK EXPENSE AS PAID
-  doMarkAsPaid(): void {
-    if (!this.markAsPaidTarget) return;
-    this.expenseService.markAsPaid(this.markAsPaidTarget.id).subscribe({
-      next: () => { this.markAsPaidTarget = null; this.success = 'Expense marked as paid'; this.load(); },
-      error: (err) => { this.error = err?.error?.message || 'Failed to mark as paid'; this.markAsPaidTarget = null; }
+  // REIMBURSE EXPENSE
+  doReimburse(): void {
+    if (!this.reimburseTarget) return;
+    this.expenseService.reimburse(this.reimburseTarget.id).subscribe({
+      next: () => { this.reimburseTarget = null; this.success = 'Expense reimbursed'; this.load(); },
+      error: (err) => { this.error = err?.error?.message || 'Failed to reimburse'; this.reimburseTarget = null; }
     });
   }
 
@@ -125,8 +135,7 @@ export class Expenses implements OnInit {
       PENDING: 'text-bg-warning',
       APPROVED: 'text-bg-success',
       REJECTED: 'text-bg-danger',
-      PAID: 'text-bg-primary',
-      CANCELLED: 'text-bg-secondary',
+      REIMBURSED: 'text-bg-primary',
     }[status] || 'text-bg-secondary';
   }
 }

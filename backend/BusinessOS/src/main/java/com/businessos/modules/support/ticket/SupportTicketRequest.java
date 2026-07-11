@@ -22,6 +22,4 @@ public class SupportTicketRequest {
     private TicketSource source = TicketSource.PORTAL;
 
     private String attachmentUrl;
-
-    private Long clientId; // Optional: link ticket to CRM Client
 }

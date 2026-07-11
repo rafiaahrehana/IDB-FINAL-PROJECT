@@ -7,6 +7,8 @@ import com.businessos.modules.hrm.designation.Designation;
 import com.businessos.modules.hrm.attendance.shift.Shift;
 import com.businessos.auth.user.User;
 import com.businessos.modules.company.Company;
+import com.businessos.enums.EmploymentStatus;
+import com.businessos.enums.EmploymentType;
 import com.businessos.enums.Gender;
 import jakarta.persistence.*;
 import lombok.*;
@@ -39,14 +41,14 @@ public class Employee extends BaseEntity {
     private String costCenter;
     private String officeLocation;
 
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(length = 30)
-    @Builder.Default
     private EmploymentType employmentType = EmploymentType.FULL_TIME;
 
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(length = 30)
-    @Builder.Default
     private EmploymentStatus employmentStatus = EmploymentStatus.PROBATION;
 
     // personal information
@@ -55,6 +57,17 @@ public class Employee extends BaseEntity {
     private Gender gender;
 
     private LocalDate dateOfBirth;
+    
+    @Column(length = 100)
+    private String fatherName;
+    
+    @Column(length = 100)
+    private String motherName;
+    
+    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JoinColumn(name = "location_id")
+    private com.businessos.shared.address.Location location;
+    
     private LocalDate hireDate;
     private LocalDate confirmationDate;
     private LocalDate probationEndDate;

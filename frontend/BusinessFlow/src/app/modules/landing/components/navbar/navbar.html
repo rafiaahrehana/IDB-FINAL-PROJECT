@@ -1,0 +1,38 @@
+<nav class="navbar navbar-expand-lg fixed-top transition-all" [ngClass]="{'scrolled glass-panel': isScrolled(), 'bg-transparent': !isScrolled() && !isMobileMenuOpen(), 'bg-white shadow-sm': isMobileMenuOpen()}">
+  <div class="container-fluid px-4 px-lg-5">
+    <a class="navbar-brand d-flex align-items-center gap-2 fw-bold" href="#">
+      <div class="logo-icon bg-primary-bos text-white d-flex align-items-center justify-content-center rounded-2">
+        <i class="bi bi-layers-fill fs-5"></i>
+      </div>
+      <span class="fs-4 tracking-tight" [ngClass]="{'text-dark': isScrolled() || isMobileMenuOpen(), 'text-white': !isScrolled() && !isMobileMenuOpen()}">BusinessOS</span>
+    </a>
+    
+    <button class="navbar-toggler border-0 shadow-none" type="button" (click)="toggleMobileMenu()">
+      <i class="bi fs-2" [ngClass]="[isMobileMenuOpen() ? 'bi-x' : 'bi-list', isScrolled() || isMobileMenuOpen() ? 'text-dark' : 'text-white']"></i>
+    </button>
+    
+    <div class="collapse navbar-collapse" [ngClass]="{'show': isMobileMenuOpen()}">
+      <ul class="navbar-nav mx-auto mb-2 mb-lg-0 gap-lg-4 fw-medium">
+        <li class="nav-item">
+          <a class="nav-link" href="#features" [ngClass]="{'text-dark': isScrolled() || isMobileMenuOpen(), 'text-white-50 text-white-hover': !isScrolled() && !isMobileMenuOpen()}">Features</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#solutions" [ngClass]="{'text-dark': isScrolled() || isMobileMenuOpen(), 'text-white-50 text-white-hover': !isScrolled() && !isMobileMenuOpen()}">Solutions</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#modules" [ngClass]="{'text-dark': isScrolled() || isMobileMenuOpen(), 'text-white-50 text-white-hover': !isScrolled() && !isMobileMenuOpen()}">Modules</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#pricing" [ngClass]="{'text-dark': isScrolled() || isMobileMenuOpen(), 'text-white-50 text-white-hover': !isScrolled() && !isMobileMenuOpen()}">Pricing</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#resources" [ngClass]="{'text-dark': isScrolled() || isMobileMenuOpen(), 'text-white-50 text-white-hover': !isScrolled() && !isMobileMenuOpen()}">Resources</a>
+        </li>
+      </ul>
+      <div class="d-flex align-items-center gap-3 flex-column flex-lg-row mt-3 mt-lg-0">
+        <a routerLink="/auth/login" class="text-decoration-none fw-medium" [ngClass]="{'text-dark': isScrolled() || isMobileMenuOpen(), 'text-white': !isScrolled() && !isMobileMenuOpen()}">Login</a>
+        <a routerLink="/auth/register" class="btn-primary-bos text-decoration-none">Get Started</a>
+      </div>
+    </div>
+  </div>
+</nav>

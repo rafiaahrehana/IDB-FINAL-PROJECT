@@ -21,21 +21,21 @@ public class SupportMessageController {
     private final SupportMessageService service;
 
     @PostMapping
-    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('EMPLOYEE') or hasRole('SUPPORT_AGENT')")
+    @PreAuthorize("hasRole('EMPLOYEE') or hasRole('SUPPORT_AGENT')")
     @Operation(summary = "Create Message")
     public ResponseEntity<SupportMessageResponse> create(@Valid @RequestBody SupportMessageRequest request) {
         return new ResponseEntity<>(service.create(request), HttpStatus.CREATED);
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('EMPLOYEE') or hasRole('SUPPORT_AGENT')")
+    @PreAuthorize("hasRole('EMPLOYEE') or hasRole('SUPPORT_AGENT')")
     @Operation(summary = "Get Message by ID")
     public ResponseEntity<SupportMessageResponse> getById(@PathVariable Long id) {
         return ResponseEntity.ok(service.getById(id));
     }
 
     @GetMapping("/ticket/{ticketId}")
-    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('EMPLOYEE') or hasRole('SUPPORT_AGENT')")
+    @PreAuthorize("hasRole('EMPLOYEE') or hasRole('SUPPORT_AGENT')")
     @Operation(summary = "Get Messages by Ticket")
     public ResponseEntity<Page<SupportMessageResponse>> getByTicket(
             @PathVariable Long ticketId,
@@ -45,21 +45,21 @@ public class SupportMessageController {
     }
 
     @GetMapping("/ticket/{ticketId}/external")
-    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('EMPLOYEE') or hasRole('SUPPORT_AGENT')")
+    @PreAuthorize("hasRole('EMPLOYEE') or hasRole('SUPPORT_AGENT')")
     @Operation(summary = "Get External Messages by Ticket")
     public ResponseEntity<List<SupportMessageResponse>> getExternalMessages(@PathVariable Long ticketId) {
         return ResponseEntity.ok(service.getExternalMessages(ticketId));
     }
 
     @GetMapping("/ticket/{ticketId}/internal")
-    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPPORT_AGENT') or hasRole('SUPPORT_MANAGER')")
+    @PreAuthorize("hasRole('SUPPORT_AGENT') or hasRole('SUPPORT_MANAGER')")
     @Operation(summary = "Get Internal Notes by Ticket")
     public ResponseEntity<List<SupportMessageResponse>> getInternalNotes(@PathVariable Long ticketId) {
         return ResponseEntity.ok(service.getInternalNotes(ticketId));
     }
 
     @PatchMapping("/{id}")
-    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPPORT_AGENT') or hasRole('EMPLOYEE')")
+    @PreAuthorize("hasRole('SUPPORT_AGENT') or hasRole('EMPLOYEE')")
     @Operation(summary = "Update Message")
     public ResponseEntity<SupportMessageResponse> update(
             @PathVariable Long id,
@@ -68,7 +68,7 @@ public class SupportMessageController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPPORT_MANAGER') or hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasRole('SUPPORT_MANAGER') or hasRole('COMPANY_ADMIN')")
     @Operation(summary = "Delete Message")
     public ResponseEntity<SupportMessageResponse> delete(@PathVariable Long id) {
         return ResponseEntity.ok(service.delete(id));

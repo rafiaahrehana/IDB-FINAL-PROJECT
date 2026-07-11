@@ -1,58 +1,87 @@
-<nav class="navbar appbar px-3 d-flex align-items-center justify-content-between">
-  <div class="d-flex align-items-center gap-3 min-w-0">
-    <button type="button" class="btn btn-light border-0 p-2 d-md-none" (click)="toggleSidebar()" aria-label="Toggle menu">
-      <i class="bi bi-list fs-5"></i>
+<header class="navbar-shell">
+  <div class="navbar-left">
+    <button class="navbar-menu-btn" (click)="onToggleMobileSidebar()" aria-label="Toggle sidebar">
+      <i class="bi bi-list" style="font-size: 20px;"></i>
     </button>
-    <div class="d-flex align-items-center gap-2">
-      <div class="d-flex align-items-center justify-content-center bg-primary text-white rounded-3" style="width: 32px; height: 32px;">
-        <i class="bi bi-boxes fs-6"></i>
-      </div>
-      <span class="fw-bold text-dark mb-0" style="font-size: 1.05rem;">BusinessOS</span>
+
+    <div class="navbar-search-trigger" (click)="showSearch.set(true)">
+      <i class="bi bi-search" style="font-size: 14px;"></i>
+      <span>Search...</span>
+      <kbd>Ctrl+K</kbd>
     </div>
-    <nav aria-label="breadcrumb" class="d-none d-lg-flex align-items-center ms-1">
-      <ol class="breadcrumb mb-0">
-        @for (crumb of breadcrumb; track $index) {
-          <li class="breadcrumb-item" [class.active]="$last" [attr.aria-current]="$last ? 'page' : null">
-            @if (!$last) { <span class="text-muted small">{{ crumb }}</span> }
-            @else { <span class="small fw-semibold text-dark">{{ crumb }}</span> }
-          </li>
-        }
-      </ol>
-    </nav>
   </div>
 
-  <form class="d-none d-md-flex position-relative mx-auto" style="width: 360px" (submit)="goSearch(); $event.preventDefault()">
-    <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
-    <input class="form-control form-control-sm ps-5" style="height: 38px" placeholder="Search everything..." [(ngModel)]="searchQuery" name="q" />
-  </form>
-
-  <div class="d-flex align-items-center gap-2">
-    <a class="btn btn-light border-0 p-2" href="/ai" aria-label="AI Assistant" title="AI Assistant">
-      <i class="bi bi-stars fs-5"></i>
+  <div class="navbar-right">
+    <a class="navbar-icon-btn" routerLink="/ai" title="AI Assistant">
+      <i class="bi bi-stars" style="font-size: 18px;"></i>
     </a>
+
     <app-notification-bell />
-    <div class="dropdown">
-      <a class="btn btn-light border-0 p-2 dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-label="Profile">
-        <span class="d-flex align-items-center justify-content-center bg-primary text-white fw-semibold rounded-circle" style="width: 32px; height: 32px; font-size: 0.8rem;">
-          {{ ((auth.currentUser$ | async)?.firstName || 'U').substring(0,1).toUpperCase() }}
-        </span>
-      </a>
-      <ul class="dropdown-menu dropdown-menu-end border shadow-sm mt-2" style="min-width: 200px;">
-        <li class="dropdown-header small text-muted px-3">
-          {{ ((auth.currentUser$ | async)?.firstName || '') + ' ' + ((auth.currentUser$ | async)?.lastName || '') || 'Account' }}
-        </li>
-        <li><hr class="dropdown-divider"></li>
-        <li>
-          <a class="dropdown-item d-flex align-items-center gap-2 py-2" href="/notifications/preferences">
-            <i class="bi bi-gear text-muted"></i>Settings
+
+    <div class="dropdown-shadcn">
+      <button class="navbar-user-btn" (click)="toggleUserMenu()">
+        <div class="navbar-avatar">
+          {{ getInitials(currentUser?.fullName) }}
+        </div>
+        <div class="navbar-user-info">
+          <span class="navbar-user-name">{{ currentUser?.fullName || 'User' }}</span>
+          <span class="navbar-user-role">{{ currentUser?.roles?.[0] || 'User' }}</span>
+        </div>
+        <i class="bi bi-chevron-down" style="font-size: 14px;"></i>
+      </button>
+
+      @if (showUserMenu()) {
+        <div class="dropdown-menu" (mouseleave)="closeUserMenu()">
+          <div class="dropdown-header">
+            <div class="dropdown-header-name">{{ currentUser?.fullName || 'User' }}</div>
+            <div class="dropdown-header-email">{{ currentUser?.email || '' }}</div>
+          </div>
+          <div class="dropdown-separator"></div>
+          <a class="dropdown-item" routerLink="/dashboard" (click)="closeUserMenu()">
+            <i class="bi bi-grid" style="font-size: 16px;"></i>
+            <span>Dashboard</span>
           </a>
-        </li>
-        <li>
-          <a class="dropdown-item d-flex align-items-center gap-2 py-2 text-danger" role="button" (click)="auth.logout()">
-            <i class="bi bi-box-arrow-right"></i>Logout
+          <a class="dropdown-item" routerLink="/notifications/preferences" (click)="closeUserMenu()">
+            <i class="bi bi-gear" style="font-size: 16px;"></i>
+            <span>Settings</span>
           </a>
-        </li>
-      </ul>
+          <div class="dropdown-separator"></div>
+          <button class="dropdown-item dropdown-item-destructive" (click)="onLogout()">
+            <i class="bi bi-box-arrow-right" style="font-size: 16px;"></i>
+            <span>Log out</span>
+          </button>
+        </div>
+      }
     </div>
   </div>
-</nav>
+</header>
+
+@if (showSearch()) {
+  <div class="search-overlay" (click)="showSearch.set(false)">
+    <div class="search-dialog" (click)="$event.stopPropagation()">
+      <div class="search-input-wrapper">
+        <i class="bi bi-search" style="font-size: 18px;"></i>
+        <input type="text"
+               class="search-input"
+               placeholder="Search leads, accounts, tickets..."
+               [(ngModel)]="searchQuery"
+               (keyup.enter)="onSearch()"
+               (keyup.escape)="showSearch.set(false)"
+               autofocus />
+        <button class="search-close-btn" (click)="showSearch.set(false)">
+          <kbd>Esc</kbd>
+        </button>
+      </div>
+      <div class="search-actions">
+        <button class="search-action-btn" (click)="onSearch()">
+          <i class="bi bi-search" style="font-size: 14px;"></i>
+          Search
+        </button>
+        <button class="search-action-btn search-action-ai" (click)="onSearchAi()">
+          <i class="bi bi-stars" style="font-size: 14px;"></i>
+          Ask AI
+        </button>
+      </div>
+    </div>
+  </div>
+}

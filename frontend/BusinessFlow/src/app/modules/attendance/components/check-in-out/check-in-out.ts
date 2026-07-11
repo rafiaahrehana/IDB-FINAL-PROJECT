@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AttendanceRecord } from '../../models/attendance.model';
@@ -20,7 +20,7 @@ export class CheckInOut implements OnInit {
   notes = '';
   location = '';
 
-  constructor(private attendanceService: AttendanceService) {}
+  constructor(private attendanceService: AttendanceService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.loadRecent();
@@ -28,16 +28,19 @@ export class CheckInOut implements OnInit {
 
   loadRecent(): void {
     this.loading = true;
+    this.cdr.markForCheck();
     this.attendanceService.list(0, 10).subscribe({
       next: (res) => {
         this.recentRecords = res.content;
         const today = new Date().toISOString().split('T')[0];
         this.todayRecord = res.content.find((r) => r.attendanceDate === today);
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.error = 'Failed to load attendance';
         this.loading = false;
+        this.cdr.markForCheck();
       },
     });
   }

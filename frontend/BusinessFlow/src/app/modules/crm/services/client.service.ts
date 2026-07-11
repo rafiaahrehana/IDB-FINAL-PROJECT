@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService, PagedResponse } from '../../../core/services/api.service';
-import { Client, ClientSelfRegisterRequest } from '../models/crm.model';
+import { Client } from '../models/crm.model';
 
 @Injectable({ providedIn: 'root' })
 export class ClientService {
@@ -17,6 +17,7 @@ export class ClientService {
     return this.api.get<Client>(`${this.endpoint}/${id}`);
   }
 
+  // Backend CreateClientRequest also takes email + password to provision the portal user
   create(payload: any): Observable<Client> {
     return this.api.post<Client>(this.endpoint, payload);
   }
@@ -27,9 +28,5 @@ export class ClientService {
 
   delete(id: number): Observable<void> {
     return this.api.delete<void>(`${this.endpoint}/${id}`);
-  }
-
-  selfRegister(payload: ClientSelfRegisterRequest): Observable<any> {
-    return this.api.post<any>(`${this.endpoint}/self-register`, payload);
   }
 }

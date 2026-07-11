@@ -21,7 +21,6 @@ public class SupportAgent extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(length = 50)
-    @Builder.Default
     private SupportAgentStatus status = SupportAgentStatus.ACTIVE;
 
     @Builder.Default

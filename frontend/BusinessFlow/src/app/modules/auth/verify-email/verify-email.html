@@ -1,0 +1,93 @@
+<div class="login-container d-flex vh-100 bg-white">
+  <div class="brand-panel d-none d-lg-flex flex-column justify-content-between p-5 text-white col-lg-6">
+    <div class="brand-pattern"></div>
+    <div class="d-flex align-items-center gap-2 position-relative z-1">
+      <div class="d-flex align-items-center justify-content-center bg-white rounded-3 text-primary shadow-sm" style="width: 36px; height: 36px;">
+        <i class="bi bi-intersect fs-5"></i>
+      </div>
+      <span class="h4 mb-0 fw-bold tracking-tight" style="font-family: 'Outfit', sans-serif;">BusinessOS</span>
+    </div>
+
+    <div class="brand-text position-relative z-1 mb-5">
+      <h1 class="display-5 fw-bold mb-3" style="font-family: 'Outfit', sans-serif;">One Last Step</h1>
+      <p class="fs-5 text-white-50 leading-relaxed">Confirming your email keeps your workspace secure and unlocks your free trial.</p>
+    </div>
+
+    <div class="brand-footer position-relative z-1 text-white-50 small">
+      &copy; 2026 BusinessOS Inc. All rights reserved.
+    </div>
+  </div>
+
+  <div class="form-panel d-flex align-items-center justify-content-center p-4 col-12 col-lg-6 bg-light bg-gradient">
+    <div class="card border-0 shadow-lg p-3 rounded-4 w-100" style="max-width: 420px; border-radius: 20px !important;">
+      <div class="card-body text-center py-4">
+
+        @switch (state) {
+          @case ('verifying') {
+            <div class="spinner-border text-primary mb-3" role="status"></div>
+            <h3 class="fw-bold text-slate-800" style="font-family: 'Outfit', sans-serif;">Verifying your email...</h3>
+            <p class="text-secondary">This will only take a moment.</p>
+          }
+
+          @case ('success') {
+            <div class="d-inline-flex align-items-center justify-content-center bg-success bg-opacity-10 text-success rounded-circle mb-3" style="width: 64px; height: 64px;">
+              <i class="bi bi-check-lg fs-2"></i>
+            </div>
+            <h3 class="fw-bold text-slate-800" style="font-family: 'Outfit', sans-serif;">Email verified</h3>
+            <p class="text-secondary">Your company workspace is now active. You're all set to sign in.</p>
+            <a routerLink="/auth/login" class="btn btn-primary rounded-3 fw-bold px-4 mt-2">Sign In</a>
+          }
+
+          @case ('missing-token') {
+            <div class="d-inline-flex align-items-center justify-content-center bg-danger bg-opacity-10 text-danger rounded-circle mb-3" style="width: 64px; height: 64px;">
+              <i class="bi bi-exclamation-triangle fs-2"></i>
+            </div>
+            <h3 class="fw-bold text-slate-800" style="font-family: 'Outfit', sans-serif;">Missing verification link</h3>
+            <p class="text-secondary">Please use the link from your verification email, or request a new one below.</p>
+          }
+
+          @case ('error') {
+            <div class="d-inline-flex align-items-center justify-content-center bg-danger bg-opacity-10 text-danger rounded-circle mb-3" style="width: 64px; height: 64px;">
+              <i class="bi bi-exclamation-triangle fs-2"></i>
+            </div>
+            <h3 class="fw-bold text-slate-800" style="font-family: 'Outfit', sans-serif;">Verification failed</h3>
+            <p class="text-secondary">{{ errorMessage }}</p>
+          }
+        }
+
+        @if (state === 'error' || state === 'missing-token') {
+          <hr class="my-3" />
+          @if (resendSubmitted) {
+            <div class="alert alert-success rounded-3 small text-start" role="alert">
+              <i class="bi bi-check-circle me-1"></i>
+              If an unverified account exists with that email, a new verification link has been sent.
+            </div>
+          } @else {
+            <p class="small fw-bold text-secondary text-start mb-2">Resend verification email</p>
+            @if (resendError) {
+              <div class="alert alert-danger py-2 px-3 rounded-3 mb-2 small text-start" role="alert">{{ resendError }}</div>
+            }
+            <form [formGroup]="resendForm" (ngSubmit)="resend()" class="text-start">
+              <div class="mb-2">
+                <input type="email" class="form-control" [formControlName]="'email'" placeholder="name@company.com"
+                       [class.is-invalid]="resendForm.controls.email.touched && resendForm.controls.email.invalid" />
+                <div class="invalid-feedback">A valid email address is required</div>
+              </div>
+              <button class="btn btn-outline-primary w-100 rounded-3 fw-bold" [disabled]="resendLoading">
+                @if (resendLoading) {
+                  <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                  Sending...
+                } @else {
+                  Resend Verification Email
+                }
+              </button>
+            </form>
+          }
+          <p class="text-center small text-secondary mt-3 mb-0">
+            <a routerLink="/auth/login" class="fw-bold text-decoration-none"><i class="bi bi-arrow-left me-1"></i>Back to Sign In</a>
+          </p>
+        }
+      </div>
+    </div>
+  </div>
+</div>

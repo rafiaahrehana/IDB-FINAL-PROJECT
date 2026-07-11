@@ -26,6 +26,16 @@
           </table>
         </div>
         @if (request.description) { <div class="card-footer small">{{ request.description }}</div> }
+        @if (formAnswers.length) {
+        <div class="card-footer">
+          <div class="small fw-semibold text-secondary mb-1"><i class="bi bi-ui-checks me-1"></i>Service Details</div>
+          <div class="row g-1">
+            @for (a of formAnswers; track a.label) {
+            <div class="col-md-6 small"><span class="text-muted">{{ a.label }}:</span> <span class="fw-medium">{{ a.value }}</span></div>
+            }
+          </div>
+        </div>
+        }
       </div>
     </div>
 
@@ -51,6 +61,87 @@
       </div>
     </div>
 
+    @if (isStaff || (isClient && request.status !== 'COMPLETED' && request.status !== 'CANCELLED' && request.status !== 'REJECTED')) {
+    <div class="col-lg-6">
+      <div class="card h-100">
+        <div class="card-header py-2 fw-semibold">Manage</div>
+        <div class="card-body">
+          @if (isStaff) {
+          <div class="row g-2 align-items-end mb-3">
+            <div class="col-md-4">
+              <label class="form-label small text-secondary mb-1">Status</label>
+              <select class="form-select form-select-sm" [(ngModel)]="newStatus">
+                @for (s of requestStatuses; track s) { <option [value]="s">{{ s.replaceAll('_', ' ') }}</option> }
+              </select>
+            </div>
+            <div class="col-md-5">
+              <label class="form-label small text-secondary mb-1">Reason (optional)</label>
+              <input class="form-control form-control-sm" [(ngModel)]="statusReason" />
+            </div>
+            <div class="col-md-3">
+              <button class="btn btn-primary btn-sm w-100" [disabled]="newStatus === request.status" (click)="changeStatus()">Update</button>
+            </div>
+          </div>
+          <div class="row g-2 align-items-end mb-3">
+            <div class="col-md-9">
+              <label class="form-label small text-secondary mb-1">Assign To</label>
+              <select class="form-select form-select-sm" [(ngModel)]="assignEmployeeId">
+                <option [ngValue]="null">— Select employee —</option>
+                @for (e of employees; track e.id) { <option [ngValue]="e.id">{{ e.firstName }} {{ e.lastName || '' }}</option> }
+              </select>
+            </div>
+            <div class="col-md-3">
+              <button class="btn btn-outline-primary btn-sm w-100" [disabled]="!assignEmployeeId" (click)="assign()">Assign</button>
+            </div>
+          </div>
+          }
+          @if (request.status !== 'COMPLETED' && request.status !== 'CANCELLED' && request.status !== 'REJECTED') {
+          <button class="btn btn-outline-danger btn-sm" (click)="cancel()">
+            <i class="bi bi-x-circle me-1"></i>Cancel Request
+          </button>
+          }
+        </div>
+      </div>
+    </div>
+    }
+
+    @if (isStaff) {
+    <div class="col-lg-6">
+      <div class="card h-100">
+        <div class="card-header py-2 d-flex justify-content-between align-items-center">
+          <span class="fw-semibold">Tasks ({{ tasks.length }})</span>
+          <button class="btn btn-outline-primary btn-sm" (click)="showTaskForm = !showTaskForm">
+            <i class="bi bi-plus-lg"></i>
+          </button>
+        </div>
+        <div class="card-body">
+          @if (showTaskForm) {
+          <div class="row g-2 mb-3">
+            <div class="col-md-8"><input class="form-control form-control-sm" placeholder="Task title *" [(ngModel)]="newTask.title" (keyup.enter)="addTask()" /></div>
+            <div class="col-md-4"><input type="date" class="form-control form-control-sm" [(ngModel)]="newTask.dueDate" /></div>
+            <div class="col-12"><input class="form-control form-control-sm" placeholder="Description (optional)" [(ngModel)]="newTask.description" /></div>
+            <div class="col-12"><button class="btn btn-primary btn-sm" [disabled]="!newTask.title?.trim()" (click)="addTask()">Add Task</button></div>
+          </div>
+          }
+          @for (task of tasks; track task.id) {
+          <div class="d-flex gap-2 align-items-center border-bottom py-2 small">
+            <div class="flex-grow-1">
+              <span [class.text-decoration-line-through]="task.status === 'COMPLETED'" class="fw-medium">{{ task.title }}</span>
+              @if (task.assignedEmployeeName) { <span class="text-muted ms-1">· {{ task.assignedEmployeeName }}</span> }
+              @if (task.dueDate) { <span class="text-muted ms-1">· due {{ task.dueDate | date:'mediumDate' }}</span> }
+            </div>
+            <select class="form-select form-select-sm" style="width: 140px" [ngModel]="task.status" (ngModelChange)="setTaskStatus(task, $event)">
+              @for (s of taskStatuses; track s) { <option [value]="s">{{ s.replaceAll('_', ' ') }}</option> }
+            </select>
+            <button class="btn btn-outline-danger btn-sm" (click)="deleteTask(task)" title="Delete"><i class="bi bi-trash"></i></button>
+          </div>
+          }
+          @if (!tasks.length) { <p class="text-muted small mb-0">No tasks yet.</p> }
+        </div>
+      </div>
+    </div>
+    }
+
     <div class="col-lg-6">
       <div class="card h-100">
         <div class="card-header py-2 fw-semibold">Quotation</div>
@@ -65,14 +156,14 @@
             </tbody>
           </table>
           }
-          @if (request?.quotationStatus === 'PENDING') {
+          @if (request?.quotationStatus === 'PENDING' && canDecideQuotation) {
           <div class="d-flex gap-2 mb-3">
             <button class="btn btn-success btn-sm" (click)="acceptQuotation()">Accept</button>
             <input class="form-control form-control-sm" placeholder="Rejection reason" [(ngModel)]="rejectReason" style="max-width:200px" />
             <button class="btn btn-outline-danger btn-sm" (click)="rejectQuotation()">Reject</button>
           </div>
           }
-          @if (!request?.quotationAmount || request?.quotationStatus === 'REJECTED') {
+          @if (isStaff && (!request?.quotationAmount || request?.quotationStatus === 'REJECTED')) {
           <h6 class="small fw-semibold">Submit a Quotation</h6>
           <div class="row g-2">
             <div class="col-6">
@@ -115,6 +206,7 @@
       </div>
     </div>
 
+    @if (isStaff) {
     <div class="col-lg-6">
       <div class="card h-100">
         <div class="card-header py-2 fw-semibold">Status History</div>
@@ -130,6 +222,7 @@
         </div>
       </div>
     </div>
+    }
   </div>
   }
 </div>

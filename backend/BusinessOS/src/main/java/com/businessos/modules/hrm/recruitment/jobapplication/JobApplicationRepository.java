@@ -1,6 +1,6 @@
 package com.businessos.modules.hrm.recruitment.jobapplication;
 
-import com.businessos.modules.hrm.recruitment.ApplicationStatus;
+import com.businessos.enums.ApplicationStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

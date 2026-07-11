@@ -2,7 +2,7 @@ package com.businessos.core.scheduler;
 
 
 import com.businessos.modules.hrm.recruitment.jobpost.JobPostingRepository;
-import com.businessos.modules.hrm.recruitment.jobpost.JobPostingStatus;
+import com.businessos.enums.JobPostingStatus;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.scheduling.annotation.Scheduled;

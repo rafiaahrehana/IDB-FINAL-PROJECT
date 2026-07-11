@@ -28,6 +28,8 @@ export interface ServiceRequest {
   quotationNotes?: string;
   quotationValidUntil?: string;
   quotationStatus?: QuotationStatus;
+  // Client answers to the service's dynamic form fields, keyed by field id
+  formData?: Record<string, string>;
 }
 
 export interface StageApproval {
@@ -135,6 +137,7 @@ export interface CompanyService {
   online: boolean;
   maximumOrders?: number;
   autoApproval: boolean;
+  requiresQuotation?: boolean;
   createdAt: string;
 }
 
@@ -378,4 +381,9 @@ export interface ServiceReviewRequest {
   serviceRequestId: number;
   rating: number;
   comment?: string;
+}
+
+export interface AverageRating {
+  average: number;
+  count?: number;
 }

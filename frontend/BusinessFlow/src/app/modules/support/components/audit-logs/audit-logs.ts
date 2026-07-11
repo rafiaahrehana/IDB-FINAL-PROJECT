@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SupportAuditLog } from '../../models/support.model';
@@ -25,7 +25,7 @@ export class AuditLogs implements OnInit {
   startDate = '';
   endDate = '';
 
-  constructor(private auditService: AuditLogService) {}
+  constructor(private auditService: AuditLogService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.load();
@@ -33,6 +33,7 @@ export class AuditLogs implements OnInit {
 
   load(): void {
     this.loading = true;
+    this.cdr.markForCheck();
     this.error = '';
 
     let obs;
@@ -51,10 +52,12 @@ export class AuditLogs implements OnInit {
         this.logs = res.content;
         this.totalPages = res.totalPages;
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.error = 'Failed to load audit logs';
         this.loading = false;
+        this.cdr.markForCheck();
       },
     });
   }

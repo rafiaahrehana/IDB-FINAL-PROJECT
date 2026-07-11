@@ -19,6 +19,7 @@ export class ServicePackageService {
     return this.api.getPaged<ServicePackage>(this.endpoint, page, size);
   }
 
+  // Backend returns a bare List (not a Page) of active packages
   listActive(): Observable<ServicePackage[]> {
     return this.api.get<ServicePackage[]>(`${this.endpoint}/active`);
   }
@@ -39,8 +40,8 @@ export class ServicePackageService {
     return this.api.patch<ServicePackage>(`${this.endpoint}/${id}/toggle`, {});
   }
 
-  delete(id: number): Observable<void> {
-    return this.api.delete<void>(`${this.endpoint}/${id}`);
+  delete(id: number): Observable<string> {
+    return this.api.deleteText(`${this.endpoint}/${id}`);
   }
 
   // SUBSCRIPTIONS
@@ -64,18 +65,19 @@ export class ServicePackageService {
     return this.api.patch<PackageSubscription>(`${this.endpoint}/subscriptions/${id}/activate`, {});
   }
 
-  suspendSubscription(id: number): Observable<PackageSubscription> {
-    return this.api.patch<PackageSubscription>(`${this.endpoint}/subscriptions/${id}/suspend`, {});
+  // Backend takes the reason as an optional ?reason= query param on both of these -
+  // a JSON body is silently ignored by @RequestParam binding.
+  suspendSubscription(id: number, reason?: string): Observable<PackageSubscription> {
+    const q = reason ? `?reason=${encodeURIComponent(reason)}` : '';
+    return this.api.patch<PackageSubscription>(`${this.endpoint}/subscriptions/${id}/suspend${q}`, {});
   }
 
   reactivateSubscription(id: number): Observable<PackageSubscription> {
     return this.api.patch<PackageSubscription>(`${this.endpoint}/subscriptions/${id}/reactivate`, {});
   }
 
-  cancelSubscription(id: number, cancellationReason?: string): Observable<PackageSubscription> {
-    const url = cancellationReason
-      ? `${this.endpoint}/subscriptions/${id}/cancel?reason=${encodeURIComponent(cancellationReason)}`
-      : `${this.endpoint}/subscriptions/${id}/cancel`;
-    return this.api.patch<PackageSubscription>(url, {});
+  cancelSubscription(id: number, reason?: string): Observable<PackageSubscription> {
+    const q = reason ? `?reason=${encodeURIComponent(reason)}` : '';
+    return this.api.patch<PackageSubscription>(`${this.endpoint}/subscriptions/${id}/cancel${q}`, {});
   }
 }

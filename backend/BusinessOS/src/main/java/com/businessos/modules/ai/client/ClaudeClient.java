@@ -8,6 +8,7 @@ import lombok.Setter;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
@@ -48,7 +49,7 @@ public class ClaudeClient implements AiHttpClient {
         } catch (AiProviderException e) {
             throw e;
         } catch (Exception e) {
-            throw new AiProviderException("Claude API call failed: " + e.getMessage());
+            throw new AiProviderException("Claude API call failed: " + e.getMessage(), isRetryable(e));
         }
     }
 
@@ -59,5 +60,12 @@ public class ClaudeClient implements AiHttpClient {
         } catch (Exception e) {
             throw new AiProviderException("Failed to parse Claude response: " + e.getMessage());
         }
+    }
+
+    private boolean isRetryable(Exception e) {
+        if (e instanceof HttpClientErrorException client) {
+            return client.getStatusCode().value() == 429;
+        }
+        return true;
     }
 }

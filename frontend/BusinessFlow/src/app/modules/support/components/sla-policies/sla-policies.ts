@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SLAPolicy, SLAPolicyRequest } from '../../models/support.model';
@@ -25,7 +25,7 @@ export class SlaPolicies implements OnInit {
 
   priorities = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'];
 
-  constructor(private slaService: SLAPolicyService) {}
+  constructor(private slaService: SLAPolicyService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.load();
@@ -46,14 +46,17 @@ export class SlaPolicies implements OnInit {
 
   load(): void {
     this.loading = true;
+    this.cdr.markForCheck();
     this.slaService.list(0, 100).subscribe({
       next: (res) => {
         this.policies = res.content;
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.error = 'Failed to load SLA policies';
         this.loading = false;
+        this.cdr.markForCheck();
       },
     });
   }

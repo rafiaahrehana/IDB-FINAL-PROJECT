@@ -1,45 +1,48 @@
-<div class="container-fluid py-3">
-  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-    <h4 class="mb-0">Support Tickets</h4>
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h4 class="page-title">Support Tickets</h4>
+    </div>
     <div class="d-flex gap-2 flex-wrap">
+      @if (isManager) {
       <div class="form-check form-switch mb-0 d-flex align-items-center gap-1">
-        <input class="form-check-input" type="checkbox" id="slaToggle" [(ngModel)]="showSlaOnly" (change)="page=0;load()" />
+        <input class="form-check-input" type="checkbox" id="slaToggle" [(ngModel)]="showSlaOnly" (change)="showCriticalOnly=false;page=0;load()" />
         <label class="form-check-label small" for="slaToggle">SLA Breached only</label>
       </div>
-      <select class="form-select form-select-sm" style="width:160px" [(ngModel)]="statusFilter" (change)="page=0;load()" [disabled]="showSlaOnly">
+      <div class="form-check form-switch mb-0 d-flex align-items-center gap-1">
+        <input class="form-check-input" type="checkbox" id="criticalToggle" [(ngModel)]="showCriticalOnly" (change)="showSlaOnly=false;page=0;load()" />
+        <label class="form-check-label small" for="criticalToggle">Critical open only</label>
+      </div>
+      <select class="select-shadcn input-shadcn-sm" style="width:160px" [(ngModel)]="statusFilter" (change)="page=0;load()" [disabled]="showSlaOnly || showCriticalOnly">
         <option value="">All statuses</option>
         @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
       </select>
-      <button class="btn btn-primary btn-sm" (click)="showCreate = !showCreate; form = {}"><i class="bi bi-plus"></i> New Ticket</button>
+      }
+      <button class="btn-shadcn btn-shadcn-primary btn-shadcn-sm" (click)="showCreate = !showCreate; form = {}"><i class="bi bi-plus"></i> New Ticket</button>
     </div>
   </div>
-  @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
-  @if (success) { <div class="alert alert-success py-2">{{ success }}</div> }
+  @if (error) { <div class="badge-shadcn badge-shadcn-destructive py-2 px-3">{{ error }}</div> }
+  @if (success) { <div class="badge-shadcn badge-shadcn-success py-2 px-3">{{ success }}</div> }
   @if (loading) { <app-loader /> }
 
   @if (showCreate) {
-  <div class="card mb-3">
-    <div class="card-header py-2 fw-semibold">New Ticket</div>
-    <div class="card-body">
+  <div class="card-shadcn">
+    <div class="card-shadcn-header" style="padding: 1rem 1.5rem;"><div class="card-shadcn-title" style="font-size: 0.9375rem;">New Ticket</div></div>
+    <div class="card-shadcn-content">
       <div class="row g-2">
-        <div class="col-md-6"><input class="form-control form-control-sm" placeholder="Title *" [(ngModel)]="form.title" /></div>
+        <div class="col-md-6"><input class="input-shadcn input-shadcn-sm" placeholder="Title *" [(ngModel)]="form.title" /></div>
         <div class="col-md-3">
-          <select class="form-select form-select-sm" [(ngModel)]="form.priority">
+          <select class="select-shadcn input-shadcn-sm" [(ngModel)]="form.priority">
             <option value="">Priority</option>
             <option value="LOW">Low</option><option value="MEDIUM">Medium</option>
             <option value="HIGH">High</option><option value="CRITICAL">Critical</option>
           </select>
         </div>
-        <div class="col-md-3">
-          <select class="form-select form-select-sm" [(ngModel)]="form.categoryId">
-            <option [ngValue]="undefined">Category</option>
-            @for (c of categories; track c.id) { <option [ngValue]="c.id">{{ c.categoryName }}</option> }
-          </select>
-        </div>
-        <div class="col-12"><textarea class="form-control form-control-sm" rows="2" placeholder="Description" [(ngModel)]="form.description"></textarea></div>
+        <div class="col-md-3"><input class="input-shadcn input-shadcn-sm" placeholder="Category" [(ngModel)]="form.categoryName" /></div>
+        <div class="col-12"><textarea class="textarea-shadcn" rows="2" placeholder="Description" [(ngModel)]="form.description"></textarea></div>
         <div class="col-12 d-flex gap-2">
-          <button class="btn btn-primary btn-sm" (click)="create()">Submit</button>
-          <button class="btn btn-secondary btn-sm" (click)="showCreate = false">Cancel</button>
+          <button class="btn-shadcn btn-shadcn-primary btn-shadcn-sm" (click)="create()">Submit</button>
+          <button class="btn-shadcn btn-shadcn-outline btn-shadcn-sm" (click)="showCreate = false">Cancel</button>
         </div>
       </div>
     </div>
@@ -49,10 +52,10 @@
   <div class="row g-3">
     <div class="col-lg-7">
       @if (!loading && tickets.length) {
-      <div class="card">
-        <div class="table-responsive">
-          <table class="table table-hover table-sm align-middle mb-0">
-            <thead class="table-light"><tr><th>#</th><th>Title</th><th>Priority</th><th>Status</th><th>Agent</th><th>SLA</th></tr></thead>
+      <div class="card-shadcn">
+        <div class="table-shadcn-container">
+          <table class="table-shadcn">
+            <thead><tr><th>#</th><th>Title</th><th>Priority</th><th>Status</th><th>Agent</th><th>SLA</th></tr></thead>
             <tbody>
               @for (t of tickets; track t.id) {
               <tr role="button" (click)="view(t)" [class.table-danger]="t.slaBreached">
@@ -61,13 +64,13 @@
                 <td><span class="badge {{ priorityClass(t.priority) }}">{{ t.priority }}</span></td>
                 <td><span class="badge {{ statusClass(t.status) }}">{{ t.status }}</span></td>
                 <td>{{ t.assignedToAgentName || '-' }}</td>
-                <td>@if (t.slaBreached) { <span class="badge text-bg-danger">BREACHED</span> }</td>
+                <td>@if (t.slaBreached) { <span class="badge-shadcn badge-shadcn-destructive">BREACHED</span> }</td>
               </tr>
               }
             </tbody>
           </table>
         </div>
-        <div class="card-footer d-flex justify-content-end">
+        <div class="card-shadcn-footer d-flex justify-content-end">
           <app-pagination [page]="page" [totalPages]="totalPages" (pageChange)="goToPage($event)" />
         </div>
       </div>
@@ -77,12 +80,12 @@
 
     @if (selected) {
     <div class="col-lg-5">
-      <div class="card">
-        <div class="card-header py-2 d-flex justify-content-between">
-          <span class="fw-semibold">{{ selected.ticketNumber }}</span>
+      <div class="card-shadcn">
+        <div class="card-shadcn-header" style="padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+          <span class="card-shadcn-title" style="font-size: 0.9375rem;">{{ selected.ticketNumber }}</span>
           <span class="badge {{ statusClass(selected.status) }}">{{ selected.status }}</span>
         </div>
-        <div class="card-body">
+        <div class="card-shadcn-content">
           <h6>{{ selected.title }}</h6>
           <p class="small text-muted">{{ selected.description }}</p>
           <dl class="row small mb-0">
@@ -92,32 +95,70 @@
             <dt class="col-5 text-muted">Created By</dt><dd class="col-7">{{ selected.createdByName }}</dd>
           </dl>
         </div>
-        <div class="card-footer d-flex flex-column gap-2">
-          <a class="btn btn-outline-secondary btn-sm" [routerLink]="['/support/messages']" [queryParams]="{ticketId: selected.id}">
+        <div class="card-shadcn-footer d-flex flex-column gap-2">
+          <a class="btn-shadcn btn-shadcn-outline btn-shadcn-sm" [routerLink]="['/support/messages']" [queryParams]="{ticketId: selected.id}">
             <i class="bi bi-chat-dots"></i> View Messages
           </a>
           @if (!selected.assignedToAgentId && agents.length) {
           <div class="input-group input-group-sm">
-            <select class="form-select" [(ngModel)]="assignAgentId">
+            <select class="select-shadcn" [(ngModel)]="assignAgentId">
               <option [ngValue]="undefined">Select agent...</option>
               @for (a of agents; track a.id) { <option [ngValue]="a.id">{{ a.fullName }}</option> }
             </select>
-            <button class="btn btn-primary" (click)="assign()">Assign</button>
+            <button class="btn-shadcn btn-shadcn-primary" (click)="assign()">Assign</button>
           </div>
           }
           @if (selected.status !== 'RESOLVED' && selected.status !== 'CLOSED') {
-          <textarea class="form-control form-control-sm" rows="2" placeholder="Resolution notes" [(ngModel)]="resolutionNotes"></textarea>
+          <textarea class="textarea-shadcn" rows="2" placeholder="Resolution notes" [(ngModel)]="resolutionNotes"></textarea>
           <div class="d-flex gap-2">
-            <button class="btn btn-success btn-sm" (click)="resolve()">Resolve</button>
-            <button class="btn btn-secondary btn-sm" (click)="close()">Close</button>
+            <button class="btn-shadcn btn-shadcn-primary btn-shadcn-sm" (click)="resolve()">Resolve</button>
+            <button class="btn-shadcn btn-shadcn-outline btn-shadcn-sm" (click)="close()">Close</button>
           </div>
           }
           @if (selected.status === 'RESOLVED' || selected.status === 'CLOSED') {
           <div class="input-group input-group-sm" style="width:260px">
-            <input class="form-control" placeholder="Reason for reopening" [(ngModel)]="reopenReason" />
-            <button class="btn btn-outline-warning" [disabled]="!reopenReason.trim()" (click)="reopen()">Reopen</button>
+            <input class="input-shadcn" placeholder="Reason for reopening" [(ngModel)]="reopenReason" />
+            <button class="btn-shadcn btn-shadcn-outline btn-shadcn-sm" [disabled]="!reopenReason.trim()" (click)="reopen()">Reopen</button>
           </div>
           }
+          @if (isManager) {
+          <hr class="my-3" />
+          <div class="row g-2">
+            <div class="col-md-6">
+              <div class="field-group"><label class="field-label">Escalate</label></div>
+              <div class="input-group input-group-sm">
+                <input class="input-shadcn" placeholder="Reason *" [(ngModel)]="escalateReason" />
+                <button class="btn-shadcn btn-shadcn-ghost btn-shadcn-sm" [disabled]="!escalateReason.trim()" (click)="escalate()">
+                  <i class="bi bi-arrow-up-circle me-1"></i>Escalate
+                </button>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="field-group"><label class="field-label">Reassign</label></div>
+              <div class="input-group input-group-sm">
+                <select class="select-shadcn" [(ngModel)]="reassignAgentId">
+                  <option [ngValue]="undefined">— Agent —</option>
+                  @for (a of agents; track a.id) { <option [ngValue]="a.id">{{ a.fullName }}</option> }
+                </select>
+                <input class="input-shadcn" placeholder="Reason *" [(ngModel)]="reassignReason" />
+                <button class="btn-shadcn btn-shadcn-primary btn-shadcn-sm" [disabled]="!reassignAgentId || !reassignReason.trim()" (click)="reassign()">Reassign</button>
+              </div>
+            </div>
+          </div>
+          }
+
+          @if (isEmployee && selected.status === 'RESOLVED') {
+          <hr class="my-3" />
+          <div class="field-group"><label class="field-label">How did we do?</label></div>
+          <div class="d-flex gap-2 align-items-start">
+            <select class="select-shadcn input-shadcn-sm" style="width:90px" [(ngModel)]="satisfactionRating">
+              @for (r of [5,4,3,2,1]; track r) { <option [ngValue]="r">{{ r }} ★</option> }
+            </select>
+            <input class="input-shadcn input-shadcn-sm" placeholder="Feedback *" [(ngModel)]="satisfactionFeedback" />
+            <button class="btn-shadcn btn-shadcn-primary btn-shadcn-sm text-nowrap" [disabled]="!satisfactionFeedback.trim()" (click)="submitSatisfaction()">Send</button>
+          </div>
+          }
+          </div>
         </div>
       </div>
     </div>

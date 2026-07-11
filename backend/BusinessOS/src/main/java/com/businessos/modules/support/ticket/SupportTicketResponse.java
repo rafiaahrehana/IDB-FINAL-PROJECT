@@ -38,9 +38,6 @@ public class SupportTicketResponse {
     private int escalationLevel;
     private LocalDateTime escalatedDate;
 
-    private Long clientId;
-    private String clientName;
-
     private String createdByName;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

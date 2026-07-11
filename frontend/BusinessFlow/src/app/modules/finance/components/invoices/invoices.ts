@@ -1,4 +1,5 @@
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { GatewayPaymentService } from '../../../../core/services/gateway-payment.service';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Invoice } from '../../models/finance.model';
@@ -22,13 +23,15 @@ export class Invoices implements OnInit {
   success = '';
   statusFilter = '';
   selected?: Invoice;
-  editing?: Invoice;
-  editPayload: any = {};
   paymentAmount: number | null = null;
   paymentMethod = 'BANK_TRANSFER';
   statuses = ['DRAFT', 'ISSUED', 'PARTIALLY_PAID', 'PAID', 'OVERDUE', 'CANCELLED'];
 
-  constructor(private invoiceService: InvoiceService) {}
+  constructor(
+    private invoiceService: InvoiceService,
+    private gatewayPayment: GatewayPaymentService,
+    private cdr: ChangeDetectorRef,
+  ) {}
 
   ngOnInit(): void {
     this.load();
@@ -36,6 +39,7 @@ export class Invoices implements OnInit {
 
   load(): void {
     this.loading = true;
+    this.cdr.markForCheck();
     const obs = this.statusFilter
       ? this.invoiceService.listByStatus(this.statusFilter, this.page)
       : this.invoiceService.list(this.page);
@@ -44,10 +48,12 @@ export class Invoices implements OnInit {
         this.invoices = res.content;
         this.totalPages = res.totalPages;
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.error = 'Failed to load invoices';
         this.loading = false;
+        this.cdr.markForCheck();
       },
     });
   }
@@ -67,55 +73,13 @@ export class Invoices implements OnInit {
   }
 
   markPaid(invoice: Invoice): void {
-    this.invoiceService.markPaid(invoice.id, invoice.balanceAmount ?? 0).subscribe({
+    this.invoiceService.markPaid(invoice.id).subscribe({
       next: () => {
         this.success = 'Marked as paid';
         this.load();
         if (this.selected?.id === invoice.id) this.view(invoice);
       },
       error: (err) => (this.error = err?.error?.message || 'Failed'),
-    });
-  }
-
-  remove(invoice: Invoice): void {
-    if (!window.confirm('Delete invoice ' + invoice.invoiceNumber + '?')) return;
-    this.invoiceService.delete(invoice.id).subscribe({
-      next: () => {
-        this.success = 'Invoice deleted';
-        this.load();
-        if (this.selected?.id === invoice.id) this.selected = undefined;
-      },
-      error: (err) => (this.error = err?.error?.message || 'Failed to delete invoice'),
-    });
-  }
-
-  openEdit(invoice: Invoice): void {
-    this.editing = invoice;
-    this.editPayload = {
-      invoiceDate: invoice.invoiceDate,
-      dueDate: invoice.dueDate,
-      notes: invoice.notes,
-    };
-  }
-
-  closeEdit(): void {
-    this.editing = undefined;
-    this.editPayload = {};
-  }
-
-  saveEdit(): void {
-    if (!this.editing) return;
-    this.invoiceService.update(this.editing.id, this.editPayload).subscribe({
-      next: () => {
-        this.success = 'Invoice updated';
-        this.closeEdit();
-        this.load();
-        if (this.selected?.id === this.editing?.id) this.view(this.selected!);
-      },
-      error: (err) => {
-        this.error = err?.error?.message || 'Failed to update invoice';
-        this.closeEdit();
-      },
     });
   }
 
@@ -132,6 +96,19 @@ export class Invoices implements OnInit {
         },
         error: (err) => (this.error = err?.error?.message || 'Failed'),
       });
+  }
+
+  // SSLCommerz checkout for the remaining balance; on validated success the
+  // backend records the payment (recordPaymentForCompany)
+  payOnline(): void {
+    if (!this.selected) return;
+    const remaining = (this.selected.totalAmount ?? 0) - (this.selected.paidAmount ?? 0);
+    if (remaining <= 0) {
+      this.error = 'This invoice has no outstanding balance';
+      return;
+    }
+    this.gatewayPayment.redirectToGateway('INVOICE', this.selected.id, remaining,
+      (msg) => (this.error = msg));
   }
 
   statusClass(s: string): string {

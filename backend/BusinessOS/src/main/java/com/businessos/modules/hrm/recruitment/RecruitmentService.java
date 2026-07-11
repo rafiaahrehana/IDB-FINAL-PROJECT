@@ -1,6 +1,7 @@
 package com.businessos.modules.hrm.recruitment;
 
 
+import com.businessos.enums.ApplicationStatus;
 import com.businessos.modules.hrm.recruitment.jobapplication.JobApplicationRequest;
 import com.businessos.modules.hrm.recruitment.jobapplication.JobApplicationResponse;
 import org.springframework.data.domain.Page;

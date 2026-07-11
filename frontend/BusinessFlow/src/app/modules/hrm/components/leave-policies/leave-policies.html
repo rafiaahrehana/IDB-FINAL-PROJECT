@@ -1,51 +1,61 @@
-<div class="container-fluid py-3" style="background-color: #f8fafc; min-height: 100vh;">
-  <!-- Header Bar -->
-  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4 bg-white p-3 rounded-3 shadow-sm">
+<div class="page-container">
+  <div class="page-header">
     <div>
-      <h4 class="mb-0 fw-bold text-dark"><i class="bi bi-shield-check text-primary me-2"></i>Leave Policies</h4>
-      <p class="text-muted small mb-0">Configure staff leave entitlement rules and approval requirements</p>
+      <h4 class="page-title"><i class="bi bi-shield-check text-primary me-2"></i>Leave Policies</h4>
+      <div class="page-subtitle">Configure staff leave entitlement rules and approval requirements</div>
     </div>
-    <button class="btn btn-primary btn-sm px-3 rounded-2 fw-medium" (click)="openCreate()"><i class="bi bi-plus-lg me-1"></i> Create Policy</button>
+    <button class="btn-shadcn btn-shadcn-primary btn-shadcn-sm" (click)="openCreate()"><i class="bi bi-plus-lg me-1"></i> Create Policy</button>
   </div>
 
-  @if (error) { <div class="alert alert-danger py-2 rounded-2 shadow-sm mb-3">{{ error }}</div> }
-  @if (success) { <div class="alert alert-success py-2 rounded-2 shadow-sm mb-3">{{ success }}</div> }
+  @if (error) { <div class="badge-shadcn badge-shadcn-destructive py-2 px-3">{{ error }}</div> }
+  @if (success) { <div class="badge-shadcn badge-shadcn-success py-2 px-3">{{ success }}</div> }
 
   @if (loading) { <app-loader /> }
 
-  <!-- Create/Edit Form Card -->
   @if (showForm) {
-  <div class="card border-0 shadow-sm rounded-3 mb-4">
-    <div class="card-header py-3 bg-light border-0 fw-semibold text-dark"><i class="bi bi-plus-circle me-2"></i>{{ isEdit ? 'Edit' : 'Create' }} Leave Policy</div>
-    <div class="card-body p-4">
+  <div class="card-shadcn mb-4">
+    <div class="card-shadcn-header"><div class="card-shadcn-title"><i class="bi bi-plus-circle me-2"></i>{{ isEdit ? 'Edit' : 'Create' }} Leave Policy</div></div>
+    <div class="card-shadcn-content">
       <div class="row g-3">
         <div class="col-md-3">
-          <label class="form-label small fw-semibold text-secondary mb-1">Leave Type <span class="text-danger">*</span></label>
-          <select class="form-select form-select-sm border-light-subtle rounded-2" [(ngModel)]="form.leaveType">
-            @for (t of leaveTypes; track t) { <option [value]="t">{{ t }}</option> }
-          </select>
+          <div class="field-group">
+            <label class="field-label">Leave Type <span class="text-danger">*</span></label>
+            <select class="select-shadcn input-shadcn-sm" [(ngModel)]="form.leaveType">
+              @for (t of leaveTypes; track t) { <option [value]="t">{{ t }}</option> }
+            </select>
+          </div>
         </div>
         <div class="col-md-3">
-          <label class="form-label small fw-semibold text-secondary mb-1">Employment Type <span class="text-danger">*</span></label>
-          <select class="form-select form-select-sm border-light-subtle rounded-2" [(ngModel)]="form.employmentType">
-            @for (t of employmentTypes; track t) { <option [value]="t">{{ t }}</option> }
-          </select>
+          <div class="field-group">
+            <label class="field-label">Employment Type <span class="text-danger">*</span></label>
+            <select class="select-shadcn input-shadcn-sm" [(ngModel)]="form.employmentType">
+              @for (t of employmentTypes; track t) { <option [value]="t">{{ t }}</option> }
+            </select>
+          </div>
         </div>
         <div class="col-md-2">
-          <label class="form-label small fw-semibold text-secondary mb-1">Annual Entitlement</label>
-          <input class="form-control form-control-sm border-light-subtle rounded-2" type="number" [(ngModel)]="form.annualEntitlement" min="0" />
+          <div class="field-group">
+            <label class="field-label">Annual Entitlement</label>
+            <input class="input-shadcn input-shadcn-sm" type="number" [(ngModel)]="form.annualEntitlement" min="0" />
+          </div>
         </div>
         <div class="col-md-2">
-          <label class="form-label small fw-semibold text-secondary mb-1">Max Carry Forward</label>
-          <input class="form-control form-control-sm border-light-subtle rounded-2" type="number" [(ngModel)]="form.maxCarryForward" min="0" />
+          <div class="field-group">
+            <label class="field-label">Max Carry Forward</label>
+            <input class="input-shadcn input-shadcn-sm" type="number" [(ngModel)]="form.maxCarryForward" min="0" />
+          </div>
         </div>
         <div class="col-md-2">
-          <label class="form-label small fw-semibold text-secondary mb-1">Max Consecutive Days</label>
-          <input class="form-control form-control-sm border-light-subtle rounded-2" type="number" [(ngModel)]="form.maxConsecutiveDays" min="0" />
+          <div class="field-group">
+            <label class="field-label">Max Consecutive Days</label>
+            <input class="input-shadcn input-shadcn-sm" type="number" [(ngModel)]="form.maxConsecutiveDays" min="0" />
+          </div>
         </div>
         <div class="col-md-3">
-          <label class="form-label small fw-semibold text-secondary mb-1">Applicable From (Months)</label>
-          <input class="form-control form-control-sm border-light-subtle rounded-2" type="number" [(ngModel)]="form.applicableFromMonths" min="0" />
+          <div class="field-group">
+            <label class="field-label">Applicable From (Months)</label>
+            <input class="input-shadcn input-shadcn-sm" type="number" [(ngModel)]="form.applicableFromMonths" min="0" />
+          </div>
         </div>
         <div class="col-md-9 d-flex align-items-end gap-4 pb-1">
           <div class="form-check">
@@ -62,22 +72,21 @@
           </div>
         </div>
         <div class="col-12 d-flex gap-2 mt-2">
-          <button class="btn btn-primary btn-sm px-3 rounded-2 fw-medium" [disabled]="saving" (click)="save()">
+          <button class="btn-shadcn btn-shadcn-primary btn-shadcn-sm" [disabled]="saving" (click)="save()">
             @if (saving) { Saving... } @else { Save }
           </button>
-          <button class="btn btn-outline-secondary btn-sm px-3 rounded-2 fw-medium border-light-subtle" (click)="showForm = false">Cancel</button>
+          <button class="btn-shadcn btn-shadcn-outline btn-shadcn-sm" (click)="showForm = false">Cancel</button>
         </div>
       </div>
     </div>
   </div>
   }
 
-  <!-- Policies Table List -->
   @if (!loading && policies.length) {
-  <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
-    <div class="table-responsive">
-      <table class="table table-hover align-middle mb-0" style="border-collapse: separate; border-spacing: 0 4px;">
-        <thead class="table-light text-secondary text-uppercase small" style="border-bottom: 2px solid #eef2f5;">
+  <div class="card-shadcn overflow-hidden">
+    <div class="table-shadcn-container">
+      <table class="table-shadcn">
+        <thead>
           <tr>
             <th class="ps-4">Leave Type</th>
             <th>Employment Type</th>
@@ -92,37 +101,37 @@
         </thead>
         <tbody>
           @for (p of policies; track p.id) {
-          <tr style="background-color: #ffffff;">
+          <tr>
             <td class="ps-4 fw-bold text-capitalize text-dark">{{ p.leaveType | lowercase }}</td>
-            <td><span class="badge text-bg-light border text-secondary fw-semibold">{{ p.employmentType }}</span></td>
+            <td><span class="badge-shadcn badge-shadcn-secondary fw-semibold">{{ p.employmentType }}</span></td>
             <td class="text-end fw-semibold text-primary">{{ p.annualEntitlement }} Days</td>
             <td class="text-end text-secondary">{{ p.canCarryForward ? p.maxCarryForward + ' Days' : 'Disabled' }}</td>
             <td class="text-end text-secondary">{{ p.maxConsecutiveDays || 'No Limit' }}</td>
             <td class="text-center">
               @if (p.requiresApproval) {
-                <span class="badge bg-success-subtle text-success rounded-pill px-2.5 py-1">Required</span>
+                <span class="badge-shadcn badge-shadcn-success">Required</span>
               } @else {
-                <span class="badge bg-secondary-subtle text-secondary rounded-pill px-2.5 py-1">Auto-Approve</span>
+                <span class="badge-shadcn badge-shadcn-secondary">Auto-Approve</span>
               }
             </td>
             <td class="text-center">
-              <span class="badge rounded-pill px-3 py-1.5 fw-semibold"
-                    [class.bg-success-subtle]="p.paid" [class.text-success]="p.paid"
-                    [class.bg-danger-subtle]="!p.paid" [class.text-danger]="!p.paid">
+              <span class="badge-shadcn"
+                    [class.badge-shadcn-success]="p.paid"
+                    [class.badge-shadcn-destructive]="!p.paid">
                 {{ p.paid ? 'PAID' : 'UNPAID' }}
               </span>
             </td>
             <td class="text-muted small">{{ p.applicableFromMonths ? 'After ' + p.applicableFromMonths + ' mo' : 'Immediate' }}</td>
             <td class="text-end pe-4 text-nowrap">
-              <button class="btn btn-outline-secondary btn-sm border-light-subtle px-2 py-1 rounded-2 me-1" (click)="openEdit(p)"><i class="bi bi-pencil small"></i></button>
-              <button class="btn btn-outline-danger btn-sm border-danger-subtle px-2 py-1 rounded-2" style="background-color: #fff5f5;" (click)="deleteTarget = p"><i class="bi bi-trash small"></i></button>
+              <button class="btn-shadcn btn-shadcn-ghost btn-shadcn-sm me-1" (click)="openEdit(p)"><i class="bi bi-pencil small"></i></button>
+              <button class="btn-shadcn btn-shadcn-ghost btn-shadcn-sm" (click)="deleteTarget = p"><i class="bi bi-trash small"></i></button>
             </td>
           </tr>
           }
         </tbody>
       </table>
     </div>
-    <div class="card-footer d-flex justify-content-end bg-white border-0 py-3">
+    <div class="card-shadcn-footer d-flex justify-content-end">
       <app-pagination [page]="page" [totalPages]="totalPages" (pageChange)="goToPage($event)" />
     </div>
   </div>

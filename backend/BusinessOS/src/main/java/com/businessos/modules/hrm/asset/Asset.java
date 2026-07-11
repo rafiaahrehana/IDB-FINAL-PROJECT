@@ -3,6 +3,7 @@ package com.businessos.modules.hrm.asset;
 import com.businessos.modules.hrm.employee.Employee;
 import com.businessos.core.base.BaseEntity;
 import com.businessos.modules.company.Company;
+import com.businessos.enums.AssetStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDate;

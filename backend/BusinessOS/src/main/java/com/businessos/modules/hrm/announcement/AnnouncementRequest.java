@@ -1,5 +1,6 @@
 package com.businessos.modules.hrm.announcement;
 
+import com.businessos.enums.AnnouncementAudience;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Data;

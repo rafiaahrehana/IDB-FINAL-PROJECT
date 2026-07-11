@@ -6,9 +6,12 @@ import com.businessos.auth.user.UserRepository;
 import com.businessos.modules.crm.client.ClientRepository;
 import com.businessos.modules.hrm.employee.EmployeeRepository;
 import com.businessos.enums.CompanyStatus;
-import com.businessos.core.subscription.SubscriptionPlan;
+import com.businessos.enums.SubscriptionPlan;
 import com.businessos.modules.servicedesk.servicerequest.ServiceRequestRepository;
 import com.businessos.enums.ServiceRequestStatus;
+import com.businessos.shared.subscription.SubscriptionHistory;
+import com.businessos.shared.subscription.SubscriptionHistoryRepository;
+import com.businessos.security.SecurityUtil;
 import com.businessos.shared.exception.BadRequestException;
 import com.businessos.shared.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +36,10 @@ public class CompanyServiceImpl implements CompanyService {
     private final EmployeeRepository employeeRepository;
     private final ClientRepository clientRepository;
     private final ServiceRequestRepository serviceRequestRepository;
+    private final com.businessos.modules.servicedesk.companyservice.CompanyServiceRepository hubServiceRepository;
+    private final SubscriptionHistoryRepository subscriptionHistoryRepository;
+    private final SecurityUtil securityUtil;
+    private final com.businessos.shared.address.LocationMapper locationMapper;
     private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -45,10 +52,23 @@ public class CompanyServiceImpl implements CompanyService {
 
     @Override
     @Transactional(readOnly = true)
+    public java.util.List<com.businessos.modules.servicedesk.companyservice.CompanyServiceResponse> getPublicServices(String subdomain) {
+        Company company = companyRepository.findBySubdomain(subdomain)
+                .orElseThrow(() -> new ResourceNotFoundException("Company not found with subdomain: " + subdomain));
+        return hubServiceRepository.findByCompanyIdAndActiveTrue(company.getId())
+                .stream()
+                .map(com.businessos.modules.servicedesk.companyservice.CompanyServiceMapper::toResponse)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public CompanyResponse getById(Long id) {
         Company company = companyRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Company not found with id : " + id));
-        return CompanyMapper.toResponse(company);
+        CompanyResponse response = CompanyMapper.toResponse(company);
+        response.setLocationDetail(locationMapper.toResponse(company.getLocationDetail()));
+        return response;
     }
 
     @Override
@@ -64,9 +84,21 @@ public class CompanyServiceImpl implements CompanyService {
         if (request.getPrimaryColor() != null) company.setPrimaryColor(request.getPrimaryColor());
         if (request.getSecondaryColor() != null) company.setSecondaryColor(request.getSecondaryColor());
         if (request.getTagline() != null) company.setTagline(request.getTagline());
+        if (request.getPortalAbout() != null) company.setPortalAbout(request.getPortalAbout());
+
+        // Structured address - same create-or-update pattern as the user profile
+        if (request.getLocationDetail() != null) {
+            if (company.getLocationDetail() == null) {
+                company.setLocationDetail(locationMapper.toEntity(request.getLocationDetail()));
+            } else {
+                locationMapper.updateEntityFromRequest(company.getLocationDetail(), request.getLocationDetail());
+            }
+        }
 
         company = companyRepository.save(company);
-        return CompanyMapper.toResponse(company);
+        CompanyResponse response = CompanyMapper.toResponse(company);
+        response.setLocationDetail(locationMapper.toResponse(company.getLocationDetail()));
+        return response;
     }
 
     @Override
@@ -105,19 +137,37 @@ public class CompanyServiceImpl implements CompanyService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<CompanyResponse> listAll(CompanyStatus status, Pageable pageable) {
-        if (status != null) {
-            return companyRepository.findByStatus(status, pageable).map(CompanyMapper::toResponse);
-        }
-        return companyRepository.findAll(pageable).map(CompanyMapper::toResponse);
+    public Page<CompanyResponse> listAll(CompanyStatus status, SubscriptionPlan plan, String keyword, Pageable pageable) {
+        return companyRepository
+            .findFiltered(status, plan, keyword == null ? null : keyword.trim(), pageable)
+            .map(CompanyMapper::toResponse);
     }
 
     @Override
-    public CompanyResponse changePlan(Long id, SubscriptionPlan plan) {
+    public CompanyResponse changePlan(Long id, SubscriptionPlan plan, Double amountPaid, String transactionRef) {
         Company company = companyRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Company not found"));
+
+        SubscriptionPlan fromPlan = company.getSubscriptionPlan();
         company.setSubscriptionPlan(plan);
-        return CompanyMapper.toResponse(companyRepository.save(company));
+        Company saved = companyRepository.save(company);
+
+        // Record the change in subscription history (audit trail + platform revenue source).
+        // amountPaid / transactionRef are optional - there is no plan price list in the
+        // system, so the amount is whatever the admin performing the change records.
+        subscriptionHistoryRepository.save(SubscriptionHistory.builder()
+                .company(saved)
+                .fromPlan(fromPlan)
+                .toPlan(plan)
+                .subscriptionStart(saved.getSubscriptionStart())
+                .subscriptionEnd(saved.getSubscriptionEnd())
+                .amountPaid(amountPaid)
+                .transactionRef(transactionRef)
+                .changedAt(LocalDateTime.now())
+                .changedBy(securityUtil.getCurrentUser())
+                .build());
+
+        return CompanyMapper.toResponse(saved);
     }
 
     @Override
@@ -155,23 +205,6 @@ public class CompanyServiceImpl implements CompanyService {
             throw new BadRequestException("Cannot deactivate company. There are active service requests.");
         }
 
-        company.setStatus(CompanyStatus.DEACTIVATED);
-        company.setActive(false);
-        companyRepository.save(company);
-    }
-
-    @Override
-    public void delete(Long id) {
-        Company company = companyRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Company not found"));
-
-        boolean hasActiveRequests = serviceRequestRepository.existsByCompanyIdAndStatusNotIn(
-            id, List.of(ServiceRequestStatus.COMPLETED, ServiceRequestStatus.REJECTED, ServiceRequestStatus.CANCELLED)
-        );
-        if (hasActiveRequests) {
-            throw new BadRequestException("Cannot delete company. There are active service requests.");
-        }
-
         if (employeeRepository.existsByCompanyId(id)) {
             throw new BadRequestException("Cannot delete company with existing employees.");
         }
@@ -191,75 +224,5 @@ public class CompanyServiceImpl implements CompanyService {
             company.getOwner().setActive(false);
             userRepository.save(company.getOwner());
         }
-    }
-
-    @Override
-    public void deactivateByOwner(Long companyId) {
-        Company company = companyRepository.findById(companyId)
-                .orElseThrow(() -> new ResourceNotFoundException("Company not found"));
-
-        boolean hasActiveRequests = serviceRequestRepository.existsByCompanyIdAndStatusNotIn(
-            companyId, List.of(ServiceRequestStatus.COMPLETED, ServiceRequestStatus.REJECTED, ServiceRequestStatus.CANCELLED)
-        );
-        if (hasActiveRequests) {
-            throw new BadRequestException("Cannot deactivate company. There are active service requests that must be completed or handed over first.");
-        }
-
-        company.setStatus(CompanyStatus.DEACTIVATED);
-        company.setActive(false);
-        companyRepository.save(company);
-    }
-
-    @Override
-    public void deleteByOwner(Long companyId) {
-        Company company = companyRepository.findById(companyId)
-                .orElseThrow(() -> new ResourceNotFoundException("Company not found"));
-
-        boolean hasActiveRequests = serviceRequestRepository.existsByCompanyIdAndStatusNotIn(
-            companyId, List.of(ServiceRequestStatus.COMPLETED, ServiceRequestStatus.REJECTED, ServiceRequestStatus.CANCELLED)
-        );
-        if (hasActiveRequests) {
-            throw new BadRequestException("Cannot delete company. There are active service requests that must be completed or handed over first.");
-        }
-
-        if (employeeRepository.existsByCompanyId(companyId)) {
-            throw new BadRequestException("Cannot delete company. All employees must be removed or handed over first.");
-        }
-
-        if (clientRepository.existsByCompanyId(companyId)) {
-            throw new BadRequestException("Cannot delete company. All clients must be removed or transferred first.");
-        }
-
-        company.setActive(false);
-        company.setDeleted(true);
-        company.setDeletedAt(LocalDateTime.now());
-        companyRepository.save(company);
-        
-        if (company.getOwner() != null) {
-            company.getOwner().setDeleted(true);
-            company.getOwner().setDeletedAt(LocalDateTime.now());
-            company.getOwner().setActive(false);
-            userRepository.save(company.getOwner());
-        }
-    }
-
-    @Override
-    public void suspendByAdmin(Long companyId) {
-        Company company = companyRepository.findById(companyId)
-                .orElseThrow(() -> new ResourceNotFoundException("Company not found"));
-
-        company.setStatus(CompanyStatus.SUSPENDED);
-        company.setActive(false);
-        companyRepository.save(company);
-    }
-
-    @Override
-    public void activateByAdmin(Long companyId) {
-        Company company = companyRepository.findById(companyId)
-                .orElseThrow(() -> new ResourceNotFoundException("Company not found"));
-
-        company.setStatus(CompanyStatus.ACTIVE);
-        company.setActive(true);
-        companyRepository.save(company);
     }
 }

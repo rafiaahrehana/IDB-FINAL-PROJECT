@@ -1,68 +1,64 @@
-<div class="container-fluid py-3" style="background-color: #f8fafc; min-height: 100vh;">
-  <!-- Header Bar -->
-  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4 bg-white p-3 rounded-3 shadow-sm">
+<div class="page-container">
+  <div class="page-header">
     <div>
-      <h4 class="mb-0 fw-bold text-dark"><i class="bi bi-calendar-event text-primary me-2"></i>Holidays Calendar</h4>
-      <p class="text-muted small mb-0">Review and schedule company-wide holidays and off days</p>
+      <h4 class="page-title"><i class="bi bi-calendar-event text-primary me-2"></i>Holidays Calendar</h4>
+      <div class="page-subtitle">Review and schedule company-wide holidays and off days</div>
     </div>
-    <button class="btn btn-primary btn-sm px-3 rounded-2 fw-medium" (click)="openCreate()"><i class="bi bi-plus-lg me-1"></i> Add Holiday</button>
+    <button class="btn-shadcn btn-shadcn-primary btn-shadcn-sm" (click)="openCreate()"><i class="bi bi-plus-lg me-1"></i> Add Holiday</button>
   </div>
 
-  @if (error) { <div class="alert alert-danger py-2 rounded-2 shadow-sm mb-3">{{ error }}</div> }
-  @if (success) { <div class="alert alert-success py-2 rounded-2 shadow-sm mb-3">{{ success }}</div> }
+  @if (error) { <div class="badge-shadcn badge-shadcn-destructive py-2 px-3 mb-3">{{ error }}</div> }
+  @if (success) { <div class="badge-shadcn badge-shadcn-success py-2 px-3 mb-3">{{ success }}</div> }
 
   @if (loading) { <app-loader /> }
 
-  <!-- Add/Edit Form Card -->
   @if (showForm) {
-  <div class="card border-0 shadow-sm rounded-3 mb-4">
-    <div class="card-header py-3 bg-light border-0 fw-semibold text-dark"><i class="bi bi-plus-circle me-2"></i>{{ isEdit ? 'Edit' : 'Add' }} Holiday</div>
-    <div class="card-body p-4">
+  <div class="card-shadcn mb-4">
+    <div class="card-shadcn-header"><div class="card-shadcn-title"><i class="bi bi-plus-circle me-2"></i>{{ isEdit ? 'Edit' : 'Add' }} Holiday</div></div>
+    <div class="card-shadcn-content">
       <div class="row g-3">
         <div class="col-md-4">
-          <label class="form-label small fw-semibold text-secondary mb-1">Name <span class="text-danger">*</span></label>
-          <input class="form-control form-control-sm border-light-subtle rounded-2" type="text" [(ngModel)]="form.name" placeholder="New Year's Day, etc." />
+          <div class="field-group"><label class="field-label">Name <span class="text-danger">*</span></label>
+          <input class="input-shadcn input-shadcn-sm" type="text" [(ngModel)]="form.name" placeholder="New Year's Day, etc." /></div>
         </div>
         <div class="col-md-3">
-          <label class="form-label small fw-semibold text-secondary mb-1">Holiday Date <span class="text-danger">*</span></label>
-          <input class="form-control form-control-sm border-light-subtle rounded-2" type="date" [(ngModel)]="form.holidayDate" />
+          <div class="field-group"><label class="field-label">Holiday Date <span class="text-danger">*</span></label>
+          <input class="input-shadcn input-shadcn-sm" type="date" [(ngModel)]="form.holidayDate" /></div>
         </div>
         <div class="col-md-3">
-          <label class="form-label small fw-semibold text-secondary mb-1">Type</label>
-          <select class="form-select form-select-sm border-light-subtle rounded-2" [(ngModel)]="form.holidayType">
+          <div class="field-group"><label class="field-label">Type</label>
+          <select class="select-shadcn input-shadcn-sm" [(ngModel)]="form.holidayType">
             @for (type of holidayTypes; track type) { <option [value]="type">{{ type }}</option> }
-          </select>
+          </select></div>
         </div>
         <div class="col-md-2">
-          <label class="form-label small fw-semibold text-secondary mb-1">Target Department</label>
-          <select class="form-select form-select-sm border-light-subtle rounded-2" [(ngModel)]="form.departmentId">
+          <div class="field-group"><label class="field-label">Target Department</label>
+          <select class="select-shadcn input-shadcn-sm" [(ngModel)]="form.departmentId">
             <option [value]="undefined">All Departments</option>
             @for (d of departments; track d.id) { <option [value]="d.id">{{ d.name }}</option> }
-          </select>
+          </select></div>
         </div>
         <div class="col-12">
-          <label class="form-label small fw-semibold text-secondary mb-1">Description</label>
-          <textarea class="form-control form-control-sm border-light-subtle rounded-2" rows="2" [(ngModel)]="form.description" placeholder="Optional description..."></textarea>
+          <div class="field-group"><label class="field-label">Description</label>
+          <textarea class="textarea-shadcn" rows="2" [(ngModel)]="form.description" placeholder="Optional description..."></textarea></div>
         </div>
         <div class="col-12 d-flex gap-2 mt-2">
-          <button class="btn btn-primary btn-sm px-3 rounded-2 fw-medium" [disabled]="!form.name || !form.holidayDate || saving" (click)="save()">
+          <button class="btn-shadcn btn-shadcn-primary btn-shadcn-sm" [disabled]="!form.name || !form.holidayDate || saving" (click)="save()">
             @if (saving) { Saving... } @else { Save }
           </button>
-          <button class="btn btn-outline-secondary btn-sm px-3 rounded-2 fw-medium border-light-subtle" (click)="showForm = false">Cancel</button>
+          <button class="btn-shadcn btn-shadcn-outline btn-shadcn-sm" (click)="showForm = false">Cancel</button>
         </div>
       </div>
     </div>
   </div>
   }
 
-  <!-- Holidays List Display -->
   @if (!loading && holidays.length) {
   <div class="row g-3 mb-4">
     @for (h of holidays; track h.id) {
     <div class="col-md-6 col-lg-4">
-      <div class="card border border-light-subtle rounded-3 bg-white shadow-sm h-100 transition-hover">
-        <div class="card-body p-4 d-flex gap-3">
-          <!-- Calendar Date Icon Badge -->
+      <div class="card-shadcn h-100">
+        <div class="card-shadcn-content d-flex gap-3">
           <div class="d-flex flex-column align-items-center justify-content-center bg-primary-subtle text-primary rounded-3 text-center" style="width: 60px; height: 60px; min-width: 60px;">
             <span class="fw-bold fs-5 mb-0 lh-1">{{ h.holidayDate | date:'d' }}</span>
             <span class="small text-uppercase fw-semibold" style="font-size: 10px;">{{ h.holidayDate | date:'MMM' }}</span>
@@ -71,8 +67,8 @@
           <div class="d-flex flex-column justify-content-between w-100">
             <div>
               <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
-                <span class="badge text-bg-light border text-secondary" style="font-size: 10px;">{{ h.holidayType || 'COMPANY' }}</span>
-                <span class="badge bg-secondary-subtle text-secondary-emphasis" style="font-size: 10px;">{{ h.departmentName || 'All Staff' }}</span>
+                <span class="badge-shadcn badge-shadcn-secondary" style="font-size: 10px;">{{ h.holidayType || 'COMPANY' }}</span>
+                <span class="badge-shadcn badge-shadcn-secondary" style="font-size: 10px;">{{ h.departmentName || 'All Staff' }}</span>
               </div>
               <h6 class="fw-bold text-dark mb-1">{{ h.name }}</h6>
               <p class="text-muted small mb-3 text-truncate-2" style="max-height: 38px;">{{ h.description || 'No description provided.' }}</p>
@@ -81,8 +77,8 @@
             <div class="d-flex justify-content-between align-items-center pt-2 border-top mt-auto">
               <span class="small text-muted">{{ h.holidayDate | date:'EEEE' }}</span>
               <div class="d-flex gap-1">
-                <button class="btn btn-outline-secondary btn-sm border-light-subtle px-2 py-1 rounded-2" (click)="openEdit(h)"><i class="bi bi-pencil small"></i></button>
-                <button class="btn btn-outline-danger btn-sm border-danger-subtle px-2 py-1 rounded-2" style="background-color: #fff5f5;" (click)="deleteTarget = h"><i class="bi bi-trash small"></i></button>
+                <button class="btn-shadcn btn-shadcn-ghost btn-shadcn-sm" (click)="openEdit(h)"><i class="bi bi-pencil small"></i></button>
+                <button class="btn-shadcn btn-shadcn-destructive btn-shadcn-sm" (click)="deleteTarget = h"><i class="bi bi-trash small"></i></button>
               </div>
             </div>
           </div>
@@ -92,7 +88,7 @@
     }
   </div>
 
-  <div class="d-flex justify-content-end p-3 bg-white rounded-3 shadow-sm mb-4">
+  <div class="card-shadcn d-flex justify-content-end p-3 mb-4">
     <app-pagination [page]="page" [totalPages]="totalPages" (pageChange)="goToPage($event)" />
   </div>
   }

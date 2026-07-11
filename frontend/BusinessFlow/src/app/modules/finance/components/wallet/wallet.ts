@@ -1,7 +1,7 @@
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { GatewayPaymentService } from '../../../../core/services/gateway-payment.service';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 import { Wallet, WalletTransaction, WalletTransactionType, WALLET_TRANSACTION_TYPES } from '../../models/finance.model';
 import { WalletService } from '../../services/wallet.service';
 import { Pagination } from '../../../../shared/components/pagination/pagination';
@@ -10,7 +10,7 @@ import { EmptyState } from '../../../../shared/components/empty-state/empty-stat
 
 @Component({
   selector: 'app-wallet',
-  imports: [CommonModule, FormsModule, RouterLink, Pagination, Loader, EmptyState],
+  imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState],
   changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './wallet.html',
 })
@@ -31,7 +31,11 @@ export class WalletPage implements OnInit {
   topUpForm = { amount: 0, reference: '', notes: '' };
   saving = false;
 
-  constructor(private walletService: WalletService) {}
+  constructor(
+    private walletService: WalletService,
+    private gatewayPayment: GatewayPaymentService,
+    private cdr: ChangeDetectorRef,
+  ) {}
 
   ngOnInit(): void {
     this.loadWallet();
@@ -54,15 +58,18 @@ export class WalletPage implements OnInit {
 
   loadTransactions(): void {
     this.loading = true;
+    this.cdr.markForCheck();
     this.walletService.getTransactions(this.typeFilter || undefined, this.page).subscribe({
       next: (res) => {
         this.transactions = res.content;
         this.totalPages = res.totalPages;
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.error = 'Failed to load transactions';
         this.loading = false;
+        this.cdr.markForCheck();
       },
     });
   }
@@ -75,10 +82,12 @@ export class WalletPage implements OnInit {
   doTopUp(): void {
     if (!this.topUpForm.amount || this.topUpForm.amount <= 0) return;
     this.saving = true;
+    this.cdr.markForCheck();
     this.walletService.topUp(this.topUpForm).subscribe({
       next: (w) => {
         this.wallet = w;
         this.saving = false;
+        this.cdr.markForCheck();
         this.showTopUp = false;
         this.success = 'Wallet topped up successfully';
         this.page = 0;
@@ -86,9 +95,17 @@ export class WalletPage implements OnInit {
       },
       error: (err) => {
         this.saving = false;
+        this.cdr.markForCheck();
         this.error = err?.error?.message || 'Failed to top up wallet';
       },
     });
+  }
+
+  // SSLCommerz checkout; on validated success the backend credits the wallet
+  topUpOnline(): void {
+    if (!this.topUpForm.amount || this.topUpForm.amount <= 0) return;
+    this.gatewayPayment.redirectToGateway('WALLET_TOPUP', null, this.topUpForm.amount,
+      (msg) => (this.error = msg));
   }
 
   goToPage(p: number): void {

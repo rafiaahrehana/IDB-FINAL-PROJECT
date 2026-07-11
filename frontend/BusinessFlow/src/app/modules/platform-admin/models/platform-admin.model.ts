@@ -25,7 +25,7 @@ export interface Company {
   companyEmail?: string;
   companyPhone?: string;
   website?: string;
-  location?: string;
+  address?: string;
   logo?: string;
   primaryColor?: string;
   secondaryColor?: string;
@@ -82,7 +82,6 @@ export interface CustomRole {
   description?: string;
   active: boolean;
   systemRole: boolean;
-  permissions?: string[];
 }
 
 export interface CustomRoleRequest {

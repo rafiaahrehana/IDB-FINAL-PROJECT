@@ -4,6 +4,7 @@ import com.businessos.modules.company.Company;
 import com.businessos.modules.hrm.department.Department;
 import com.businessos.modules.hrm.employee.Employee;
 import com.businessos.auth.user.User;
+import com.businessos.enums.JobPostingStatus;
 import com.businessos.shared.exception.BadRequestException;
 import com.businessos.shared.exception.ResourceNotFoundException;
 import com.businessos.modules.hrm.department.DepartmentRepository;

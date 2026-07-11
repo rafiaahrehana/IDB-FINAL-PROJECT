@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy } from '@angular/core';
+import { Component, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ProfitLossReport, BalanceSheetReport, TrialBalanceReport } from '../../models/finance.model';
@@ -25,7 +25,7 @@ export class Reports {
   loading = false;
   error = '';
 
-  constructor(private reportService: FinancialReportService) {}
+  constructor(private reportService: FinancialReportService, private cdr: ChangeDetectorRef) {}
 
   generate(): void {
     this.error = '';
@@ -39,9 +39,10 @@ export class Reports {
         return;
       }
       this.loading = true;
+      this.cdr.markForCheck();
       this.reportService.profitLoss(this.startDate, this.endDate).subscribe({
-        next: (r) => { this.profitLoss = r; this.loading = false; },
-        error: () => { this.error = 'Failed to generate report'; this.loading = false; },
+        next: (r) => { this.profitLoss = r; this.loading = false; this.cdr.markForCheck(); },
+        error: () => { this.error = 'Failed to generate report'; this.loading = false; this.cdr.markForCheck(); },
       });
       return;
     }
@@ -51,15 +52,16 @@ export class Reports {
       return;
     }
     this.loading = true;
+    this.cdr.markForCheck();
     if (this.reportType === 'BALANCE_SHEET') {
       this.reportService.balanceSheet(this.asOfDate).subscribe({
-        next: (r) => { this.balanceSheet = r; this.loading = false; },
-        error: () => { this.error = 'Failed to generate report'; this.loading = false; },
+        next: (r) => { this.balanceSheet = r; this.loading = false; this.cdr.markForCheck(); },
+        error: () => { this.error = 'Failed to generate report'; this.loading = false; this.cdr.markForCheck(); },
       });
     } else {
       this.reportService.trialBalance(this.asOfDate).subscribe({
-        next: (r) => { this.trialBalance = r; this.loading = false; },
-        error: () => { this.error = 'Failed to generate report'; this.loading = false; },
+        next: (r) => { this.trialBalance = r; this.loading = false; this.cdr.markForCheck(); },
+        error: () => { this.error = 'Failed to generate report'; this.loading = false; this.cdr.markForCheck(); },
       });
     }
   }

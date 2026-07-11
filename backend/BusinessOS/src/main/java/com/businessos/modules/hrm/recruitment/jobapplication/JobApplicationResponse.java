@@ -1,6 +1,6 @@
 package com.businessos.modules.hrm.recruitment.jobapplication;
 
-import com.businessos.modules.hrm.recruitment.ApplicationStatus;
+import com.businessos.enums.ApplicationStatus;
 import lombok.Getter;
 import lombok.Setter;
 

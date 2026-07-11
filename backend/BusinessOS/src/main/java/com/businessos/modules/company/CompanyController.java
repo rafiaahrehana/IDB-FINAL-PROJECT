@@ -1,7 +1,7 @@
 package com.businessos.modules.company;
 
 import com.businessos.enums.CompanyStatus;
-import com.businessos.core.subscription.SubscriptionPlan;
+import com.businessos.enums.SubscriptionPlan;
 import com.businessos.shared.exception.UnauthorizedException;
 import com.businessos.security.SecurityUtil;
 import jakarta.validation.Valid;
@@ -25,6 +25,12 @@ public class CompanyController {
     @GetMapping("/public/{subdomain}")
     public ResponseEntity<CompanyPublicResponse> getPublic(@PathVariable String subdomain) {
         return ResponseEntity.ok(companyService.getBySubdomain(subdomain));
+    }
+
+    /** Active services of a company for its public portal page. */
+    @GetMapping("/public/{subdomain}/services")
+    public ResponseEntity<java.util.List<com.businessos.modules.servicedesk.companyservice.CompanyServiceResponse>> getPublicServices(@PathVariable String subdomain) {
+        return ResponseEntity.ok(companyService.getPublicServices(subdomain));
     }
 
     @GetMapping("/me")
@@ -53,9 +59,11 @@ public class CompanyController {
     @GetMapping
     public ResponseEntity<Page<CompanyResponse>> listAll(
             @RequestParam(required = false) CompanyStatus status,
+            @RequestParam(required = false) SubscriptionPlan plan,
+            @RequestParam(required = false) String keyword,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        return ResponseEntity.ok(companyService.listAll(status,
+        return ResponseEntity.ok(companyService.listAll(status, plan, keyword,
                 PageRequest.of(page, size, Sort.by("createdAt").descending())));
     }
 
@@ -69,8 +77,10 @@ public class CompanyController {
     @PatchMapping("/{id}/plan")
     public ResponseEntity<CompanyResponse> changePlan(
             @PathVariable Long id,
-            @RequestParam SubscriptionPlan plan) {
-        return ResponseEntity.ok(companyService.changePlan(id, plan));
+            @RequestParam SubscriptionPlan plan,
+            @RequestParam(required = false) Double amountPaid,
+            @RequestParam(required = false) String transactionRef) {
+        return ResponseEntity.ok(companyService.changePlan(id, plan, amountPaid, transactionRef));
     }
 
     @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'SYSTEM_ADMIN', 'PLATFORM_ACCOUNTANT', 'ACCOUNT_EXECUTIVE')")
@@ -81,42 +91,10 @@ public class CompanyController {
         return ResponseEntity.ok(companyService.changeStatus(id, status));
     }
 
-    @PatchMapping("/me/deactivate")
-    public ResponseEntity<String> deactivateMyCompany() {
-        Long companyId = securityUtil.getCurrentCompanyId();
-        if (companyId == null)
-            throw new UnauthorizedException("No company associated with this account");
-        companyService.deactivateByOwner(companyId);
-        return ResponseEntity.ok("Company deactivated successfully");
-    }
-
-    @DeleteMapping("/me")
-    public ResponseEntity<String> deleteMyCompany() {
-        Long companyId = securityUtil.getCurrentCompanyId();
-        if (companyId == null)
-            throw new UnauthorizedException("No company associated with this account");
-        companyService.deleteByOwner(companyId);
-        return ResponseEntity.ok("Company deleted successfully");
-    }
-
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'SYSTEM_ADMIN')")
-    @PatchMapping("/{id}/suspend")
-    public ResponseEntity<String> suspendCompany(@PathVariable Long id) {
-        companyService.suspendByAdmin(id);
-        return ResponseEntity.ok("Company suspended successfully");
-    }
-
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'SYSTEM_ADMIN')")
-    @PatchMapping("/{id}/activate")
-    public ResponseEntity<String> activateCompany(@PathVariable Long id) {
-        companyService.activateByAdmin(id);
-        return ResponseEntity.ok("Company activated successfully");
-    }
-
     @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'SYSTEM_ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deactivate(@PathVariable Long id) {
-        companyService.delete(id);
-        return ResponseEntity.ok("Company deleted successfully");
+        companyService.deactivate(id);
+        return ResponseEntity.ok("Company deactivated successfully");
     }
 }

@@ -12,6 +12,7 @@ import com.businessos.modules.ai.entity.AiConversation;
 import com.businessos.modules.ai.entity.AiPromptTemplate;
 import com.businessos.modules.ai.entity.AiProviderConfig;
 import com.businessos.modules.ai.enums.AiFeature;
+import com.businessos.modules.ai.exception.AiProviderException;
 import com.businessos.modules.ai.exception.AiQuotaExceededException;
 import com.businessos.modules.ai.mapper.AiMapper;
 import com.businessos.modules.ai.provider.AiProviderAdapter;
@@ -65,7 +66,7 @@ public class AiServiceImpl implements AiService {
         AiProviderAdapter adapter = resolver.resolve(companyId);
 
         long start    = System.currentTimeMillis();
-        String result = adapter.generate(prompt);
+        String result = generateWithRetry(adapter, prompt);
         long elapsed  = System.currentTimeMillis() - start;
 
         String uuid = auditService.record(
@@ -228,6 +229,37 @@ public class AiServiceImpl implements AiService {
     }
 
     // ── Private helpers ───────────────────────────────────────────
+
+    private static final int MAX_ATTEMPTS = 3; // 1 initial + 2 retries
+    private static final long[] BACKOFF_MS = {300, 900};
+
+    // Retries transient provider failures (timeouts, 429, 5xx) with a short backoff.
+    // Non-retryable failures (bad request, auth, malformed response) fail immediately.
+    private String generateWithRetry(AiProviderAdapter adapter, String prompt) {
+        AiProviderException lastFailure = null;
+
+        for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+            try {
+                return adapter.generate(prompt);
+            } catch (AiProviderException e) {
+                lastFailure = e;
+                if (!e.isRetryable() || attempt == MAX_ATTEMPTS) {
+                    throw e;
+                }
+                sleep(BACKOFF_MS[attempt - 1]);
+            }
+        }
+
+        throw lastFailure;
+    }
+
+    private void sleep(long ms) {
+        try {
+            Thread.sleep(ms);
+        } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+        }
+    }
 
     private void enforceRateLimits(Long companyId, Long userId) {
         long companyCount = usageLogRepository.countByCompanyAndDate(companyId, LocalDate.now());

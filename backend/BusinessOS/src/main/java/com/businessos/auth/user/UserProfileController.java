@@ -1,8 +1,8 @@
 package com.businessos.auth.user;
 
-import com.businessos.shared.location.Location;
-import com.businessos.shared.location.LocationMapper;
-import com.businessos.shared.location.LocationRequest;
+import com.businessos.shared.address.Location;
+import com.businessos.shared.address.LocationMapper;
+import com.businessos.shared.address.LocationRequest;
 import com.businessos.security.SecurityUtil;
 import com.businessos.shared.exception.ResourceNotFoundException;
 import com.businessos.shared.exception.UnauthorizedException;

@@ -18,9 +18,6 @@ public class ClientMapper {
         response.setClientCompanyName(client.getClientCompanyName());
         response.setIndustry(client.getIndustry());
         response.setWebsite(client.getWebsite());
-        response.setTags(client.getTags());
-        response.setEmployeeCount(client.getEmployeeCount());
-        response.setAnnualRevenue(client.getAnnualRevenue());
         response.setStatus(client.getStatus());
         response.setPortalAccessEnabled(client.isPortalAccessEnabled());
         response.setAccountManagerId(employee != null ? employee.getId() : null);

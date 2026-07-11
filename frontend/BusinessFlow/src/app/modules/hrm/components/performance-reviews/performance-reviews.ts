@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PerformanceReview, PerformanceReviewRequest, Employee } from '../../models/hrm.model';
@@ -33,7 +33,8 @@ export class PerformanceReviews implements OnInit {
 
   constructor(
     private reviewService: PerformanceReviewService,
-    private employeeService: EmployeeService
+    private employeeService: EmployeeService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -43,16 +44,19 @@ export class PerformanceReviews implements OnInit {
 
   load(): void {
     this.loading = true;
+    this.cdr.markForCheck();
     this.error = '';
     this.reviewService.list(this.page, 20).subscribe({
       next: (res) => {
         this.reviews = res.content;
         this.totalPages = res.totalPages;
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.error = 'Failed to load performance reviews';
         this.loading = false;
+        this.cdr.markForCheck();
       }
     });
   }
@@ -93,6 +97,7 @@ export class PerformanceReviews implements OnInit {
 
   save(): void {
     this.saving = true;
+    this.cdr.markForCheck();
     this.error = '';
     const payload = this.cleanPayload();
     const request = this.isEdit && this.selectedId
@@ -102,12 +107,14 @@ export class PerformanceReviews implements OnInit {
     request.subscribe({
       next: () => {
         this.saving = false;
+        this.cdr.markForCheck();
         this.showForm = false;
         this.success = this.isEdit ? 'Performance review updated' : 'Performance review created';
         this.load();
       },
       error: (err) => {
         this.saving = false;
+        this.cdr.markForCheck();
         this.error = err?.error?.message || 'Failed to save review';
       }
     });

@@ -4,6 +4,7 @@ import com.businessos.modules.hrm.employee.Employee;
 import com.businessos.core.base.BaseEntity;
 
 import com.businessos.modules.company.Company;
+import com.businessos.enums.PayrollStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.Filter;

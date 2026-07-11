@@ -30,9 +30,9 @@ public class BiometricDevice extends BaseEntity {
     private String location; // "Main Office - Ground Floor"
     private String department; // "Administration"
 
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(length = 50)
-    @Builder.Default
     private BiometricDeviceStatus status = BiometricDeviceStatus.ACTIVE;
 
     // API Integration

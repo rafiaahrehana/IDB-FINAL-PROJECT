@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Expense } from '../../../finance/models/finance.model';
@@ -35,7 +35,7 @@ export class PlatformExpenses implements OnInit {
 
   statuses = ['PENDING', 'APPROVED', 'REJECTED', 'PAID'];
 
-  constructor(private expenseService: PlatformExpenseService) {}
+  constructor(private expenseService: PlatformExpenseService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.load();
@@ -43,6 +43,7 @@ export class PlatformExpenses implements OnInit {
 
   load(): void {
     this.loading = true;
+    this.cdr.markForCheck();
     const obs = this.statusFilter
       ? this.expenseService.listByStatus(this.statusFilter, this.page)
       : this.expenseService.list(this.page);
@@ -51,10 +52,12 @@ export class PlatformExpenses implements OnInit {
         this.expenses = res.content;
         this.totalPages = res.totalPages;
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.error = 'Failed to load platform expenses';
         this.loading = false;
+        this.cdr.markForCheck();
       },
     });
   }

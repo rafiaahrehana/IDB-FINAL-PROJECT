@@ -1,6 +1,5 @@
 package com.businessos.shared.email;
 
-import com.businessos.modules.company.Company;
 import com.businessos.shared.exception.BadRequestException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
@@ -40,9 +39,9 @@ public class EmailServiceImpl implements EmailService {
     }
 
     private void sendInternal(String to, String subject, String html, String templateName, Long companyId) {
-        Company company = null;
+        com.businessos.modules.company.Company company = null;
         if (companyId != null) {
-            company = new Company();
+            company = new com.businessos.modules.company.Company();
             company.setId(companyId);
         }
 

@@ -1,3 +1,7 @@
+// Mirrors backend DTOs in com.businessos.auth.* and com.businessos.platform.company
+// (LoginRequest, LoginResponse, JwtResponse, RegisterRequest, VerifyEmailRequest,
+// ResendVerificationRequest, ForgotPasswordRequest, ResetPasswordRequest).
+
 export interface LoginRequest {
   email: string;
   password: string;
@@ -11,44 +15,82 @@ export interface RegisterRequest {
   companyName: string;
   subdomain: string;
   companyPhone?: string;
-  country?: string;
-  level1?: string;
-  level2?: string;
-  level3?: string;
-  level4?: string;
-  streetAddress?: string;
-  postalCode?: string;
-  apartment?: string;
 }
- 
-export interface AuthResponse {
-  accessToken: string;
-  refreshToken: string;
+
+// POST /api/auth/login response shape
+export interface LoginResponse {
   userId: number;
   firstName: string;
   email: string;
   role: string;
-  companyId: number;
+  companyId: number | null;
+  accessToken: string;
+  refreshToken: string;
 }
- 
+
+// POST /api/auth/refresh response shape (tokens only - no user info)
+export interface JwtResponse {
+  accessToken: string;
+  refreshToken: string;
+}
+
+export interface VerifyEmailRequest {
+  token: string;
+}
+
+export interface ResendVerificationRequest {
+  email: string;
+}
+
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+export interface ResetPasswordRequest {
+  token: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
+// Mirrors backend ChangePasswordRequest (POST /api/auth/change-password).
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
 export interface User {
   id: number;
-  firstName: string;
-  lastName: string;
+  username: string;
   email: string;
-  phone?: string;
-  image?: string;
-  role: string;
-  companyId?: number;
-  languagePreference?: string;
-  customRoleId?: number;
-  customRoleName?: string;
+  fullName: string;
+  roles: string[];
+  companyId?: number | null;
+  profileImageUrl?: string;
 }
- 
+
 export interface TokenPayload {
   sub: string;
-  roles: string[];
-  companyId: number;
+  role: string;
+  companyId?: number;
+  actionType?: string;
   exp: number;
   iat: number;
+}
+
+// POST /api/platform-admin/companies/{id}/impersonate response shape
+export interface ImpersonationResponse {
+  accessToken: string;
+  companyId: number;
+  companyName: string;
+  impersonationSessionId: string;
+  expiresInSeconds: number;
+}
+
+// Local (frontend-only) bookkeeping for the "Viewing as {company}" banner
+export interface ImpersonationSession {
+  companyId: number;
+  companyName: string;
+  impersonationSessionId: string;
+  expiresAt: number; // epoch ms
 }

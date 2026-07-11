@@ -11,13 +11,13 @@
       <div>
         <div class="text-muted small text-uppercase">Overall Rating</div>
         <div class="d-flex align-items-baseline gap-2 mt-1">
-          <span class="fs-2 fw-medium">{{ average | number:'1.1-1' }}</span>
+          <span class="fs-2 fw-medium">{{ average.average | number:'1.1-1' }}</span>
           <span class="text-muted small">/ 5</span>
         </div>
       </div>
       <div class="text-warning fs-4">
-        @for (_ of stars(average); track $index) { <i class="bi bi-star-fill"></i> }
-        @for (_ of emptyStars(average); track $index) { <i class="bi bi-star text-muted"></i> }
+        @for (_ of stars(average.average); track $index) { <i class="bi bi-star-fill"></i> }
+        @for (_ of emptyStars(average.average); track $index) { <i class="bi bi-star text-muted"></i> }
       </div>
     </div>
   </div>

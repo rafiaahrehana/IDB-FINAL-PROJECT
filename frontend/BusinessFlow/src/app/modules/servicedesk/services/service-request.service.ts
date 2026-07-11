@@ -13,6 +13,8 @@ export interface CreateServiceRequestRequest {
   subscriptionId?: number;
   paymentChoice: string;
   paymentMethod?: string;
+  // Answers to the service's dynamic form fields, keyed by ServiceFormField id
+  formData?: Record<string, string>;
 }
 
 export interface UpdateServiceRequestRequest {
@@ -80,7 +82,7 @@ export class ServiceRequestService {
   }
 
   cancel(id: number): Observable<string> {
-    return this.api.patch<string>(`${this.endpoint}/${id}/cancel`, {});
+    return this.api.patchText(`${this.endpoint}/${id}/cancel`, {});
   }
 
   // TASKS
@@ -97,7 +99,7 @@ export class ServiceRequestService {
   }
 
   deleteTask(id: number, taskId: number): Observable<string> {
-    return this.api.delete<string>(`${this.endpoint}/${id}/tasks/${taskId}`);
+    return this.api.deleteText(`${this.endpoint}/${id}/tasks/${taskId}`);
   }
 
   // COMMENTS - backend returns Page<RequestCommentResponse>, not a plain array

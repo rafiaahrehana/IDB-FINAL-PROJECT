@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ChartOfAccount, JournalEntry } from '../../models/finance.model';
@@ -33,6 +33,7 @@ export class JournalEntries implements OnInit {
   constructor(
     private journalEntryService: JournalEntryService,
     private coaService: CoaService,
+    private cdr: ChangeDetectorRef,
   ) {}
 
   // LIFECYCLE HOOKS
@@ -43,15 +44,18 @@ export class JournalEntries implements OnInit {
   // LOAD JOURNAL ENTRIES
   load(): void {
     this.loading = true;
+    this.cdr.markForCheck();
     this.journalEntryService.list(this.page).subscribe({
       next: (res) => {
         this.entries = res.content;
         this.totalPages = res.totalPages;
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.error = 'Failed to load journal entries';
         this.loading = false;
+        this.cdr.markForCheck();
       },
     });
   }

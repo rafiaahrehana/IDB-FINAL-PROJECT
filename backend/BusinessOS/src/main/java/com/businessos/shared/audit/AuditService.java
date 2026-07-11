@@ -4,7 +4,6 @@ import com.businessos.auth.user.User;
 import com.businessos.enums.AuditAction;
 import com.businessos.enums.AuditEntityType;
 
-import com.businessos.modules.company.Company;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.scheduling.annotation.Async;
@@ -35,7 +34,7 @@ public class AuditService {
                 .oldValue(oldValue)
                 .newValue(newValue)
                 .performedBy(performedBy)
-                .company(companyId != null ? new Company() {
+                .company(companyId != null ? new com.businessos.modules.company.Company() {
                     {
                         setId(companyId);
                     }
@@ -54,7 +53,7 @@ public class AuditService {
                 .action(AuditAction.LOGIN)
                 .newValue(user.getEmail())
                 .performedBy(user)
-                .company(companyId != null ? new Company() {
+                .company(companyId != null ? new com.businessos.modules.company.Company() {
                     {
                         setId(companyId);
                     }
@@ -72,7 +71,7 @@ public class AuditService {
                 .entityId(user.getId())
                 .action(AuditAction.LOGOUT)
                 .performedBy(user)
-                .company(companyId != null ? new Company() {
+                .company(companyId != null ? new com.businessos.modules.company.Company() {
                     {
                         setId(companyId);
                     }

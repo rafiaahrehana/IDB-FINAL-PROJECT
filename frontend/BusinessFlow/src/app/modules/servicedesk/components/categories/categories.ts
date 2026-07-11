@@ -1,22 +1,19 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ServiceCategory, ServiceCategoryRequest } from '../../models/servicedesk.model';
 import { ServiceCategoryService } from '../../services/service-category.service';
-import { Pagination } from '../../../../shared/components/pagination/pagination';
 import { Loader } from '../../../../shared/components/loader/loader';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
 
 @Component({
   selector: 'app-service-categories',
-  imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState],
+  imports: [CommonModule, FormsModule, Loader, EmptyState],
   templateUrl: './categories.html',
 })
 export class Categories implements OnInit {
   // VARIABLES
   categories: ServiceCategory[] = [];
-  totalPages = 0;
-  page = 0;
   loading = false;
   error = '';
   success = '';
@@ -25,18 +22,19 @@ export class Categories implements OnInit {
   editingId: number | null = null;
   form: ServiceCategoryRequest = { name: '' };
 
-  constructor(private categoryService: ServiceCategoryService) {}
+  constructor(private categoryService: ServiceCategoryService, private cdr: ChangeDetectorRef) {}
 
   // LIFECYCLE HOOKS
   ngOnInit(): void { this.load(); }
 
-  // LOAD CATEGORIES
+  // LOAD CATEGORIES (management listing - includes inactive, bare list, not paged)
   load(): void {
     this.loading = true;
+    this.cdr.markForCheck();
     this.error = '';
-    this.categoryService.list().subscribe({
-      next: (res) => { this.categories = res; this.totalPages = 1; this.loading = false; },
-      error: () => { this.error = 'Failed to load categories'; this.loading = false; }
+    this.categoryService.listAll().subscribe({
+      next: (res) => { this.categories = res; this.loading = false; this.cdr.markForCheck(); },
+      error: () => { this.error = 'Failed to load categories'; this.loading = false; this.cdr.markForCheck(); }
     });
   }
 
@@ -48,23 +46,15 @@ export class Categories implements OnInit {
   }
 
   openEdit(c: ServiceCategory): void {
-    this.loading = true;
-    this.error = '';
-    this.categoryService.getById(c.id).subscribe({
-      next: (category) => {
-        this.editingId = category.id;
-        this.form = {
-          name: category.name,
-          nameBn: category.nameBn,
-          description: category.description,
-          iconUrl: category.iconUrl,
-          sortOrder: category.sortOrder,
-        };
-        this.showForm = true;
-        this.loading = false;
-      },
-      error: () => { this.error = 'Failed to load category'; this.loading = false; }
-    });
+    this.editingId = c.id;
+    this.form = {
+      name: c.name,
+      nameBn: c.nameBn,
+      description: c.description,
+      iconUrl: c.iconUrl,
+      sortOrder: c.sortOrder,
+    };
+    this.showForm = true;
   }
 
   // SAVE CATEGORY
@@ -88,7 +78,4 @@ export class Categories implements OnInit {
       error: (err) => this.error = err?.error?.message || 'Failed to toggle category'
     });
   }
-
-  // PAGINATION
-  goToPage(p: number): void { this.page = p; this.load(); }
 }

@@ -2,7 +2,7 @@ package com.businessos.modules.servicedesk.servicerequest;
 
 import com.businessos.core.automation.AutomationEventPublisher;
 import com.businessos.enums.*;
-import com.businessos.core.subscription.SubscriptionStatus;
+import com.businessos.enums.SubscriptionStatus;
 import com.businessos.modules.servicedesk.companyservice.CompanyService;
 import com.businessos.modules.servicedesk.companyservice.PackageSubscription;
 import com.businessos.modules.servicedesk.companyservice.PackageSubscriptionRepository;
@@ -49,6 +49,12 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+
+import com.businessos.modules.servicedesk.dynamicform.ServiceFormField;
+import com.businessos.modules.servicedesk.dynamicform.ServiceFormFieldRepository;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 @Slf4j
 @Service
@@ -73,6 +79,8 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
     private final CompanyRepository companyRepository;
     private final AutomationEventPublisher automationEventPublisher;
     private final ClientInvoiceService invoiceService;
+    private final ServiceFormFieldRepository serviceFormFieldRepository;
+    private final ObjectMapper objectMapper;
 
     @Override
     @Transactional
@@ -129,6 +137,12 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
                 : service.getPrice();
         }
 
+        // Validate the client's answers against the service's dynamic form
+        // definition (required fields must be present, keyed by field id),
+        // then persist them as JSON on the request.
+        String formDataJson = validateAndSerializeFormData(
+            companyId, service.getId(), request.getFormData());
+
         ServiceRequest sr = ServiceRequest.builder()
             .title(request.getTitle())
             .description(request.getDescription())
@@ -137,6 +151,7 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
                 ? request.getPriority() : service.getDefaultPriority())
             .agreedPrice(agreedPrice)
             .slaDeadline(request.getSlaDeadline())
+            .formDataJson(formDataJson)
             .company(companyRef(companyId))
             .client(client)
             .companyService(service)
@@ -582,7 +597,40 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
         long taskCount = taskRepository.countByServiceRequestId(sr.getId());
         long completedCount = taskRepository.countByServiceRequestIdAndStatus(
             sr.getId(), TaskStatus.COMPLETED);
-        return ServiceRequestMapper.toResponse(sr, taskCount, completedCount);
+        ServiceRequestResponse response = ServiceRequestMapper.toResponse(sr, taskCount, completedCount);
+        if (sr.getFormDataJson() != null && !sr.getFormDataJson().isBlank()) {
+            try {
+                response.setFormData(objectMapper.readValue(
+                    sr.getFormDataJson(), new TypeReference<Map<String, String>>() {}));
+            } catch (Exception ex) {
+                log.warn("Could not parse formDataJson for request {}: {}", sr.getId(), ex.getMessage());
+            }
+        }
+        return response;
+    }
+
+    /**
+     * Checks required dynamic form fields for the service are answered and
+     * returns the answers serialized as JSON (null when there is nothing to store).
+     * Answers are keyed by ServiceFormField id so renamed labels don't orphan data.
+     */
+    private String validateAndSerializeFormData(
+            Long companyId, Long serviceId, Map<String, String> formData) {
+        List<ServiceFormField> fields = serviceFormFieldRepository
+            .findByCompanyIdAndServiceIdOrderBySortOrderAsc(companyId, serviceId);
+        for (ServiceFormField field : fields) {
+            if (!field.isRequired()) continue;
+            String value = formData == null ? null : formData.get(String.valueOf(field.getId()));
+            if (value == null || value.isBlank()) {
+                throw new BadRequestException("'" + field.getLabel() + "' is required");
+            }
+        }
+        if (formData == null || formData.isEmpty()) return null;
+        try {
+            return objectMapper.writeValueAsString(formData);
+        } catch (Exception ex) {
+            throw new BadRequestException("Invalid form data");
+        }
     }
 
     @Override

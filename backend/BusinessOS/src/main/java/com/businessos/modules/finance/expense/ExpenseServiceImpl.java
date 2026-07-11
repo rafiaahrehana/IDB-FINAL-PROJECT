@@ -4,8 +4,6 @@ import com.businessos.modules.hrm.employee.EmployeeRepository;
 import com.businessos.auth.user.User;
 import com.businessos.auth.user.UserRepository;
 import com.businessos.security.SecurityUtil;
-import com.businessos.shared.email.EmailBranding;
-import com.businessos.shared.email.EmailService;
 import com.businessos.shared.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -23,8 +21,6 @@ public class ExpenseServiceImpl implements ExpenseService {
     private final EmployeeRepository employeeRepository;
     private final UserRepository userRepository;
     private final SecurityUtil securityUtil;
-    private final EmailService emailService;
-    private final EmailBranding emailBranding;
 
     @Override
     @Transactional
@@ -162,14 +158,6 @@ public class ExpenseServiceImpl implements ExpenseService {
         expense.approve(approver);
         expense.setApprovalNotes(approvalNotes);
         expenseRepository.save(expense);
-
-        // Send expense approval email to submitter
-        if (expense.getSubmittedBy() != null && expense.getSubmittedBy().getUser() != null) {
-            String to = expense.getSubmittedBy().getUser().getEmail();
-            String name = expense.getSubmittedBy().getUser().getFullName();
-            EmailBranding.Data branding = emailBranding.from(expense.getSubmittedBy() != null ? expense.getSubmittedBy().getCompany() : null);
-            emailService.sendExpenseStatusEmail(to, name, expense.getTitle(), "APPROVED", branding);
-        }
     }
 
     @Override
@@ -180,14 +168,6 @@ public class ExpenseServiceImpl implements ExpenseService {
         expense.reject();
         expense.setApprovalNotes(reason);
         expenseRepository.save(expense);
-
-        // Send expense rejection email to submitter
-        if (expense.getSubmittedBy() != null && expense.getSubmittedBy().getUser() != null) {
-            String to = expense.getSubmittedBy().getUser().getEmail();
-            String name = expense.getSubmittedBy().getUser().getFullName();
-            EmailBranding.Data branding = emailBranding.from(expense.getSubmittedBy() != null ? expense.getSubmittedBy().getCompany() : null);
-            emailService.sendExpenseStatusEmail(to, name, expense.getTitle(), "REJECTED", branding);
-        }
     }
 
     @Override

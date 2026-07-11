@@ -1,0 +1,26 @@
+.landing {
+  .hero {
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 55%, #a855f7 100%);
+    padding: 5rem 0;
+  }
+
+  .cta {
+    background: linear-gradient(135deg, #0d6efd 0%, #4f46e5 100%);
+  }
+
+  .card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--card-box-shadow-hover);
+    }
+  }
+
+  .plan-highlight {
+    border: 2px solid var(--bs-primary) !important;
+  }
+
+  h1, h2 {
+    font-family: 'Outfit', sans-serif;
+  }
+}

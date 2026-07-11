@@ -18,7 +18,14 @@ export class SiteService {
   private http = inject(HttpClient);
   private api = environment.apiUrl;
 
+  private _subdomain = '';
+
+  setSubdomain(value: string): void {
+    this._subdomain = value;
+  }
+
   private get subdomain(): string {
+    if (this._subdomain) return this._subdomain;
     const host = window.location.hostname;
     const parts = host.split('.');
     if (parts.length > 2) return parts[0];

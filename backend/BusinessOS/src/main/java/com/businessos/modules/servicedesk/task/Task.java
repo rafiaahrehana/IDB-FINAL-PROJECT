@@ -18,8 +18,10 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 
-@Entity(name = "ServiceDeskTask")
-@Table(name = "service_desk_tasks")
+@FilterDef(name = "tenantFilter", parameters = @ParamDef(name = "companyId", type = Long.class))
+@Filter(name = "tenantFilter", condition = "company_id = :companyId")
+@Entity
+@Table(name = "tasks")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class Task extends BaseEntity {
 
@@ -38,7 +40,6 @@ public class Task extends BaseEntity {
     @Builder.Default
     private ServiceRequestPriority priority = ServiceRequestPriority.NORMAL;
 
-    @Column(name = "due_date")
     private LocalDate dueDate;
     private LocalDateTime completedAt;
 

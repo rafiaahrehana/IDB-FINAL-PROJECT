@@ -2,6 +2,7 @@ package com.businessos.modules.hrm.asset;
 
 import com.businessos.modules.company.Company;
 import com.businessos.modules.hrm.employee.Employee;
+import com.businessos.enums.AssetStatus;
 import com.businessos.shared.exception.BadRequestException;
 import com.businessos.shared.exception.ResourceNotFoundException;
 

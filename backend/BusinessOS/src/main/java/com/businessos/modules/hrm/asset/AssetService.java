@@ -1,5 +1,6 @@
 package com.businessos.modules.hrm.asset;
 
+import com.businessos.enums.AssetStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 

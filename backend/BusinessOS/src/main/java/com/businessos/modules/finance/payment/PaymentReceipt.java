@@ -3,7 +3,7 @@ package com.businessos.modules.finance.payment;
 import com.businessos.core.base.BaseEntity;
 import com.businessos.modules.crm.client.Client;
 import com.businessos.modules.finance.invoice.ClientInvoice;
-import com.businessos.shared.payment.PaymentMethod;
+import com.businessos.enums.PaymentMethod;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.Filter;

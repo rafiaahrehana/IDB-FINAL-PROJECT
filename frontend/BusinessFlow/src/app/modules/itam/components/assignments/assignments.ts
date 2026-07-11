@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService, PagedResponse } from '../../../../core/services/api.service';
@@ -19,7 +19,7 @@ export class Assignments implements OnInit {
   loading = false;
   error = '';
 
-  constructor(private api: ApiService) {}
+  constructor(private api: ApiService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.load();
@@ -27,6 +27,7 @@ export class Assignments implements OnInit {
 
   load(): void {
     this.loading = true;
+    this.cdr.markForCheck();
     // NOTE: ApiService already prepends environment.apiUrl, which already contains "/api".
     // The backend controller is mapped at "/api/hr/asset-history" - this path must NOT
     // repeat "/api", or it 404s on every call (as it did before this fix).
@@ -35,10 +36,12 @@ export class Assignments implements OnInit {
         this.assignments = res.content;
         this.totalPages = res.totalPages;
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.error = 'Failed to load assignments';
         this.loading = false;
+        this.cdr.markForCheck();
       },
     });
   }

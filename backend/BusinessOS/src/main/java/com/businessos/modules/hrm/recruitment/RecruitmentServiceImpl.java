@@ -1,5 +1,7 @@
 package com.businessos.modules.hrm.recruitment;
 
+import com.businessos.enums.ApplicationStatus;
+import com.businessos.enums.JobPostingStatus;
 import com.businessos.modules.hrm.employee.Employee;
 import com.businessos.modules.hrm.employee.EmployeeRepository;
 import com.businessos.modules.hrm.recruitment.jobapplication.JobApplication;
@@ -9,7 +11,6 @@ import com.businessos.modules.hrm.recruitment.jobapplication.JobApplicationRespo
 import com.businessos.modules.hrm.recruitment.jobpost.JobPosting;
 import com.businessos.modules.company.Company;
 import com.businessos.modules.company.CompanyRepository;
-import com.businessos.modules.hrm.recruitment.jobpost.JobPostingStatus;
 import com.businessos.security.SecurityUtil;
 import com.businessos.shared.email.EmailBranding;
 import com.businessos.shared.email.EmailService;

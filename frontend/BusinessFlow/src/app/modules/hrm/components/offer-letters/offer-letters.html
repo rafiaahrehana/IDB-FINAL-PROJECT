@@ -1,27 +1,27 @@
-<div class="container-fluid py-3" style="background-color: #f8fafc; min-height: 100vh;">
-  <!-- Header Bar -->
-  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4 bg-white p-3 rounded-3 shadow-sm">
+<div class="page-container">
+  <div class="page-header">
     <div>
-      <h4 class="mb-0 fw-bold text-dark"><i class="bi bi-file-earmark-text text-primary me-2"></i>Official & Offer Letters</h4>
-      <p class="text-muted small mb-0">Generate, issue, and manage employee recruitment offer letters and certificates</p>
+      <h4 class="page-title"><i class="bi bi-file-earmark-text text-primary me-2"></i>Official & Offer Letters</h4>
+      <div class="page-subtitle">Generate, issue, and manage employee recruitment offer letters and certificates</div>
     </div>
-    <button class="btn btn-primary btn-sm px-3 rounded-2 fw-medium" (click)="openCreate()"><i class="bi bi-plus-lg me-1"></i> Generate Letter</button>
+    <button class="btn-shadcn btn-shadcn-primary btn-shadcn-sm" (click)="openCreate()"><i class="bi bi-plus-lg me-1"></i> Generate Letter</button>
   </div>
 
-  @if (error) { <div class="alert alert-danger py-2 rounded-2 shadow-sm mb-3">{{ error }}</div> }
-  @if (success) { <div class="alert alert-success py-2 rounded-2 shadow-sm mb-3">{{ success }}</div> }
+  @if (error) { <div class="badge-shadcn badge-shadcn-destructive py-2 px-3 mb-3">{{ error }}</div> }
+  @if (success) { <div class="badge-shadcn badge-shadcn-success py-2 px-3 mb-3">{{ success }}</div> }
 
   @if (loading) { <app-loader /> }
 
-  <!-- Create Form Card -->
   @if (showForm) {
-  <div class="card border-0 shadow-sm rounded-3 mb-4">
-    <div class="card-header py-3 bg-light border-0 fw-semibold text-dark"><i class="bi bi-plus-circle me-2"></i>Generate Letter</div>
-    <div class="card-body p-4">
+  <div class="card-shadcn mb-4">
+    <div class="card-shadcn-header"><div class="card-shadcn-title"><i class="bi bi-plus-circle me-2"></i>Generate Letter</div></div>
+    <div class="card-shadcn-content">
       <div class="row g-3">
         <div class="col-md-4">
-          <label class="form-label small fw-semibold text-secondary mb-1">Employee <span class="text-danger">*</span></label>
-          <select class="form-select form-select-sm border-light-subtle rounded-2" [(ngModel)]="form.employeeId">
+          <div class="field-group">
+            <label class="field-label">Employee <span class="text-danger">*</span></label>
+          </div>
+          <select class="select-shadcn input-shadcn-sm" [(ngModel)]="form.employeeId">
             <option [value]="undefined" disabled>Select Recipient</option>
             @for (emp of employees; track emp.id) {
               <option [value]="emp.id">{{ emp.firstName }} {{ emp.lastName }} ({{ emp.jobTitle || 'No Title' }})</option>
@@ -29,59 +29,66 @@
           </select>
         </div>
         <div class="col-md-3">
-          <label class="form-label small fw-semibold text-secondary mb-1">Letter Type</label>
-          <select class="form-select form-select-sm border-light-subtle rounded-2" [(ngModel)]="form.letterType">
+          <div class="field-group">
+            <label class="field-label">Letter Type</label>
+          </div>
+          <select class="select-shadcn input-shadcn-sm" [(ngModel)]="form.letterType">
             @for (type of letterTypes; track type) { <option [value]="type">{{ type }}</option> }
           </select>
         </div>
         <div class="col-md-3">
-          <label class="form-label small fw-semibold text-secondary mb-1">Issue Date <span class="text-danger">*</span></label>
-          <input class="form-control form-control-sm border-light-subtle rounded-2" type="date" [(ngModel)]="form.issueDate" />
+          <div class="field-group">
+            <label class="field-label">Issue Date <span class="text-danger">*</span></label>
+          </div>
+          <input class="input-shadcn input-shadcn-sm" type="date" [(ngModel)]="form.issueDate" />
         </div>
         <div class="col-md-2">
-          <label class="form-label small fw-semibold text-secondary mb-1">Reference Number</label>
-          <input class="form-control form-control-sm border-light-subtle rounded-2" type="text" [(ngModel)]="form.referenceNumber" placeholder="HR/2026/001" />
+          <div class="field-group">
+            <label class="field-label">Reference Number</label>
+          </div>
+          <input class="input-shadcn input-shadcn-sm" type="text" [(ngModel)]="form.referenceNumber" placeholder="HR/2026/001" />
         </div>
         <div class="col-md-4">
-          <label class="form-label small fw-semibold text-secondary mb-1">Signed By</label>
-          <input class="form-control form-control-sm border-light-subtle rounded-2" type="text" [(ngModel)]="form.signedBy" placeholder="HR Manager Name" />
+          <div class="field-group">
+            <label class="field-label">Signed By</label>
+          </div>
+          <input class="input-shadcn input-shadcn-sm" type="text" [(ngModel)]="form.signedBy" placeholder="HR Manager Name" />
         </div>
         <div class="col-12">
-          <label class="form-label small fw-semibold text-secondary mb-1">Letter Content <span class="text-danger">*</span></label>
-          <textarea class="form-control form-control-sm border-light-subtle rounded-2" rows="5" [(ngModel)]="form.content" placeholder="Dear EmployeeName, ..."></textarea>
+          <div class="field-group">
+            <label class="field-label">Letter Content <span class="text-danger">*</span></label>
+          </div>
+          <textarea class="textarea-shadcn" rows="5" [(ngModel)]="form.content" placeholder="Dear EmployeeName, ..."></textarea>
         </div>
         <div class="col-12 d-flex gap-2 mt-2">
-          <button class="btn btn-primary btn-sm px-3 rounded-2 fw-medium" [disabled]="!form.employeeId || !form.issueDate || !form.content || saving" (click)="save()">
+          <button class="btn-shadcn btn-shadcn-primary btn-shadcn-sm" [disabled]="!form.employeeId || !form.issueDate || !form.content || saving" (click)="save()">
             @if (saving) { Saving... } @else { Save }
           </button>
-          <button class="btn btn-outline-secondary btn-sm px-3 rounded-2 fw-medium border-light-subtle" (click)="showForm = false">Cancel</button>
+          <button class="btn-shadcn btn-shadcn-outline btn-shadcn-sm" (click)="showForm = false">Cancel</button>
         </div>
       </div>
     </div>
   </div>
   }
 
-  <!-- timeline log view layout for Offer Letters -->
   @if (!loading && letters.length) {
   <div class="timeline-container ps-3 border-start border-2 border-primary-subtle position-relative ms-4 mb-4">
     @for (l of letters; track l.id) {
     <div class="timeline-item mb-4 position-relative">
       
-      <!-- Timeline Node Circle -->
       <div class="position-absolute d-flex align-items-center justify-content-center bg-primary text-white rounded-circle shadow-sm"
            style="width: 32px; height: 32px; left: -33px; top: 0px;">
         <i class="bi bi-file-earmark-text small"></i>
       </div>
 
-      <!-- Detail Card block -->
-      <div class="card border border-light-subtle rounded-3 bg-white shadow-sm p-4 ms-3 transition-hover">
+      <div class="card-shadcn p-4 ms-3">
         <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
           <div>
             <span class="text-muted small fw-bold">Ref No: {{ l.referenceNumber || 'Unspecified' }}</span>
             <h5 class="fw-bold text-dark mt-1 mb-0">{{ l.letterType }} - {{ l.employeeName }}</h5>
           </div>
           <div class="d-flex align-items-center gap-2">
-            <span class="badge rounded-pill px-3 py-1.5" [class.text-bg-success]="l.issued" [class.text-bg-warning]="!l.issued">
+            <span class="badge-shadcn" [class.badge-shadcn-success]="l.issued" [class.badge-shadcn-warning]="!l.issued">
               {{ l.issued ? 'Issued' : 'Draft' }}
             </span>
             <span class="text-muted small">{{ l.issueDate | date:'mediumDate' }}</span>
@@ -98,9 +105,9 @@
           </div>
           <div class="d-flex gap-1">
             @if (!l.issued) {
-              <button class="btn btn-outline-success btn-sm border-success-subtle px-3 rounded-2 fw-medium me-1" (click)="issue(l)">Mark Issued</button>
+              <button class="btn-shadcn btn-shadcn-ghost btn-shadcn-sm me-1" (click)="issue(l)">Mark Issued</button>
             }
-            <button class="btn btn-outline-danger btn-sm border-danger-subtle px-2 rounded-2" style="background-color: #fff5f5;" (click)="deleteTarget = l"><i class="bi bi-trash"></i></button>
+            <button class="btn-shadcn btn-shadcn-ghost btn-shadcn-sm" (click)="deleteTarget = l"><i class="bi bi-trash"></i></button>
           </div>
         </div>
       </div>
@@ -109,7 +116,7 @@
     }
   </div>
 
-  <div class="d-flex justify-content-end p-3 bg-white rounded-3 shadow-sm mb-4">
+  <div class="d-flex justify-content-end p-3 card-shadcn mb-4">
     <app-pagination [page]="page" [totalPages]="totalPages" (pageChange)="goToPage($event)" />
   </div>
   }

@@ -1,76 +1,227 @@
-<div class="container-fluid py-3">
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h4 class="mb-0">Accounts</h4>
-    <div class="d-flex gap-2">
-      <select class="form-select form-select-sm" style="width: 160px" [(ngModel)]="statusFilter" (change)="page = 0; load()">
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h4 class="page-title">Accounts</h4>
+    </div>
+    <div class="d-flex gap-2 align-items-center">
+      <select class="select-shadcn" style="width: 160px" [(ngModel)]="statusFilter" (change)="page = 0; load()">
         <option value="">All statuses</option>
-        <option value="ACTIVE">Active</option>
-        <option value="INACTIVE">Inactive</option>
+        @for (s of statuses; track s) { <option [value]="s">{{ s | titlecase }}</option> }
       </select>
-      <button class="btn btn-primary btn-sm" (click)="showCreate = !showCreate; form = {}"><i class="bi bi-plus-lg me-1"></i>Add Client</button>
+      <button class="btn-shadcn btn-shadcn-primary btn-shadcn-sm" (click)="openCreate()">
+        <i class="bi bi-person-plus me-1"></i>Add Account
+      </button>
     </div>
   </div>
 
-  @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
-  @if (success) { <div class="alert alert-success py-2">{{ success }}</div> }
-
-  @if (showCreate) {
-  <div class="card mb-3">
-    <div class="card-header py-2 fw-semibold">New Client</div>
-    <div class="card-body">
-      <div class="row g-2">
-        <div class="col-md-3"><input class="form-control form-control-sm" placeholder="First Name *" [(ngModel)]="form.firstName" /></div>
-        <div class="col-md-3"><input class="form-control form-control-sm" placeholder="Last Name *" [(ngModel)]="form.lastName" /></div>
-        <div class="col-md-3"><input type="email" class="form-control form-control-sm" placeholder="Email *" [(ngModel)]="form.email" /></div>
-        <div class="col-md-3"><input type="password" class="form-control form-control-sm" placeholder="Password *" [(ngModel)]="form.password" /></div>
-        <div class="col-md-3"><input class="form-control form-control-sm" placeholder="Phone" [(ngModel)]="form.phone" /></div>
-        <div class="col-md-3"><input class="form-control form-control-sm" placeholder="Company Name" [(ngModel)]="form.clientCompanyName" /></div>
-        <div class="col-md-3"><input class="form-control form-control-sm" placeholder="Industry" [(ngModel)]="form.industry" /></div>
-        <div class="col-md-3"><input class="form-control form-control-sm" placeholder="Website" [(ngModel)]="form.website" /></div>
-        <div class="col-12 d-flex gap-2">
-          <button class="btn btn-primary btn-sm" (click)="create()">Create Client</button>
-          <button class="btn btn-secondary btn-sm" (click)="showCreate = false">Cancel</button>
-        </div>
-      </div>
-    </div>
-  </div>
-  }
-
+  @if (error) { <div class="badge-shadcn badge-shadcn-destructive py-2 px-3">{{ error }}</div> }
+  @if (success) { <div class="badge-shadcn badge-shadcn-success py-2 px-3">{{ success }}</div> }
   @if (loading) { <app-loader /> }
 
   @if (!loading && clients.length) {
-  <div class="card">
-    <div class="table-responsive">
-      <table class="table table-hover table-sm align-middle mb-0">
-        <thead class="table-light">
+  <div class="card-shadcn">
+    <div class="table-shadcn-container">
+      <table class="table-shadcn">
+        <thead>
           <tr>
             <th>Account</th><th>Industry</th><th>Contact</th><th>Status</th>
-            <th>Tags</th><th>Account Manager</th><th>Onboarded</th><th></th>
+            <th>Portal</th><th>Account Manager</th><th>Onboarded</th><th></th>
           </tr>
         </thead>
         <tbody>
           @for (client of clients; track client.id) {
           <tr>
-            <td><a [routerLink]="['/crm/clients', client.id]">{{ client.clientCompanyName || (client.firstName + ' ' + client.lastName) }}</a></td>
+            <td><a [routerLink]="['/crm/clients', client.id]" class="text-primary">{{ client.clientCompanyName || (client.firstName + ' ' + client.lastName) }}</a></td>
             <td>{{ client.industry || '-' }}</td>
             <td>{{ client.email || '-' }}</td>
-            <td><span class="badge text-bg-success">{{ client.status }}</span></td>
+            <td><span class="badge-shadcn {{ statusClass(client.status) }}">{{ client.status }}</span></td>
             <td>
-              @for (tag of tagList(client); track tag) { <span class="badge text-bg-light border me-1">{{ tag }}</span> }
+              @if (client.portalAccessEnabled) { <i class="bi bi-check-circle text-success"></i> }
+              @else { <i class="bi bi-dash-circle text-muted"></i> }
             </td>
             <td>{{ client.accountManagerName || '-' }}</td>
             <td>{{ client.onboardedAt ? (client.onboardedAt | date:'mediumDate') : '-' }}</td>
-            <td><button class="btn btn-outline-danger btn-sm" (click)="deleteClient(client)"><i class="bi bi-trash"></i></button></td>
+            <td class="text-end text-nowrap">
+              <button class="btn-shadcn btn-shadcn-ghost btn-shadcn-sm me-1" (click)="openEdit(client)" title="Edit">
+                <i class="bi bi-pencil"></i>
+              </button>
+              <button class="btn-shadcn btn-shadcn-ghost btn-shadcn-sm" (click)="deleteTarget = client" title="Delete">
+                <i class="bi bi-trash"></i>
+              </button>
+            </td>
           </tr>
           }
         </tbody>
       </table>
     </div>
-    <div class="card-footer d-flex justify-content-end">
+    <div class="card-shadcn-footer d-flex justify-content-end">
       <app-pagination [page]="page" [totalPages]="totalPages" (pageChange)="goToPage($event)" />
     </div>
   </div>
   }
 
   @if (!loading && !clients.length) { <app-empty-state icon="bi-building" message="No accounts found." /> }
+
+  <!-- Add Account modal -->
+  @if (showCreate) {
+  <div class="modal-overlay" (click)="showCreate = false">
+    <div class="modal-dialog-shadcn" (click)="$event.stopPropagation()">
+      <div class="modal-header-shadcn">
+        <h5 class="modal-title-shadcn">Add Account</h5>
+        <button class="btn-shadcn btn-shadcn-ghost btn-shadcn-icon" (click)="showCreate = false">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div class="modal-body-shadcn">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="field-group">
+              <label class="field-label">First Name <span class="text-danger">*</span></label>
+              <input class="input-shadcn input-shadcn-sm" [(ngModel)]="createForm.firstName" />
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="field-group">
+              <label class="field-label">Last Name <span class="text-danger">*</span></label>
+              <input class="input-shadcn input-shadcn-sm" [(ngModel)]="createForm.lastName" />
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="field-group">
+              <label class="field-label">Email <span class="text-danger">*</span></label>
+              <input type="email" class="input-shadcn input-shadcn-sm" [(ngModel)]="createForm.email" />
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="field-group">
+              <label class="field-label">Portal Password <span class="text-danger">*</span></label>
+              <input type="password" class="input-shadcn input-shadcn-sm" [(ngModel)]="createForm.password" autocomplete="new-password" />
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="field-group">
+              <label class="field-label">Phone</label>
+              <input class="input-shadcn input-shadcn-sm" [(ngModel)]="createForm.phone" />
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="field-group">
+              <label class="field-label">Company Name</label>
+              <input class="input-shadcn input-shadcn-sm" [(ngModel)]="createForm.clientCompanyName" />
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="field-group">
+              <label class="field-label">Industry</label>
+              <input class="input-shadcn input-shadcn-sm" [(ngModel)]="createForm.industry" />
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="field-group">
+              <label class="field-label">Website</label>
+              <input class="input-shadcn input-shadcn-sm" [(ngModel)]="createForm.website" />
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="field-group">
+              <label class="field-label">Tax ID</label>
+              <input class="input-shadcn input-shadcn-sm" [(ngModel)]="createForm.taxId" />
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="field-group">
+              <label class="field-label">Account Manager</label>
+              <select class="select-shadcn input-shadcn-sm" [(ngModel)]="createForm.accountManagerId">
+                <option [ngValue]="null">— None —</option>
+                @for (e of employees; track e.id) { <option [ngValue]="e.id">{{ e.firstName }} {{ e.lastName }}</option> }
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="field-hint mt-3">The email and password create the client's portal login.</div>
+      </div>
+      <div class="modal-footer-shadcn">
+        <button class="btn-shadcn btn-shadcn-outline btn-shadcn-sm" (click)="showCreate = false">Cancel</button>
+        <button class="btn-shadcn btn-shadcn-primary btn-shadcn-sm" (click)="saveCreate()" [disabled]="saving">
+          @if (saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
+          Create Account
+        </button>
+      </div>
+    </div>
+  </div>
+  }
+
+  <!-- Edit Account modal -->
+  @if (editing) {
+  <div class="modal-overlay" (click)="editing = null">
+    <div class="modal-dialog-shadcn" (click)="$event.stopPropagation()">
+      <div class="modal-header-shadcn">
+        <h5 class="modal-title-shadcn">Edit Account</h5>
+        <button class="btn-shadcn btn-shadcn-ghost btn-shadcn-icon" (click)="editing = null">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div class="modal-body-shadcn">
+        <div class="row g-3">
+          <div class="col-12">
+            <div class="field-group">
+              <label class="field-label">Company Name</label>
+              <input class="input-shadcn input-shadcn-sm" [(ngModel)]="editForm.clientCompanyName" />
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="field-group">
+              <label class="field-label">Industry</label>
+              <input class="input-shadcn input-shadcn-sm" [(ngModel)]="editForm.industry" />
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="field-group">
+              <label class="field-label">Website</label>
+              <input class="input-shadcn input-shadcn-sm" [(ngModel)]="editForm.website" />
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="field-group">
+              <label class="field-label">Status</label>
+              <select class="select-shadcn input-shadcn-sm" [(ngModel)]="editForm.status">
+                @for (s of statuses; track s) { <option [value]="s">{{ s | titlecase }}</option> }
+              </select>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="field-group">
+              <label class="field-label">Account Manager</label>
+              <select class="select-shadcn input-shadcn-sm" [(ngModel)]="editForm.accountManagerId">
+                <option [ngValue]="null">— None —</option>
+                @for (e of employees; track e.id) { <option [ngValue]="e.id">{{ e.firstName }} {{ e.lastName }}</option> }
+              </select>
+            </div>
+          </div>
+          <div class="col-12 mt-2">
+            <div class="field-group" style="flex-direction: row; align-items: center; gap: 0.5rem;">
+              <input type="checkbox" class="input-shadcn" id="portalAccess" [(ngModel)]="editForm.portalAccessEnabled" style="width: auto;" />
+              <label class="field-label mb-0" for="portalAccess">Portal access enabled</label>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer-shadcn">
+        <button class="btn-shadcn btn-shadcn-outline btn-shadcn-sm" (click)="editing = null">Cancel</button>
+        <button class="btn-shadcn btn-shadcn-primary btn-shadcn-sm" (click)="saveEdit()" [disabled]="saving">
+          @if (saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
+          Save Changes
+        </button>
+      </div>
+    </div>
+  </div>
+  }
+
+  <app-confirm-dialog
+    [visible]="!!deleteTarget"
+    title="Delete Account"
+    [message]="'Delete account ' + (deleteTarget?.clientCompanyName || deleteTarget?.email || '') + '? This cannot be undone.'"
+    confirmLabel="Delete"
+    (confirmed)="confirmDelete()"
+    (cancelled)="deleteTarget = null" />
 </div>

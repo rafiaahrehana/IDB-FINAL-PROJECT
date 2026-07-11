@@ -5,6 +5,7 @@ import com.businessos.modules.hrm.department.Department;
 import com.businessos.modules.hrm.designation.Designation;
 import com.businessos.modules.hrm.attendance.shift.Shift;
 import com.businessos.auth.user.User;
+import com.businessos.enums.EmploymentStatus;
 import com.businessos.auth.role.enums.Role;
 import com.businessos.shared.exception.BadRequestException;
 import com.businessos.shared.exception.ResourceNotFoundException;
@@ -43,6 +44,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     private final EmailBranding emailBranding;
     private final NotificationPreferenceService notificationPreferenceService;
     private final EmployeeMapper employeeMapper;
+    private final com.businessos.shared.address.LocationMapper locationMapper;
     private final SecurityUtil securityUtil;
 
     private Long requireCompanyId() {
@@ -114,6 +116,9 @@ public class EmployeeServiceImpl implements EmployeeService {
                         : EmploymentStatus.PROBATION)
                 .gender(request.getGender())
                 .dateOfBirth(request.getDateOfBirth())
+                .fatherName(request.getFatherName())
+                .motherName(request.getMotherName())
+                .location(locationMapper.toEntity(request.getLocation()))
                 .hireDate(request.getHireDate())
                 .confirmationDate(request.getConfirmationDate())
                 .probationEndDate(request.getProbationEndDate())
@@ -163,6 +168,17 @@ public class EmployeeServiceImpl implements EmployeeService {
             emp.setGender(request.getGender());
         if (request.getDateOfBirth() != null)
             emp.setDateOfBirth(request.getDateOfBirth());
+        if (request.getFatherName() != null)
+            emp.setFatherName(request.getFatherName());
+        if (request.getMotherName() != null)
+            emp.setMotherName(request.getMotherName());
+        if (request.getLocation() != null) {
+            if (emp.getLocation() == null) {
+                emp.setLocation(locationMapper.toEntity(request.getLocation()));
+            } else {
+                locationMapper.updateEntityFromRequest(emp.getLocation(), request.getLocation());
+            }
+        }
         if (request.getHireDate() != null)
             emp.setHireDate(request.getHireDate());
         if (request.getConfirmationDate() != null)

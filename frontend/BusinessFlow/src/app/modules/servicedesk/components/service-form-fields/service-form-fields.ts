@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -40,7 +40,8 @@ export class ServiceFormFields implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private fieldService: ServiceFormFieldService,
-    private serviceService: CompanyServiceService
+    private serviceService: CompanyServiceService,
+    private cdr: ChangeDetectorRef,
   ) {}
 
   // LIFECYCLE HOOKS
@@ -61,10 +62,11 @@ export class ServiceFormFields implements OnInit {
   // LOAD FORM FIELDS
   loadFields(): void {
     this.loading = true;
+    this.cdr.markForCheck();
     this.error = '';
     this.fieldService.list(this.serviceId).subscribe({
-      next: (res) => { this.fields = res || []; this.loading = false; },
-      error: () => { this.error = 'Failed to load form fields'; this.loading = false; }
+      next: (res) => { this.fields = res || []; this.loading = false; this.cdr.markForCheck(); },
+      error: () => { this.error = 'Failed to load form fields'; this.loading = false; this.cdr.markForCheck(); }
     });
   }
 

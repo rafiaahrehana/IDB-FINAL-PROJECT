@@ -4,6 +4,7 @@ import com.businessos.modules.hrm.employee.Employee;
 import com.businessos.core.base.BaseEntity;
 import com.businessos.auth.user.User;
 import com.businessos.modules.company.Company;
+import com.businessos.enums.LetterType;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDate;

@@ -17,7 +17,6 @@ export class ErrorInterceptor implements HttpInterceptor {
           this.notificationService.error(errorMessage);
         }
  
-        console.error('API Error:', error);
         return throwError(() => error);
       })
     );

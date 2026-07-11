@@ -1,0 +1,339 @@
+<section class="py-6 bg-light border-bottom position-relative">
+  <div class="container py-5 mb-5">
+    <div class="text-center mb-5 position-relative z-1">
+      <h2 class="display-5 fw-bold text-dark slide-up">A Unified Workspace Experience</h2>
+      <p class="text-muted slide-up fs-5" style="animation-delay: 0.1s;">Switch contexts instantly without losing your flow.</p>
+    </div>
+    
+    <!-- Module Tabs -->
+    <div class="d-flex justify-content-center gap-3 mb-2 overflow-auto pb-3 slide-up position-relative z-1" style="animation-delay: 0.2s;">
+      <button 
+        *ngFor="let tab of tabs()" 
+        (click)="setActiveTab(tab)"
+        class="btn rounded-pill px-4 py-2 fw-medium transition-all shadow-sm"
+        [ngClass]="activeTab() === tab ? 'btn-primary-bos text-white' : 'btn-white bg-white text-dark border'">
+        {{ tab }}
+      </button>
+    </div>
+    
+    <!-- 3D Workspace Stage -->
+    <div class="workspace-stage slide-up" style="animation-delay: 0.3s;">
+      
+      <!-- Background Glow -->
+      <div class="workspace-glow"></div>
+
+      <!-- Main Isometric Container -->
+      <div class="workspace-container">
+        
+        <!-- Base App Layer -->
+        <div class="workspace-layer">
+          <!-- Fake App Header -->
+          <div class="ui-header d-flex justify-content-between">
+            <div class="d-flex align-items-center gap-3">
+              <div class="dot bg-danger rounded-circle" style="width: 10px; height: 10px;"></div>
+              <div class="dot bg-warning rounded-circle" style="width: 10px; height: 10px;"></div>
+              <div class="dot bg-success rounded-circle" style="width: 10px; height: 10px;"></div>
+            </div>
+            <div class="text-muted small fw-medium">
+              app.businessos.com/{{ activeTab() | lowercase }}
+            </div>
+            <div class="d-flex gap-2">
+              <i class="bi bi-bell text-muted fs-5"></i>
+              <div class="mini-avatar">JS</div>
+            </div>
+          </div>
+          
+          <!-- Content Body -->
+          <div class="ui-body">
+            
+            <!-- CRM View -->
+            <div class="view-enter h-100" *ngIf="activeTab() === 'CRM'">
+              <div class="d-flex justify-content-between mb-4">
+                <h5 class="fw-bold m-0 text-dark">Sales Pipeline</h5>
+                <button class="btn btn-sm btn-primary-bos px-3">+ New Deal</button>
+              </div>
+              <div class="row g-3 h-100">
+                <!-- Kanban Column -->
+                <div class="col-4 h-100">
+                  <div class="bg-white rounded-3 p-3 h-100 border">
+                    <h6 class="text-muted small fw-bold mb-3 d-flex justify-content-between">
+                      LEAD <span class="badge bg-light text-dark">3</span>
+                    </h6>
+                    <div class="mini-card border-start border-4 border-primary">
+                      <div class="fw-bold text-dark mb-1">Acme Corp Enterprise</div>
+                      <div class="text-muted small mb-2">$45,000</div>
+                      <div class="d-flex justify-content-between align-items-center">
+                        <span class="badge bg-primary-subtle text-primary">In Progress</span>
+                        <div class="mini-avatar" style="width:24px;height:24px;">SJ</div>
+                      </div>
+                    </div>
+                    <div class="mini-card border-start border-4 border-primary">
+                      <div class="fw-bold text-dark mb-1">TechFlow Expansion</div>
+                      <div class="text-muted small mb-2">$12,500</div>
+                      <div class="d-flex justify-content-between align-items-center">
+                        <span class="badge bg-secondary-subtle text-secondary">New</span>
+                        <div class="mini-avatar" style="width:24px;height:24px;">MR</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <!-- Kanban Column -->
+                <div class="col-4 h-100">
+                  <div class="bg-white rounded-3 p-3 h-100 border">
+                    <h6 class="text-muted small fw-bold mb-3 d-flex justify-content-between">
+                      NEGOTIATION <span class="badge bg-light text-dark">1</span>
+                    </h6>
+                    <div class="mini-card border-start border-4 border-warning">
+                      <div class="fw-bold text-dark mb-1">Globex Systems</div>
+                      <div class="text-muted small mb-2">$85,000</div>
+                      <div class="d-flex justify-content-between align-items-center">
+                        <span class="badge bg-warning-subtle text-warning">High Priority</span>
+                        <div class="mini-avatar" style="width:24px;height:24px;">SJ</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <!-- Kanban Column -->
+                <div class="col-4 h-100">
+                  <div class="bg-white rounded-3 p-3 h-100 border">
+                    <h6 class="text-muted small fw-bold mb-3 d-flex justify-content-between">
+                      WON <span class="badge bg-light text-dark">2</span>
+                    </h6>
+                    <div class="mini-card border-start border-4 border-success">
+                      <div class="fw-bold text-dark mb-1">Stark Industries</div>
+                      <div class="text-muted small mb-2">$150,000</div>
+                      <div class="d-flex justify-content-between align-items-center">
+                        <span class="badge bg-success-subtle text-success">Closed</span>
+                        <div class="mini-avatar" style="width:24px;height:24px;">JD</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- HRM View -->
+            <div class="view-enter h-100" *ngIf="activeTab() === 'HRM'">
+              <div class="d-flex justify-content-between mb-4">
+                <h5 class="fw-bold m-0 text-dark">Team Overview</h5>
+                <button class="btn btn-sm btn-outline-primary px-3">Run Payroll</button>
+              </div>
+              <div class="row g-4">
+                <div class="col-8">
+                  <div class="bg-white rounded-3 p-3 border mb-4">
+                    <h6 class="text-muted small fw-bold mb-3">ATTENDANCE HEATMAP</h6>
+                    <div class="heatmap-grid">
+                      <div class="h-cell c-3" *ngFor="let i of [1,2,3,4,5,6,7,8]"></div>
+                      <div class="h-cell c-2" *ngFor="let i of [1,2,3,4]"></div>
+                      <div class="h-cell c-1" *ngFor="let i of [1,2,3,4,5,6]"></div>
+                      <div class="h-cell" *ngFor="let i of [1,2,3]"></div>
+                    </div>
+                  </div>
+                  <div class="row g-3">
+                    <div class="col-6">
+                      <div class="mini-card d-flex align-items-center gap-3 m-0">
+                        <div class="mini-avatar" style="width:40px;height:40px;background:#3b82f6;color:#fff;">AB</div>
+                        <div>
+                          <div class="fw-bold text-dark">Alice Baker</div>
+                          <div class="small text-muted">Engineering Lead</div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-6">
+                      <div class="mini-card d-flex align-items-center gap-3 m-0">
+                        <div class="mini-avatar" style="width:40px;height:40px;background:#10b981;color:#fff;">CD</div>
+                        <div>
+                          <div class="fw-bold text-dark">Charlie Davis</div>
+                          <div class="small text-muted">Product Manager</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-4">
+                  <div class="bg-white rounded-3 p-3 border h-100">
+                    <h6 class="text-muted small fw-bold mb-3">PENDING REQUESTS</h6>
+                    <div class="d-flex justify-content-between border-bottom pb-2 mb-2">
+                      <span class="text-dark small fw-medium">PTO Request</span>
+                      <span class="badge bg-warning-subtle text-warning">Review</span>
+                    </div>
+                    <div class="d-flex justify-content-between border-bottom pb-2 mb-2">
+                      <span class="text-dark small fw-medium">Expense Report</span>
+                      <span class="badge bg-warning-subtle text-warning">Review</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Finance View -->
+            <div class="view-enter h-100" *ngIf="activeTab() === 'Finance'">
+              <div class="d-flex justify-content-between mb-4">
+                <h5 class="fw-bold m-0 text-dark">Financial Dashboard</h5>
+                <span class="badge bg-success text-white d-flex align-items-center px-3">+14% YoY</span>
+              </div>
+              <div class="row g-3 mb-4">
+                <div class="col-4">
+                  <div class="bg-white rounded-3 p-3 border shadow-sm">
+                    <div class="text-muted small fw-bold">TOTAL REVENUE</div>
+                    <h3 class="m-0 text-dark fw-bold">$2.4M</h3>
+                  </div>
+                </div>
+                <div class="col-4">
+                  <div class="bg-white rounded-3 p-3 border shadow-sm">
+                    <div class="text-muted small fw-bold">PROFIT MARGIN</div>
+                    <h3 class="m-0 text-dark fw-bold">32%</h3>
+                  </div>
+                </div>
+                <div class="col-4">
+                  <div class="bg-white rounded-3 p-3 border shadow-sm">
+                    <div class="text-muted small fw-bold">BURN RATE</div>
+                    <h3 class="m-0 text-danger fw-bold">$85k/mo</h3>
+                  </div>
+                </div>
+              </div>
+              <div class="bg-white rounded-3 p-3 border shadow-sm h-50">
+                <div class="text-muted small fw-bold mb-2">CASH FLOW TREND</div>
+                <div class="chart-bar-container">
+                  <div class="bar" style="height: 40%; animation-delay: 0.1s;"></div>
+                  <div class="bar" style="height: 60%; animation-delay: 0.2s;"></div>
+                  <div class="bar" style="height: 50%; animation-delay: 0.3s;"></div>
+                  <div class="bar" style="height: 80%; animation-delay: 0.4s;"></div>
+                  <div class="bar" style="height: 70%; animation-delay: 0.5s;"></div>
+                  <div class="bar" style="height: 100%; animation-delay: 0.6s;"></div>
+                  <div class="bar" style="height: 90%; animation-delay: 0.7s;"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Inventory View -->
+            <div class="view-enter h-100" *ngIf="activeTab() === 'Inventory'">
+              <div class="d-flex justify-content-between mb-4">
+                <h5 class="fw-bold m-0 text-dark">Warehouse Operations</h5>
+                <button class="btn btn-sm btn-outline-dark px-3"><i class="bi bi-box-seam me-2"></i>New Stock</button>
+              </div>
+              <div class="row g-4">
+                <div class="col-7">
+                  <div class="bg-white rounded-3 p-3 border shadow-sm mb-3">
+                    <h6 class="text-muted small fw-bold mb-3">STOCK MOVEMENT</h6>
+                    <div class="d-flex align-items-center justify-content-between p-2 bg-light rounded mb-2">
+                      <div class="d-flex align-items-center gap-3">
+                        <div class="bg-white p-2 rounded shadow-sm"><i class="bi bi-box text-primary"></i></div>
+                        <div>
+                          <div class="fw-bold text-dark small">MacBook Pro M3</div>
+                          <div class="text-muted small" style="font-size: 0.7rem;">SKU: MBP-2024</div>
+                        </div>
+                      </div>
+                      <div class="fw-bold text-success">+50 Units</div>
+                    </div>
+                    <div class="d-flex align-items-center justify-content-between p-2 bg-light rounded">
+                      <div class="d-flex align-items-center gap-3">
+                        <div class="bg-white p-2 rounded shadow-sm"><i class="bi bi-box text-warning"></i></div>
+                        <div>
+                          <div class="fw-bold text-dark small">Dell UltraSharp 27"</div>
+                          <div class="text-muted small" style="font-size: 0.7rem;">SKU: DUS-27</div>
+                        </div>
+                      </div>
+                      <div class="fw-bold text-danger">-12 Units</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-5">
+                  <div class="bg-white rounded-3 p-3 border shadow-sm h-100">
+                    <h6 class="text-muted small fw-bold mb-3">CAPACITY</h6>
+                    <div class="d-flex justify-content-center align-items-center flex-column h-75">
+                      <div class="position-relative" style="width: 100px; height: 100px;">
+                        <!-- SVG Circle for fake chart -->
+                        <svg viewBox="0 0 36 36" class="w-100 h-100">
+                          <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#e2e8f0" stroke-width="3" />
+                          <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#f59e0b" stroke-width="3" stroke-dasharray="75, 100" />
+                        </svg>
+                        <div class="position-absolute top-50 start-50 translate-middle fw-bold text-dark fs-4">75%</div>
+                      </div>
+                      <div class="text-muted small mt-2">Warehouse A</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Support View -->
+            <div class="view-enter h-100" *ngIf="activeTab() === 'Support'">
+              <div class="d-flex justify-content-between mb-4">
+                <h5 class="fw-bold m-0 text-dark">Customer Support</h5>
+                <span class="badge bg-success-subtle text-success d-flex align-items-center px-3">SLA: 98%</span>
+              </div>
+              <div class="row g-4 h-100">
+                <div class="col-7 h-100">
+                  <div class="bg-white rounded-3 p-3 border shadow-sm h-100 d-flex flex-column">
+                    <h6 class="text-muted small fw-bold mb-3">LIVE TICKETS</h6>
+                    
+                    <div class="p-3 bg-light rounded-3 mb-2 border-start border-4 border-danger">
+                      <div class="d-flex justify-content-between mb-1">
+                        <span class="fw-bold text-dark small">Server Outage in US-East</span>
+                        <span class="text-muted small" style="font-size: 0.7rem;">2m ago</span>
+                      </div>
+                      <p class="text-muted small m-0 text-truncate">We are experiencing downtime on our main production cluster...</p>
+                    </div>
+
+                    <div class="p-3 bg-light rounded-3 mb-2 border-start border-4 border-warning">
+                      <div class="d-flex justify-content-between mb-1">
+                        <span class="fw-bold text-dark small">Billing Cycle Question</span>
+                        <span class="text-muted small" style="font-size: 0.7rem;">14m ago</span>
+                      </div>
+                      <p class="text-muted small m-0 text-truncate">Can you please clarify why I was charged twice for...</p>
+                    </div>
+
+                  </div>
+                </div>
+                <div class="col-5">
+                  <div class="bg-white rounded-3 p-3 border shadow-sm h-100">
+                    <h6 class="text-muted small fw-bold mb-3"><i class="bi bi-stars text-primary me-1"></i> AI SUGGESTIONS</h6>
+                    <div class="bg-primary-subtle p-3 rounded-3 mb-2">
+                      <div class="small fw-bold text-primary mb-1">Draft Response Ready</div>
+                      <div class="text-dark small" style="font-size: 0.75rem;">"We have identified the outage in US-East and are currently rolling back the..."</div>
+                      <button class="btn btn-sm btn-primary mt-2 py-1 w-100" style="font-size: 0.75rem;">Approve & Send</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+        
+        <!-- Floating Widgets (Animated in 3D Space) -->
+        <div class="floating-widget w-top-right p-3">
+          <div class="d-flex align-items-center gap-3">
+            <div class="rounded-circle bg-success-subtle text-success d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+              <i class="bi bi-check2-circle fs-5"></i>
+            </div>
+            <div>
+              <div class="fw-bold text-dark" style="font-size: 0.85rem;">Workflow Approved</div>
+              <div class="text-muted" style="font-size: 0.7rem;">Just now</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="floating-widget w-bottom-left p-3" style="width: 220px;">
+          <div class="fw-bold text-dark mb-2" style="font-size: 0.8rem;">Live Users</div>
+          <div class="d-flex gap-2">
+            <div class="mini-avatar bg-primary text-white">AJ</div>
+            <div class="mini-avatar bg-warning text-white">MR</div>
+            <div class="mini-avatar bg-danger text-white">SJ</div>
+            <div class="mini-avatar bg-success text-white">+12</div>
+          </div>
+        </div>
+        
+        <div class="floating-widget w-bottom-right p-3">
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <div class="dot bg-success rounded-circle" style="width: 8px; height: 8px;"></div>
+            <span class="text-muted fw-bold" style="font-size: 0.7rem;">SYSTEM STATUS</span>
+          </div>
+          <div class="fw-bold text-dark fs-5">All systems operational</div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>

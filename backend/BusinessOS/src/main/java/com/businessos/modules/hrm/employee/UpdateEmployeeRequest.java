@@ -1,5 +1,7 @@
 package com.businessos.modules.hrm.employee;
 
+import com.businessos.enums.EmploymentStatus;
+import com.businessos.enums.EmploymentType;
 import com.businessos.enums.Gender;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Size;
@@ -17,6 +19,11 @@ public class UpdateEmployeeRequest {
     private EmploymentStatus employmentStatus;
     private Gender gender;
     private LocalDate dateOfBirth;
+    @Size(max = 100)
+    private String fatherName;
+    @Size(max = 100)
+    private String motherName;
+    private com.businessos.shared.address.LocationRequest location;
     private LocalDate hireDate;
     private LocalDate confirmationDate;
     private LocalDate probationEndDate;

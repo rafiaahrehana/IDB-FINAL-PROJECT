@@ -8,8 +8,6 @@ public interface ClientService {
 
     ClientResponse create(CreateClientRequest request);
 
-    ClientResponse selfRegister(ClientSelfRegisterRequest request);
-
     ClientResponse getById(Long id);
 
     ClientResponse getMyProfile();

@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ReportService } from '../../services/report.service';
@@ -19,7 +19,7 @@ export class Reports implements OnInit {
   selectedDate = new Date().toISOString().split('T')[0];
   selectedMonth = new Date().toISOString().substring(0, 7);
 
-  constructor(private reportService: ReportService) {}
+  constructor(private reportService: ReportService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.loadDaily();
@@ -27,29 +27,35 @@ export class Reports implements OnInit {
 
   loadDaily(): void {
     this.loading = true;
+    this.cdr.markForCheck();
     this.reportService.daily(this.selectedDate).subscribe({
       next: (data) => {
         this.dailyReport = data;
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.error = 'Report not available';
         this.loading = false;
+        this.cdr.markForCheck();
       },
     });
   }
 
   loadMonthly(): void {
     this.loading = true;
+    this.cdr.markForCheck();
     const [year, month] = this.selectedMonth.split('-');
     this.reportService.monthly(month, +year).subscribe({
       next: (data) => {
         this.monthlyReport = data;
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.error = 'Report not available';
         this.loading = false;
+        this.cdr.markForCheck();
       },
     });
   }

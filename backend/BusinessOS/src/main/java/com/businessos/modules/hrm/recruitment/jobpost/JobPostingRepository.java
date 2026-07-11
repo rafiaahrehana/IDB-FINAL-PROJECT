@@ -1,6 +1,7 @@
 package com.businessos.modules.hrm.recruitment.jobpost;
 
 
+import com.businessos.enums.JobPostingStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

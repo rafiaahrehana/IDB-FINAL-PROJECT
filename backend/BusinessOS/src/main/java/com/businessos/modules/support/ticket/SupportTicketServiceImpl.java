@@ -8,8 +8,6 @@ import com.businessos.modules.support.category.SupportCategory;
 import com.businessos.modules.support.category.SupportCategoryRepository;
 import com.businessos.modules.support.sla.SLAPolicy;
 import com.businessos.modules.support.sla.SLAPolicyRepository;
-import com.businessos.modules.crm.client.Client;
-import com.businessos.modules.crm.client.ClientRepository;
 import com.businessos.modules.company.Company;
 import com.businessos.modules.company.CompanyRepository;
 import com.businessos.auth.user.User;
@@ -37,7 +35,6 @@ public class SupportTicketServiceImpl implements SupportTicketService {
     private final SupportAuditLogRepository auditRepository;
     private final CompanyRepository companyRepository;
     private final UserRepository userRepository;
-    private final ClientRepository clientRepository;
     private final SecurityUtil securityUtil;
 
     @Override
@@ -51,14 +48,6 @@ public class SupportTicketServiceImpl implements SupportTicketService {
 
         User createdBy = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-
-        // Resolve client: CLIENT-role users auto-link to their Client record
-        Client client = null;
-        if (createdBy.getRole() != null && createdBy.getRole().name().equals("CLIENT")) {
-            client = clientRepository.findByUserId(currentUserId).orElse(null);
-        } else if (request.getClientId() != null) {
-            client = clientRepository.findById(request.getClientId()).orElse(null);
-        }
 
         SupportCategory category = null;
         if (request.getCategoryId() != null) {
@@ -86,7 +75,6 @@ public class SupportTicketServiceImpl implements SupportTicketService {
                 .ticketNumber(ticketNumber)
                 .company(company)
                 .createdBy(createdBy)
-                .client(client)
                 .title(request.getTitle())
                 .description(request.getDescription())
                 .category(category)

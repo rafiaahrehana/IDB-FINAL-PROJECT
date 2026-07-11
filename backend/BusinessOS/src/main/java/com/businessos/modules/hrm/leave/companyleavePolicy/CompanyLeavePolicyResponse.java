@@ -1,6 +1,6 @@
 package com.businessos.modules.hrm.leave.companyleavePolicy;
 
-import com.businessos.modules.hrm.employee.EmploymentType;
+import com.businessos.enums.EmploymentType;
 import com.businessos.enums.LeaveType;
 import lombok.Getter;
 import lombok.Setter;

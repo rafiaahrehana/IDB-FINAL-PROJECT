@@ -43,7 +43,4 @@ public class CustomRole extends BaseEntity {
     @OneToMany(mappedBy = "customRole", fetch = FetchType.LAZY)
     private List<User> users;
 
-    @OneToMany(mappedBy = "customRole", fetch = FetchType.LAZY)
-    private List<RolePermission> rolePermissions;
-
 }

@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -14,16 +14,15 @@ import {
 import { EmployeeService } from '../../services/employee.service';
 import { DepartmentService } from '../../services/department.service';
 import { DesignationService } from '../../services/designation.service';
-import { CustomRoleService } from '../../../platform-admin/services/custom-role.service';
-import { CustomRole } from '../../../platform-admin/models/platform-admin.model';
 import { Pagination } from '../../../../shared/components/pagination/pagination';
 import { Loader } from '../../../../shared/components/loader/loader';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
 import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/confirm-dialog';
+import { LocationComponent } from '../../../../shared/components/location/location.component';
 
 @Component({
   selector: 'app-employees',
-  imports: [CommonModule, FormsModule, RouterLink, Pagination, Loader, EmptyState, ConfirmDialog],
+  imports: [CommonModule, FormsModule, RouterLink, Pagination, Loader, EmptyState, ConfirmDialog, LocationComponent],
   templateUrl: './employees.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './employees.scss',
@@ -32,7 +31,6 @@ export class Employees implements OnInit {
   employees: Employee[] = [];
   departments: Department[] = [];
   designations: Designation[] = [];
-  customRoles: CustomRole[] = [];
   totalPages = 0;
   page = 0;
   loading = false;
@@ -54,18 +52,18 @@ export class Employees implements OnInit {
     private employeeService: EmployeeService,
     private departmentService: DepartmentService,
     private designationService: DesignationService,
-    private customRoleService: CustomRoleService,
+    private cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit(): void {
     this.load();
     this.departmentService.listActive().subscribe({ next: (d) => (this.departments = d) });
     this.designationService.listActive().subscribe({ next: (d) => (this.designations = d) });
-    this.customRoleService.list().subscribe({ next: (r) => (this.customRoles = r) });
   }
 
   load(): void {
     this.loading = true;
+    this.cdr.markForCheck();
     this.error = '';
     this.employeeService
       .list(this.page, 20, this.departmentFilter || undefined, this.statusFilter || undefined)
@@ -74,45 +72,36 @@ export class Employees implements OnInit {
           this.employees = res.content;
           this.totalPages = res.totalPages;
           this.loading = false;
+          this.cdr.markForCheck();
         },
         error: () => {
           this.error = 'Failed to load employees';
           this.loading = false;
+          this.cdr.markForCheck();
         },
       });
   }
 
   save(): void {
     this.saving = true;
+    this.cdr.markForCheck();
     this.error = '';
-    const payload = this.cleanPayload();
-    const roleId = payload.customRoleId;
-    delete payload.customRoleId;
-    this.employeeService.create(payload).subscribe({
-      next: (emp) => {
-        if (roleId && emp.userId) {
-          this.customRoleService.assignToUser(roleId, emp.userId).subscribe({
-            next: () => this.onCreated(),
-            error: () => this.onCreated(),
-          });
-        } else {
-          this.onCreated();
-        }
+    this.employeeService.create(this.cleanPayload()).subscribe({
+      next: () => {
+        this.saving = false;
+        this.cdr.markForCheck();
+        this.showForm = false;
+        this.form = this.emptyForm();
+        this.success = 'Employee created successfully';
+        this.page = 0;
+        this.load();
       },
       error: (err) => {
         this.saving = false;
+        this.cdr.markForCheck();
         this.error = err?.error?.message || 'Failed to create employee';
       },
     });
-  }
-
-  private onCreated(): void {
-    this.saving = false;
-    this.showForm = false;
-    this.form = this.emptyForm();
-    this.success = 'Employee created successfully';
-    this.page = 0;
-    this.load();
   }
 
   confirmTerminate(): void {
@@ -151,5 +140,9 @@ export class Employees implements OnInit {
       password: '',
       employmentType: 'FULL_TIME',
     };
+  }
+
+  onLocationChange(location: any) {
+    this.form.location = location;
   }
 }

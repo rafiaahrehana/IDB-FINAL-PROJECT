@@ -1,6 +1,6 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ServiceReview } from '../../models/servicedesk.model';
+import { AverageRating, ServiceReview } from '../../models/servicedesk.model';
 import { ServiceReviewService } from '../../services/service-review.service';
 import { Pagination } from '../../../../shared/components/pagination/pagination';
 import { Loader } from '../../../../shared/components/loader/loader';
@@ -15,7 +15,7 @@ import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/conf
 export class Reviews implements OnInit {
   // VARIABLES
   reviews: ServiceReview[] = [];
-  average: number | null = null;
+  average: AverageRating | null = null;
   totalPages = 0;
   page = 0;
   loading = false;
@@ -24,7 +24,7 @@ export class Reviews implements OnInit {
 
   deleteTarget: ServiceReview | null = null;
 
-  constructor(private reviewService: ServiceReviewService) {}
+  constructor(private reviewService: ServiceReviewService, private cdr: ChangeDetectorRef) {}
 
   // LIFECYCLE HOOKS
   ngOnInit(): void {
@@ -35,10 +35,11 @@ export class Reviews implements OnInit {
   // LOAD REVIEWS
   load(): void {
     this.loading = true;
+    this.cdr.markForCheck();
     this.error = '';
     this.reviewService.list(this.page).subscribe({
-      next: (res) => { this.reviews = res.content; this.totalPages = res.totalPages; this.loading = false; },
-      error: () => { this.error = 'Failed to load reviews'; this.loading = false; }
+      next: (res) => { this.reviews = res.content; this.totalPages = res.totalPages; this.loading = false; this.cdr.markForCheck(); },
+      error: () => { this.error = 'Failed to load reviews'; this.loading = false; this.cdr.markForCheck(); }
     });
   }
 

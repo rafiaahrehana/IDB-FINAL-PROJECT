@@ -64,6 +64,15 @@ public interface ClientInvoiceRepository extends JpaRepository<ClientInvoice, Lo
         @Param("statuses") List<InvoiceStatus> statuses
     );
 
+    @Query("SELECT SUM(i.balanceAmount) FROM ClientInvoice i WHERE i.companyId = :companyId AND i.client.id = :clientId AND i.status IN :statuses AND i.deleted = false")
+    Optional<BigDecimal> sumOutstandingByCompanyIdAndClientId(
+        @Param("companyId") Long companyId,
+        @Param("clientId") Long clientId,
+        @Param("statuses") List<InvoiceStatus> statuses
+    );
+
+    long countByCompanyIdAndClientIdAndStatusIn(Long companyId, Long clientId, List<InvoiceStatus> statuses);
+
     @org.springframework.data.jpa.repository.Modifying
     @Query("UPDATE ClientInvoice i SET i.status = :newStatus WHERE i.dueDate < :currentDate AND i.status IN :oldStatuses")
     int markOverdueInvoices(

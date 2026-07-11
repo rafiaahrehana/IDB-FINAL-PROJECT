@@ -155,7 +155,7 @@ public class ServiceRequestController {
     // Quotation Endpoints
 
     @PostMapping("/{id}/quotation")
-    @PreAuthorize("hasRole('SERVICE_AGENT') or hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     @Operation(summary = "Submit a quotation for a service request")
     public ResponseEntity<ServiceRequestResponse> submitQuotation(
             @PathVariable Long id,
@@ -164,14 +164,14 @@ public class ServiceRequestController {
     }
 
     @PostMapping("/{id}/quotation/accept")
-    @PreAuthorize("hasRole('CLIENT') or hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasAnyRole('CLIENT', 'COMPANY_OWNER')")
     @Operation(summary = "Accept a quotation")
     public ResponseEntity<ServiceRequestResponse> acceptQuotation(@PathVariable Long id) {
         return ResponseEntity.ok(serviceRequestService.acceptQuotation(id));
     }
 
     @PostMapping("/{id}/quotation/reject")
-    @PreAuthorize("hasRole('CLIENT') or hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasAnyRole('CLIENT', 'COMPANY_OWNER')")
     @Operation(summary = "Reject a quotation")
     public ResponseEntity<ServiceRequestResponse> rejectQuotation(
             @PathVariable Long id,

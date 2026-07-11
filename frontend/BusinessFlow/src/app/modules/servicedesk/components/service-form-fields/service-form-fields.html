@@ -25,7 +25,12 @@
           </select>
         </div>
         <div class="col-md-2"><input class="form-control form-control-sm" type="number" placeholder="Sort order" [(ngModel)]="form.sortOrder" /></div>
-        <div class="col-md-3"><input class="form-control form-control-sm" placeholder="Validation rules" [(ngModel)]="form.validationRules" /></div>
+        <div class="col-md-3">
+          <input class="form-control form-control-sm" placeholder="Validation rules" [(ngModel)]="form.validationRules" />
+          @if (form.fieldType === 'DROPDOWN' || form.fieldType === 'RADIO') {
+          <div class="form-text small">For Dropdown/Radio: enter the choices here, comma-separated (e.g. Small, Medium, Large)</div>
+          }
+        </div>
         <div class="col-md-1 d-flex align-items-center">
           <div class="form-check">
             <input class="form-check-input" type="checkbox" id="ff-required" [(ngModel)]="form.required" />

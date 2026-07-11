@@ -1,7 +1,7 @@
 package com.businessos.modules.company;
 
 import com.businessos.enums.CompanyStatus;
-import com.businessos.core.subscription.SubscriptionPlan;
+import com.businessos.enums.SubscriptionPlan;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -22,6 +22,8 @@ public class CompanyResponse {
     private String primaryColor;
     private String secondaryColor;
     private String tagline;
+    private String portalAbout;
+    private com.businessos.shared.address.LocationResponse locationDetail;
     private CompanyStatus status;
     private SubscriptionPlan subscriptionPlan;
     private LocalDate subscriptionStart;

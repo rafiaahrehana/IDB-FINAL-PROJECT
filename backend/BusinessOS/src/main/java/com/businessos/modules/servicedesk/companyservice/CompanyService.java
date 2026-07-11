@@ -32,13 +32,11 @@ public class CompanyService extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    @Builder.Default
     private ServicePriceType priceType = ServicePriceType.FIXED;
 
     private Integer estimatedDays;
 
     @Enumerated(EnumType.STRING)
-    @Builder.Default
     private ServiceRequestPriority defaultPriority = ServiceRequestPriority.NORMAL;
 
     @Builder.Default

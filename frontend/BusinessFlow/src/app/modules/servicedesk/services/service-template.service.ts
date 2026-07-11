@@ -13,8 +13,9 @@ export class ServiceTemplateService {
     return this.api.getPaged<ServiceTemplate>(this.endpoint, page, size);
   }
 
-  listByCategory(categoryId: number, page = 0, size = 50): Observable<PagedResponse<ServiceTemplate>> {
-    return this.api.getPaged<ServiceTemplate>(`${this.endpoint}/category/${categoryId}`, page, size);
+  // Backend returns a bare List here (not a Page)
+  listByCategory(categoryId: number): Observable<ServiceTemplate[]> {
+    return this.api.get<ServiceTemplate[]>(`${this.endpoint}/category/${categoryId}`);
   }
 
   getById(id: number): Observable<ServiceTemplate> {

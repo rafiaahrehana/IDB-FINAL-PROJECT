@@ -1,0 +1,17 @@
+.accordion-button:not(.collapsed) {
+  background-color: transparent !important;
+  color: var(--bos-primary) !important;
+  box-shadow: none !important;
+}
+
+.accordion-button:focus {
+  box-shadow: none !important;
+}
+
+.accordion-item {
+  border-bottom: 1px solid var(--bos-border) !important;
+  
+  &:last-child {
+    border-bottom: none !important;
+  }
+}

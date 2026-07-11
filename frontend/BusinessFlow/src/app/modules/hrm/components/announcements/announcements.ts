@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Announcement, AnnouncementRequest, ANNOUNCEMENT_AUDIENCES, Department } from '../../models/hrm.model';
@@ -33,7 +33,8 @@ export class Announcements implements OnInit {
 
   constructor(
     private announcementService: AnnouncementService,
-    private departmentService: DepartmentService
+    private departmentService: DepartmentService,
+    private cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit(): void {
@@ -43,16 +44,19 @@ export class Announcements implements OnInit {
 
   load(): void {
     this.loading = true;
+    this.cdr.markForCheck();
     this.error = '';
     this.announcementService.list(this.page, 20).subscribe({
       next: (res) => {
         this.announcements = res.content;
         this.totalPages = res.totalPages;
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.error = 'Failed to load announcements';
         this.loading = false;
+        this.cdr.markForCheck();
       }
     });
   }
@@ -71,17 +75,20 @@ export class Announcements implements OnInit {
 
   save(): void {
     this.saving = true;
+    this.cdr.markForCheck();
     this.error = '';
     const payload = this.cleanPayload();
     this.announcementService.create(payload).subscribe({
       next: () => {
         this.saving = false;
+        this.cdr.markForCheck();
         this.showForm = false;
         this.success = 'Announcement created successfully';
         this.load();
       },
       error: (err) => {
         this.saving = false;
+        this.cdr.markForCheck();
         this.error = err?.error?.message || 'Failed to create announcement';
       }
     });

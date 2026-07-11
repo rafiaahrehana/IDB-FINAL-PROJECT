@@ -1,22 +1,67 @@
-<div class="sidebar-nav py-3">
-  <ul class="nav flex-column">
-    <li class="nav-item">
-      <a class="nav-link" routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}">
-        <i class="bi bi-grid-1x2"></i>Dashboard
-      </a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link" routerLink="/ai" routerLinkActive="active">
-        <i class="bi bi-stars"></i>AI Assistant
-      </a>
-    </li>
-    @for (group of visibleGroups; track group.label) {
-      <div class="nav-group-label">{{ group.label }}</div>
-      @for (item of group.items; track item.link) {
-        <a class="nav-link" [routerLink]="item.link" routerLinkActive="active">
-          <i class="bi {{ item.icon }}"></i>{{ item.label }}
-        </a>
+<div class="sidebar-inner" [class.collapsed]="collapsed()" [class.mobile-open]="mobileOpen()">
+
+  <div class="sidebar-header">
+    <a routerLink="/dashboard" class="sidebar-logo">
+      <div class="sidebar-logo-icon">
+        <i class="bi bi-layers-fill"></i>
+      </div>
+      @if (!collapsed()) {
+        <span class="sidebar-logo-text">BusinessOS</span>
       }
+    </a>
+    @if (mobileOpen()) {
+      <button class="sidebar-close-btn" (click)="onCloseMobile()" aria-label="Close sidebar">
+        <i class="bi bi-x-lg"></i>
+      </button>
     }
-  </ul>
+  </div>
+
+  <nav class="sidebar-nav">
+    <ul class="sidebar-nav-list">
+
+      <li class="sidebar-nav-item">
+        <a class="sidebar-link" routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}">
+          <i class="bi bi-grid-1x2-fill"></i>
+          @if (!collapsed()) { <span>Dashboard</span> }
+        </a>
+      </li>
+
+      @for (group of visibleGroups(); track group.label) {
+        <li class="sidebar-nav-item">
+          <button class="sidebar-link sidebar-group-toggle"
+                  [class.expanded]="isGroupExpanded(group.label)"
+                  (click)="toggleGroup(group.label)">
+            <i class="bi" [ngClass]="group.icon"></i>
+            @if (!collapsed()) {
+              <span>{{ group.label }}</span>
+              <i class="bi bi-chevron-down sidebar-chevron"
+                 [class.rotated]="isGroupExpanded(group.label)"></i>
+            }
+          </button>
+
+          @if (isGroupExpanded(group.label) && !collapsed()) {
+            <ul class="sidebar-submenu">
+              @for (item of group.items; track item.route) {
+                <li>
+                  <a class="sidebar-sublink" [routerLink]="item.route" routerLinkActive="active">
+                    <i class="bi" [ngClass]="item.icon"></i>
+                    <span>{{ item.label }}</span>
+                  </a>
+                </li>
+              }
+            </ul>
+          }
+        </li>
+      }
+
+    </ul>
+  </nav>
+
+  <div class="sidebar-footer">
+    <a class="sidebar-link" routerLink="/settings" routerLinkActive="active">
+      <i class="bi bi-gear"></i>
+      @if (!collapsed()) { <span>Settings</span> }
+    </a>
+  </div>
+
 </div>

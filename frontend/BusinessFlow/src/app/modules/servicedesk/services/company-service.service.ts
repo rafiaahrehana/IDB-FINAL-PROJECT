@@ -13,6 +13,7 @@ export class CompanyServiceService {
     return this.api.getPaged<CompanyService>(this.endpoint, page, size);
   }
 
+  // Backend returns a bare List (not a Page) of active services
   listActive(): Observable<CompanyService[]> {
     return this.api.get<CompanyService[]>(`${this.endpoint}/active`);
   }
@@ -33,7 +34,7 @@ export class CompanyServiceService {
     return this.api.patch<CompanyService>(`${this.endpoint}/${id}/toggle`, {});
   }
 
-  delete(id: number): Observable<void> {
-    return this.api.delete<void>(`${this.endpoint}/${id}`);
+  delete(id: number): Observable<string> {
+    return this.api.deleteText(`${this.endpoint}/${id}`);
   }
 }

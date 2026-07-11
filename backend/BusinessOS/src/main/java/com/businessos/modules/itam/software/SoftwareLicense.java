@@ -29,9 +29,9 @@ public class SoftwareLicense extends BaseEntity {
     @Column(length = 50)
     private LicenseType licenseType; // PERPETUAL, SUBSCRIPTION, TRIAL, OPEN_SOURCE
 
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(length = 50)
-    @Builder.Default
     private LicenseStatus licenseStatus = LicenseStatus.ACTIVE;
 
     // License Count
@@ -46,9 +46,9 @@ public class SoftwareLicense extends BaseEntity {
     // Expiry & Renewal
     private LocalDate licenseExpiryDate;
 
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(length = 50)
-    @Builder.Default
     private LicenseRenewalType renewalType = LicenseRenewalType.ANNUAL;
 
     private LocalDate nextRenewalDate;

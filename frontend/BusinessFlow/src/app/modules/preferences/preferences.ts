@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
@@ -28,7 +28,7 @@ interface PrefRow {
 export class Preferences implements OnInit {
   @ViewChild(LocationComponent) locationComponent!: LocationComponent;
 
-  activeTab: 'profile' | 'notifications' = 'profile';
+  activeTab: 'profile' | 'notifications' | 'security' = 'profile';
 
   // PROFILE VARIABLES
   profile: any = null;
@@ -41,6 +41,15 @@ export class Preferences implements OnInit {
     phone: '',
     image: '',
     languagePreference: 'EN'
+  };
+
+  // SECURITY (CHANGE PASSWORD) VARIABLES
+  changingPassword = false;
+
+  passwordForm = {
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
   };
 
   // NOTIFICATION VARIABLES
@@ -68,7 +77,8 @@ export class Preferences implements OnInit {
 
   constructor(
     private notificationService: NotificationService,
-    private authService: AuthService
+    private authService: AuthService,
+    private cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit(): void {
@@ -77,7 +87,7 @@ export class Preferences implements OnInit {
   }
 
   // TAB CONTROLS
-  setTab(tab: 'profile' | 'notifications'): void {
+  setTab(tab: 'profile' | 'notifications' | 'security'): void {
     this.activeTab = tab;
     this.error = '';
     this.success = '';
@@ -165,13 +175,51 @@ export class Preferences implements OnInit {
     });
   }
 
+  // CHANGE PASSWORD
+  changePassword(): void {
+    const { currentPassword, newPassword, confirmPassword } = this.passwordForm;
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      this.error = 'All password fields are required';
+      return;
+    }
+    if (newPassword.length < 8) {
+      this.error = 'New password must be at least 8 characters';
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      this.error = 'New passwords do not match';
+      return;
+    }
+
+    this.changingPassword = true;
+    this.error = '';
+    this.success = '';
+
+    this.authService.changePassword({ currentPassword, newPassword, confirmPassword }).subscribe({
+      next: () => {
+        this.changingPassword = false;
+        this.passwordForm = { currentPassword: '', newPassword: '', confirmPassword: '' };
+        // Backend revokes ALL refresh tokens on password change, so this session
+        // can no longer refresh - log out and send the user back to sign in.
+        this.success = 'Password changed successfully. Redirecting to sign in...';
+        setTimeout(() => this.authService.logout(), 2000);
+      },
+      error: (err) => {
+        this.error = err?.error?.message || 'Failed to change password';
+        this.changingPassword = false;
+      }
+    });
+  }
+
   // LOAD PREFERENCES
   load(): void {
     this.loading = true;
+    this.cdr.markForCheck();
     this.error = '';
     this.notificationService.getPreferences().subscribe({
-      next: (res: NotificationPreference) => { this.preference = res; this.loading = false; },
-      error: () => { this.error = 'Failed to load preferences'; this.loading = false; }
+      next: (res: NotificationPreference) => { this.preference = res; this.loading = false; this.cdr.markForCheck(); },
+      error: () => { this.error = 'Failed to load preferences'; this.loading = false; this.cdr.markForCheck(); }
     });
   }
 
@@ -179,6 +227,7 @@ export class Preferences implements OnInit {
   save(): void {
     if (!this.preference) return;
     this.saving = true;
+    this.cdr.markForCheck();
     this.error = '';
     this.success = '';
     const payload: UpdateNotificationPreferenceRequest = {
@@ -193,8 +242,8 @@ export class Preferences implements OnInit {
       emailMarketing: this.preference.emailMarketing,
     };
     this.notificationService.updatePreferences(payload).subscribe({
-      next: (res: NotificationPreference) => { this.preference = res; this.saving = false; this.success = 'Preferences saved'; },
-      error: (err: any) => { this.saving = false; this.error = err?.error?.message || 'Failed to save preferences'; }
+      next: (res: NotificationPreference) => { this.preference = res; this.saving = false; this.cdr.markForCheck(); this.success = 'Preferences saved'; },
+      error: (err: any) => { this.saving = false; this.cdr.markForCheck(); this.error = err?.error?.message || 'Failed to save preferences'; }
     });
   }
 

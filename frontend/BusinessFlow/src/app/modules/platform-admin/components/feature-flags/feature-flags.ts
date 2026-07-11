@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FeatureFlag } from '../../models/platform-admin.model';
@@ -19,7 +19,7 @@ export class FeatureFlags implements OnInit {
   error = '';
   success = '';
 
-  constructor(private flagService: FeatureFlagService) {}
+  constructor(private flagService: FeatureFlagService, private cdr: ChangeDetectorRef) {}
 
   // LIFECYCLE HOOKS
   ngOnInit(): void { this.load(); }
@@ -27,10 +27,11 @@ export class FeatureFlags implements OnInit {
   // LOAD FLAGS
   load(): void {
     this.loading = true;
+    this.cdr.markForCheck();
     this.error = '';
     this.flagService.list().subscribe({
-      next: (res) => { this.flags = res || []; this.loading = false; },
-      error: () => { this.error = 'Failed to load feature flags'; this.loading = false; }
+      next: (res) => { this.flags = res || []; this.loading = false; this.cdr.markForCheck(); },
+      error: () => { this.error = 'Failed to load feature flags'; this.loading = false; this.cdr.markForCheck(); }
     });
   }
 

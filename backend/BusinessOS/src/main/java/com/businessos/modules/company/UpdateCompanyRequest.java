@@ -20,4 +20,6 @@ public class UpdateCompanyRequest {
     private String secondaryColor;
     @Size(max = 255)
     private String tagline;
+    private String portalAbout;
+    private com.businessos.shared.address.LocationRequest locationDetail;
 }

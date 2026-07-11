@@ -1,6 +1,30 @@
-$primary: #5B3DF5;
-$secondary: #6C63FF;
-$success: #16C784;
-$danger: #EF4444;
-$warning: #F59E0B;
-$info: #3B82F6;
+// ============================================================
+// BusinessOS — Design Tokens
+// Dark Purple / Lavender / Light Lavender standard palette
+// ============================================================
+
+// Core brand
+$primary:        #6B46FF;   // Deep purple/violet — main CTA
+$primary-hover:  #5A35E5;   // Hover state
+$primary-dark:   #3D1FA3;   // Dark purple — sidebar, headers
+
+// Lavender spectrum
+$lavender:       #A78BFA;   // Mid lavender — accents, icons
+$lavender-light: #EDE9FE;   // Light lavender — backgrounds, chips
+$lavender-muted: #DDD6FE;   // Lavender muted — borders on lavender
+
+// Semantic
+$success:  #16A34A;
+$danger:   #DC2626;
+$warning:  #D97706;
+$info:     #2563EB;
+
+// Neutrals
+$text-primary:   #1E1B4B;   // Dark indigo — main text (great contrast on light)
+$text-secondary: #6B7280;   // Mid gray — secondary/muted
+$text-muted:     #9CA3AF;   // Light gray — placeholder
+$border:         #E5E7EB;   // Subtle borders
+$bg-page:        #F5F4FF;   // Very light lavender page bg
+$bg-card:        #FFFFFF;   // White cards
+$bg-sidebar:     #1E1B4B;   // Dark indigo sidebar
+$bg-sidebar-active: #6B46FF; // Active sidebar item

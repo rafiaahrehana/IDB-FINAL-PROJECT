@@ -5,8 +5,6 @@ import com.businessos.modules.crm.client.ClientRepository;
 import com.businessos.modules.finance.invoice.ClientInvoice;
 import com.businessos.modules.finance.invoice.ClientInvoiceRepository;
 import com.businessos.security.SecurityUtil;
-import com.businessos.shared.email.EmailBranding;
-import com.businessos.shared.email.EmailService;
 import com.businessos.shared.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -23,8 +21,6 @@ public class PaymentReceiptServiceImpl implements PaymentReceiptService {
     private final ClientInvoiceRepository invoiceRepository;
     private final ClientRepository clientRepository;
     private final SecurityUtil securityUtil;
-    private final EmailService emailService;
-    private final EmailBranding emailBranding;
 
     @Override
     @Transactional
@@ -82,15 +78,6 @@ public class PaymentReceiptServiceImpl implements PaymentReceiptService {
                 .orElseThrow(() -> new ResourceNotFoundException("Payment receipt not found"));
         receipt.confirmPayment();
         receiptRepository.save(receipt);
-
-        // Send payment receipt email
-        if (receipt.getClient() != null && receipt.getClient().getUser() != null) {
-            String to = receipt.getClient().getUser().getEmail();
-            String name = receipt.getClient().getUser().getFullName();
-            String invoiceNumber = receipt.getInvoice() != null ? receipt.getInvoice().getInvoiceNumber() : "N/A";
-            EmailBranding.Data branding = emailBranding.from(receipt.getClient() != null ? receipt.getClient().getCompany() : null);
-            emailService.sendPaymentReceiptEmail(to, name, invoiceNumber, receipt.getAmount().toString(), branding);
-        }
     }
 
     @Override

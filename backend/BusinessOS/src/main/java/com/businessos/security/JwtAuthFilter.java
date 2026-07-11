@@ -6,19 +6,28 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
 
+import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
 public class JwtAuthFilter extends OncePerRequestFilter {
+
+    private static final Logger log = LoggerFactory.getLogger(JwtAuthFilter.class);
 
     private final JwtService jwtService;
     private final UserRepository userRepository;
@@ -37,6 +46,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         }
 
         final String token = authHeader.substring(7);
+        boolean mdcSet = false;
 
         try {
             if (!jwtService.isTokenValid(token)) {
@@ -51,9 +61,29 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
                 if (user != null && user.isEnabled()) {
                     Long companyId = jwtService.extractCompanyId(token);
+                    Long impersonatedBy = jwtService.extractImpersonatedBy(token);
+
+                    // Impersonation tokens grant access as the impersonated tenant role
+                    // (see ImpersonationServiceImpl), NOT the real admin's own DB role -
+                    // otherwise every tenant endpoint would 403 a platform admin/support
+                    // agent trying to "access" a company.
+                    Collection<? extends GrantedAuthority> authorities;
+                    if (impersonatedBy != null) {
+                        String impersonatedRole = jwtService.extractRole(token);
+                        authorities = List.of(new SimpleGrantedAuthority("ROLE_" + impersonatedRole));
+
+                        MDC.put("impersonatedBy", String.valueOf(impersonatedBy));
+                        String sessionId = jwtService.extractImpersonationSessionId(token);
+                        if (sessionId != null) {
+                            MDC.put("impersonationSessionId", sessionId);
+                        }
+                        mdcSet = true;
+                    } else {
+                        authorities = user.getAuthorities();
+                    }
 
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                            user, companyId, user.getAuthorities());
+                            user, companyId, authorities);
 
                     authToken.setDetails(
                             new WebAuthenticationDetailsSource().buildDetails(request));
@@ -62,9 +92,16 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 }
             }
         } catch (Exception e) {
-
+            log.debug("JWT authentication failed for request {}: {}", request.getRequestURI(), e.getMessage());
         }
 
-        filterChain.doFilter(request, response);
+        try {
+            filterChain.doFilter(request, response);
+        } finally {
+            if (mdcSet) {
+                MDC.remove("impersonatedBy");
+                MDC.remove("impersonationSessionId");
+            }
+        }
     }
 }

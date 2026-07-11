@@ -9,7 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import com.businessos.modules.company.Company;
 import com.businessos.modules.company.CompanyRepository;
 import com.businessos.enums.CompanyStatus;
-import com.businessos.core.subscription.SubscriptionPlan;
+import com.businessos.enums.SubscriptionPlan;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;

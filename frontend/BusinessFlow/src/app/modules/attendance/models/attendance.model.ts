@@ -23,18 +23,17 @@ export interface AttendanceRecord {
 
 export interface AttendanceLeave {
   id: number;
-  leaveType: string;
-  startDate: string;
-  endDate: string;
-  totalDays: number;
-  reason?: string;
-  status: string;
-  rejectionReason?: string;
-  reviewedAt?: string;
+  companyId: number;
   employeeId: number;
-  employeeName?: string;
-  reviewedById?: number;
-  reviewedByName?: string;
+  employeeName: string;
+  leaveDate: string;
+  leaveType: string;
+  leaveReason?: string;
+  halfDay: boolean;
+  approved: boolean;
+  approvedBy?: string;
+  rejectionReason?: string;
+  notes?: string;
   createdAt: string;
 }
 

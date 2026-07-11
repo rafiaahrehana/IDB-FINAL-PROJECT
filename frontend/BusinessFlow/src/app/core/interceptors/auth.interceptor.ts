@@ -1,12 +1,15 @@
 import { Injectable } from '@angular/core';
 import { HttpInterceptor, HttpRequest, HttpHandler, HttpEvent } from '@angular/common/http';
-import { Observable, throwError } from 'rxjs';
-import { catchError, switchMap } from 'rxjs/operators';
+import { BehaviorSubject, Observable, throwError } from 'rxjs';
+import { catchError, filter, switchMap, take } from 'rxjs/operators';
 import { AuthService } from '../services/auth.service';
  
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
   private isRefreshing = false;
+  // Emits the new access token once a refresh completes, so requests that arrived
+  // while a refresh was already in flight can wait for it instead of firing their own.
+  private refreshedToken$ = new BehaviorSubject<string | null>(null);
  
   constructor(private authService: AuthService) {}
  
@@ -24,22 +27,42 @@ export class AuthInterceptor implements HttpInterceptor {
  
     return next.handle(request).pipe(
       catchError(error => {
-        if (error.status === 401 && !this.isRefreshing) {
-          this.isRefreshing = true;
-          return this.authService.refreshToken().pipe(
-            switchMap(response => {
-              this.isRefreshing = false;
-              const newToken = this.authService.getAccessToken()!;
-              return next.handle(this.addToken(request, newToken));
-            }),
-            catchError(err => {
-              this.isRefreshing = false;
-              this.authService.logout();
-              return throwError(() => err);
-            })
-          );
+        if (error.status === 401) {
+          return this.handle401(request, next);
         }
         return throwError(() => error);
+      })
+    );
+  }
+
+  private handle401(request: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
+    if (!this.authService.getRefreshToken()) {
+      this.authService.logout();
+      return throwError(() => new Error('Session expired. Please log in again.'));
+    }
+
+    if (this.isRefreshing) {
+      // A refresh is already in flight: wait for it to finish, then retry with the new token.
+      return this.refreshedToken$.pipe(
+        filter(token => token !== null),
+        take(1),
+        switchMap(token => next.handle(this.addToken(request, token as string)))
+      );
+    }
+
+    this.isRefreshing = true;
+    this.refreshedToken$.next(null);
+
+    return this.authService.refreshToken().pipe(
+      switchMap(response => {
+        this.isRefreshing = false;
+        this.refreshedToken$.next(response.accessToken);
+        return next.handle(this.addToken(request, response.accessToken));
+      }),
+      catchError(err => {
+        this.isRefreshing = false;
+        this.authService.logout();
+        return throwError(() => err);
       })
     );
   }
@@ -53,6 +76,6 @@ export class AuthInterceptor implements HttpInterceptor {
   }
  
   private isAuthEndpoint(url: string): boolean {
-    return url.includes('/auth/login') || url.includes('/auth/register');
+    return url.includes('/auth/login') || url.includes('/auth/register') || url.includes('/auth/refresh');
   }
 }

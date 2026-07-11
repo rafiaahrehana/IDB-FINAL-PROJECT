@@ -1,13 +1,15 @@
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
+  Client,
   Opportunity,
   OpportunityStage,
   OPEN_STAGES,
   PipelineSummary,
 } from '../../models/crm.model';
 import { OpportunityService } from '../../services/opportunity.service';
+import { ClientService } from '../../services/client.service';
 import { Loader } from '../../../../shared/components/loader/loader';
 
 @Component({
@@ -27,14 +29,101 @@ export class PipelineBoard implements OnInit {
   lostReasonFor: Opportunity | null = null;
   lostReason = '';
 
-  constructor(private opportunityService: OpportunityService) {}
+  // Create/Edit modal state - null editing means "create"
+  showForm = false;
+  editing: Opportunity | null = null;
+  saving = false;
+  form: any = this.emptyForm();
+  clients: Client[] = [];
+
+  constructor(
+    private opportunityService: OpportunityService,
+    private clientService: ClientService,
+    private cdr: ChangeDetectorRef,
+  ) {}
 
   ngOnInit(): void {
     this.load();
+    // For the "Client" dropdown; a page of 100 covers typical client counts
+    this.clientService.list(0, 100).subscribe({ next: (res) => (this.clients = res.content) });
+  }
+
+  private emptyForm(): any {
+    return {
+      name: '',
+      clientId: null,
+      description: '',
+      stage: 'PROSPECTING',
+      amount: null,
+      probability: null,
+      expectedCloseDate: '',
+      nextStep: '',
+    };
+  }
+
+  openCreate(): void {
+    this.editing = null;
+    this.form = this.emptyForm();
+    this.showForm = true;
+  }
+
+  openEdit(deal: Opportunity): void {
+    this.editing = deal;
+    this.form = {
+      name: deal.name,
+      clientId: deal.clientId,
+      description: deal.description || '',
+      stage: deal.stage,
+      amount: deal.amount ?? null,
+      probability: deal.probability ?? null,
+      expectedCloseDate: deal.expectedCloseDate || '',
+      nextStep: deal.nextStep || '',
+    };
+    this.showForm = true;
+  }
+
+  save(): void {
+    if (!this.form.name?.trim() || !this.form.clientId) {
+      this.error = 'Name and client are required';
+      return;
+    }
+    this.saving = true;
+    this.cdr.markForCheck();
+    this.error = '';
+    const payload: any = {
+      name: this.form.name.trim(),
+      clientId: this.form.clientId,
+      description: this.form.description || undefined,
+      amount: this.form.amount ?? undefined,
+      probability: this.form.probability ?? undefined,
+      expectedCloseDate: this.form.expectedCloseDate || undefined,
+      nextStep: this.form.nextStep || undefined,
+    };
+    // Stage changes on an existing deal go through the dedicated /stage endpoint
+    // (it records lost reasons and timeline entries), so it's only sent on create.
+    if (!this.editing) payload.stage = this.form.stage;
+
+    const obs = this.editing
+      ? this.opportunityService.update(this.editing.id, payload)
+      : this.opportunityService.create(payload);
+    obs.subscribe({
+      next: () => {
+        this.showForm = false;
+        this.saving = false;
+        this.cdr.markForCheck();
+        this.load();
+      },
+      error: (err) => {
+        this.error = err?.error?.message || 'Failed to save opportunity';
+        this.saving = false;
+        this.cdr.markForCheck();
+      },
+    });
   }
 
   load(): void {
     this.loading = true;
+    this.cdr.markForCheck();
     this.error = '';
     this.opportunityService.list(0, 200).subscribe({
       next: (page) => {
@@ -42,10 +131,12 @@ export class PipelineBoard implements OnInit {
         this.stages.forEach((s) => (this.columns[s] = []));
         page.content.forEach((o) => (this.columns[o.stage] ??= []).push(o));
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.error = 'Failed to load pipeline';
         this.loading = false;
+        this.cdr.markForCheck();
       },
     });
     this.opportunityService.pipelineSummary().subscribe({

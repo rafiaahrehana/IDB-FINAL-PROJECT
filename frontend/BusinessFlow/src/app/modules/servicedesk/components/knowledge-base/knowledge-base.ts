@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { KbArticle } from '../../models/servicedesk.model';
@@ -25,9 +25,10 @@ export class KnowledgeBase implements OnInit {
   statusFilter = '';
 
   showEditor = false;
+  editingId: number | null = null;
   draft: Partial<KbArticle> = {};
 
-  constructor(private kbService: KbService) {}
+  constructor(private kbService: KbService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.load();
@@ -35,6 +36,7 @@ export class KnowledgeBase implements OnInit {
 
   load(): void {
     this.loading = true;
+    this.cdr.markForCheck();
     this.error = '';
     const params: any = {};
     if (this.keyword.trim()) params.keyword = this.keyword.trim();
@@ -44,10 +46,12 @@ export class KnowledgeBase implements OnInit {
         this.articles = res.content;
         this.totalPages = res.totalPages;
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.error = 'Failed to load articles';
         this.loading = false;
+        this.cdr.markForCheck();
       },
     });
   }
@@ -76,6 +80,20 @@ export class KnowledgeBase implements OnInit {
 
   startNew(): void {
     this.draft = { clientVisible: false };
+    this.editingId = null;
+    this.showEditor = true;
+    this.selected = undefined;
+  }
+
+  startEdit(article: KbArticle): void {
+    this.editingId = article.id;
+    this.draft = {
+      title: article.title,
+      summary: article.summary,
+      keywords: article.keywords,
+      content: article.content,
+      clientVisible: article.clientVisible,
+    };
     this.showEditor = true;
     this.selected = undefined;
   }
@@ -85,10 +103,14 @@ export class KnowledgeBase implements OnInit {
       this.error = 'Title and content are required';
       return;
     }
-    this.kbService.create(this.draft).subscribe({
+    const op = this.editingId
+      ? this.kbService.update(this.editingId, this.draft)
+      : this.kbService.create(this.draft);
+    op.subscribe({
       next: () => {
         this.showEditor = false;
         this.draft = {};
+        this.editingId = null;
         this.load();
       },
       error: (err) => (this.error = err?.error?.message || 'Failed to save article'),

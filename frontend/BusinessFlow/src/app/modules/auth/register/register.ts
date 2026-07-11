@@ -1,11 +1,18 @@
-import { Component, ChangeDetectionStrategy, ViewChild } from '@angular/core';
+import { Component, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
-import { RegisterRequest } from '../../../core/models/auth.model';
 import { LocationComponent } from '../../../shared/components/location/location.component';
-import { LocationRequest } from '../../../shared/models/location.model';
+import { passwordsMatchValidator } from '../../../shared/validators/password-validators';
+
+// Mirrors backend @Pattern on RegisterRequest.password:
+// min 8 chars, at least one lowercase, one uppercase, one digit, one special character.
+const PASSWORD_PATTERN =
+  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^()_+\-=]).{8,}$/;
+
+// Mirrors backend @Pattern on RegisterRequest.subdomain.
+const SUBDOMAIN_PATTERN = /^[a-z0-9]([a-z0-9-]{1,48}[a-z0-9])?$/;
 
 @Component({
   selector: 'app-register',
@@ -15,49 +22,96 @@ import { LocationRequest } from '../../../shared/models/location.model';
   styleUrl: './register.scss',
 })
 export class Register {
-  @ViewChild(LocationComponent) locationComponent!: LocationComponent;
-
   loading = false;
+  submitted = false;
   error = '';
-  step = 1;
-
+  showPwd = false;
+  showConfirmPwd = false;
+  currentStep = 1;
   form;
-  locationValid = false;
 
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,
     private router: Router,
+    private cdr : ChangeDetectorRef
   ) {
-    this.form = this.fb.group({
-      firstName: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(50)]],
-      lastName: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(50)]],
-      email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required, Validators.minLength(8)]],
-      companyName: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(150)]],
-      subdomain: ['', [Validators.required, Validators.pattern('^[a-z0-9]([a-z0-9-]{1,48}[a-z0-9])?$')]],
-      companyPhone: ['', [Validators.maxLength(30)]],
-    });
+    this.form = this.fb.group(
+      {
+        firstName: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(50)]],
+        lastName: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(50)]],
+        email: ['', [Validators.required, Validators.email]],
+        password: ['', [Validators.required, Validators.pattern(PASSWORD_PATTERN)]],
+        confirmPassword: ['', Validators.required],
+        companyName: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(150)]],
+        subdomain: ['', [Validators.required, Validators.pattern(SUBDOMAIN_PATTERN)]],
+        companyEmail: ['', [Validators.email]],
+        companyPhone: ['', Validators.maxLength(30)],
+        location: [null as any],
+      },
+      { validators: passwordsMatchValidator('password', 'confirmPassword') },
+    );
   }
 
-  goStep2(): void {
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
-      return;
+  // Convenience helper so the subdomain preview updates as the company name is typed,
+  // without overriding anything the user has already typed into the subdomain field.
+  onCompanyNameInput(): void {
+    const subdomainControl = this.form.controls.subdomain;
+    if (subdomainControl.pristine) {
+      const slug = (this.form.controls.companyName.value || '')
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .slice(0, 50);
+      subdomainControl.setValue(slug);
+      subdomainControl.markAsPristine();
     }
-    this.step = 2;
-    this.error = '';
   }
 
-  goStep1(): void {
-    this.step = 1;
-    this.error = '';
+  onLocationChange(loc: any): void {
+    this.form.controls.location.setValue(loc);
   }
 
-  onLocationFormReady(): void {
-    if (this.locationComponent) {
-      this.locationValid = this.locationComponent.locationForm.valid;
+  nextStep(): void {
+    if (this.currentStep === 1) {
+      // Validate step 1 fields
+      const step1Controls = ['firstName', 'lastName', 'email', 'password', 'confirmPassword'];
+      let valid = true;
+      step1Controls.forEach(ctrl => {
+        if (this.form.get(ctrl)?.invalid) {
+          this.form.get(ctrl)?.markAsTouched();
+          valid = false;
+        }
+      });
+      // also check password mismatch
+      if (this.form.hasError('passwordMismatch')) {
+        valid = false;
+      }
+      if (valid) this.currentStep = 2;
+    } else if (this.currentStep === 2) {
+      // Validate step 2 fields
+      const step2Controls = ['companyName', 'subdomain', 'companyEmail', 'companyPhone'];
+      let valid = true;
+      step2Controls.forEach(ctrl => {
+        if (this.form.get(ctrl)?.invalid) {
+          this.form.get(ctrl)?.markAsTouched();
+          valid = false;
+        }
+      });
+      if (valid) this.currentStep = 3;
     }
+  }
+
+  prevStep(): void {
+    if (this.currentStep > 1) {
+      this.currentStep--;
+    }
+  }
+
+  skipLocationAndSubmit(): void {
+    this.form.controls.location.setValue(null);
+    this.submit();
   }
 
   submit(): void {
@@ -65,41 +119,22 @@ export class Register {
       this.form.markAllAsTouched();
       return;
     }
-
-    const locationData: LocationRequest | null =
-      this.locationComponent && this.locationComponent.locationForm.valid
-        ? this.locationComponent.locationForm.getRawValue()
-        : null;
-
     this.loading = true;
     this.error = '';
 
-    const payload: RegisterRequest = {
-      ...this.form.getRawValue() as RegisterRequest,
-    };
+    const { confirmPassword, ...request } = this.form.getRawValue();
 
-    if (locationData) {
-      payload.country = locationData.country;
-      payload.level1 = locationData.level1;
-      payload.level2 = locationData.level2;
-      payload.level3 = locationData.level3;
-      payload.level4 = locationData.level4;
-      payload.streetAddress = locationData.streetAddress;
-      payload.postalCode = locationData.postalCode;
-      payload.apartment = locationData.apartment;
-    }
-
-    this.authService.register(payload).subscribe({
-      next: () => this.router.navigate(['/auth/login'], { queryParams: { registered: '1' } }),
-      error: (err) => {
-        if (err?.error?.message) {
-          this.error = err.error.message;
-        } else if (err?.message) {
-          this.error = err.message;
-        } else {
-          this.error = 'Registration failed. Please try again.';
-        }
+    this.authService.register(request as any).subscribe({
+      next: () => {
+        
         this.loading = false;
+        this.submitted = true;
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        this.error = err?.error?.message || 'Registration failed. Please try again.';
+        this.loading = false;
+        this.cdr.markForCheck();
       },
     });
   }

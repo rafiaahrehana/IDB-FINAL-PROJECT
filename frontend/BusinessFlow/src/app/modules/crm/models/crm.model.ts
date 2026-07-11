@@ -17,29 +17,33 @@ export interface Lead {
   phone?: string;
   industry?: string;
   jobTitle?: string;
+  notes?: string;
+  description?: string;
   status: string;
   source: string;
   priority?: string;
   estimatedValue?: number;
   expectedCloseDate?: string;
   converted: boolean;
+  assignedToId?: number;
   assignedToName?: string;
   createdAt: string;
 }
 
 export interface Client {
   id: number;
+  userId?: number;
   firstName?: string;
   lastName?: string;
   email?: string;
   phone?: string;
+  image?: string;
   clientCompanyName?: string;
   industry?: string;
   website?: string;
   status: string;
-  tags?: string;
-  employeeCount?: number;
-  annualRevenue?: number;
+  portalAccessEnabled?: boolean;
+  accountManagerId?: number;
   accountManagerName?: string;
   onboardedAt?: string;
   createdAt: string;
@@ -111,17 +115,4 @@ export interface CrmActivity {
   opportunityName?: string;
   performedByName?: string;
   createdAt: string;
-}
-
-export interface ClientSelfRegisterRequest {
-  subdomain: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  password: string;
-  phone?: string;
-  clientCompanyName?: string;
-  industry?: string;
-  website?: string;
-  taxId?: string;
 }

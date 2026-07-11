@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
@@ -43,7 +43,8 @@ export class JobPostings implements OnInit {
 
   constructor(
     private postingService: JobPostingService,
-    private departmentService: DepartmentService
+    private departmentService: DepartmentService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -53,16 +54,19 @@ export class JobPostings implements OnInit {
 
   load(): void {
     this.loading = true;
+    this.cdr.markForCheck();
     this.error = '';
     this.postingService.list(this.page, 20).subscribe({
       next: (res) => {
         this.postings = res.content;
         this.totalPages = res.totalPages;
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.error = 'Failed to load job postings';
         this.loading = false;
+        this.cdr.markForCheck();
       }
     });
   }
@@ -102,6 +106,7 @@ export class JobPostings implements OnInit {
 
   save(): void {
     this.saving = true;
+    this.cdr.markForCheck();
     this.error = '';
     const payload = this.cleanPayload();
     const request = this.isEdit && this.selectedId
@@ -111,12 +116,14 @@ export class JobPostings implements OnInit {
     request.subscribe({
       next: () => {
         this.saving = false;
+        this.cdr.markForCheck();
         this.showForm = false;
         this.success = this.isEdit ? 'Job posting updated' : 'Job posting created';
         this.load();
       },
       error: (err) => {
         this.saving = false;
+        this.cdr.markForCheck();
         this.error = err?.error?.message || 'Failed to save job posting';
       }
     });

@@ -7,6 +7,7 @@ import {
   AiUsageSummary,
   AiPromptTemplate,
   AiPromptTemplateRequest,
+  PageResponse
 } from '../../modules/ai/models/ai.model';
 
 export interface AiGenerateResponse {
@@ -79,22 +80,22 @@ export class AiService {
   }
 
   getConfig(): Observable<AiProviderConfig> {
-    return this.api.get<AiProviderConfig>('/ai/config');
+    return this.api.get<AiProviderConfig>('/ai/admin/config');
   }
 
-  saveConfig(req: AiProviderConfigRequest): Observable<AiProviderConfig> {
-    return this.api.post<AiProviderConfig>('/ai/config', req);
+  saveConfig(config: AiProviderConfigRequest): Observable<AiProviderConfig> {
+    return this.api.post<AiProviderConfig>('/ai/admin/config', config);
   }
 
   getUsage(date?: string): Observable<AiUsageSummary> {
-    return this.api.get<AiUsageSummary>('/ai/usage', date ? { date } : undefined);
+    return this.api.get<AiUsageSummary>('/ai/admin/usage', date ? { date } : undefined);
   }
 
-  listTemplates(page = 0, size = 20): Observable<PagedResponse<AiPromptTemplate>> {
-    return this.api.getPaged<AiPromptTemplate>('/ai/templates', page, size);
+  listTemplates(): Observable<PageResponse<AiPromptTemplate>> {
+    return this.api.get<PageResponse<AiPromptTemplate>>('/ai/admin/templates');
   }
 
-  saveTemplate(req: AiPromptTemplateRequest): Observable<AiPromptTemplate> {
-    return this.api.post<AiPromptTemplate>('/ai/templates', req);
+  saveTemplate(template: AiPromptTemplateRequest): Observable<AiPromptTemplate> {
+    return this.api.post<AiPromptTemplate>('/ai/admin/templates', template);
   }
 }

@@ -26,8 +26,6 @@ public class SupportTicketMapper {
                 .slaBreached(entity.isSlaBreached())
                 .escalationLevel(entity.getEscalationLevel())
                 .satisfactionRating(entity.getSatisfactionRating())
-                .clientId(entity.getClient() != null ? entity.getClient().getId() : null)
-                .clientName(entity.getClient() != null ? entity.getClient().getUser().getFullName() : null)
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .build();

@@ -1,5 +1,4 @@
 export type AiProviderType = 'GEMINI' | 'CLAUDE' | 'OPENAI' | 'MOCK';
-
 export type AiModel =
   | 'GEMINI_2_5_FLASH'
   | 'GEMINI_2_5_PRO'
@@ -7,7 +6,6 @@ export type AiModel =
   | 'GPT_4O_MINI'
   | 'CLAUDE_SONNET'
   | 'CLAUDE_OPUS';
-
 export type AiFeature =
   | 'EMPLOYMENT_LETTER'
   | 'LEAVE_POLICY'
@@ -23,30 +21,31 @@ export type AiFeature =
   | 'GENERAL';
 
 export interface AiProviderConfig {
-  id: number;
+  id?: number;
   provider: AiProviderType;
   model: AiModel;
   temperature: number;
   maxTokens: number;
-  active: boolean;
-  createdAt?: string;
+  apiKey?: string;
 }
 
 export interface AiProviderConfigRequest {
   aiProviderType: AiProviderType;
   model: AiModel;
+  temperature: number;
+  maxTokens: number;
   apiKey?: string;
-  temperature?: number;
-  maxTokens?: number;
 }
 
 export interface AiUsageSummary {
-  date?: string;
   totalRequests: number;
-  totalTokens: number;
-  avgResponseTimeMs: number;
-  requestsByFeature?: Record<string, number>;
-  tokensByFeature?: Record<string, number>;
+  totalTokens?: number;
+  totalInputTokens: number;
+  totalOutputTokens: number;
+  totalCostUsd: number;
+  avgResponseTimeMs?: number;
+  requestsByFeature?: { [key: string]: number };
+  tokensByFeature?: { [key: string]: number };
 }
 
 export interface AiPromptTemplate {
@@ -55,7 +54,6 @@ export interface AiPromptTemplate {
   name: string;
   template: string;
   version: number;
-  active: boolean;
   changeNotes?: string;
 }
 
@@ -64,4 +62,12 @@ export interface AiPromptTemplateRequest {
   name: string;
   template: string;
   changeNotes?: string;
+}
+
+export interface PageResponse<T> {
+  content: T[];
+  totalElements: number;
+  totalPages: number;
+  size: number;
+  number: number;
 }

@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { NgClass } from '@angular/common';
 import { SiteService } from '../../services/site.service';
@@ -87,11 +87,14 @@ export class SiteServiceDetailPage implements OnInit {
   service: Service | null = null;
   loading = true;
 
+  constructor(private cdr: ChangeDetectorRef) {}
+
   ngOnInit(): void {
     this.route.params.subscribe(p => {
       this.siteService.getService(p['slug']).subscribe(s => {
         this.service = s;
         this.loading = false;
+        this.cdr.markForCheck();
       });
     });
   }

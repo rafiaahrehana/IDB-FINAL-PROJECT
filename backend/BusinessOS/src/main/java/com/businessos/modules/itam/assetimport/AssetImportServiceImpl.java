@@ -4,7 +4,7 @@ import com.businessos.modules.hrm.asset.Asset;
 import com.businessos.modules.hrm.asset.AssetRepository;
 import com.businessos.modules.hrm.employee.Employee;
 import com.businessos.modules.hrm.employee.EmployeeRepository;
-import com.businessos.modules.hrm.asset.AssetStatus;
+import com.businessos.enums.AssetStatus;
 import com.businessos.modules.company.Company;
 import com.businessos.security.SecurityUtil;
 import com.businessos.shared.exception.BadRequestException;

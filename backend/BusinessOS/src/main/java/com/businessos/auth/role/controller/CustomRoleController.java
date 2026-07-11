@@ -50,35 +50,4 @@ public class CustomRoleController {
     public void delete(@PathVariable Long id) {
         customRoleService.delete(id);
     }
-
-    @GetMapping("/permissions/all")
-    public List<String> getAllAvailablePermissions() {
-        return customRoleService.getAllAvailablePermissions();
-    }
-
-    @GetMapping("/{id}/permissions")
-    public List<String> getPermissions(@PathVariable Long id) {
-        return customRoleService.getPermissions(id);
-    }
-
-    @PreAuthorize("hasRole('COMPANY_OWNER')")
-    @PutMapping("/{id}/permissions")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void setPermissions(@PathVariable Long id, @RequestBody List<String> permissionCodes) {
-        customRoleService.setPermissions(id, permissionCodes);
-    }
-
-    @PreAuthorize("hasRole('COMPANY_OWNER')")
-    @PutMapping("/{roleId}/assign/{userId}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void assignToUser(@PathVariable Long roleId, @PathVariable Long userId) {
-        customRoleService.assignToUser(roleId, userId);
-    }
-
-    @PreAuthorize("hasRole('COMPANY_OWNER')")
-    @DeleteMapping("/{roleId}/unassign/{userId}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void unassignFromUser(@PathVariable Long roleId, @PathVariable Long userId) {
-        customRoleService.unassignFromUser(roleId, userId);
-    }
 }

@@ -1,6 +1,6 @@
 package com.businessos.auth.user;
 
-import com.businessos.shared.location.LocationRequest;
+import com.businessos.shared.address.LocationRequest;
 import lombok.Data;
 
 @Data

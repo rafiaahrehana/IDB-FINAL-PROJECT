@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SupportAgent } from '../../models/support.model';
@@ -23,7 +23,7 @@ export class Agents implements OnInit {
   showForm = false;
   form: any = {};
 
-  constructor(private agentService: AgentService) {}
+  constructor(private agentService: AgentService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.load();
@@ -31,15 +31,18 @@ export class Agents implements OnInit {
 
   load(): void {
     this.loading = true;
+    this.cdr.markForCheck();
     this.agentService.list(this.page).subscribe({
       next: (res) => {
         this.agents = res.content;
         this.totalPages = res.totalPages;
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.error = 'Failed to load agents';
         this.loading = false;
+        this.cdr.markForCheck();
       },
     });
   }

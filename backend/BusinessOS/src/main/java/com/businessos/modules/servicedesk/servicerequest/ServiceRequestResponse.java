@@ -49,4 +49,7 @@ public class ServiceRequestResponse {
     private String quotationNotes;
     private LocalDateTime quotationValidUntil;
     private com.businessos.enums.QuotationStatus quotationStatus;
+
+    // Client answers to the service's dynamic form fields, keyed by field id
+    private java.util.Map<String, String> formData;
 }

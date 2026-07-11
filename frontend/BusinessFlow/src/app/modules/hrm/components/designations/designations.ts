@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Designation, DesignationRequest } from '../../models/hrm.model';
@@ -30,7 +30,7 @@ export class Designations implements OnInit {
 
   deleteTarget: Designation | null = null;
 
-  constructor(private designationService: DesignationService) {}
+  constructor(private designationService: DesignationService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.load();
@@ -38,16 +38,19 @@ export class Designations implements OnInit {
 
   load(): void {
     this.loading = true;
+    this.cdr.markForCheck();
     this.error = '';
     this.designationService.list(this.page, 20).subscribe({
       next: (res) => {
         this.designations = res.content;
         this.totalPages = res.totalPages;
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.error = 'Failed to load designations';
         this.loading = false;
+        this.cdr.markForCheck();
       },
     });
   }
@@ -66,6 +69,7 @@ export class Designations implements OnInit {
 
   save(): void {
     this.saving = true;
+    this.cdr.markForCheck();
     this.error = '';
     const req = this.editingId
       ? this.designationService.update(this.editingId, this.form)
@@ -73,12 +77,14 @@ export class Designations implements OnInit {
     req.subscribe({
       next: () => {
         this.saving = false;
+        this.cdr.markForCheck();
         this.showForm = false;
         this.success = this.editingId ? 'Designation updated' : 'Designation created';
         this.load();
       },
       error: (err) => {
         this.saving = false;
+        this.cdr.markForCheck();
         this.error = err?.error?.message || 'Failed to save designation';
       },
     });

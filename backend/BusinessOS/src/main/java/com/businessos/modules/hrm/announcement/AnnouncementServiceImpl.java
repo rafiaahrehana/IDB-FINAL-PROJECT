@@ -3,6 +3,7 @@ package com.businessos.modules.hrm.announcement;
 import com.businessos.shared.notification.CreateNotificationRequest;
 import com.businessos.modules.company.Company;
 import com.businessos.modules.hrm.department.Department;
+import com.businessos.enums.AnnouncementAudience;
 import com.businessos.enums.NotificationType;
 import com.businessos.shared.exception.BadRequestException;
 import com.businessos.shared.exception.ResourceNotFoundException;

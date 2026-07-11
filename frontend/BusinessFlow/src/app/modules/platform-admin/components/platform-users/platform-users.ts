@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PLATFORM_ROLES, PlatformRole, PlatformUser, PlatformUserRequest } from '../../models/platform-admin.model';
@@ -30,7 +30,7 @@ export class PlatformUsers implements OnInit {
 
   roles: PlatformRole[] = PLATFORM_ROLES;
 
-  constructor(private userService: PlatformUserService) {}
+  constructor(private userService: PlatformUserService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.load();
@@ -42,15 +42,18 @@ export class PlatformUsers implements OnInit {
 
   load(): void {
     this.loading = true;
+    this.cdr.markForCheck();
     this.userService.list(this.page).subscribe({
       next: (res) => {
         this.users = res.content;
         this.totalPages = res.totalPages;
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.error = 'Failed to load platform users';
         this.loading = false;
+        this.cdr.markForCheck();
       },
     });
   }
@@ -70,6 +73,7 @@ export class PlatformUsers implements OnInit {
 
   save(): void {
     this.saving = true;
+    this.cdr.markForCheck();
     this.error = '';
     this.success = '';
     const op = this.editingId
@@ -78,12 +82,14 @@ export class PlatformUsers implements OnInit {
     op.subscribe({
       next: () => {
         this.saving = false;
+        this.cdr.markForCheck();
         this.showForm = false;
         this.success = this.editingId ? 'Platform user updated' : `Platform user ${this.form.email} created`;
         this.load();
       },
       error: (err) => {
         this.saving = false;
+        this.cdr.markForCheck();
         this.error = err?.error?.message || 'Failed to save platform user';
       },
     });

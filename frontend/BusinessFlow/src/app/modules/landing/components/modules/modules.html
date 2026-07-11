@@ -1,0 +1,100 @@
+<section id="modules" class="modules-section-dark py-6">
+  <!-- Glowing orbs in background -->
+  <div class="bg-glow-1"></div>
+  <div class="bg-glow-2"></div>
+  
+  <div class="container py-5 content-wrapper">
+    <div class="text-center max-w-3xl mx-auto mb-5">
+      
+      <!-- Top Badge -->
+      <div class="badge-glow mb-4 slide-up">
+        <i class="bi bi-star-fill"></i> All-in-One Business Platform
+      </div>
+      
+      <!-- Heading -->
+      <h2 class="display-4 fw-bold mb-4 slide-up" style="animation-delay: 0.1s;">
+        Everything you need <br />
+        <span class="gradient-title">to run your business</span>
+      </h2>
+      
+      <!-- Subheading -->
+      <p class="lead text-secondary mb-4 slide-up" style="animation-delay: 0.2s;">
+        Mix and match powerful modules. Start with what you need, and add more capabilities as your company scales.
+      </p>
+      
+      <!-- Capability Badges -->
+      <div class="d-flex flex-wrap justify-content-center gap-4 mt-4 slide-up" style="animation-delay: 0.3s;">
+        <span class="sub-badge"><i class="bi bi-plugin"></i> Modular & Flexible</span>
+        <span class="sub-badge"><i class="bi bi-graph-up-arrow"></i> Scalable as You Grow</span>
+        <span class="sub-badge"><i class="bi bi-shield-check"></i> Secure & Reliable</span>
+      </div>
+    </div>
+    
+    <!-- Module Grid -->
+    <div class="row g-4 mt-2">
+      <div class="col-md-6 col-lg-3 slide-up" *ngFor="let module of modulesList(); let i = index" [style.animation-delay]="(0.3 + (i * 0.05)) + 's'">
+        <div class="glass-card">
+          <!-- Colorful Icon Box -->
+          <div class="icon-box shadow-sm" [ngClass]="'icon-color-' + (i % 8)">
+            <i class="bi" [ngClass]="module.icon"></i>
+          </div>
+          
+          <h5>{{ module.title }}</h5>
+          <p class="flex-grow-1">{{ module.desc }}</p>
+          
+          <a href="#learn-more" class="arrow-btn text-decoration-none shadow-sm">
+            <i class="bi bi-arrow-right"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Bottom Stats Banner -->
+    <div class="stats-banner slide-up" style="animation-delay: 0.8s;">
+      <div class="row g-4 align-items-center">
+        
+        <div class="col-md-3">
+          <div class="stat-item justify-content-md-center">
+            <div class="stat-icon"><i class="bi bi-grid-fill"></i></div>
+            <div class="stat-text">
+              <span class="val">8+</span>
+              <span class="lbl">Powerful Modules</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-md-3">
+          <div class="stat-item justify-content-md-center">
+            <div class="stat-icon" style="color: #38bdf8;"><i class="bi bi-people-fill"></i></div>
+            <div class="stat-text">
+              <span class="val">10K+</span>
+              <span class="lbl">Active Businesses</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-md-3">
+          <div class="stat-item justify-content-md-center">
+            <div class="stat-icon" style="color: #fb7185;"><i class="bi bi-lightning-charge-fill"></i></div>
+            <div class="stat-text">
+              <span class="val">99.9%</span>
+              <span class="lbl">Uptime & Reliability</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-md-3">
+          <div class="stat-item justify-content-md-center">
+            <div class="stat-icon" style="color: #f472b6;"><i class="bi bi-lock-fill"></i></div>
+            <div class="stat-text">
+              <span class="val">Enterprise</span>
+              <span class="lbl">Grade Security</span>
+            </div>
+          </div>
+        </div>
+        
+      </div>
+    </div>
+    
+  </div>
+</section>

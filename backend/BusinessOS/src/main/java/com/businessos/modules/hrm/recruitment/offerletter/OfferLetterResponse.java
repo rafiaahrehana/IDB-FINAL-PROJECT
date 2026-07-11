@@ -1,5 +1,6 @@
 package com.businessos.modules.hrm.recruitment.offerletter;
 
+import com.businessos.enums.LetterType;
 import lombok.Getter;
 import lombok.Setter;
 

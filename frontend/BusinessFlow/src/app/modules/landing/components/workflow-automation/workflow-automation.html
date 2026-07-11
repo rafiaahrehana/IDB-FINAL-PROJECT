@@ -1,0 +1,36 @@
+<section class="py-6 bg-light position-relative border-bottom">
+  <div class="container py-5">
+    <div class="row align-items-center mb-5">
+      <div class="col-lg-6 mb-4 mb-lg-0">
+        <span class="text-primary-bos fw-bold text-uppercase small tracking-widest mb-2 d-block slide-up">Visual Workflow Builder</span>
+        <h2 class="display-6 fw-bold text-dark mb-4 slide-up" style="animation-delay: 0.1s;">Automate your operations end-to-end</h2>
+        <p class="lead text-muted slide-up" style="animation-delay: 0.2s;">
+          Design multi-stage approvals, set conditional routing, and connect external services without writing a single line of code.
+        </p>
+      </div>
+      <div class="col-lg-6 text-lg-end slide-up" style="animation-delay: 0.3s;">
+        <a href="#workflows" class="btn btn-outline-bos rounded-pill px-4">Explore Workflow Templates</a>
+      </div>
+    </div>
+    
+    <div class="workflow-timeline d-flex flex-column flex-lg-row align-items-center justify-content-between position-relative mt-5 pt-4 slide-up" style="animation-delay: 0.4s;">
+      <!-- Connecting Line -->
+      <div class="timeline-line d-none d-lg-block position-absolute w-100 bg-secondary" style="height: 2px; top: 32px; left: 0; z-index: 1;">
+         <div class="timeline-progress bg-primary-bos h-100" style="width: 0%;"></div>
+      </div>
+      
+      <!-- Steps -->
+      <div *ngFor="let step of steps; let i = index" class="workflow-step d-flex flex-column align-items-center position-relative z-2 mb-4 mb-lg-0 text-center" [style.animation-delay]="(i * 0.2) + 's'">
+        <div class="step-icon d-flex align-items-center justify-content-center bg-white border border-2 rounded-circle shadow-sm mb-3" 
+             [ngClass]="'border-' + step.color + (step.color === 'accent' ? ' border-accent' : '')"
+             style="width: 64px; height: 64px;">
+          <i class="bi fs-4" [ngClass]="[step.icon, 'text-' + step.color, step.color === 'accent' ? 'text-accent' : '']"></i>
+        </div>
+        <h6 class="fw-bold text-dark mb-1">{{ step.label }}</h6>
+        <span class="small text-muted d-block d-lg-none" *ngIf="i < steps.length - 1">
+          <i class="bi bi-arrow-down fs-5"></i>
+        </span>
+      </div>
+    </div>
+  </div>
+</section>

@@ -1,9 +1,11 @@
-<div class="container-fluid py-3">
-  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-    <h4 class="mb-0">Payroll</h4>
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h4 class="page-title">Payroll</h4>
+    </div>
     <div class="d-flex gap-2">
       <select
-        class="form-select form-select-sm"
+        class="select-shadcn input-shadcn-sm"
         style="width: 110px"
         [(ngModel)]="month"
         (change)="page = 0; load()"
@@ -13,7 +15,7 @@
         }
       </select>
       <select
-        class="form-select form-select-sm"
+        class="select-shadcn input-shadcn-sm"
         style="width: 110px"
         [(ngModel)]="year"
         (change)="page = 0; load()"
@@ -22,27 +24,27 @@
           <option [ngValue]="y">{{ y }}</option>
         }
       </select>
-      <button class="btn btn-primary btn-sm text-nowrap" (click)="showForm = true">
+      <button class="btn-shadcn btn-shadcn-primary btn-shadcn-sm text-nowrap" (click)="showForm = true">
         <i class="bi bi-plus-lg me-1"></i>Add Payroll
       </button>
     </div>
   </div>
 
   @if (error) {
-    <div class="alert alert-danger py-2">{{ error }}</div>
+    <div class="badge-shadcn badge-shadcn-destructive py-2 px-3">{{ error }}</div>
   }
   @if (success) {
-    <div class="alert alert-success py-2">{{ success }}</div>
+    <div class="badge-shadcn badge-shadcn-success py-2 px-3">{{ success }}</div>
   }
   @if (loading) {
     <app-loader />
   }
 
   @if (!loading && payrolls.length) {
-    <div class="card">
-      <div class="table-responsive">
-        <table class="table table-hover table-sm align-middle mb-0">
-          <thead class="table-light">
+    <div class="card-shadcn">
+      <div class="table-shadcn-container">
+        <table class="table-shadcn">
+          <thead>
             <tr>
               <th>Employee</th>
               <th>Period</th>
@@ -68,11 +70,11 @@
                 <td class="text-end fw-semibold">{{ p.netSalary | number: '1.2-2' }}</td>
                 <td>
                   <span
-                    class="badge"
-                    [class.text-bg-secondary]="p.status === 'DRAFT'"
-                    [class.text-bg-info]="p.status === 'APPROVED'"
-                    [class.text-bg-success]="p.status === 'PAID'"
-                    [class.text-bg-danger]="p.status === 'CANCELLED'"
+                    class="badge-shadcn"
+                    [class.badge-shadcn-secondary]="p.status === 'DRAFT'"
+                    [class.badge-shadcn-info]="p.status === 'APPROVED'"
+                    [class.badge-shadcn-success]="p.status === 'PAID'"
+                    [class.badge-shadcn-destructive]="p.status === 'CANCELLED'"
                   >
                     {{ p.status }}
                   </span>
@@ -86,14 +88,14 @@
                 <td class="text-end text-nowrap">
                   @if (p.status === 'DRAFT') {
                     <button
-                      class="btn btn-outline-info btn-sm py-0 me-1"
+                      class="btn-shadcn btn-shadcn-outline btn-shadcn-sm py-0 me-1"
                       title="Approve"
                       (click)="approve(p)"
                     >
                       <i class="bi bi-check2-circle"></i>
                     </button>
                     <button
-                      class="btn btn-outline-danger btn-sm py-0"
+                      class="btn-shadcn btn-shadcn-destructive btn-shadcn-sm py-0"
                       title="Delete"
                       (click)="deleteTarget = p"
                     >
@@ -102,7 +104,7 @@
                   }
                   @if (p.status === 'APPROVED') {
                     <button
-                      class="btn btn-outline-success btn-sm py-0"
+                      class="btn-shadcn btn-shadcn-outline btn-shadcn-sm py-0"
                       title="Mark Paid"
                       (click)="openPay(p)"
                     >
@@ -115,7 +117,7 @@
           </tbody>
         </table>
       </div>
-      <div class="card-footer d-flex justify-content-end">
+      <div class="card-shadcn-footer d-flex justify-content-end">
         <app-pagination [page]="page" [totalPages]="totalPages" (pageChange)="goToPage($event)" />
       </div>
     </div>
@@ -128,20 +130,20 @@
 
 <!-- Create payroll modal -->
 @if (showForm) {
-  <div class="modal d-block" tabindex="-1" style="background: rgba(0, 0, 0, 0.4)">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-      <div class="modal-content">
-        <form #f="ngForm" (ngSubmit)="f.valid && save()">
-          <div class="modal-header">
-            <h5 class="modal-title">Add Payroll</h5>
-            <button type="button" class="btn-close" (click)="showForm = false"></button>
-          </div>
-          <div class="modal-body">
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label">Employee *</label>
+  <div class="modal-overlay" (click)="showForm = false">
+    <div class="modal-dialog-shadcn modal-lg" (click)="$event.stopPropagation()">
+      <form #f="ngForm" (ngSubmit)="f.valid && save()">
+        <div class="modal-header-shadcn">
+          <h5 class="modal-title">Add Payroll</h5>
+          <button type="button" class="btn-shadcn btn-shadcn-ghost btn-shadcn-icon btn-shadcn-sm" (click)="showForm = false"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="modal-body-shadcn">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <div class="field-group">
+                <label class="field-label">Employee *</label>
                 <select
-                  class="form-select form-select-sm"
+                  class="select-shadcn input-shadcn-sm"
                   name="employeeId"
                   [(ngModel)]="form.employeeId"
                   (change)="onEmployeeSelected()"
@@ -153,10 +155,12 @@
                   }
                 </select>
               </div>
-              <div class="col-md-3">
-                <label class="form-label">Month *</label>
+            </div>
+            <div class="col-md-3">
+              <div class="field-group">
+                <label class="field-label">Month *</label>
                 <select
-                  class="form-select form-select-sm"
+                  class="select-shadcn input-shadcn-sm"
                   name="payMonth"
                   [(ngModel)]="form.payMonth"
                   required
@@ -166,10 +170,12 @@
                   }
                 </select>
               </div>
-              <div class="col-md-3">
-                <label class="form-label">Year *</label>
+            </div>
+            <div class="col-md-3">
+              <div class="field-group">
+                <label class="field-label">Year *</label>
                 <select
-                  class="form-select form-select-sm"
+                  class="select-shadcn input-shadcn-sm"
                   name="payYear"
                   [(ngModel)]="form.payYear"
                   required
@@ -179,81 +185,97 @@
                   }
                 </select>
               </div>
-              <div class="col-md-3">
-                <label class="form-label">Basic Salary *</label>
+            </div>
+            <div class="col-md-3">
+              <div class="field-group">
+                <label class="field-label">Basic Salary *</label>
                 <input
                   type="number"
-                  class="form-control form-control-sm"
+                  class="input-shadcn input-shadcn-sm"
                   name="basicSalary"
                   [(ngModel)]="form.basicSalary"
                   required
                   min="0"
                 />
               </div>
-              <div class="col-md-3">
-                <label class="form-label">House Rent</label>
+            </div>
+            <div class="col-md-3">
+              <div class="field-group">
+                <label class="field-label">House Rent</label>
                 <input
                   type="number"
-                  class="form-control form-control-sm"
+                  class="input-shadcn input-shadcn-sm"
                   name="houseRent"
                   [(ngModel)]="form.houseRent"
                   min="0"
                 />
               </div>
-              <div class="col-md-3">
-                <label class="form-label">Medical</label>
+            </div>
+            <div class="col-md-3">
+              <div class="field-group">
+                <label class="field-label">Medical</label>
                 <input
                   type="number"
-                  class="form-control form-control-sm"
+                  class="input-shadcn input-shadcn-sm"
                   name="medicalAllowance"
                   [(ngModel)]="form.medicalAllowance"
                   min="0"
                 />
               </div>
-              <div class="col-md-3">
-                <label class="form-label">Transport</label>
+            </div>
+            <div class="col-md-3">
+              <div class="field-group">
+                <label class="field-label">Transport</label>
                 <input
                   type="number"
-                  class="form-control form-control-sm"
+                  class="input-shadcn input-shadcn-sm"
                   name="transportAllowance"
                   [(ngModel)]="form.transportAllowance"
                   min="0"
                 />
               </div>
-              <div class="col-md-4">
-                <label class="form-label">Bonus</label>
+            </div>
+            <div class="col-md-4">
+              <div class="field-group">
+                <label class="field-label">Bonus</label>
                 <input
                   type="number"
-                  class="form-control form-control-sm"
+                  class="input-shadcn input-shadcn-sm"
                   name="bonus"
                   [(ngModel)]="form.bonus"
                   min="0"
                 />
               </div>
-              <div class="col-md-4">
-                <label class="form-label">Deductions</label>
+            </div>
+            <div class="col-md-4">
+              <div class="field-group">
+                <label class="field-label">Deductions</label>
                 <input
                   type="number"
-                  class="form-control form-control-sm"
+                  class="input-shadcn input-shadcn-sm"
                   name="deductions"
                   [(ngModel)]="form.deductions"
                   min="0"
                 />
               </div>
-              <div class="col-md-4">
-                <label class="form-label">Tax Deduction</label>
+            </div>
+            <div class="col-md-4">
+              <div class="field-group">
+                <label class="field-label">Tax Deduction</label>
                 <input
                   type="number"
-                  class="form-control form-control-sm"
+                  class="input-shadcn input-shadcn-sm"
                   name="taxDeduction"
                   [(ngModel)]="form.taxDeduction"
                   min="0"
                 />
               </div>
-              <div class="col-12">
-                <label class="form-label">Notes</label>
+            </div>
+            <div class="col-12">
+              <div class="field-group">
+                <label class="field-label">Notes</label>
                 <textarea
-                  class="form-control form-control-sm"
+                  class="textarea-shadcn"
                   name="notes"
                   [(ngModel)]="form.notes"
                   rows="2"
@@ -261,49 +283,49 @@
               </div>
             </div>
           </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary btn-sm" (click)="showForm = false">
-              Cancel
-            </button>
-            <button type="submit" class="btn btn-primary btn-sm" [disabled]="f.invalid || saving">
-              @if (saving) {
-                <span class="spinner-border spinner-border-sm me-1"></span>
-              }
-              Create
-            </button>
-          </div>
-        </form>
-      </div>
+        </div>
+        <div class="modal-footer-shadcn">
+          <button type="button" class="btn-shadcn btn-shadcn-outline btn-shadcn-sm" (click)="showForm = false">
+            Cancel
+          </button>
+          <button type="submit" class="btn-shadcn btn-shadcn-primary btn-shadcn-sm" [disabled]="f.invalid || saving">
+            @if (saving) {
+              <span class="spinner-border spinner-border-sm me-1"></span>
+            }
+            Create
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 }
 
 <!-- Mark paid modal -->
 @if (payTarget) {
-  <div class="modal d-block" tabindex="-1" style="background: rgba(0, 0, 0, 0.4)">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Mark as Paid</h5>
-          <button type="button" class="btn-close" (click)="payTarget = null"></button>
-        </div>
-        <div class="modal-body">
-          <p class="small mb-2">
-            {{ payTarget.employeeName }} — {{ payTarget.payMonth | number: '2.0' }}/{{
-              payTarget.payYear
-            }}, net <strong>{{ payTarget.netSalary | number: '1.2-2' }}</strong>
-          </p>
-          <label class="form-label">Payment Reference (optional)</label>
+  <div class="modal-overlay" (click)="payTarget = null">
+    <div class="modal-dialog-shadcn" (click)="$event.stopPropagation()">
+      <div class="modal-header-shadcn">
+        <h5 class="modal-title">Mark as Paid</h5>
+        <button type="button" class="btn-shadcn btn-shadcn-ghost btn-shadcn-icon btn-shadcn-sm" (click)="payTarget = null"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div class="modal-body-shadcn">
+        <p class="small mb-2">
+          {{ payTarget.employeeName }} — {{ payTarget.payMonth | number: '2.0' }}/{{
+            payTarget.payYear
+          }}, net <strong>{{ payTarget.netSalary | number: '1.2-2' }}</strong>
+        </p>
+        <div class="field-group">
+          <label class="field-label">Payment Reference (optional)</label>
           <input
-            class="form-control form-control-sm"
+            class="input-shadcn input-shadcn-sm"
             [(ngModel)]="paymentReference"
             placeholder="e.g. bank transfer ID"
           />
         </div>
-        <div class="modal-footer">
-          <button class="btn btn-secondary btn-sm" (click)="payTarget = null">Cancel</button>
-          <button class="btn btn-success btn-sm" (click)="confirmPay()">Mark Paid</button>
-        </div>
+      </div>
+      <div class="modal-footer-shadcn">
+        <button class="btn-shadcn btn-shadcn-outline btn-shadcn-sm" (click)="payTarget = null">Cancel</button>
+        <button class="btn-shadcn btn-shadcn-primary btn-shadcn-sm" (click)="confirmPay()">Mark Paid</button>
       </div>
     </div>
   </div>

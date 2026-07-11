@@ -1,5 +1,6 @@
 package com.businessos.modules.hrm.employee;
 
+import com.businessos.enums.EmploymentStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;

@@ -1,97 +1,90 @@
-<div class="container-fluid py-3">
-  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+<div class="page-container">
+  <div class="page-header mb-4">
     <div>
-      <h4 class="mb-0">Departments</h4>
-      <small class="text-muted">{{ filteredDepartments.length }} department{{ filteredDepartments.length !== 1 ? 's' : '' }}</small>
+      <h4 class="page-title mb-0">Departments</h4>
+      <div class="page-subtitle mt-1">Manage organizational structure</div>
     </div>
-    <div class="d-flex gap-2">
-      <div class="input-group input-group-sm" style="width: 220px">
-        <span class="input-group-text"><i class="bi bi-search"></i></span>
-        <input class="form-control" placeholder="Search departments..." [(ngModel)]="searchTerm" />
-        @if (searchTerm) {
-          <button class="btn btn-outline-secondary" (click)="searchTerm = ''"><i class="bi bi-x"></i></button>
-        }
-      </div>
-      <button class="btn btn-primary btn-sm text-nowrap" (click)="openCreate()">
-        <i class="bi bi-plus-lg me-1"></i>Add Department
-      </button>
-    </div>
+    <button class="btn-shadcn btn-shadcn-primary btn-shadcn-sm" (click)="openCreate()">
+      <i class="bi bi-plus-lg me-1"></i>Add Department
+    </button>
   </div>
 
   @if (error) {
-    <div class="alert alert-danger py-2">{{ error }}</div>
+    <div class="badge-shadcn badge-shadcn-destructive py-2 px-3">{{ error }}</div>
   }
   @if (success) {
-    <div class="alert alert-success py-2">{{ success }}</div>
+    <div class="badge-shadcn badge-shadcn-success py-2 px-3">{{ success }}</div>
   }
   @if (loading) {
     <app-loader />
   }
 
-  @if (!loading && filteredDepartments.length) {
-    <div class="card border-0 shadow-sm">
-      <div class="table-responsive">
-        <table class="table table-hover table-sm align-middle mb-0">
-          <thead class="table-light">
+  @if (!loading && departments.length) {
+    <div class="card-shadcn">
+      <div class="table-shadcn-container">
+        <table class="table-shadcn">
+          <thead>
             <tr>
-              <th>Department</th>
+              <th>Name</th>
               <th>Code</th>
               <th>Head</th>
               <th>Parent</th>
               <th class="text-end">Employees</th>
               <th class="text-end">Budget</th>
               <th>Status</th>
-              <th class="text-end">Actions</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
-            @for (dept of filteredDepartments; track dept.id) {
+            @for (dept of departments; track dept.id) {
               <tr>
                 <td>
-                  <div class="fw-medium">{{ dept.name }}</div>
+                  {{ dept.name }}
                   @if (dept.description) {
-                    <div class="text-muted small text-truncate" style="max-width: 280px">{{ dept.description }}</div>
+                    <div class="text-muted small text-truncate" style="max-width: 260px">
+                      {{ dept.description }}
+                    </div>
                   }
                 </td>
-                <td>
-                  @if (dept.code) {
-                    <span class="badge text-bg-light border">{{ dept.code }}</span>
-                  } @else {
-                    <span class="text-muted">-</span>
-                  }
-                </td>
+                <td>{{ dept.code || '-' }}</td>
                 <td>{{ dept.headEmployeeName || '-' }}</td>
                 <td>{{ dept.parentDepartmentName || '-' }}</td>
-                <td class="text-end">
-                  @if (dept.employeeCount > 0) {
-                    <button class="btn btn-link btn-sm p-0 text-decoration-none" (click)="viewEmployees(dept)">
-                      {{ dept.employeeCount }}
-                      <i class="bi bi-box-arrow-up-right small ms-1"></i>
-                    </button>
-                  } @else {
-                    <span class="text-muted">0</span>
-                  }
-                </td>
-                <td class="text-end">
-                  @if (dept.budget) {
-                    {{ dept.budget | number }}
-                  } @else {
-                    <span class="text-muted">-</span>
-                  }
-                </td>
+                <td class="text-end">{{ dept.employeeCount }}</td>
+                <td class="text-end">{{ dept.budget ?? '-' }}</td>
                 <td>
-                  <span class="badge rounded-pill" [class.text-bg-success]="dept.active" [class.text-bg-secondary]="!dept.active">
-                    {{ dept.active ? 'Active' : 'Inactive' }}
+                  <span
+                    class="badge-shadcn"
+                    [class.badge-shadcn-success]="dept.active"
+                    [class.badge-shadcn-secondary]="!dept.active"
+                  >
+                    {{ dept.active ? 'ACTIVE' : 'INACTIVE' }}
                   </span>
                 </td>
                 <td class="text-end text-nowrap">
-                  <button class="btn btn-outline-secondary btn-sm py-0 me-1" title="Edit" (click)="openEdit(dept)">
+                  <button
+                    class="btn-shadcn btn-shadcn-ghost btn-shadcn-sm py-0 me-1"
+                    title="Edit"
+                    (click)="openEdit(dept)"
+                  >
                     <i class="bi bi-pencil"></i>
                   </button>
-                  <button class="btn btn-outline-secondary btn-sm py-0 me-1" [title]="dept.active ? 'Deactivate' : 'Activate'" (click)="toggle(dept)">
-                    <i class="bi" [class.bi-toggle-on]="dept.active" [class.bi-toggle-off]="!dept.active"></i>
+                  <button
+                    class="btn-shadcn btn-shadcn-ghost btn-shadcn-sm py-0 me-1"
+                    [title]="dept.active ? 'Deactivate' : 'Activate'"
+                    (click)="toggle(dept)"
+                  >
+                    <i
+                      class="bi"
+                      [class.bi-toggle-on]="dept.active"
+                      [class.bi-toggle-off]="!dept.active"
+                    ></i>
                   </button>
-                  <button class="btn btn-outline-danger btn-sm py-0" title="Delete" (click)="deleteTarget = dept">
+                  <button
+                    class="btn-shadcn btn-shadcn-ghost btn-shadcn-sm py-0"
+                    style="color: var(--color-destructive);"
+                    title="Delete"
+                    (click)="deleteTarget = dept"
+                  >
                     <i class="bi bi-trash"></i>
                   </button>
                 </td>
@@ -100,83 +93,118 @@
           </tbody>
         </table>
       </div>
-      @if (totalPages > 1) {
-        <div class="card-footer d-flex justify-content-end">
-          <app-pagination [page]="page" [totalPages]="totalPages" (pageChange)="goToPage($event)" />
-        </div>
-      }
+      <div class="card-shadcn-footer d-flex justify-content-end">
+        <app-pagination [page]="page" [totalPages]="totalPages" (pageChange)="goToPage($event)" />
+      </div>
     </div>
   }
 
-  @if (!loading && !filteredDepartments.length && !searchTerm) {
-    <app-empty-state icon="bi-diagram-3" message="No departments yet. Create your first department to get started." />
-  }
-
-  @if (!loading && !filteredDepartments.length && searchTerm) {
-    <div class="text-center py-5">
-      <i class="bi bi-search fs-1 text-muted"></i>
-      <p class="text-muted mt-2">No departments match "{{ searchTerm }}"</p>
-      <button class="btn btn-outline-secondary btn-sm" (click)="searchTerm = ''">Clear search</button>
-    </div>
+  @if (!loading && !departments.length) {
+    <app-empty-state icon="bi-diagram-3" message="No departments yet." />
   }
 </div>
 
 @if (showForm) {
-  <div class="modal d-block" tabindex="-1" style="background: rgba(0, 0, 0, 0.4)">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
+  <div class="modal-overlay" tabindex="-1" (click)="showForm = false">
+    <div class="modal-dialog-shadcn" (click)="$event.stopPropagation()">
       <div class="modal-content">
         <form #f="ngForm" (ngSubmit)="f.valid && save()">
-          <div class="modal-header">
-            <h5 class="modal-title">{{ editingId ? 'Edit Department' : 'Add Department' }}</h5>
-            <button type="button" class="btn-close" (click)="showForm = false"></button>
+          <div class="modal-header-shadcn">
+            <h5 class="modal-title-shadcn">{{ editingId ? 'Edit Department' : 'Add Department' }}</h5>
+            <button type="button" class="btn-shadcn btn-shadcn-ghost btn-shadcn-icon btn-shadcn-sm" (click)="showForm = false"><i class="bi bi-x-lg"></i></button>
           </div>
-          <div class="modal-body">
+          <div class="modal-body-shadcn">
             <div class="row g-3">
               <div class="col-md-8">
-                <label class="form-label">Name *</label>
-                <input class="form-control form-control-sm" name="name" [(ngModel)]="form.name" required minlength="2" maxlength="100" />
+                <div class="field-group">
+                  <label class="field-label">Name *</label>
+                  <input
+                    class="input-shadcn input-shadcn-sm"
+                    name="name"
+                    [(ngModel)]="form.name"
+                    required
+                    minlength="2"
+                    maxlength="100"
+                  />
+                </div>
               </div>
               <div class="col-md-4">
-                <label class="form-label">Code</label>
-                <input class="form-control form-control-sm" name="code" [(ngModel)]="form.code" maxlength="20" placeholder="e.g. HR, IT" />
+                <div class="field-group">
+                  <label class="field-label">Code</label>
+                  <input
+                    class="input-shadcn input-shadcn-sm"
+                    name="code"
+                    [(ngModel)]="form.code"
+                    maxlength="20"
+                  />
+                </div>
               </div>
               <div class="col-12">
-                <label class="form-label">Description</label>
-                <textarea class="form-control form-control-sm" name="description" [(ngModel)]="form.description" rows="2" placeholder="What does this department do?"></textarea>
+                <div class="field-group">
+                  <label class="field-label">Description</label>
+                  <textarea
+                    class="textarea-shadcn"
+                    name="description"
+                    [(ngModel)]="form.description"
+                    rows="2"
+                  ></textarea>
+                </div>
               </div>
               <div class="col-md-4">
-                <label class="form-label">Parent Department</label>
-                <select class="form-select form-select-sm" name="parentDepartmentId" [(ngModel)]="form.parentDepartmentId">
-                  <option [ngValue]="undefined">None (Top level)</option>
-                  @for (d of activeDepartments; track d.id) {
-                    @if (d.id !== editingId) {
-                      <option [ngValue]="d.id">{{ d.name }}</option>
+                <div class="field-group">
+                  <label class="field-label">Parent Department</label>
+                  <select
+                    class="select-shadcn input-shadcn-sm"
+                    name="parentDepartmentId"
+                    [(ngModel)]="form.parentDepartmentId"
+                  >
+                    <option [ngValue]="undefined">-</option>
+                    @for (d of activeDepartments; track d.id) {
+                      @if (d.id !== editingId) {
+                        <option [ngValue]="d.id">{{ d.name }}</option>
+                      }
                     }
-                  }
-                </select>
+                  </select>
+                </div>
               </div>
               <div class="col-md-4">
-                <label class="form-label">Department Head</label>
-                <select class="form-select form-select-sm" name="headEmployeeId" [(ngModel)]="form.headEmployeeId">
-                  <option [ngValue]="undefined">None</option>
-                  @for (emp of employees; track emp.id) {
-                    <option [ngValue]="emp.id">{{ emp.firstName }} {{ emp.lastName }}</option>
-                  }
-                </select>
+                <div class="field-group">
+                  <label class="field-label">Head Employee</label>
+                  <select
+                    class="select-shadcn input-shadcn-sm"
+                    name="headEmployeeId"
+                    [(ngModel)]="form.headEmployeeId"
+                  >
+                    <option [ngValue]="undefined">-</option>
+                    @for (e of employees; track e.id) {
+                      <option [ngValue]="e.id">{{ e.firstName }} {{ e.lastName }}</option>
+                    }
+                  </select>
+                </div>
               </div>
               <div class="col-md-4">
-                <label class="form-label">Budget</label>
-                <input type="number" class="form-control form-control-sm" name="budget" [(ngModel)]="form.budget" min="0" placeholder="0" />
+                <div class="field-group">
+                  <label class="field-label">Budget</label>
+                  <input
+                    type="number"
+                    class="input-shadcn input-shadcn-sm"
+                    name="budget"
+                    [(ngModel)]="form.budget"
+                    min="0"
+                  />
+                </div>
               </div>
             </div>
           </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary btn-sm" (click)="showForm = false">Cancel</button>
-            <button type="submit" class="btn btn-primary btn-sm" [disabled]="f.invalid || saving">
+          <div class="modal-footer-shadcn d-flex justify-content-end gap-2">
+            <button type="button" class="btn-shadcn btn-shadcn-outline btn-shadcn-sm" (click)="showForm = false">
+              Cancel
+            </button>
+            <button type="submit" class="btn-shadcn btn-shadcn-primary btn-shadcn-sm" [disabled]="f.invalid || saving">
               @if (saving) {
                 <span class="spinner-border spinner-border-sm me-1"></span>
               }
-              {{ editingId ? 'Save Changes' : 'Create Department' }}
+              {{ editingId ? 'Save' : 'Create' }}
             </button>
           </div>
         </form>
@@ -185,47 +213,10 @@
   </div>
 }
 
-@if (showEmployees) {
-  <div class="modal d-block" tabindex="-1" style="background: rgba(0, 0, 0, 0.4)">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Employees in {{ selectedDeptName }}</h5>
-          <button type="button" class="btn-close" (click)="showEmployees = false"></button>
-        </div>
-        <div class="modal-body">
-          @if (deptEmployeesLoading) {
-            <app-loader />
-          }
-          @if (!deptEmployeesLoading && deptEmployees.length) {
-            <div class="list-group list-group-flush">
-              @for (emp of deptEmployees; track emp.id) {
-                <a class="list-group-item list-group-item-action d-flex align-items-center gap-3" [routerLink]="['/hrm/employees', emp.id]" (click)="showEmployees = false">
-                  <div class="rounded-circle bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
-                    <i class="bi bi-person"></i>
-                  </div>
-                  <div class="flex-grow-1">
-                    <div class="fw-medium small">{{ getEmployeeName(emp) }}</div>
-                    <div class="text-muted small">{{ emp.jobTitle || emp.employmentType }}</div>
-                  </div>
-                  <span class="badge text-bg-light border">{{ emp.employmentStatus }}</span>
-                </a>
-              }
-            </div>
-          }
-          @if (!deptEmployeesLoading && !deptEmployees.length) {
-            <div class="text-center text-muted py-3">No employees found in this department.</div>
-          }
-        </div>
-      </div>
-    </div>
-  </div>
-}
-
 <app-confirm-dialog
   [visible]="!!deleteTarget"
   title="Delete Department"
-  [message]="'Delete department \'' + ($safeNavigationMigration(deleteTarget?.name)) + '\'? Employees in this department will not be deleted.'"
+  [message]="'Delete department \'' + $safeNavigationMigration(deleteTarget?.name) + '\'?'"
   confirmLabel="Delete"
   (confirmed)="confirmDelete()"
   (cancelled)="deleteTarget = null"

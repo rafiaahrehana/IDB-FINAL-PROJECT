@@ -1,9 +1,7 @@
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
-import { Department, DepartmentRequest } from '../../models/hrm.model';
-import { Employee } from '../../models/hrm.model';
+import { Department, DepartmentRequest, Employee } from '../../models/hrm.model';
 import { DepartmentService } from '../../services/department.service';
 import { EmployeeService } from '../../services/employee.service';
 import { Pagination } from '../../../../shared/components/pagination/pagination';
@@ -13,7 +11,7 @@ import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/conf
 
 @Component({
   selector: 'app-departments',
-  imports: [CommonModule, FormsModule, RouterLink, Pagination, Loader, EmptyState, ConfirmDialog],
+  imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState, ConfirmDialog],
   templateUrl: './departments.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './departments.scss',
@@ -32,53 +30,38 @@ export class Departments implements OnInit {
   showForm = false;
   editingId: number | null = null;
   form: DepartmentRequest = { name: '' };
-  searchTerm = '';
 
   deleteTarget: Department | null = null;
-
-  // Department employees modal
-  showEmployees = false;
-  deptEmployees: Employee[] = [];
-  deptEmployeesLoading = false;
-  selectedDeptName = '';
 
   constructor(
     private departmentService: DepartmentService,
     private employeeService: EmployeeService,
+    private cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit(): void {
     this.load();
-    this.employeeService.list(0, 200).subscribe({
-      next: (res) => (this.employees = res.content),
-    });
+    this.employeeService.list(0, 1000, undefined, 'ACTIVE').subscribe({ next: (res) => (this.employees = res.content) });
   }
 
   load(): void {
     this.loading = true;
+    this.cdr.markForCheck();
     this.error = '';
-    this.departmentService.list(this.page, 50).subscribe({
+    this.departmentService.list(this.page, 20).subscribe({
       next: (res) => {
         this.departments = res.content;
         this.totalPages = res.totalPages;
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.error = 'Failed to load departments';
         this.loading = false;
+        this.cdr.markForCheck();
       },
     });
     this.departmentService.listActive().subscribe({ next: (d) => (this.activeDepartments = d) });
-  }
-
-  get filteredDepartments(): Department[] {
-    if (!this.searchTerm.trim()) return this.departments;
-    const term = this.searchTerm.toLowerCase();
-    return this.departments.filter(d =>
-      d.name.toLowerCase().includes(term) ||
-      (d.code && d.code.toLowerCase().includes(term)) ||
-      (d.description && d.description.toLowerCase().includes(term))
-    );
   }
 
   openCreate(): void {
@@ -102,10 +85,11 @@ export class Departments implements OnInit {
 
   save(): void {
     this.saving = true;
+    this.cdr.markForCheck();
     this.error = '';
     const payload: any = { ...this.form };
     Object.keys(payload).forEach((k) => {
-      if (payload[k] === '' || payload[k] === null || payload[k] === undefined) delete payload[k];
+      if (payload[k] === '' || payload[k] === null) delete payload[k];
     });
     const req = this.editingId
       ? this.departmentService.update(this.editingId, payload)
@@ -113,12 +97,14 @@ export class Departments implements OnInit {
     req.subscribe({
       next: () => {
         this.saving = false;
+        this.cdr.markForCheck();
         this.showForm = false;
         this.success = this.editingId ? 'Department updated' : 'Department created';
         this.load();
       },
       error: (err) => {
         this.saving = false;
+        this.cdr.markForCheck();
         this.error = err?.error?.message || 'Failed to save department';
       },
     });
@@ -140,31 +126,10 @@ export class Departments implements OnInit {
         this.load();
       },
       error: (err) => {
-        this.deleteTarget = null;
         this.error = err?.error?.message || 'Failed to delete department';
+        this.deleteTarget = null;
       },
     });
-  }
-
-  viewEmployees(dept: Department): void {
-    if (dept.employeeCount === 0) return;
-    this.selectedDeptName = dept.name;
-    this.showEmployees = true;
-    this.deptEmployeesLoading = true;
-    this.employeeService.list(0, 100, dept.id).subscribe({
-      next: (res) => {
-        this.deptEmployees = res.content;
-        this.deptEmployeesLoading = false;
-      },
-      error: () => {
-        this.deptEmployees = [];
-        this.deptEmployeesLoading = false;
-      },
-    });
-  }
-
-  getEmployeeName(emp: Employee): string {
-    return `${emp.firstName} ${emp.lastName}`;
   }
 
   goToPage(p: number): void {

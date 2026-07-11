@@ -1,6 +1,6 @@
 package com.businessos.modules.finance.payment;
 
-import com.businessos.shared.payment.PaymentMethod;
+import com.businessos.enums.PaymentMethod;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

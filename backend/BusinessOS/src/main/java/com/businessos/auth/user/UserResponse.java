@@ -22,6 +22,4 @@ public class UserResponse {
     private boolean twoFactorEnabled;
     private String languagePreference;
     private LocalDateTime createdAt;
-    private Long customRoleId;
-    private String customRoleName;
 }

@@ -2,7 +2,6 @@
 package com.businessos.modules.crm.client;
 
 import com.businessos.auth.role.enums.Role;
-import com.businessos.core.automation.AutomationEventPublisher;
 import com.businessos.modules.company.Company;
 import com.businessos.modules.hrm.employee.Employee;
 import com.businessos.auth.user.User;
@@ -39,7 +38,6 @@ public class ClientServiceImpl implements ClientService {
     private final EmailService emailService;
     private final EmailBranding emailBranding;
     private final CompanyRepository companyRepository;
-    private final AutomationEventPublisher automationEventPublisher;
 
     @Override
     @Transactional
@@ -84,10 +82,6 @@ public class ClientServiceImpl implements ClientService {
         clientRepository.save(client);
         notificationPreferenceService.createDefaultsForUser(user.getId());
 
-        String fullName = (request.getFirstName() + " " + request.getLastName()).trim();
-        automationEventPublisher.publishClientCreated(
-            this, companyId, client.getId(), fullName, normalizedEmail);
-
         try {
             Company fullCompany = companyRepository.findById(companyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Company not found"));
@@ -98,52 +92,6 @@ public class ClientServiceImpl implements ClientService {
         }
 
         
-        return ClientMapper.toResponse(client);
-    }
-
-    @Override
-    @Transactional
-    public ClientResponse selfRegister(ClientSelfRegisterRequest request) {
-        Company company = companyRepository.findBySubdomain(request.getSubdomain().toLowerCase().trim())
-                .orElseThrow(() -> new BadRequestException(
-                        "No company found for subdomain: " + request.getSubdomain()));
-
-        String normalizedEmail = request.getEmail().toLowerCase().trim();
-        if (userRepository.existsByEmail(normalizedEmail)) {
-            throw new BadRequestException("An account with this email already exists");
-        }
-
-        User user = User.builder()
-                .firstName(request.getFirstName())
-                .lastName(request.getLastName())
-                .email(normalizedEmail)
-                .password(passwordEncoder.encode(request.getPassword()))
-                .phone(request.getPhone())
-                .role(Role.CLIENT)
-                .active(true)
-                .emailVerified(true)
-                .build();
-        userRepository.save(user);
-
-        Client client = Client.builder()
-                .user(user)
-                .company(companyRef(company.getId()))
-                .clientCompanyName(request.getClientCompanyName())
-                .industry(request.getIndustry())
-                .website(request.getWebsite())
-                .taxId(request.getTaxId())
-                .status(ClientStatus.ACTIVE)
-                .build();
-        clientRepository.save(client);
-        notificationPreferenceService.createDefaultsForUser(user.getId());
-
-        try {
-            EmailBranding.Data branding = emailBranding.from(company);
-            emailService.sendClientWelcomeEmail(user.getEmail(), user.getFirstName(), branding);
-        } catch (Exception ex) {
-            log.warn("Welcome email failed for client {}: {}", user.getEmail(), ex.getMessage());
-        }
-
         return ClientMapper.toResponse(client);
     }
 

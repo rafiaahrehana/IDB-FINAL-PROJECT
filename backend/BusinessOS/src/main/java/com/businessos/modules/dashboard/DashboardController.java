@@ -31,4 +31,16 @@ public class DashboardController {
     public ResponseEntity<InsightsResponse> getAiInsights() {
         return ResponseEntity.ok(dashboardService.getAiInsights());
     }
+
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'SYSTEM_ADMIN', 'SUPPORT_AGENT', 'SUPPORT_MANAGER', 'MARKETING_MANAGER', 'PLATFORM_ACCOUNTANT', 'SALES_MANAGER')")
+    @GetMapping("/platform-summary")
+    public ResponseEntity<PlatformSummaryResponse> getPlatformSummary() {
+        return ResponseEntity.ok(dashboardService.getPlatformSummary());
+    }
+
+    @PreAuthorize("hasRole('CLIENT')")
+    @GetMapping("/client-summary")
+    public ResponseEntity<ClientSummaryResponse> getClientSummary() {
+        return ResponseEntity.ok(dashboardService.getClientSummary());
+    }
 }

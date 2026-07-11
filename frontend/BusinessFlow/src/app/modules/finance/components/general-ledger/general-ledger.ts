@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ChartOfAccount, GeneralLedgerEntry } from '../../models/finance.model';
@@ -31,7 +31,7 @@ export class GeneralLedger implements OnInit {
   reconcileTarget: GeneralLedgerEntry | null = null;
   reconcileNotes = '';
 
-  constructor(private ledgerService: GeneralLedgerService, private coaService: CoaService) {}
+  constructor(private ledgerService: GeneralLedgerService, private coaService: CoaService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.coaService.list(0, 200).subscribe({ next: (res) => (this.accounts = res.content) });
@@ -40,6 +40,7 @@ export class GeneralLedger implements OnInit {
 
   load(): void {
     this.loading = true;
+    this.cdr.markForCheck();
     this.accountBalance = null;
     let obs;
     if (this.startDate && this.endDate) {
@@ -55,10 +56,12 @@ export class GeneralLedger implements OnInit {
         this.entries = res.content;
         this.totalPages = res.totalPages;
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.error = 'Failed to load ledger entries';
         this.loading = false;
+        this.cdr.markForCheck();
       },
     });
   }

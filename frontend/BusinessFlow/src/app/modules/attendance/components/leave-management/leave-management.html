@@ -9,15 +9,18 @@
   @if (showForm) {
   <div class="card mb-3"><div class="card-body">
     <div class="row g-2">
-      <div class="col-md-2"><input class="form-control form-control-sm" type="date" placeholder="Start Date *" [(ngModel)]="form.startDate" /></div>
-      <div class="col-md-2"><input class="form-control form-control-sm" type="date" placeholder="End Date *" [(ngModel)]="form.endDate" /></div>
+      <div class="col-md-2"><input class="form-control form-control-sm" type="date" placeholder="Leave Date *" [(ngModel)]="form.leaveDate" /></div>
       <div class="col-md-2">
         <select class="form-select form-select-sm" [(ngModel)]="form.leaveType">
           <option value="">Type *</option>
           @for (t of leaveTypes; track t) { <option [value]="t">{{ t }}</option> }
         </select>
       </div>
-      <div class="col-md-4"><input class="form-control form-control-sm" placeholder="Reason" [(ngModel)]="form.reason" /></div>
+      <div class="col-md-4"><input class="form-control form-control-sm" placeholder="Reason" [(ngModel)]="form.leaveReason" /></div>
+      <div class="col-md-2 d-flex align-items-center gap-1">
+        <input class="form-check-input" type="checkbox" id="halfDay" [(ngModel)]="form.halfDay" />
+        <label class="form-check-label small" for="halfDay">Half day</label>
+      </div>
       <div class="col-md-2 d-flex gap-2">
         <button class="btn btn-primary btn-sm" (click)="create()">Submit</button>
         <button class="btn btn-secondary btn-sm" (click)="showForm = false">✕</button>
@@ -36,16 +39,17 @@
         @for (l of leaves; track l.id) {
         <tr>
           <td>{{ l.employeeName }}</td>
-          <td>{{ l.startDate | date:'mediumDate' }}</td>
+          <td>{{ l.leaveDate | date:'mediumDate' }}</td>
           <td><span class="badge text-bg-light border">{{ l.leaveType }}</span></td>
-          <td class="small text-muted">{{ l.reason || '-' }}</td>
+          <td class="small text-muted">{{ l.leaveReason || '-' }}</td>
+          <td>{{ l.halfDay ? 'Yes' : 'No' }}</td>
           <td>
-            @if (l.status === 'APPROVED') { <span class="badge text-bg-success">Approved</span> }
-            @else if (l.status === 'REJECTED') { <span class="badge text-bg-danger" [title]="l.rejectionReason">Rejected</span> }
+            @if (l.approved) { <span class="badge text-bg-success">Approved</span> }
+            @else if (l.rejectionReason) { <span class="badge text-bg-danger" [title]="l.rejectionReason">Rejected</span> }
             @else { <span class="badge text-bg-warning">Pending</span> }
           </td>
           <td class="text-end text-nowrap">
-            @if (l.status === 'PENDING') {
+            @if (!l.approved && !l.rejectionReason) {
             <button class="btn btn-outline-success btn-sm me-1" (click)="approve(l)">Approve</button>
             <button class="btn btn-outline-danger btn-sm" (click)="rejectTarget = l; rejectionReason = ''">Reject</button>
             }

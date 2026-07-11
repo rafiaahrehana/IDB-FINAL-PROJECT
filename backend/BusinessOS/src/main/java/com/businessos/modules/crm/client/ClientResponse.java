@@ -21,9 +21,6 @@ public class ClientResponse {
     private String clientCompanyName;
     private String industry;
     private String website;
-    private String tags;
-    private Integer employeeCount;
-    private java.math.BigDecimal annualRevenue;
     private ClientStatus status;
     private boolean portalAccessEnabled;
     private Long accountManagerId;

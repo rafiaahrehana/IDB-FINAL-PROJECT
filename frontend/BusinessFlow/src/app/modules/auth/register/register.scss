@@ -1,85 +1,106 @@
-.auth-container {
-  font-family: 'Inter', sans-serif;
+// Register page — shares exact same design as login page.
+// Import the shared login styles by reusing all the same class names.
+// Only register-specific additions are listed here.
 
-  .brand-panel {
-    background: #2563EB;
-    position: relative;
-    z-index: 1;
-    min-height: 100vh;
+@import '../login/login.scss';
 
-    .brand-pattern {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      opacity: 0.1;
-      background-image: radial-gradient(#ffffff 1.5px, transparent 1.5px), radial-gradient(#ffffff 1.5px, transparent 1.5px);
-      background-size: 24px 24px;
-      background-position: 0 0, 12px 12px;
-      pointer-events: none;
-      z-index: 0;
-    }
+// ── Register-specific additions ──────────────────────────
+.field-row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.9rem;
+}
+
+.field-row-subdomain {
+  display: flex;
+  gap: 0.9rem;
+}
+
+.subdomain-wrap {
+  .field-input {
+    border-radius: 12px 0 0 12px !important;
+    border-right: 0 !important;
+    flex: 1;
   }
+}
 
-  .form-panel {
-    min-height: 100vh;
-    background: #f8fafc;
+.subdomain-suffix {
+  height: 48px;
+  padding: 0 12px;
+  background: #F3F4F6;
+  border: 1.5px solid #E5E7EB;
+  border-left: 0;
+  border-radius: 0 12px 12px 0;
+  display: flex;
+  align-items: center;
+  font-size: 0.82rem;
+  color: #6B7280;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.section-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #6B46FF;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 1.2rem 0 1rem;
+
+  &::before,
+  &::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #E5E7EB;
   }
+}
 
-  .form-control {
-    height: 42px;
-    border-radius: 8px;
+.field-opt {
+  font-weight: 400;
+  color: #9CA3AF;
+  font-size: 0.78rem;
+}
 
-    &:focus {
-      border-color: #2563EB;
-      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
-    }
+.success-icon-wrap {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: rgba(22, 163, 74, 0.1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  i {
+    font-size: 2rem;
+    color: #16A34A;
   }
+}
 
-  .btn-primary {
-    background: #2563EB;
-    border: none;
-    font-weight: 600;
-    font-size: 0.95rem;
+// Make right panel wider for register (more fields)
+.right-panel {
+  flex: 0 0 70%;
+  justify-content: center;
+  padding-left: 2rem;
+  padding-right: 2rem;
 
-    &:hover, &:focus {
-      background: #1d4ed8;
-    }
+  @media (max-width: 991px) {
+    flex: 0 0 100%;
   }
+}
 
-  .step-dot {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.75rem;
-    font-weight: 700;
-    background: #e2e8f0;
-    color: #94a3b8;
-    transition: all 0.2s;
+.left-panel {
+  flex: 0 0 30%;
 
-    &.active {
-      background: #2563EB;
-      color: #fff;
-    }
-
-    &.done {
-      background: #2563EB;
-      color: #fff;
-    }
+  @media (max-width: 991px) {
+    display: none;
   }
+}
 
-  .step-line {
-    width: 40px;
-    height: 2px;
-    background: #e2e8f0;
-    transition: background 0.2s;
-
-    &.active {
-      background: #2563EB;
-    }
-  }
+.auth-card {
+  max-width: 540px;
+  margin: 0 auto;
 }

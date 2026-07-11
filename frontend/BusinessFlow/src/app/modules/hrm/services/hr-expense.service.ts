@@ -5,7 +5,7 @@ import { HrExpense, HrExpenseRequest } from '../models/hrm.model';
 
 @Injectable({ providedIn: 'root' })
 export class HrExpenseService {
-  private readonly endpoint = '/company/finance/expenses';
+  private readonly endpoint = '/hr/expenses';
 
   constructor(private api: ApiService) {}
 
@@ -14,7 +14,7 @@ export class HrExpenseService {
   }
 
   listMine(page = 0, size = 20): Observable<PagedResponse<HrExpense>> {
-    return this.api.getPaged<HrExpense>(`${this.endpoint}/my-expenses`, page, size);
+    return this.api.getPaged<HrExpense>(`${this.endpoint}/my`, page, size);
   }
 
   getById(id: number): Observable<HrExpense> {
@@ -25,21 +25,16 @@ export class HrExpenseService {
     return this.api.post<HrExpense>(this.endpoint, payload);
   }
 
-  approve(id: number, notes = ''): Observable<void> {
-    return this.api.post<void>(`${this.endpoint}/${id}/approve?notes=${encodeURIComponent(notes)}`, {});
+  approve(id: number): Observable<HrExpense> {
+    return this.api.patch<HrExpense>(`${this.endpoint}/${id}/approve`, {});
   }
 
-  reject(id: number, reason: string): Observable<void> {
-    return this.api.post<void>(`${this.endpoint}/${id}/reject?reason=${encodeURIComponent(reason)}`, {});
+  reject(id: number, rejectionReason: string): Observable<HrExpense> {
+    return this.api.patch<HrExpense>(`${this.endpoint}/${id}/reject`, { rejectionReason });
   }
 
-  markAsPaid(id: number, reimbursementMethod?: string, referenceNumber?: string): Observable<void> {
-    let url = `${this.endpoint}/${id}/mark-as-paid`;
-    const params: string[] = [];
-    if (reimbursementMethod) params.push(`reimbursementMethod=${encodeURIComponent(reimbursementMethod)}`);
-    if (referenceNumber) params.push(`referenceNumber=${encodeURIComponent(referenceNumber)}`);
-    if (params.length) url += '?' + params.join('&');
-    return this.api.post<void>(url, {});
+  reimburse(id: number): Observable<HrExpense> {
+    return this.api.patch<HrExpense>(`${this.endpoint}/${id}/reimburse`, {});
   }
 
   delete(id: number): Observable<void> {

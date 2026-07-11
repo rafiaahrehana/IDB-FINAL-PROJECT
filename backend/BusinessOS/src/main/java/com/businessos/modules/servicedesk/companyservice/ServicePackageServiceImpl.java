@@ -1,6 +1,6 @@
 package com.businessos.modules.servicedesk.companyservice;
 
-import com.businessos.core.subscription.SubscriptionStatus;
+import com.businessos.enums.SubscriptionStatus;
 import com.businessos.modules.crm.client.Client;
 import com.businessos.modules.crm.client.ClientRepository;
 import com.businessos.modules.company.Company;
@@ -226,7 +226,14 @@ public class ServicePackageServiceImpl implements ServicePackageService {
     @Override
     @Transactional
     public PackageSubscriptionResponse activate(Long subscriptionId) {
-        PackageSubscription sub = findSubscriptionInTenant(subscriptionId);
+        return activateForCompany(requireCompanyId(), subscriptionId);
+    }
+
+    @Override
+    @Transactional
+    public PackageSubscriptionResponse activateForCompany(Long companyId, Long subscriptionId) {
+        PackageSubscription sub = subscriptionRepository.findByIdAndCompanyId(subscriptionId, companyId)
+            .orElseThrow(() -> new ResourceNotFoundException("Subscription not found: " + subscriptionId));
 
         if (sub.getStatus() != SubscriptionStatus.PENDING_PAYMENT) {
             throw new BadRequestException(

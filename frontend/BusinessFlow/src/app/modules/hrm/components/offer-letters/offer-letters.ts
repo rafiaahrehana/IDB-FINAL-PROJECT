@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { OfferLetter, OfferLetterRequest, LetterType, LETTER_TYPES, Employee } from '../../models/hrm.model';
@@ -35,7 +35,8 @@ export class OfferLetters implements OnInit {
 
   constructor(
     private letterService: OfferLetterService,
-    private employeeService: EmployeeService
+    private employeeService: EmployeeService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -45,16 +46,19 @@ export class OfferLetters implements OnInit {
 
   load(): void {
     this.loading = true;
+    this.cdr.markForCheck();
     this.error = '';
     this.letterService.list(this.page, 20).subscribe({
       next: (res) => {
         this.letters = res.content;
         this.totalPages = res.totalPages;
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.error = 'Failed to load offer/official letters';
         this.loading = false;
+        this.cdr.markForCheck();
       }
     });
   }
@@ -74,17 +78,20 @@ export class OfferLetters implements OnInit {
 
   save(): void {
     this.saving = true;
+    this.cdr.markForCheck();
     this.error = '';
     const payload = this.cleanPayload();
     this.letterService.create(payload).subscribe({
       next: () => {
         this.saving = false;
+        this.cdr.markForCheck();
         this.showForm = false;
         this.success = 'Letter record created successfully';
         this.load();
       },
       error: (err) => {
         this.saving = false;
+        this.cdr.markForCheck();
         this.error = err?.error?.message || 'Failed to create letter';
       }
     });

@@ -1,39 +1,69 @@
-import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, signal, output, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { NotificationBell } from '../notification-bell/notification-bell';
 
 @Component({
   selector: 'app-navbar',
-  imports: [CommonModule, FormsModule, NotificationBell],
+  standalone: true,
+  imports: [FormsModule, RouterLink, NotificationBell],
   templateUrl: './navbar.html',
   styleUrl: './navbar.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Navbar {
+  readonly toggleMobileSidebar = output<void>();
+
   searchQuery = '';
-  breadcrumb: string[] = [];
+  showUserMenu = signal(false);
+  showSearch = signal(false);
 
-  constructor(public auth: AuthService, private router: Router) {
-    this.router.events.subscribe(() => this.buildBreadcrumb());
-    this.buildBreadcrumb();
+  get currentUser() { return this.auth.getCurrentUser(); }
+
+  constructor(
+    public auth: AuthService,
+    private router: Router
+  ) {}
+
+  onToggleMobileSidebar(): void {
+    this.toggleMobileSidebar.emit();
   }
 
-  private buildBreadcrumb(): void {
-    const segments = this.router.url.split('?')[0].split('/').filter(Boolean);
-    this.breadcrumb = segments.map((s) =>
-      s.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
-    );
+  onSearch(): void {
+    if (this.searchQuery.trim()) {
+      this.router.navigate(['/search'], { queryParams: { q: this.searchQuery.trim() } });
+      this.searchQuery = '';
+      this.showSearch.set(false);
+    }
   }
 
-  toggleSidebar(): void {
-    document.body.classList.toggle('sidebar-open');
+  onSearchAi(): void {
+    if (this.searchQuery.trim()) {
+      this.router.navigate(['/search'], { queryParams: { q: this.searchQuery.trim(), ai: 'true' } });
+      this.searchQuery = '';
+    } else {
+      this.router.navigate(['/ai']);
+    }
   }
 
-  goSearch(): void {
-    if (this.searchQuery.trim().length < 2) return;
-    this.router.navigate(['/search'], { queryParams: { q: this.searchQuery.trim() } });
-    this.searchQuery = '';
+  toggleUserMenu(): void {
+    this.showUserMenu.update(v => !v);
+  }
+
+  closeUserMenu(): void {
+    this.showUserMenu.set(false);
+  }
+
+  onLogout(): void {
+    this.closeUserMenu();
+    this.auth.logout();
+  }
+
+  getInitials(fullName?: string): string {
+    if (!fullName) return 'U';
+    const parts = fullName.trim().split(/\s+/);
+    if (parts.length === 1) return parts[0][0]?.toUpperCase() || 'U';
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
   }
 }

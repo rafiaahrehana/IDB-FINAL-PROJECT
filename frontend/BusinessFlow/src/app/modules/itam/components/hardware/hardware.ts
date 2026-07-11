@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HrAsset, HrAssetRequest } from '../../../hrm/models/hrm.model';
@@ -39,7 +39,7 @@ export class Hardware implements OnInit {
   categories = ['Laptop', 'Desktop', 'Monitor', 'Printer', 'Phone', 'Tablet', 'Server', 'Networking', 'Other'];
   today = new Date().toISOString().slice(0, 10);
 
-  constructor(private assetService: HrAssetService) {}
+  constructor(private assetService: HrAssetService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.load();
@@ -47,15 +47,18 @@ export class Hardware implements OnInit {
 
   load(): void {
     this.loading = true;
+    this.cdr.markForCheck();
     this.assetService.list(this.page).subscribe({
       next: (res) => {
         this.assets = res.content;
         this.totalPages = res.totalPages;
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.error = 'Failed to load hardware assets';
         this.loading = false;
+        this.cdr.markForCheck();
       },
     });
   }

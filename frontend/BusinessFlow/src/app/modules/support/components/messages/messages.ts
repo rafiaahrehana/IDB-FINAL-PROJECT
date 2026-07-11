@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy } from '@angular/core';
+import { Component, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
@@ -24,7 +24,7 @@ export class Messages {
   newMessage = '';
   isInternal = false;
 
-  constructor(private messageService: MessageService, private route: ActivatedRoute) {
+  constructor(private messageService: MessageService, private route: ActivatedRoute, private cdr: ChangeDetectorRef) {
     const qp = this.route.snapshot.queryParamMap.get('ticketId');
     if (qp) {
       this.ticketId = Number(qp);
@@ -35,15 +35,18 @@ export class Messages {
   load(): void {
     if (!this.ticketId) return;
     this.loading = true;
+    this.cdr.markForCheck();
     this.error = '';
     this.messageService.getExternalMessages(this.ticketId).subscribe({
       next: (res) => {
         this.external = res;
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.error = 'Failed to load messages for that ticket';
         this.loading = false;
+        this.cdr.markForCheck();
       },
     });
     this.messageService.getInternalNotes(this.ticketId).subscribe({ next: (res) => (this.internal = res) });

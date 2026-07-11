@@ -28,24 +28,4 @@ export class CustomRoleService {
   delete(id: number): Observable<void> {
     return this.api.delete<void>(`${this.endpoint}/${id}`);
   }
-
-  getAllPermissions(): Observable<string[]> {
-    return this.api.get<string[]>(`${this.endpoint}/permissions/all`);
-  }
-
-  getPermissions(roleId: number): Observable<string[]> {
-    return this.api.get<string[]>(`${this.endpoint}/${roleId}/permissions`);
-  }
-
-  setPermissions(roleId: number, permissionCodes: string[]): Observable<void> {
-    return this.api.put<void>(`${this.endpoint}/${roleId}/permissions`, permissionCodes);
-  }
-
-  assignToUser(roleId: number, userId: number): Observable<void> {
-    return this.api.put<void>(`${this.endpoint}/${roleId}/assign/${userId}`, {});
-  }
-
-  unassignFromUser(roleId: number, userId: number): Observable<void> {
-    return this.api.delete<void>(`${this.endpoint}/${roleId}/unassign/${userId}`);
-  }
 }

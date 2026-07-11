@@ -1,6 +1,7 @@
 package com.businessos.security;
 
 import com.businessos.auth.user.User;
+import org.slf4j.MDC;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -13,10 +14,6 @@ import org.springframework.stereotype.Component;
 @Component
 public class SecurityUtil {
 
-    /**
-     * Returns the currently authenticated {@link User}, or {@code null}
-     * if no authentication is present or the principal is not a User.
-     */
     public User getCurrentUser() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated())
@@ -31,5 +28,14 @@ public class SecurityUtil {
             return null;
         Object credentials = auth.getCredentials();
         return (credentials instanceof Long id) ? id : null;
+    }
+
+    public boolean isImpersonating() {
+        return MDC.get("impersonatedBy") != null;
+    }
+
+    public Long getImpersonatedByUserId() {
+        String raw = MDC.get("impersonatedBy");
+        return raw != null ? Long.parseLong(raw) : null;
     }
 }

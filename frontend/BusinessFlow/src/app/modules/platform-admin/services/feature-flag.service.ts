@@ -21,7 +21,8 @@ export class FeatureFlagService {
     return this.api.patch<FeatureFlag>(`${this.endpoint}/${key}/toggle`, {});
   }
 
+  // Backend returns a plain-text summary message, not the flag list
   seed(): Observable<string> {
-    return this.api.post<string>(`${this.endpoint}/seed`, {});
+    return this.api.postText(`${this.endpoint}/seed`, {});
   }
 }

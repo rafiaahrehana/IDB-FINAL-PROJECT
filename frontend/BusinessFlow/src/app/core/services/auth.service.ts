@@ -3,9 +3,30 @@ import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { BehaviorSubject, Observable, throwError } from 'rxjs';
 import { map, tap, catchError } from 'rxjs/operators';
-import { LoginRequest, RegisterRequest, AuthResponse, User, TokenPayload } from '../models/auth.model';
+import {
+  LoginRequest,
+  LoginResponse,
+  JwtResponse,
+  RegisterRequest,
+  VerifyEmailRequest,
+  ResendVerificationRequest,
+  ForgotPasswordRequest,
+  ResetPasswordRequest,
+  ChangePasswordRequest,
+  User,
+  TokenPayload,
+  ImpersonationResponse,
+  ImpersonationSession,
+} from '../models/auth.model';
 import { environment } from '../../../environments/environment';
- 
+
+// SaaS-provider staff roles - distinct from Company-scoped roles (COMPANY_OWNER, EMPLOYEE, CLIENT).
+// Mirrors backend User.isPlatformUser() (com.businessos.auth.user.User).
+const PLATFORM_ROLES = [
+  'SUPER_ADMIN', 'SYSTEM_ADMIN', 'SUPPORT_AGENT', 'SUPPORT_MANAGER',
+  'MARKETING_MANAGER', 'PLATFORM_ACCOUNTANT', 'SALES_MANAGER',
+];
+
 @Injectable({
   providedIn: 'root'
 })
@@ -14,85 +35,246 @@ export class AuthService {
   private readonly TOKEN_KEY = 'access_token';
   private readonly REFRESH_TOKEN_KEY = 'refresh_token';
   private readonly USER_KEY = 'user';
-  private readonly PERMISSIONS_KEY = 'user_permissions';
- 
+
+  // Backup slots used only while impersonating, so "End session" can restore the
+  // platform admin's own identity without a fresh login.
+  private readonly ADMIN_TOKEN_KEY = 'admin_access_token';
+  private readonly ADMIN_USER_KEY = 'admin_user';
+  private readonly IMPERSONATION_KEY = 'impersonation_session';
+
   private currentUserSubject = new BehaviorSubject<User | null>(this.getUserFromStorage());
   public currentUser$ = this.currentUserSubject.asObservable();
- 
+
   private isAuthenticatedSubject = new BehaviorSubject<boolean>(this.hasValidToken());
   public isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
 
-  private permissionsSubject = new BehaviorSubject<string[]>(this.getPermissionsFromStorage());
-  public permissions$ = this.permissionsSubject.asObservable();
- 
+  private impersonationSubject = new BehaviorSubject<ImpersonationSession | null>(this.getImpersonationFromStorage());
+  public impersonation$ = this.impersonationSubject.asObservable();
+
   constructor(private http: HttpClient, private router: Router) {
     this.initializeAuthState();
   }
+
+  /** True for the 7 SaaS-provider staff roles (never Company-scoped roles). */
+  isPlatformUser(): boolean {
+    const user = this.currentUserSubject.value;
+    return !!user && user.roles.some(r => PLATFORM_ROLES.includes(r));
+  }
+
+  isImpersonating(): boolean {
+    return this.impersonationSubject.value !== null;
+  }
+
+  getImpersonationSession(): ImpersonationSession | null {
+    return this.impersonationSubject.value;
+  }
+
+  /**
+   * Switches the active session into an impersonated Company view: backs up the
+   * platform admin's own token/identity, swaps in the scoped impersonation token,
+   * and marks the user as COMPANY_OWNER so tenant route guards / dashboard render
+   * the normal Company experience.
+   */
+  startImpersonation(response: ImpersonationResponse): void {
+    const adminUser = this.currentUserSubject.value;
+    if (adminUser) {
+      localStorage.setItem(this.ADMIN_USER_KEY, JSON.stringify(adminUser));
+    }
+    const adminToken = this.getAccessToken();
+    if (adminToken) {
+      localStorage.setItem(this.ADMIN_TOKEN_KEY, adminToken);
+    }
+
+    const impersonatedUser: User = {
+      id: adminUser?.id ?? 0,
+      username: adminUser?.username ?? '',
+      email: adminUser?.email ?? '',
+      fullName: adminUser?.fullName ?? '',
+      roles: ['COMPANY_OWNER'],
+      companyId: response.companyId,
+    };
+
+    localStorage.setItem(this.TOKEN_KEY, response.accessToken);
+    this.setUserInStorage(impersonatedUser);
+    this.currentUserSubject.next(impersonatedUser);
+
+    const session: ImpersonationSession = {
+      companyId: response.companyId,
+      companyName: response.companyName,
+      impersonationSessionId: response.impersonationSessionId,
+      expiresAt: Date.now() + response.expiresInSeconds * 1000,
+    };
+    localStorage.setItem(this.IMPERSONATION_KEY, JSON.stringify(session));
+    this.impersonationSubject.next(session);
+
+    this.router.navigate(['/']);
+  }
+
+  /**
+   * Ends the impersonation session (best-effort server call) and restores the
+   * platform admin's own token/identity.
+   */
+  endImpersonation(): Observable<any> {
+    const session = this.impersonationSubject.value;
+    const restore = () => {
+      const adminUserRaw = localStorage.getItem(this.ADMIN_USER_KEY);
+      const adminToken = localStorage.getItem(this.ADMIN_TOKEN_KEY);
+
+      localStorage.removeItem(this.ADMIN_USER_KEY);
+      localStorage.removeItem(this.ADMIN_TOKEN_KEY);
+      localStorage.removeItem(this.IMPERSONATION_KEY);
+      this.impersonationSubject.next(null);
+
+      if (adminToken) {
+        localStorage.setItem(this.TOKEN_KEY, adminToken);
+      }
+      if (adminUserRaw && adminUserRaw !== 'undefined') {
+        const adminUser = JSON.parse(adminUserRaw) as User;
+        this.setUserInStorage(adminUser);
+        this.currentUserSubject.next(adminUser);
+      }
+      this.router.navigate(['/']);
+    };
+
+    if (!session) {
+      restore();
+      return this.http.post(`${environment.apiUrl}/platform-admin/impersonate/end`, {});
+    }
+
+    const request$ = this.http.post(
+      `${environment.apiUrl}/platform-admin/impersonate/end`,
+      { impersonationSessionId: session.impersonationSessionId },
+    );
+    request$.subscribe({ next: restore, error: restore });
+    return request$;
+  }
+
+  private getImpersonationFromStorage(): ImpersonationSession | null {
+    const raw = localStorage.getItem(this.IMPERSONATION_KEY);
+    return (raw && raw !== 'undefined') ? JSON.parse(raw) : null;
+  }
  
+  /**
+   * Login user with credentials
+   */
   login(credentials: LoginRequest): Observable<User> {
-    return this.http.post<any>(`${this.API_URL}/login`, credentials).pipe(
+    return this.http.post<LoginResponse>(`${this.API_URL}/login`, credentials).pipe(
       tap(response => {
         const user: User = {
           id: response.userId,
-          firstName: response.firstName,
-          lastName: response.lastName || '',
+          username: response.email,
           email: response.email,
-          role: response.role,
-          companyId: response.companyId,
-          customRoleId: response.customRoleId,
-          customRoleName: response.customRoleName
+          fullName: response.firstName,
+          roles: [response.role],
+          companyId: response.companyId
         };
-        this.setTokens(response.accessToken, response.refreshToken);
-        this.setUserInStorage(user);
+        const persist = sessionStorage.getItem('auth_remember_me') !== 'false';
+        sessionStorage.removeItem('auth_remember_me');
+        this.setTokens(response.accessToken, response.refreshToken, persist);
+        this.setUserInStorage(user, persist);
         this.currentUserSubject.next(user);
         this.isAuthenticatedSubject.next(true);
-        if (response.customRoleId) {
-          this.fetchAndStorePermissions(response.customRoleId);
-        }
       }),
       map(response => ({
         id: response.userId,
-        firstName: response.firstName,
-        lastName: response.lastName || '',
+        username: response.email,
         email: response.email,
-        role: response.role,
-        companyId: response.companyId,
-        customRoleId: response.customRoleId,
-        customRoleName: response.customRoleName
+        fullName: response.firstName,
+        roles: [response.role],
+        companyId: response.companyId
       } as User)),
       catchError(error => {
-        console.error('Login failed', error);
-        return throwError(() => error);
-      })
-    );
-  }
- 
-  register(payload: RegisterRequest): Observable<any> {
-    return this.http.post<any>(`${this.API_URL}/register`, payload).pipe(
-      catchError(error => {
-        console.error('Registration failed', error);
         return throwError(() => error);
       })
     );
   }
 
+  /**
+   * Register a new company owner account + company (tenant).
+   * On success the backend sends a verification email; the account is inactive
+   * until /auth/verify-email is called, so we do NOT log the user in here.
+   */
+  register(request: RegisterRequest): Observable<any> {
+    return this.http.post<any>(`${this.API_URL}/register`, request);
+  }
+
+  /**
+   * Confirm the email-verification token sent to the user's inbox.
+   */
+  verifyEmail(request: VerifyEmailRequest): Observable<any> {
+    return this.http.post(`${this.API_URL}/verify-email`, request, { responseType: 'text' });
+  }
+
+  /**
+   * Ask the backend to send a fresh verification email.
+   * Backend always returns 200 (no user enumeration) regardless of whether the email exists.
+   */
+  resendVerification(request: ResendVerificationRequest): Observable<any> {
+    return this.http.post(`${this.API_URL}/resend-verification`, request, { responseType: 'text' });
+  }
+
+  /**
+   * Request a password-reset email. Backend always returns 200 regardless of
+   * whether the account exists, to avoid leaking which emails are registered.
+   */
+  forgotPassword(request: ForgotPasswordRequest): Observable<any> {
+    return this.http.post(`${this.API_URL}/forgot-password`, request, { responseType: 'text' });
+  }
+
+  /**
+   * Complete a password reset using the token from the reset-password email.
+   * All existing refresh tokens are revoked server-side, so any other active
+   * session gets logged out next time it tries to refresh.
+   */
+  resetPassword(request: ResetPasswordRequest): Observable<any> {
+    return this.http.post(`${this.API_URL}/reset-password`, request, { responseType: 'text' });
+  }
+
+  /**
+   * Change password while logged in (POST /api/auth/change-password).
+   * Backend verifies the current password, then revokes ALL refresh tokens
+   * (same as resetPassword) - so after a successful change the caller should
+   * call logout() and send the user back to the login page.
+   */
+  changePassword(request: ChangePasswordRequest): Observable<any> {
+    return this.http.post(`${this.API_URL}/change-password`, request, { responseType: 'text' });
+  }
+
+  /**
+   * Logout user
+   */
   logout(): void {
+    const refreshToken = this.getRefreshToken();
     this.clearTokens();
     this.clearUserStorage();
-    localStorage.removeItem(this.PERMISSIONS_KEY);
+    localStorage.removeItem(this.ADMIN_TOKEN_KEY);
+    localStorage.removeItem(this.ADMIN_USER_KEY);
+    localStorage.removeItem(this.IMPERSONATION_KEY);
+    this.impersonationSubject.next(null);
     this.currentUserSubject.next(null);
     this.isAuthenticatedSubject.next(false);
-    this.permissionsSubject.next([]);
     this.router.navigate(['/auth/login']);
+
+    if (refreshToken) {
+      // Best-effort server-side revoke; ignore errors since we've already logged out locally.
+      this.http.post(`${this.API_URL}/logout`, { refreshToken }, { responseType: 'text' }).subscribe({ error: () => {} });
+    }
   }
  
-  refreshToken(): Observable<any> {
+  /**
+   * Refresh access token.
+   * IMPORTANT: /auth/refresh only returns { accessToken, refreshToken } - no user info -
+   * so we must only update the stored tokens and keep the existing user object as-is.
+   */
+  refreshToken(): Observable<JwtResponse> {
     const refreshToken = this.getRefreshToken();
-    return this.http.post<any>(`${this.API_URL}/refresh`, { 
-      refreshToken 
+    return this.http.post<JwtResponse>(`${this.API_URL}/refresh`, {
+      refreshToken
     }).pipe(
       tap(response => {
-        this.setTokens(response.accessToken, response.refreshToken);
+        const persist = !sessionStorage.getItem(this.TOKEN_KEY);
+        this.setTokens(response.accessToken, response.refreshToken, persist);
+        this.isAuthenticatedSubject.next(true);
       }),
       catchError(error => {
         this.logout();
@@ -101,131 +283,66 @@ export class AuthService {
     );
   }
  
+  /**
+   * Get current access token
+   */
   getAccessToken(): string | null {
-    return localStorage.getItem(this.TOKEN_KEY);
+    return localStorage.getItem(this.TOKEN_KEY) || sessionStorage.getItem(this.TOKEN_KEY);
   }
  
+  /**
+   * Get refresh token
+   */
   getRefreshToken(): string | null {
-    return localStorage.getItem(this.REFRESH_TOKEN_KEY);
+    return localStorage.getItem(this.REFRESH_TOKEN_KEY) || sessionStorage.getItem(this.REFRESH_TOKEN_KEY);
   }
  
+  /**
+   * Check if user is authenticated
+   */
   isAuthenticated(): boolean {
     return this.hasValidToken();
   }
  
+  /**
+   * Check if user has specific role
+   */
   hasRole(role: string): boolean {
     const user = this.currentUserSubject.value;
-    return user ? user.role === role : false;
+    return user ? user.roles.includes(role) : false;
   }
-
+ 
+  /**
+   * Check if user has any of the roles
+   */
   hasAnyRole(roles: string[]): boolean {
     const user = this.currentUserSubject.value;
     if (!user) return false;
-    return roles.some(role => user.role === role);
-  }
-
-  hasPermission(permission: string): boolean {
-    const user = this.currentUserSubject.value;
-    if (!user) return false;
-    if (user.role === 'COMPANY_OWNER' || user.role === 'SUPER_ADMIN') return true;
-    return this.permissionsSubject.value.includes(permission);
-  }
-
-  hasAnyPermission(permissions: string[]): boolean {
-    return permissions.some(p => this.hasPermission(p));
-  }
-
-  getPermissions(): string[] {
-    return this.permissionsSubject.value;
-  }
-
-  refreshPermissions(): void {
-    const user = this.currentUserSubject.value;
-    if (user?.customRoleId) {
-      this.fetchAndStorePermissions(user.customRoleId);
-    }
-  }
-
-  private fetchAndStorePermissions(customRoleId: number): void {
-    this.http.get<string[]>(`${environment.apiUrl}/custom-roles/${customRoleId}/permissions`).subscribe({
-      next: (perms) => {
-        localStorage.setItem(this.PERMISSIONS_KEY, JSON.stringify(perms));
-        this.permissionsSubject.next(perms);
-      },
-      error: () => {
-        this.permissionsSubject.next([]);
-      }
-    });
+    return roles.some(role => user.roles.includes(role));
   }
  
+  /**
+   * Get current user
+   */
   getCurrentUser(): User | null {
     return this.currentUserSubject.value;
   }
  
+  /**
+   * Get company ID
+   */
   getCompanyId(): number | null {
     const user = this.currentUserSubject.value;
     return user?.companyId || null;
   }
  
-  getProfile(): Observable<any> {
-    return this.http.get<any>(`${environment.apiUrl}/users/profile`);
-  }
-
-  updateProfile(request: any): Observable<any> {
-    return this.http.patch<any>(`${environment.apiUrl}/users/profile`, request).pipe(
-      tap(profile => {
-        const storedUser = this.getUserFromStorage();
-        if (storedUser) {
-          storedUser.firstName = profile.firstName;
-          storedUser.lastName = profile.lastName;
-          storedUser.image = profile.image;
-          this.setUserInStorage(storedUser);
-          this.currentUserSubject.next(storedUser);
-        }
-      })
-    );
-  }
- 
-  private setTokens(accessToken: string, refreshToken: string): void {
-    localStorage.setItem(this.TOKEN_KEY, accessToken);
-    localStorage.setItem(this.REFRESH_TOKEN_KEY, refreshToken);
-  }
- 
-  private clearTokens(): void {
-    localStorage.removeItem(this.TOKEN_KEY);
-    localStorage.removeItem(this.REFRESH_TOKEN_KEY);
-  }
- 
-  private setUserInStorage(user: User): void {
-    localStorage.setItem(this.USER_KEY, JSON.stringify(user));
-  }
- 
-  private getUserFromStorage(): User | null {
-    const user = localStorage.getItem(this.USER_KEY);
-    return (user && user !== 'undefined') ? JSON.parse(user) : null;
-  }
-
-  private getPermissionsFromStorage(): string[] {
-    const perms = localStorage.getItem(this.PERMISSIONS_KEY);
-    return perms ? JSON.parse(perms) : [];
-  }
- 
-  private clearUserStorage(): void {
-    localStorage.removeItem(this.USER_KEY);
-  }
- 
-  private hasValidToken(): boolean {
-    const token = this.getAccessToken();
-    if (!token) return false;
-    const payload = this.decodeToken();
-    if (!payload) return false;
-    const currentTime = Date.now() / 1000;
-    return payload.exp > currentTime;
-  }
- 
+  /**
+   * Decode JWT token
+   */
   private decodeToken(): TokenPayload | null {
     const token = this.getAccessToken();
     if (!token) return null;
+ 
     try {
       const base64Url = token.split('.')[1];
       const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
@@ -239,15 +356,97 @@ export class AuthService {
     }
   }
  
+  /**
+   * Check if token is valid and not expired
+   */
+  private hasValidToken(): boolean {
+    const token = this.getAccessToken();
+    if (!token) return false;
+ 
+    const payload = this.decodeToken();
+    if (!payload) return false;
+ 
+    const currentTime = Date.now() / 1000;
+    return payload.exp > currentTime;
+  }
+ 
+  /**
+   * Store tokens in localStorage
+   */
+  private setTokens(accessToken: string, refreshToken: string, persist = true): void {
+    const storage = persist ? localStorage : sessionStorage;
+    storage.setItem(this.TOKEN_KEY, accessToken);
+    storage.setItem(this.REFRESH_TOKEN_KEY, refreshToken);
+  }
+ 
+  /**
+   * Clear tokens from localStorage
+   */
+  private clearTokens(): void {
+    localStorage.removeItem(this.TOKEN_KEY);
+    sessionStorage.removeItem(this.TOKEN_KEY);
+    localStorage.removeItem(this.REFRESH_TOKEN_KEY);
+    sessionStorage.removeItem(this.REFRESH_TOKEN_KEY);
+  }
+ 
+  /**
+   * Get current user profile and location
+   */
+  getProfile(): Observable<any> {
+    return this.http.get<any>(`${environment.apiUrl}/users/profile`);
+  }
+
+  /**
+   * Update user profile and location
+   */
+  updateProfile(request: any): Observable<any> {
+    return this.http.patch<any>(`${environment.apiUrl}/users/profile`, request).pipe(
+      tap(profile => {
+        const storedUser = this.getUserFromStorage();
+        if (storedUser) {
+          storedUser.fullName = `${profile.firstName} ${profile.lastName}`;
+          storedUser.profileImageUrl = profile.image;
+          this.setUserInStorage(storedUser);
+          this.currentUserSubject.next(storedUser);
+        }
+      })
+    );
+  }
+
+  /**
+   * Store user in localStorage
+   */
+  private setUserInStorage(user: User, persist = true): void {
+    const storage = persist ? localStorage : sessionStorage;
+    storage.setItem(this.USER_KEY, JSON.stringify(user));
+  }
+ 
+  /**
+   * Get user from localStorage
+   */
+  private getUserFromStorage(): User | null {
+    const user = localStorage.getItem(this.USER_KEY) || sessionStorage.getItem(this.USER_KEY);
+    return (user && user !== 'undefined') ? JSON.parse(user) : null;
+  }
+ 
+  /**
+   * Clear user from localStorage
+   */
+  private clearUserStorage(): void {
+    localStorage.removeItem(this.USER_KEY);
+    sessionStorage.removeItem(this.USER_KEY);
+  }
+ 
+  /**
+   * Initialize auth state on app startup
+   */
   private initializeAuthState(): void {
     const isAuthenticated = this.hasValidToken();
     this.isAuthenticatedSubject.next(isAuthenticated);
+
     if (isAuthenticated) {
       const user = this.getUserFromStorage();
       this.currentUserSubject.next(user);
-      if (user?.customRoleId) {
-        this.fetchAndStorePermissions(user.customRoleId);
-      }
     }
   }
 }

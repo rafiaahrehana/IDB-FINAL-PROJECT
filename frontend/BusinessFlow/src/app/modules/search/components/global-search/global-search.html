@@ -1,14 +1,6 @@
 <div class="container-fluid py-3">
   <h4 class="mb-3">Search</h4>
-  <div class="input-group mb-3" style="max-width: 640px">
-    <input class="form-control" placeholder="Search leads, accounts, deals, requests, tickets, invoices..."
-           [(ngModel)]="query" (keyup.enter)="doSearch()" />
-    <button class="btn btn-primary" (click)="doSearch()"><i class="bi bi-search"></i> Search</button>
-    <button class="btn btn-outline-primary" (click)="askAi()" [disabled]="asking">
-      @if (asking) { <span class="spinner-border spinner-border-sm me-1"></span> }
-      <i class="bi bi-stars"></i> Ask AI
-    </button>
-  </div>
+  <!-- Search bar has been moved to the header nav -->
 
   @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
   @if (loading) { <app-loader /> }

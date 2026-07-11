@@ -1,107 +1,208 @@
-<div class="container-fluid py-3">
-  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-    <h4 class="mb-0">Expenses</h4>
-    <div class="d-flex gap-2">
-      <select class="form-select form-select-sm" style="width:160px" [(ngModel)]="statusFilter" (change)="page=0;load()">
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Expenses</h1>
+      <p class="page-subtitle">Submit and manage business expenses</p>
+    </div>
+    <div style="display: flex; align-items: center; gap: 0.75rem;">
+      <select class="input-shadcn" style="width: 160px; height: 2.5rem;"
+              [(ngModel)]="statusFilter" (change)="page=0;load()">
         <option value="">All statuses</option>
         @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
       </select>
-      <button class="btn btn-primary btn-sm" (click)="showForm = true; form = {}"><i class="bi bi-plus"></i> Submit Expense</button>
+      <button class="btn-shadcn btn-shadcn-primary" (click)="showForm = true; form = {}">
+        <i class="bi bi-plus-lg"></i> Submit Expense
+      </button>
     </div>
   </div>
-  @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
-  @if (success) { <div class="alert alert-success py-2">{{ success }}</div> }
+
+  @if (error) {
+    <div class="card-shadcn" style="padding: 0.75rem 1rem; margin-bottom: 1rem; border-color: var(--color-destructive); background: #fef2f2;">
+      <span style="color: var(--color-destructive); font-size: 0.875rem;">{{ error }}</span>
+    </div>
+  }
+  @if (success) {
+    <div class="card-shadcn" style="padding: 0.75rem 1rem; margin-bottom: 1rem; border-color: #16a34a; background: #f0fdf4;">
+      <span style="color: #166534; font-size: 0.875rem;">{{ success }}</span>
+    </div>
+  }
   @if (loading) { <app-loader /> }
 
   @if (showForm) {
-  <div class="card mb-3">
-    <div class="card-header py-2 fw-semibold">New Expense</div>
-    <div class="card-body">
-      <div class="row g-2">
-        <div class="col-md-4"><input class="form-control form-control-sm" placeholder="Description *" [(ngModel)]="form.description" /></div>
-        <div class="col-md-2"><input class="form-control form-control-sm" type="number" placeholder="Amount *" [(ngModel)]="form.amount" /></div>
-        <div class="col-md-2"><input class="form-control form-control-sm" type="date" [(ngModel)]="form.expenseDate" /></div>
-        <div class="col-md-2"><input class="form-control form-control-sm" placeholder="Category" [(ngModel)]="form.category" /></div>
-        <div class="col-md-2"><input class="form-control form-control-sm" placeholder="Vendor" [(ngModel)]="form.vendorName" /></div>
-        <div class="col-12 d-flex gap-2">
-          <button class="btn btn-primary btn-sm" (click)="save()">Submit</button>
-          <button class="btn btn-secondary btn-sm" (click)="showForm = false">Cancel</button>
+    <div class="card-shadcn" style="padding: 1.5rem; margin-bottom: 1.5rem;">
+      <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem;">New Expense</h3>
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1rem;">
+        <div class="field-group">
+          <label class="field-label">Title *</label>
+          <input class="input-shadcn" placeholder="Office supplies" [(ngModel)]="form.title" />
+        </div>
+        <div class="field-group" style="grid-column: span 2;">
+          <label class="field-label">Description *</label>
+          <input class="input-shadcn" placeholder="Monthly office supplies" [(ngModel)]="form.description" />
+        </div>
+        <div class="field-group">
+          <label class="field-label">Amount *</label>
+          <input class="input-shadcn" type="number" placeholder="0.00" [(ngModel)]="form.amount" />
         </div>
       </div>
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1rem;">
+        <div class="field-group">
+          <label class="field-label">Currency</label>
+          <select class="input-shadcn" [(ngModel)]="form.currency">
+            <option value="USD">USD</option>
+            <option value="EUR">EUR</option>
+            <option value="GBP">GBP</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Date</label>
+          <input class="input-shadcn" type="date" [(ngModel)]="form.expenseDate" />
+        </div>
+        <div class="field-group">
+          <label class="field-label">Category</label>
+          <input class="input-shadcn" placeholder="Travel, Office, etc." [(ngModel)]="form.category" />
+        </div>
+        <div class="field-group">
+          <label class="field-label">Vendor</label>
+          <input class="input-shadcn" placeholder="Vendor name" [(ngModel)]="form.vendorName" />
+        </div>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1rem;">
+        <div class="field-group">
+          <label class="field-label">Receipt URL</label>
+          <input class="input-shadcn" placeholder="https://..." [(ngModel)]="form.receiptUrl" />
+        </div>
+        <div class="field-group">
+          <label class="field-label">Notes</label>
+          <input class="input-shadcn" placeholder="Additional notes" [(ngModel)]="form.notes" />
+        </div>
+        <div class="field-group">
+          <label class="field-label">Reference Number</label>
+          <input class="input-shadcn" placeholder="REF-001" [(ngModel)]="form.referenceNumber" />
+        </div>
+      </div>
+      <div style="display: flex; gap: 0.5rem;">
+        <button class="btn-shadcn btn-shadcn-primary btn-shadcn-sm" (click)="save()">Submit</button>
+        <button class="btn-shadcn btn-shadcn-ghost btn-shadcn-sm" (click)="showForm = false">Cancel</button>
+      </div>
     </div>
-  </div>
   }
 
   @if (!loading && expenses.length) {
-  <div class="card">
-    <div class="table-responsive">
-      <table class="table table-hover table-sm align-middle mb-0">
-        <thead class="table-light">
-          <tr><th>#</th><th>Description</th><th>Category</th><th>Vendor</th><th class="text-end">Amount</th><th>Date</th><th>Status</th><th>Submitted By</th><th></th></tr>
-        </thead>
-        <tbody>
-          @for (e of expenses; track e.id) {
-          <tr>
-            <td class="text-muted small">{{ e.expenseNumber }}</td>
-            <td>{{ e.description }}</td>
-            <td>{{ e.category || '-' }}</td>
-            <td>{{ e.vendorName || '-' }}</td>
-            <td class="text-end">{{ e.amount | currency }}</td>
-            <td>{{ e.expenseDate | date:'mediumDate' }}</td>
-            <td><span class="badge {{ statusClass(e.status) }}">{{ e.status }}</span></td>
-            <td>{{ e.submittedByName || '-' }}</td>
-            <td class="text-end text-nowrap">
-              @if (e.status === 'PENDING') {
-              <button class="btn btn-outline-success btn-sm me-1" (click)="openApproval(e, 'approve')">Approve</button>
-              <button class="btn btn-outline-danger btn-sm me-1" (click)="openApproval(e, 'reject')">Reject</button>
-              }
-              @if (e.status === 'APPROVED') {
-              <button class="btn btn-outline-primary btn-sm me-1" (click)="openPay(e)">Mark as Paid</button>
-              }
-              <button class="btn btn-outline-danger btn-sm" (click)="deleteTarget = e"><i class="bi bi-trash"></i></button>
-            </td>
-          </tr>
-          }
-        </tbody>
-      </table>
+    <div class="card-shadcn">
+      <div class="table-shadcn-container">
+        <table class="table-shadcn">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Description</th>
+              <th>Category</th>
+              <th>Vendor</th>
+              <th style="text-align: right;">Amount</th>
+              <th>Date</th>
+              <th>Status</th>
+              <th>Submitted By</th>
+              <th style="text-align: right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (e of expenses; track e.id) {
+              <tr>
+                <td style="font-size: 0.8125rem; color: var(--color-muted-foreground);">{{ e.expenseNumber }}</td>
+                <td>{{ e.description }}</td>
+                <td>{{ e.category || '-' }}</td>
+                <td>{{ e.vendorName || '-' }}</td>
+                <td style="text-align: right; font-weight: 500;">{{ e.amount | currency }}</td>
+                <td style="font-size: 0.8125rem;">{{ e.expenseDate | date:'mediumDate' }}</td>
+                <td>
+                  <span class="badge-shadcn"
+                        [class.badge-shadcn-warning]="e.status === 'PENDING'"
+                        [class.badge-shadcn-success]="e.status === 'APPROVED' || e.status === 'PAID'"
+                        [class.badge-shadcn-destructive]="e.status === 'REJECTED'">
+                    {{ e.status }}
+                  </span>
+                </td>
+                <td>{{ e.submittedByName || '-' }}</td>
+                <td style="text-align: right;">
+                  <div style="display: flex; gap: 0.25rem; justify-content: flex-end;">
+                    @if (e.status === 'PENDING') {
+                      <button class="btn-shadcn btn-shadcn-ghost btn-shadcn-sm" style="color: #16a34a;"
+                              (click)="openApproval(e, 'approve')">Approve</button>
+                      <button class="btn-shadcn btn-shadcn-ghost btn-shadcn-sm" style="color: var(--color-destructive);"
+                              (click)="openApproval(e, 'reject')">Reject</button>
+                    }
+                    @if (e.status === 'APPROVED') {
+                      <button class="btn-shadcn btn-shadcn-outline btn-shadcn-sm"
+                              (click)="openPay(e)">Mark Paid</button>
+                    }
+                    <button class="btn-shadcn btn-shadcn-ghost btn-shadcn-icon btn-shadcn-sm"
+                            style="color: var(--color-destructive);"
+                            (click)="deleteTarget = e"><i class="bi bi-trash"></i></button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <div class="card-shadcn-footer" style="justify-content: flex-end;">
+        <app-pagination [page]="page" [totalPages]="totalPages" (pageChange)="goToPage($event)" />
+      </div>
     </div>
-    <div class="card-footer d-flex justify-content-end">
-      <app-pagination [page]="page" [totalPages]="totalPages" (pageChange)="goToPage($event)" />
-    </div>
-  </div>
   }
   @if (!loading && !expenses.length && !showForm) { <app-empty-state icon="bi-cash-stack" message="No expenses found." /> }
 
   @if (approvalTarget) {
-  <div class="modal d-block" style="background: rgba(0,0,0,.4)">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header"><h5 class="modal-title">{{ approvalAction === 'approve' ? 'Approve' : 'Reject' }} Expense</h5><button class="btn-close" (click)="approvalTarget = null"></button></div>
-        <div class="modal-body"><textarea class="form-control" rows="3" [placeholder]="approvalAction === 'reject' ? 'Rejection reason (required)' : 'Notes (optional)'" [(ngModel)]="approvalNotes"></textarea></div>
-        <div class="modal-footer">
-          <button class="btn btn-secondary btn-sm" (click)="approvalTarget = null">Cancel</button>
-          <button class="btn btn-sm" [class.btn-success]="approvalAction === 'approve'" [class.btn-danger]="approvalAction === 'reject'" (click)="doApproval()">Confirm</button>
+    <div class="modal-overlay" (click)="approvalTarget = null">
+      <div class="modal-dialog-shadcn" (click)="$event.stopPropagation()" style="max-width: 420px;">
+        <div class="modal-header-shadcn">
+          <h2 class="modal-title-shadcn">{{ approvalAction === 'approve' ? 'Approve' : 'Reject' }} Expense</h2>
+          <button class="btn-shadcn btn-shadcn-ghost btn-shadcn-icon btn-shadcn-sm" (click)="approvalTarget = null">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+        <div class="modal-body-shadcn">
+          <textarea class="textarea-shadcn" rows="3"
+                    [placeholder]="approvalAction === 'reject' ? 'Rejection reason (required)' : 'Notes (optional)'"
+                    [(ngModel)]="approvalNotes"></textarea>
+        </div>
+        <div class="modal-footer-shadcn">
+          <button class="btn-shadcn btn-shadcn-outline" (click)="approvalTarget = null">Cancel</button>
+          <button class="btn-shadcn"
+                  [class.btn-shadcn-primary]="approvalAction === 'approve'"
+                  [class.btn-shadcn-destructive]="approvalAction === 'reject'"
+                  (click)="doApproval()">Confirm</button>
         </div>
       </div>
     </div>
-  </div>
   }
+
   @if (payTarget) {
-  <div class="modal d-block" style="background: rgba(0,0,0,.4)">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header"><h5 class="modal-title">Mark Expense as Paid</h5><button class="btn-close" (click)="payTarget = null"></button></div>
-        <div class="modal-body">
-          <input class="form-control form-control-sm mb-2" placeholder="Payment method (e.g. BANK_TRANSFER)" [(ngModel)]="payMethod" />
-          <input class="form-control form-control-sm" placeholder="Reference number (bank tx id, etc.)" [(ngModel)]="payReference" />
+    <div class="modal-overlay" (click)="payTarget = null">
+      <div class="modal-dialog-shadcn" (click)="$event.stopPropagation()" style="max-width: 420px;">
+        <div class="modal-header-shadcn">
+          <h2 class="modal-title-shadcn">Mark Expense as Paid</h2>
+          <button class="btn-shadcn btn-shadcn-ghost btn-shadcn-icon btn-shadcn-sm" (click)="payTarget = null">
+            <i class="bi bi-x-lg"></i>
+          </button>
         </div>
-        <div class="modal-footer">
-          <button class="btn btn-secondary btn-sm" (click)="payTarget = null">Cancel</button>
-          <button class="btn btn-primary btn-sm" (click)="doPay()">Confirm Payment</button>
+        <div class="modal-body-shadcn">
+          <div class="field-group" style="margin-bottom: 0.75rem;">
+            <label class="field-label">Payment Method</label>
+            <input class="input-shadcn" placeholder="e.g. BANK_TRANSFER" [(ngModel)]="payMethod" />
+          </div>
+          <div class="field-group">
+            <label class="field-label">Reference Number</label>
+            <input class="input-shadcn" placeholder="Bank tx id, etc." [(ngModel)]="payReference" />
+          </div>
+        </div>
+        <div class="modal-footer-shadcn">
+          <button class="btn-shadcn btn-shadcn-outline" (click)="payTarget = null">Cancel</button>
+          <button class="btn-shadcn btn-shadcn-primary" (click)="doPay()">Confirm Payment</button>
         </div>
       </div>
     </div>
-  </div>
   }
+
   <app-confirm-dialog [visible]="!!deleteTarget" title="Delete Expense" message="Delete this expense?" (confirmed)="doDelete()" (cancelled)="deleteTarget = null" />
 </div>

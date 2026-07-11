@@ -1,8 +1,6 @@
 package com.businessos.modules.servicedesk.servicerequest;
 
 import com.businessos.enums.ServiceRequestPriority;
-import com.businessos.shared.payment.PaymentChoice;
-import com.businessos.shared.payment.PaymentMethod;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -40,7 +38,14 @@ public class CreateServiceRequestRequest {
     private Long subscriptionId;
 
     @NotNull(message = "Payment choice is required")
-    private PaymentChoice paymentChoice;
+    private com.businessos.enums.PaymentChoice paymentChoice;
 
-    private PaymentMethod paymentMethod;
+    private com.businessos.enums.PaymentMethod paymentMethod;
+
+    /**
+     * Answers to the service's dynamic form fields (defined by the admin
+     * per service), keyed by ServiceFormField id. Required fields are
+     * validated server-side against the service's field definitions.
+     */
+    private java.util.Map<String, String> formData;
 }

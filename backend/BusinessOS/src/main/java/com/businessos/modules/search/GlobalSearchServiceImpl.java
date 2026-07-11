@@ -3,8 +3,6 @@ package com.businessos.modules.search;
 import com.businessos.modules.ai.enums.AiFeature;
 import com.businessos.modules.ai.prompt.SearchAnswerPromptBuilder;
 import com.businessos.modules.ai.service.AiService;
-import com.businessos.auth.role.enums.PermissionCode;
-import com.businessos.auth.role.service.AuthorizationService;
 import com.businessos.modules.crm.client.ClientRepository;
 import com.businessos.modules.crm.lead.LeadRepository;
 import com.businessos.modules.crm.opportunity.OpportunityRepository;
@@ -36,7 +34,6 @@ public class GlobalSearchServiceImpl implements GlobalSearchService {
     private final ClientInvoiceRepository invoiceRepository;
     private final AiService aiService;
     private final SecurityUtil securityUtil;
-    private final AuthorizationService authorizationService;
 
     @Override
     public GlobalSearchResponse search(String query) {
@@ -51,50 +48,41 @@ public class GlobalSearchServiceImpl implements GlobalSearchService {
         response.setQuery(keyword);
         List<SearchResultItem> results = response.getResults();
 
-        // CRM — leads, clients, opportunities (require CLIENT_VIEW)
-        if (authorizationService.hasPermission(PermissionCode.CLIENT_VIEW)) {
-            leadRepository.searchLeads(companyId, keyword, top)
-                    .forEach(lead -> results.add(new SearchResultItem("LEAD", lead.getId(),
-                            lead.getContactName(),
-                            (lead.getCompanyName() != null ? lead.getCompanyName() + " · " : "") + lead.getStatus(),
-                            "/crm/leads")));
+        leadRepository.searchLeads(companyId, keyword, top)
+                .forEach(lead -> results.add(new SearchResultItem("LEAD", lead.getId(),
+                        lead.getContactName(),
+                        (lead.getCompanyName() != null ? lead.getCompanyName() + " · " : "") + lead.getStatus(),
+                        "/crm/leads")));
 
-            clientRepository.searchClients(companyId, keyword, top)
-                    .forEach(client -> results.add(new SearchResultItem("CLIENT", client.getId(),
-                            client.getClientCompanyName() != null ? client.getClientCompanyName()
-                                    : client.getUser().getFirstName() + " " + client.getUser().getLastName(),
-                            client.getIndustry() != null ? client.getIndustry() : "Account",
-                            "/crm/clients/" + client.getId())));
+        clientRepository.searchClients(companyId, keyword, top)
+                .forEach(client -> results.add(new SearchResultItem("CLIENT", client.getId(),
+                        client.getClientCompanyName() != null ? client.getClientCompanyName()
+                                : client.getUser().getFirstName() + " " + client.getUser().getLastName(),
+                        client.getIndustry() != null ? client.getIndustry() : "Account",
+                        "/crm/clients/" + client.getId())));
 
-            opportunityRepository.searchOpportunities(companyId, keyword, top)
-                    .forEach(opp -> results.add(new SearchResultItem("OPPORTUNITY", opp.getId(),
-                            opp.getName(),
-                            opp.getStage() + (opp.getAmount() != null ? " · " + opp.getAmount() : ""),
-                            "/crm/pipeline")));
-        }
+        opportunityRepository.searchOpportunities(companyId, keyword, top)
+                .forEach(opp -> results.add(new SearchResultItem("OPPORTUNITY", opp.getId(),
+                        opp.getName(),
+                        opp.getStage() + (opp.getAmount() != null ? " · " + opp.getAmount() : ""),
+                        "/crm/pipeline")));
 
-        // Service desk — service requests (require SERVICE_REQUEST_VIEW)
-        if (authorizationService.hasPermission(PermissionCode.SERVICE_REQUEST_VIEW)) {
-            serviceRequestRepository.findByCompanyIdAndTitleContainingIgnoreCaseAndDeletedFalse(companyId, keyword, top)
-                    .forEach(sr -> results.add(new SearchResultItem("SERVICE_REQUEST", sr.getId(),
-                            sr.getTitle(), String.valueOf(sr.getStatus()),
-                            "/servicedesk/requests/" + sr.getId())));
+        serviceRequestRepository.findByCompanyIdAndTitleContainingIgnoreCaseAndDeletedFalse(companyId, keyword, top)
+                .forEach(sr -> results.add(new SearchResultItem("SERVICE_REQUEST", sr.getId(),
+                        sr.getTitle(), String.valueOf(sr.getStatus()),
+                        "/servicedesk/requests/" + sr.getId())));
 
-            supportTicketRepository.findByCompanyIdAndTitleContainingIgnoreCase(companyId, keyword, top)
-                    .forEach(ticket -> results.add(new SearchResultItem("TICKET", ticket.getId(),
-                            ticket.getTitle(),
-                            ticket.getTicketNumber() + " · " + ticket.getStatus(),
-                            "/support/tickets")));
-        }
+        supportTicketRepository.findByCompanyIdAndTitleContainingIgnoreCase(companyId, keyword, top)
+                .forEach(ticket -> results.add(new SearchResultItem("TICKET", ticket.getId(),
+                        ticket.getTitle(),
+                        ticket.getTicketNumber() + " · " + ticket.getStatus(),
+                        "/support/tickets")));
 
-        // Finance — invoices (require EXPENSE_VIEW)
-        if (authorizationService.hasPermission(PermissionCode.EXPENSE_VIEW)) {
-            invoiceRepository.findByCompanyIdAndInvoiceNumberContainingIgnoreCase(companyId, keyword, top)
-                    .forEach(invoice -> results.add(new SearchResultItem("INVOICE", invoice.getId(),
-                            invoice.getInvoiceNumber(),
-                            invoice.getStatus() + " · " + invoice.getTotalAmount(),
-                            "/finance/invoices")));
-        }
+        invoiceRepository.findByCompanyIdAndInvoiceNumberContainingIgnoreCase(companyId, keyword, top)
+                .forEach(invoice -> results.add(new SearchResultItem("INVOICE", invoice.getId(),
+                        invoice.getInvoiceNumber(),
+                        invoice.getStatus() + " · " + invoice.getTotalAmount(),
+                        "/finance/invoices")));
 
         response.setTotalMatches(results.size());
         return response;

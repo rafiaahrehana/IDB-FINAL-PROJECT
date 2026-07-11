@@ -9,6 +9,8 @@ public interface ServiceCategoryRepository extends JpaRepository<ServiceCategory
 
     List<ServiceCategory> findByActiveTrueOrderBySortOrderAsc();
 
+    List<ServiceCategory> findAllByOrderBySortOrderAsc();
+
     Optional<ServiceCategory> findByName(String name);
 
     boolean existsByName(String name);

@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService, PagedResponse } from '../../../core/services/api.service';
-import { ServiceReview, ServiceReviewRequest } from '../models/servicedesk.model';
+import { AverageRating, ServiceReview, ServiceReviewRequest } from '../models/servicedesk.model';
 
 @Injectable({ providedIn: 'root' })
 export class ServiceReviewService {
@@ -25,12 +25,12 @@ export class ServiceReviewService {
     return this.api.post<ServiceReview>(this.endpoint, payload);
   }
 
-  averageRating(): Observable<number> {
-    return this.api.get<number>(`${this.endpoint}/average-rating`);
+  averageRating(): Observable<AverageRating> {
+    return this.api.get<AverageRating>(`${this.endpoint}/average-rating`);
   }
 
-  averageRatingForService(hubServiceId: number): Observable<number> {
-    return this.api.get<number>(`${this.endpoint}/service/${hubServiceId}/average-rating`);
+  averageRatingForService(hubServiceId: number): Observable<AverageRating> {
+    return this.api.get<AverageRating>(`${this.endpoint}/service/${hubServiceId}/average-rating`);
   }
 
   delete(id: number): Observable<void> {

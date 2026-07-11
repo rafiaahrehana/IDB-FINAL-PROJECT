@@ -4,7 +4,8 @@ import com.businessos.modules.hrm.department.Department;
 import com.businessos.modules.hrm.employee.Employee;
 import com.businessos.core.base.BaseEntity;
 import com.businessos.modules.company.Company;
-import com.businessos.modules.hrm.employee.EmploymentType;
+import com.businessos.enums.EmploymentType;
+import com.businessos.enums.JobPostingStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
@@ -34,14 +35,14 @@ public class JobPosting extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String responsibilities;
 
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(length = 30)
-    @Builder.Default
     private EmploymentType employmentType = EmploymentType.FULL_TIME;
 
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    @Builder.Default
     private JobPostingStatus status = JobPostingStatus.DRAFT;
 
     @Column(precision = 12, scale = 2)

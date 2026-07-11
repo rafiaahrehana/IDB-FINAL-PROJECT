@@ -1,14 +1,14 @@
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { SupportTicket, SupportAgent } from '../../models/support.model';
 import { TicketService } from '../../services/ticket.service';
 import { AgentService } from '../../services/agent.service';
-import { ApiService } from '../../../../core/services/api.service';
 import { Pagination } from '../../../../shared/components/pagination/pagination';
 import { Loader } from '../../../../shared/components/loader/loader';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
+import { AuthService } from '../../../../core/services/auth.service';
 
 @Component({
   selector: 'app-tickets',
@@ -19,7 +19,6 @@ import { EmptyState } from '../../../../shared/components/empty-state/empty-stat
 export class Tickets implements OnInit {
   tickets: SupportTicket[] = [];
   agents: SupportAgent[] = [];
-  categories: any[] = [];
   totalPages = 0;
   page = 0;
   loading = false;
@@ -27,6 +26,22 @@ export class Tickets implements OnInit {
   success = '';
   statusFilter = '';
   showSlaOnly = false;
+  showCriticalOnly = false;
+
+  // Backend role split: list/critical/escalate/reassign are SUPPORT_MANAGER,
+  // /my-tickets is EMPLOYEE (creator view + satisfaction), /assigned-to-me is
+  // the agent's queue (resolved via their SupportAgent record).
+  isEmployee = false;
+  isManager = false;
+  isAgent = false;
+  myAgentId: number | null = null;
+
+  // Escalate / reassign / satisfaction state
+  escalateReason = '';
+  reassignAgentId?: number;
+  reassignReason = '';
+  satisfactionRating = 5;
+  satisfactionFeedback = '';
 
   selected?: SupportTicket;
   assignAgentId?: number;
@@ -40,17 +55,74 @@ export class Tickets implements OnInit {
   constructor(
     private ticketService: TicketService,
     private agentService: AgentService,
-    private api: ApiService,
+    private auth: AuthService,
+    private cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit(): void {
-    this.load();
+    const roles = this.auth.getCurrentUser()?.roles ?? [];
+    this.isManager = roles.includes('SUPPORT_MANAGER');
+    this.isAgent = roles.includes('SUPPORT_AGENT');
+    this.isEmployee = roles.includes('EMPLOYEE') && !this.isManager && !this.isAgent;
+    if (this.isAgent) {
+      // Resolve the agent record for /assigned-to-me
+      const userId = this.auth.getCurrentUser()?.id;
+      if (userId) {
+        this.agentService.getByUserId(userId).subscribe({
+          next: (a) => { this.myAgentId = a.id; this.load(); },
+          error: () => this.load(),
+        });
+      }
+    } else {
+      this.load();
+    }
     this.agentService.available().subscribe({ next: (r) => (this.agents = r) });
-    this.api.get<any>('/support/categories/active').subscribe({ next: (r) => (this.categories = r), error: () => {} });
   }
 
   load(): void {
     this.loading = true;
+    this.cdr.markForCheck();
+    if (this.showCriticalOnly && this.isManager) {
+      // Bare list, not a page
+      this.ticketService.criticalOpen().subscribe({
+        next: (res) => {
+          this.tickets = res; this.totalPages = 1; this.loading = false;
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.error = 'Failed to load tickets'; this.loading = false;
+          this.cdr.markForCheck();
+        },
+      });
+      return;
+    }
+    if (this.isEmployee) {
+      this.ticketService.myTickets(undefined, this.page).subscribe({
+        next: (res) => {
+          this.tickets = res.content; this.totalPages = res.totalPages; this.loading = false;
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.error = 'Failed to load tickets'; this.loading = false;
+          this.cdr.markForCheck();
+        },
+      });
+      return;
+    }
+    if (this.isAgent && !this.isManager) {
+      if (this.myAgentId == null) { this.loading = false; this.cdr.markForCheck(); return; }
+      this.ticketService.assignedToMe(this.myAgentId, this.page).subscribe({
+        next: (res) => {
+          this.tickets = res.content; this.totalPages = res.totalPages; this.loading = false;
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.error = 'Failed to load tickets'; this.loading = false;
+          this.cdr.markForCheck();
+        },
+      });
+      return;
+    }
     if (this.showSlaOnly) {
       // Backend returns a plain list for SLA-breached tickets, not a page
       this.ticketService.slaBreached().subscribe({
@@ -58,10 +130,12 @@ export class Tickets implements OnInit {
           this.tickets = res;
           this.totalPages = 1;
           this.loading = false;
+          this.cdr.markForCheck();
         },
         error: () => {
           this.error = 'Failed to load tickets';
           this.loading = false;
+          this.cdr.markForCheck();
         },
       });
       return;
@@ -74,10 +148,12 @@ export class Tickets implements OnInit {
         this.tickets = res.content;
         this.totalPages = res.totalPages;
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.error = 'Failed to load tickets';
         this.loading = false;
+        this.cdr.markForCheck();
       },
     });
   }
@@ -155,6 +231,30 @@ export class Tickets implements OnInit {
         this.refreshSelected();
         this.load();
       },
+      error: (err) => (this.error = err?.error?.message || 'Failed'),
+    });
+  }
+
+  escalate(): void {
+    if (!this.selected || !this.escalateReason.trim()) return;
+    this.ticketService.escalate(this.selected.id, this.escalateReason.trim()).subscribe({
+      next: () => { this.success = 'Escalated'; this.escalateReason = ''; this.refreshSelected(); this.load(); },
+      error: (err) => (this.error = err?.error?.message || 'Failed'),
+    });
+  }
+
+  reassign(): void {
+    if (!this.selected || !this.reassignAgentId || !this.reassignReason.trim()) return;
+    this.ticketService.reassign(this.selected.id, this.reassignAgentId, this.reassignReason.trim()).subscribe({
+      next: () => { this.success = 'Reassigned'; this.reassignReason = ''; this.refreshSelected(); this.load(); },
+      error: (err) => (this.error = err?.error?.message || 'Failed'),
+    });
+  }
+
+  submitSatisfaction(): void {
+    if (!this.selected || !this.satisfactionFeedback.trim()) return;
+    this.ticketService.recordSatisfaction(this.selected.id, this.satisfactionRating, this.satisfactionFeedback.trim()).subscribe({
+      next: () => { this.success = 'Thanks for your feedback'; this.satisfactionFeedback = ''; this.refreshSelected(); },
       error: (err) => (this.error = err?.error?.message || 'Failed'),
     });
   }

@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService, PagedResponse } from '../../../../core/services/api.service';
@@ -21,7 +21,7 @@ export class Categories implements OnInit {
   form: any = {};
   deleteTarget: any = null;
 
-  constructor(private api: ApiService) {}
+  constructor(private api: ApiService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.load();
@@ -34,15 +34,18 @@ export class Categories implements OnInit {
 
   load(): void {
     this.loading = true;
+    this.cdr.markForCheck();
     // Backend returns Page<SupportCategoryResponse>, not a plain array
     this.api.getPaged<any>(this.endpoint, 0, 200).subscribe({
       next: (res) => {
         this.categories = res.content;
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.error = 'Failed to load categories';
         this.loading = false;
+        this.cdr.markForCheck();
       },
     });
   }

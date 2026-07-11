@@ -68,6 +68,23 @@ export class ApiService {
   delete<T>(endpoint: string): Observable<T> {
     return this.http.delete<T>(`${this.baseUrl}${endpoint}`);
   }
+
+  /**
+   * Text-response variants. Several backend endpoints return a plain string body
+   * (ResponseEntity<String>) with content-type text/plain - the default 'json'
+   * responseType would fail to parse it and turn a successful 200 into an error.
+   */
+  postText(endpoint: string, data: any): Observable<string> {
+    return this.http.post(`${this.baseUrl}${endpoint}`, data, { responseType: 'text' });
+  }
+
+  patchText(endpoint: string, data: any): Observable<string> {
+    return this.http.patch(`${this.baseUrl}${endpoint}`, data, { responseType: 'text' });
+  }
+
+  deleteText(endpoint: string): Observable<string> {
+    return this.http.delete(`${this.baseUrl}${endpoint}`, { responseType: 'text' });
+  }
  
   /**
    * Get paginated data

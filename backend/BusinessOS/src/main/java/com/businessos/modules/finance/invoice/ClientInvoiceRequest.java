@@ -11,6 +11,7 @@ import java.util.List;
 @Data @NoArgsConstructor @AllArgsConstructor @Builder
 public class ClientInvoiceRequest {
 
+    @NotNull(message = "Client ID is required")
     private Long clientId;
 
     @NotNull(message = "Invoice date is required")

@@ -1,7 +1,7 @@
 package com.businessos.modules.company;
 
 import com.businessos.core.base.BaseEntity;
-import com.businessos.modules.hrm.employee.EmploymentType;
+import com.businessos.enums.EmploymentType;
 import com.businessos.enums.LeaveType;
 import jakarta.persistence.*;
 import lombok.*;
@@ -42,7 +42,6 @@ public class CompanyLeavePolicy extends BaseEntity {
     @Builder.Default
     private boolean active = true;
 
-    @Builder.Default
     private int applicableFromMonths = 0;
 
     @ManyToOne(fetch = FetchType.LAZY)

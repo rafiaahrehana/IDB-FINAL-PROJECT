@@ -1,0 +1,35 @@
+<section id="features" class="py-6 bg-white position-relative overflow-hidden why-bos">
+  <div class="glow glow-1"></div>
+  <div class="glow glow-2"></div>
+  <div class="dot-grid"></div>
+
+  <div class="container py-5 position-relative">
+    <div class="row mb-5">
+      <div class="col-lg-7">
+        <span class="text-primary-bos fw-bold text-uppercase small tracking-widest mb-2 d-block fade-in">Why BusinessOS</span>
+        <h2 class="display-5 fw-bold text-dark mb-4 slide-up">Engineered for the <span class="gradient-text">Modern Enterprise.</span></h2>
+        <p class="lead text-muted slide-up" style="animation-delay: 0.1s;">
+          Stop juggling disconnected tools. Unify your entire organization under one scalable, secure, and intelligent platform.
+        </p>
+      </div>
+    </div>
+
+    <div class="bento-grid">
+      @for (feature of features(); track feature.title; let i = $index) {
+        <div class="feature-card p-4 h-100 rounded-4 hover-card-lift slide-up"
+             [class.featured]="feature.featured"
+             [class.wide]="i === features().length - 1"
+             [style.animation-delay]="(i * 0.08) + 's'"
+             [style.grid-column]="feature.featured ? 'span 2' : (i === features().length - 1 ? 'span 3' : 'span 1')">
+          <div class="icon-wrapper rounded-3 d-inline-flex align-items-center justify-content-center mb-4 flex-shrink-0" style="width: 56px; height: 56px;">
+            <i class="bi fs-4" [ngClass]="feature.icon"></i>
+          </div>
+          <div>
+            <h4 class="fw-bold mb-3 fs-5">{{ feature.title }}</h4>
+            <p class="mb-0" [class.text-muted]="!feature.featured">{{ feature.desc }}</p>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+</section>

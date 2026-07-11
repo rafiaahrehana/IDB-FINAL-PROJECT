@@ -1,6 +1,5 @@
 package com.businessos.modules.crm.lead;
 
-import com.businessos.modules.company.Company;
 import com.businessos.modules.crm.client.Client;
 import com.businessos.modules.servicedesk.companyservice.CompanyService;
 import com.businessos.core.base.BaseEntity;
@@ -87,7 +86,7 @@ public class Lead extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "company_id", nullable = false)
-    private Company company;
+    private com.businessos.modules.company.Company company;
 
     // Assigned sales person
     @ManyToOne(fetch = FetchType.LAZY)

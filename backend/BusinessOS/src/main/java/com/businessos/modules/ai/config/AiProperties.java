@@ -23,6 +23,7 @@ public class AiProperties {
     private final Gemini  gemini  = new Gemini();
     private final Openai  openai  = new Openai();
     private final Claude  claude  = new Claude();
+    private final Groq    groq    = new Groq();
 
     @Getter @Setter
     public static class Gemini {
@@ -40,6 +41,13 @@ public class AiProperties {
 
     @Getter @Setter
     public static class Claude {
+        private String apiKey;
+        private double temperature = 0.7;
+        private int    maxTokens   = 2048;
+    }
+
+    @Getter @Setter
+    public static class Groq {
         private String apiKey;
         private double temperature = 0.7;
         private int    maxTokens   = 2048;

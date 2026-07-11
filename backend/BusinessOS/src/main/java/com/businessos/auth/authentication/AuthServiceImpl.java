@@ -9,21 +9,23 @@ import com.businessos.auth.user.User;
 import com.businessos.auth.user.UserMapper;
 import com.businessos.auth.user.UserRepository;
 import com.businessos.auth.user.UserResponse;
+import com.businessos.auth.password.ChangePasswordRequest;
 import com.businessos.auth.password.ForgotPasswordRequest;
 import com.businessos.auth.password.ResetPasswordRequest;
 import com.businessos.modules.crm.client.ClientRepository;
 import com.businessos.modules.hrm.employee.EmployeeRepository;
 import com.businessos.enums.CompanyStatus;
-import com.businessos.core.subscription.SubscriptionPlan;
+import com.businessos.enums.SubscriptionPlan;
 import com.businessos.shared.audit.AuditService;
 import com.businessos.modules.company.Company;
 import com.businessos.modules.company.CompanyRepository;
 import com.businessos.modules.company.RegisterRequest;
-import com.businessos.shared.location.Location;
 import com.businessos.shared.email.EmailService;
 import com.businessos.security.JwtService;
+import com.businessos.security.SecurityUtil;
 import com.businessos.shared.exception.BadRequestException;
 import com.businessos.shared.exception.ResourceNotFoundException;
+import com.businessos.shared.exception.UnauthorizedException;
 import com.businessos.shared.notification.NotificationPreferenceService;
 import lombok.RequiredArgsConstructor;
 
@@ -39,7 +41,6 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -60,6 +61,7 @@ public class AuthServiceImpl implements AuthService {
     private final EmailService emailService;
     private final AuditService auditService;
     private final NotificationPreferenceService notificationPreferenceService;
+    private final SecurityUtil securityUtil;
 
     @Value("${jwt.refresh-expiration-ms:604800000}")
     private long refreshExpirationMs;
@@ -83,43 +85,19 @@ public class AuthServiceImpl implements AuthService {
             .email(request.getEmail().toLowerCase().trim())
             .password(passwordEncoder.encode(request.getPassword()))
             .role(Role.COMPANY_OWNER)
-            .active(false)
-            .emailVerified(false)
+            .active(true)
+            .emailVerified(true)
             .build();
-
-        if (request.getCountry() != null && !request.getCountry().isBlank()) {
-            Location location = Location.builder()
-                .country(request.getCountry())
-                .level1(request.getLevel1())
-                .level2(request.getLevel2())
-                .level3(request.getLevel3())
-                .level4(request.getLevel4())
-                .streetAddress(request.getStreetAddress())
-                .postalCode(request.getPostalCode())
-                .apartment(request.getApartment())
-                .build();
-            user.setLocation(location);
-        }
-
         userRepository.save(user);
-
-        String locationStr = null;
-        if (request.getCountry() != null && !request.getCountry().isBlank()) {
-            locationStr = String.join(", ",
-                Stream.of(request.getCountry(), request.getLevel1(), request.getLevel2(),
-                          request.getLevel3(), request.getLevel4(), request.getStreetAddress())
-                    .filter(s -> s != null && !s.isBlank())
-                    .toList()
-            );
-        }
 
         Company company = Company.builder()
             .companyName(request.getCompanyName())
             .subdomain(request.getSubdomain().toLowerCase().trim())
+            .companyEmail(request.getCompanyEmail() != null ? request.getCompanyEmail().toLowerCase().trim() : null)
             .companyPhone(request.getCompanyPhone())
-            .location(locationStr)
+            .locationDetail(request.getLocation())
             .subscriptionPlan(SubscriptionPlan.FREE)
-            .status(CompanyStatus.PENDING_VERIFICATION)
+            .status(CompanyStatus.TRIAL)
             .owner(user)
             .build();
         companyRepository.save(company);
@@ -142,6 +120,16 @@ public class AuthServiceImpl implements AuthService {
             .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         Long companyId = resolveCompanyId(user);
+
+        if (user.isTenantUser() && companyId != null) {
+            Company company = companyRepository.findById(companyId).orElse(null);
+            if (company != null && (company.getStatus() == CompanyStatus.SUSPENDED
+                    || company.getStatus() == CompanyStatus.DEACTIVATED)) {
+                throw new UnauthorizedException(
+                    "This company account has been " + company.getStatus().name().toLowerCase()
+                        + ". Please contact support.");
+            }
+        }
 
         String accessToken  = jwtService.generateAccessToken(
             user.getEmail(), user.getRole().name(), companyId);
@@ -277,10 +265,41 @@ public class AuthServiceImpl implements AuthService {
         
     }
 
+    @Override
+    @Transactional
+    public void changePassword(ChangePasswordRequest request) {
+        User principal = securityUtil.getCurrentUser();
+        if (principal == null) {
+            throw new UnauthorizedException("User not authenticated");
+        }
+
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            throw new BadRequestException("Passwords do not match");
+        }
+
+        User user = userRepository.findById(principal.getId())
+            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+            throw new BadRequestException("Current password is incorrect");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+
+        // Revoke all refresh tokens so any other active session is logged out,
+        // consistent with resetPassword. The current session's access token stays
+        // valid until it expires; the frontend should redirect to login after success.
+        revokeAllRefreshTokens(user);
+    }
+
 
     private Long resolveCompanyId(User user) {
         return switch (user.getRole()) {
-            case SUPER_ADMIN, SYSTEM_ADMIN, SUPPORT_AGENT, SUPPORT_MANAGER, MARKETING_MANAGER, PLATFORM_ACCOUNTANT, SALES_MANAGER -> 1L;
+            // Platform staff have no home tenant - their token carries no companyId at all.
+            // (Previously hardcoded to the seeded "BusinessOS HQ" company, which made every
+            // platform login behave like a login into that tenant - see PLATFORM_ADMIN identity fix.)
+            case SUPER_ADMIN, SYSTEM_ADMIN, SUPPORT_AGENT, SUPPORT_MANAGER, MARKETING_MANAGER, PLATFORM_ACCOUNTANT, SALES_MANAGER -> null;
             case COMPANY_OWNER -> companyRepository.findByOwnerId(user.getId())
                 .map(Company::getId).orElse(null);
             case EMPLOYEE -> employeeRepository.findCompanyIdByUserId(user.getId())

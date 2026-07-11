@@ -3,7 +3,7 @@ package com.businessos.security;
 import com.businessos.auth.user.User;
 import com.businessos.modules.company.Company;
 import com.businessos.modules.company.CompanyRepository;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

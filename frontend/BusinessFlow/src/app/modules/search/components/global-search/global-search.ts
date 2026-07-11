@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -37,14 +37,20 @@ export class GlobalSearch implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private searchService: SearchService,
+    private cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit(): void {
     this.route.queryParamMap.subscribe((params) => {
       const q = params.get('q');
+      const ai = params.get('ai');
       if (q) {
         this.query = q;
-        this.doSearch();
+        if (ai === 'true') {
+          this.askAi();
+        } else {
+          this.doSearch();
+        }
       }
     });
   }
@@ -52,6 +58,7 @@ export class GlobalSearch implements OnInit {
   doSearch(): void {
     if (this.query.trim().length < 2) return;
     this.loading = true;
+    this.cdr.markForCheck();
     this.error = '';
     this.askResult = undefined;
     this.searchService.search(this.query.trim()).subscribe({
@@ -59,10 +66,12 @@ export class GlobalSearch implements OnInit {
         this.results = res.results;
         this.searched = true;
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error: (err) => {
         this.error = err?.error?.message || 'Search failed';
         this.loading = false;
+        this.cdr.markForCheck();
       },
     });
   }

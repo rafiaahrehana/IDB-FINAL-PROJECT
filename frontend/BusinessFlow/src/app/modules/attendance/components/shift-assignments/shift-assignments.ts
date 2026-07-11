@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { EmployeeShiftAssignment, EmployeeShiftAssignmentRequest, Shift } from '../../../hrm/models/hrm.model';
@@ -32,7 +32,7 @@ export class ShiftAssignments implements OnInit {
   employeeIdLookup?: number;
   lookedUpAssignment: EmployeeShiftAssignment | null = null;
 
-  constructor(private assignmentService: ShiftAssignmentService, private shiftService: ShiftService) {}
+  constructor(private assignmentService: ShiftAssignmentService, private shiftService: ShiftService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.shiftService.listActive().subscribe({ next: (res) => (this.shifts = res) });
@@ -45,15 +45,18 @@ export class ShiftAssignments implements OnInit {
 
   load(): void {
     this.loading = true;
+    this.cdr.markForCheck();
     this.assignmentService.list(this.page).subscribe({
       next: (res) => {
         this.assignments = res.content;
         this.totalPages = res.totalPages;
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.error = 'Failed to load shift assignments';
         this.loading = false;
+        this.cdr.markForCheck();
       },
     });
   }

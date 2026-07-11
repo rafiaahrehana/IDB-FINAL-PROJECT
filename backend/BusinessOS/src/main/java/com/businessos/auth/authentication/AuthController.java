@@ -1,5 +1,6 @@
 package com.businessos.auth.authentication;
 
+import com.businessos.auth.password.ChangePasswordRequest;
 import com.businessos.auth.password.ForgotPasswordRequest;
 import com.businessos.modules.company.RegisterRequest;
 import com.businessos.auth.password.ResetPasswordRequest;
@@ -60,5 +61,11 @@ public class AuthController {
     public ResponseEntity<String> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
         authService.resetPassword(request);
         return ResponseEntity.ok("Password reset successfully");
+    }
+
+    @PostMapping("/change-password")
+    public ResponseEntity<String> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
+        authService.changePassword(request);
+        return ResponseEntity.ok("Password changed successfully");
     }
 }

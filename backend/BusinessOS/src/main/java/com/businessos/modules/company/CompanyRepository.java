@@ -1,7 +1,7 @@
 package com.businessos.modules.company;
 
 import com.businessos.enums.CompanyStatus;
-import com.businessos.core.subscription.SubscriptionPlan;
+import com.businessos.enums.SubscriptionPlan;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -23,6 +23,26 @@ public interface CompanyRepository extends JpaRepository<Company, Long> {
     Page<Company> findByStatus(CompanyStatus status, Pageable pageable);
 
     Page<Company> findBySubscriptionPlan(SubscriptionPlan plan, Pageable pageable);
+
+    /**
+     * Combined, null-safe filtering for the platform companies list:
+     * any of status / plan / keyword may be omitted. Keyword matches
+     * company name, email or subdomain, case-insensitively.
+     */
+    @Query("""
+        SELECT c FROM Company c
+        WHERE (:status IS NULL OR c.status = :status)
+          AND (:plan IS NULL OR c.subscriptionPlan = :plan)
+          AND (:keyword IS NULL OR :keyword = ''
+               OR LOWER(c.companyName) LIKE LOWER(CONCAT('%', :keyword, '%'))
+               OR LOWER(c.companyEmail) LIKE LOWER(CONCAT('%', :keyword, '%'))
+               OR LOWER(c.subdomain) LIKE LOWER(CONCAT('%', :keyword, '%')))
+        """)
+    Page<Company> findFiltered(
+        @Param("status") CompanyStatus status,
+        @Param("plan") SubscriptionPlan plan,
+        @Param("keyword") String keyword,
+        Pageable pageable);
 
     /**
      * Fix from Phase 2: enum values are now passed as typed parameters,
@@ -59,4 +79,6 @@ public interface CompanyRepository extends JpaRepository<Company, Long> {
     long countByStatus(CompanyStatus status);
 
     long countBySubscriptionPlan(SubscriptionPlan plan);
+
+    long countByStatusAndSubscriptionEndBetween(CompanyStatus status, LocalDate from, LocalDate to);
 }

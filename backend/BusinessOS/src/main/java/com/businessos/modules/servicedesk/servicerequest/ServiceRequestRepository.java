@@ -35,6 +35,8 @@ public interface ServiceRequestRepository extends JpaRepository<ServiceRequest, 
 
     long countByCompanyIdAndStatus(Long companyId, ServiceRequestStatus status);
 
+    long countByCompanyIdAndClientIdAndStatus(Long companyId, Long clientId, ServiceRequestStatus status);
+
     boolean existsByCompanyIdAndStatusNotIn(Long companyId, List<ServiceRequestStatus> closedStatuses);
 
     @Query("""

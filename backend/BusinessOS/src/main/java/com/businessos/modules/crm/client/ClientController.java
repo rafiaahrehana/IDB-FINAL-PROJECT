@@ -24,13 +24,6 @@ public class ClientController {
         return new ResponseEntity<>(clientService.create(request), HttpStatus.CREATED);
     }
 
-    // Public self-registration: a client signs up and becomes a client of the
-    // company identified by the supplied subdomain.
-    @PostMapping("/self-register")
-    public ResponseEntity<ClientResponse> selfRegister(@Valid @RequestBody ClientSelfRegisterRequest request) {
-        return new ResponseEntity<>(clientService.selfRegister(request), HttpStatus.CREATED);
-    }
-
     @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     @GetMapping
     public ResponseEntity<Page<ClientResponse>> listAll(

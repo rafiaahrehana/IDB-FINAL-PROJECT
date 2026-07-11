@@ -1,0 +1,48 @@
+:host {
+  height: 100%;
+}
+
+.nav-group-label {
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #94a3b8;
+  padding: 0.75rem 1rem 0.25rem;
+}
+
+.nav-link {
+  color: #64748b !important;
+  transition: all 0.2s ease-in-out;
+  cursor: pointer;
+  text-decoration: none;
+  font-size: 0.88rem;
+
+  i {
+    transition: transform 0.2s ease-in-out;
+    opacity: 0.75;
+    color: #94a3b8;
+    margin-right: 0.5rem;
+  }
+
+  &:hover {
+    background-color: rgba(241, 245, 249, 0.8);
+    color: #0f172a !important;
+
+    i {
+      transform: scale(1.05);
+      color: var(--bs-primary) !important;
+      opacity: 1;
+    }
+  }
+
+  &.active {
+    background-color: rgba(13, 110, 253, 0.08) !important;
+    color: var(--bs-primary) !important;
+    font-weight: 600 !important;
+
+    i {
+      color: var(--bs-primary) !important;
+      opacity: 1;
+    }
+  }
+}

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
@@ -37,7 +37,7 @@ export class LeavePolicies implements OnInit {
   leaveTypes = LEAVE_TYPES;
   employmentTypes = EMPLOYMENT_TYPES;
 
-  constructor(private policyService: LeavePolicyService) {}
+  constructor(private policyService: LeavePolicyService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.load();
@@ -45,16 +45,19 @@ export class LeavePolicies implements OnInit {
 
   load(): void {
     this.loading = true;
+    this.cdr.markForCheck();
     this.error = '';
     this.policyService.list(this.page, 20).subscribe({
       next: (res) => {
         this.policies = res.content;
         this.totalPages = res.totalPages;
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.error = 'Failed to load leave policies';
         this.loading = false;
+        this.cdr.markForCheck();
       }
     });
   }
@@ -84,6 +87,7 @@ export class LeavePolicies implements OnInit {
 
   save(): void {
     this.saving = true;
+    this.cdr.markForCheck();
     this.error = '';
     const payload = this.cleanPayload();
     const request = this.isEdit && this.selectedId
@@ -93,12 +97,14 @@ export class LeavePolicies implements OnInit {
     request.subscribe({
       next: () => {
         this.saving = false;
+        this.cdr.markForCheck();
         this.showForm = false;
         this.success = this.isEdit ? 'Leave policy updated' : 'Leave policy created';
         this.load();
       },
       error: (err) => {
         this.saving = false;
+        this.cdr.markForCheck();
         this.error = err?.error?.message || 'Failed to save policy';
       }
     });

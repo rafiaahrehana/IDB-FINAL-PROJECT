@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Timesheet, TimesheetRequest } from '../../models/attendance.model';
@@ -35,7 +35,7 @@ export class Timesheets implements OnInit {
   employeeTotalPages = 0;
   employeeLoading = false;
 
-  constructor(private timesheetService: TimesheetService) {}
+  constructor(private timesheetService: TimesheetService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.load();
@@ -47,15 +47,18 @@ export class Timesheets implements OnInit {
 
   load(): void {
     this.loading = true;
+    this.cdr.markForCheck();
     this.timesheetService.listMine(this.page).subscribe({
       next: (res) => {
         this.myTimesheets = res.content;
         this.totalPages = res.totalPages;
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.error = 'Failed to load timesheets';
         this.loading = false;
+        this.cdr.markForCheck();
       },
     });
   }

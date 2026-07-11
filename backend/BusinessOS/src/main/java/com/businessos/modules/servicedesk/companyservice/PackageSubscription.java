@@ -3,7 +3,7 @@ package com.businessos.modules.servicedesk.companyservice;
 import com.businessos.modules.crm.client.Client;
 import com.businessos.modules.company.Company;
 import com.businessos.enums.BillingCycle;
-import com.businessos.core.subscription.SubscriptionStatus;
+import com.businessos.enums.SubscriptionStatus;
 import com.businessos.core.base.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;

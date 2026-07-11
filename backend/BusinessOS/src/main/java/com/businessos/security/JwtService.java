@@ -26,6 +26,9 @@ public class JwtService {
     @Value("${jwt.refresh-expiration-ms:604800000}")
     private long refreshExpirationMs;
 
+    @Value("${jwt.impersonation-expiration-ms:1800000}")
+    private long impersonationExpirationMs;
+
 
     public String generateAccessToken(String email, String role, Long companyId) {
         Map<String, Object> claims = new HashMap<>();
@@ -44,6 +47,28 @@ public class JwtService {
         Map<String, Object> claims = new HashMap<>();
         claims.put("actionType", actionType.name());
         return buildToken(claims, email, expirationMs);
+    }
+
+    /**
+     * Short-lived token for a platform admin/support agent "accessing" a tenant company.
+     * Carries the impersonated company's id under the normal "companyId" claim (so every
+     * existing tenant-scoping code path picks it up with zero changes) plus impersonatedBy /
+     * impersonationSessionId so the JWT filter can flag every request made under it.
+     */
+    public String generateImpersonationToken(String email, String role, Long companyId,
+                                              Long impersonatedBy, String impersonationSessionId) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("role", role);
+        if (companyId != null) {
+            claims.put("companyId", companyId);
+        }
+        claims.put("impersonatedBy", impersonatedBy);
+        claims.put("impersonationSessionId", impersonationSessionId);
+        return buildToken(claims, email, impersonationExpirationMs);
+    }
+
+    public long getImpersonationExpirationMs() {
+        return impersonationExpirationMs;
     }
 
 
@@ -68,6 +93,18 @@ public class JwtService {
         return type != null ? TokenType.valueOf(type) : null;
     }
 
+    public Long extractImpersonatedBy(String token) {
+        Object raw = extractClaims(token).get("impersonatedBy");
+        if (raw == null) return null;
+        if (raw instanceof Long l) return l;
+        if (raw instanceof Integer i) return i.longValue();
+        return Long.parseLong(raw.toString());
+    }
+
+    public String extractImpersonationSessionId(String token) {
+        return extractClaims(token).get("impersonationSessionId", String.class);
+    }
+
     public boolean isTokenValid(String token) {
         try {
             return !extractClaims(token).getExpiration().before(new Date());
@@ -80,11 +117,11 @@ public class JwtService {
 
     private String buildToken(Map<String, Object> extraClaims, String subject, long expirationMs) {
         return Jwts.builder()
-                .setClaims(extraClaims)
-                .setSubject(subject)
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + expirationMs))
-                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
+                .claims(extraClaims)
+                .subject(subject)
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + expirationMs))
+                .signWith(getSigningKey())
                 .compact();
     }
 

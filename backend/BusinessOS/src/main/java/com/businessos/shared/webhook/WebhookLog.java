@@ -1,5 +1,6 @@
 package com.businessos.shared.webhook;
 
+import com.businessos.enums.WebhookStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -26,9 +27,9 @@ public class WebhookLog {
     @Column(nullable = false)
     private String transactionId;
 
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    @Builder.Default
     private WebhookStatus status = WebhookStatus.RECEIVED;
 
     @Builder.Default

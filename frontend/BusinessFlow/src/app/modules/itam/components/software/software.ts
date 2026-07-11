@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SoftwareLicense } from '../../models/itam.model';
@@ -30,7 +30,7 @@ export class Software implements OnInit {
   statuses = ['ACTIVE', 'EXPIRED', 'EXPIRING_SOON', 'CANCELLED'];
   licenseTypes = ['PERPETUAL', 'SUBSCRIPTION', 'VOLUME', 'OEM', 'FREEWARE', 'OPEN_SOURCE'];
 
-  constructor(private softwareService: SoftwareService) {}
+  constructor(private softwareService: SoftwareService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.load();
@@ -38,6 +38,7 @@ export class Software implements OnInit {
 
   load(): void {
     this.loading = true;
+    this.cdr.markForCheck();
     const obs = this.showExpiring
       ? this.softwareService.expiring()
       : this.statusFilter
@@ -48,10 +49,12 @@ export class Software implements OnInit {
         this.licenses = res.content;
         this.totalPages = res.totalPages;
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.error = 'Failed to load licenses';
         this.loading = false;
+        this.cdr.markForCheck();
       },
     });
   }

@@ -37,9 +37,9 @@ public class Attendance extends BaseEntity {
     private LocalTime checkInTime;
     private LocalDateTime checkInDateTime;
 
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(length = 50)
-    @Builder.Default
     private AttendanceMethod checkInMethod = AttendanceMethod.MANUAL;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -75,9 +75,9 @@ public class Attendance extends BaseEntity {
     private String checkOutLocation;
 
     // Status
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(length = 50)
-    @Builder.Default
     private AttendanceStatus status = AttendanceStatus.ABSENT;
 
     @Enumerated(EnumType.STRING)

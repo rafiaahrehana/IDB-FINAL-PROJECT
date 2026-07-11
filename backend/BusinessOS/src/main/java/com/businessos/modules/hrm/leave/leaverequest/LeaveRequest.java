@@ -37,9 +37,9 @@ public class LeaveRequest extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String reason;
 
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
-    @Builder.Default
     private LeaveRequestStatus status = LeaveRequestStatus.PENDING;
 
     private String rejectionReason;

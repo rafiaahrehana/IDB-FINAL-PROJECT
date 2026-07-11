@@ -3,7 +3,7 @@ package com.businessos.modules.servicedesk.companyservice;
 import lombok.Getter;
 import lombok.Setter;
 import com.businessos.enums.BillingCycle;
-import com.businessos.core.subscription.SubscriptionStatus;
+import com.businessos.enums.SubscriptionStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;

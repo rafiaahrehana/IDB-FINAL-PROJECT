@@ -1,6 +1,7 @@
 package com.businessos.auth.authentication;
 
 import com.businessos.auth.user.UserResponse;
+import com.businessos.auth.password.ChangePasswordRequest;
 import com.businessos.auth.password.ForgotPasswordRequest;
 import com.businessos.auth.password.ResetPasswordRequest;
 import com.businessos.modules.company.RegisterRequest;
@@ -22,4 +23,6 @@ public interface AuthService {
     void forgotPassword(ForgotPasswordRequest request);
 
     void resetPassword(ResetPasswordRequest request);
+
+    void changePassword(ChangePasswordRequest request);
 }

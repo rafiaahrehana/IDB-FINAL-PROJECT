@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
@@ -38,7 +38,7 @@ export class Workflows implements OnInit {
   deleteTarget: WorkflowTemplate | null = null;
   deleteStageId: number | null = null;
 
-  constructor(private workflowService: WorkflowService) {}
+  constructor(private workflowService: WorkflowService, private cdr: ChangeDetectorRef) {}
 
   // LIFECYCLE HOOKS
   ngOnInit(): void { this.load(); }
@@ -46,10 +46,11 @@ export class Workflows implements OnInit {
   // LOAD TEMPLATES
   load(): void {
     this.loading = true;
+    this.cdr.markForCheck();
     this.error = '';
     this.workflowService.list(this.page).subscribe({
-      next: (res) => { this.templates = res.content; this.totalPages = res.totalPages; this.loading = false; },
-      error: () => { this.error = 'Failed to load workflows'; this.loading = false; }
+      next: (res) => { this.templates = res.content; this.totalPages = res.totalPages; this.loading = false; this.cdr.markForCheck(); },
+      error: () => { this.error = 'Failed to load workflows'; this.loading = false; this.cdr.markForCheck(); }
     });
   }
 

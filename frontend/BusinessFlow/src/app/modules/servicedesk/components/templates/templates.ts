@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
@@ -47,7 +47,8 @@ export class Templates implements OnInit {
 
   constructor(
     private templateService: ServiceTemplateService,
-    private categoryService: ServiceCategoryService
+    private categoryService: ServiceCategoryService,
+    private cdr: ChangeDetectorRef,
   ) {}
 
   // LIFECYCLE HOOKS
@@ -56,10 +57,11 @@ export class Templates implements OnInit {
   // LOAD TEMPLATES
   load(): void {
     this.loading = true;
+    this.cdr.markForCheck();
     this.error = '';
     this.templateService.list(this.page).subscribe({
-      next: (res) => { this.templates = res.content; this.totalPages = res.totalPages; this.loading = false; },
-      error: () => { this.error = 'Failed to load templates'; this.loading = false; }
+      next: (res) => { this.templates = res.content; this.totalPages = res.totalPages; this.loading = false; this.cdr.markForCheck(); },
+      error: () => { this.error = 'Failed to load templates'; this.loading = false; this.cdr.markForCheck(); }
     });
   }
 

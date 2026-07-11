@@ -2,7 +2,7 @@ package com.businessos.modules.servicedesk.companyservice;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import com.businessos.core.subscription.SubscriptionStatus;
+import com.businessos.enums.SubscriptionStatus;
 
 import java.util.List;
 
@@ -31,6 +31,9 @@ public interface ServicePackageService {
 
     /** Admin activates a PENDING_PAYMENT subscription (simulates payment confirmation). */
     PackageSubscriptionResponse activate(Long subscriptionId);
+
+    /** System entry point (payment gateway callbacks) - no security context. */
+    PackageSubscriptionResponse activateForCompany(Long companyId, Long subscriptionId);
 
     /** Admin suspends an ACTIVE subscription. */
     PackageSubscriptionResponse suspend(Long subscriptionId, String reason);

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
@@ -45,7 +45,8 @@ export class Applications implements OnInit {
 
   constructor(
     private recruitmentService: RecruitmentService,
-    private jobPostingService: JobPostingService
+    private jobPostingService: JobPostingService,
+    private cdr: ChangeDetectorRef,
   ) {}
 
   // LIFECYCLE HOOKS
@@ -54,10 +55,15 @@ export class Applications implements OnInit {
   // LOAD APPLICATIONS
   load(): void {
     this.loading = true;
+    this.cdr.markForCheck();
     this.error = '';
     this.recruitmentService.list(this.page, 20, this.statusFilter || undefined).subscribe({
-      next: (res) => { this.applications = res.content; this.totalPages = res.totalPages; this.loading = false; },
-      error: () => { this.error = 'Failed to load applications'; this.loading = false; }
+      next: (res) => { this.applications = res.content; this.totalPages = res.totalPages; this.loading = false;
+        this.cdr.markForCheck();
+      },
+      error: () => { this.error = 'Failed to load applications'; this.loading = false;
+        this.cdr.markForCheck();
+      }
     });
   }
 

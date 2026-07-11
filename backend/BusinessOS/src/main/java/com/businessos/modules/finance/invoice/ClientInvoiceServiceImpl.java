@@ -1,11 +1,8 @@
 package com.businessos.modules.finance.invoice;
 
-import com.businessos.core.automation.AutomationEventPublisher;
 import com.businessos.modules.crm.client.Client;
 import com.businessos.modules.crm.client.ClientRepository;
 import com.businessos.security.SecurityUtil;
-import com.businessos.shared.email.EmailBranding;
-import com.businessos.shared.email.EmailService;
 import com.businessos.shared.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -25,9 +22,6 @@ public class ClientInvoiceServiceImpl implements ClientInvoiceService {
     private final ClientInvoiceRepository invoiceRepository;
     private final ClientRepository clientRepository;
     private final SecurityUtil securityUtil;
-    private final EmailService emailService;
-    private final EmailBranding emailBranding;
-    private final AutomationEventPublisher automationEventPublisher;
 
     private Long requireCompanyId() {
         Long id = securityUtil.getCurrentCompanyId();
@@ -43,9 +37,6 @@ public class ClientInvoiceServiceImpl implements ClientInvoiceService {
     @Override
     @Transactional
     public ClientInvoiceResponse create(ClientInvoiceRequest request) {
-        if (request.getClientId() == null) {
-            throw new com.businessos.shared.exception.BadRequestException("Client ID is required");
-        }
         Long companyId = securityUtil.getCurrentCompanyId();
 
         Client client = clientRepository.findById(request.getClientId())
@@ -157,20 +148,19 @@ public class ClientInvoiceServiceImpl implements ClientInvoiceService {
         invoice.setStatus(InvoiceStatus.ISSUED);
         invoice.setSentDate(LocalDate.now());
         invoiceRepository.save(invoice);
-
-        // Send invoice email to client
-        if (invoice.getClient() != null && invoice.getClient().getUser() != null) {
-            String to = invoice.getClient().getUser().getEmail();
-            String name = invoice.getClient().getUser().getFullName();
-            EmailBranding.Data branding = emailBranding.from(invoice.getClient().getCompany());
-            emailService.sendInvoiceEmail(to, name, branding);
-        }
     }
 
     @Override
     @Transactional
     public void recordPayment(Long id, BigDecimal amount) {
-        ClientInvoice invoice = findInTenant(id);  // tenant-scoped
+        recordPaymentForCompany(requireCompanyId(), id, amount);
+    }
+
+    @Override
+    @Transactional
+    public void recordPaymentForCompany(Long companyId, Long id, BigDecimal amount) {
+        ClientInvoice invoice = invoiceRepository.findByIdAndCompanyId(id, companyId)
+            .orElseThrow(() -> new com.businessos.shared.exception.ResourceNotFoundException("Invoice not found: " + id));
 
         BigDecimal newPaidAmount = invoice.getPaidAmount().add(amount);
         invoice.setPaidAmount(newPaidAmount);
@@ -184,12 +174,6 @@ public class ClientInvoiceServiceImpl implements ClientInvoiceService {
 
         invoice.calculateTotals();
         invoiceRepository.save(invoice);
-
-        if (invoice.getStatus() == InvoiceStatus.PAID) {
-            automationEventPublisher.publishInvoicePaid(
-                this, requireCompanyId(), invoice.getId(),
-                invoice.getClient().getId(), amount);
-        }
     }
 
     @Override

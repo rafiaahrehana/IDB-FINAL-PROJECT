@@ -30,13 +30,15 @@ public class AuthorizationServiceImpl implements AuthorizationService {
 
         User user = securityUtil.getCurrentUser();
 
-        // Super Admin can do everything
-        if (user.getRole() == Role.SUPER_ADMIN) {
+        // While impersonating a company, act as its owner for fine-grained permission
+        // checks too - the real admin's own role (checked below) must not gate tenant
+        // modules like Leave/Payroll/AI that use checkPermission() instead of @PreAuthorize.
+        if (securityUtil.isImpersonating()) {
             return true;
         }
 
-        // System Admin can only access Platform Level permissions
-        if (user.getRole() == Role.SYSTEM_ADMIN) {
+        // Platform Admins can only access Platform Level permissions (Privacy)
+        if (user.getRole() == Role.SUPER_ADMIN || user.getRole() == Role.SYSTEM_ADMIN) {
             return isPlatformPermission(permission);
         }
 

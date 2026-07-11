@@ -2,144 +2,63 @@
   <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
     <div>
       <h4 class="mb-1">Custom Roles</h4>
-      <div class="text-muted small">Define custom roles and assign permissions. Companies can then assign these roles to their employees.</div>
+      <div class="text-muted small">Define custom roles that companies can assign to their users.</div>
     </div>
     <button class="btn btn-primary btn-sm" (click)="openCreate()"><i class="bi bi-plus"></i> New Role</button>
   </div>
-
-  @if (error) {
-    <div class="alert alert-danger py-2">{{ error }}</div>
-  }
-
-  @if (success) {
-    <div class="alert alert-success py-2">{{ success }}</div>
-  }
-
-  @if (loading) {
-    <app-loader />
-  }
+  @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
+  @if (success) { <div class="alert alert-success py-2">{{ success }}</div> }
+  @if (loading) { <app-loader /> }
 
   @if (showForm) {
-    <div class="card border-0 shadow-sm mb-3">
-      <div class="card-header bg-white py-2 fw-semibold d-flex justify-content-between align-items-center">
-        {{ editingId ? 'Edit Role' : 'New Role' }}
-        <button class="btn btn-sm btn-outline-secondary" (click)="showForm = false; editingId = null"><i class="bi bi-x-lg"></i></button>
-      </div>
-      <div class="card-body">
-        <div class="row g-2 mb-3">
-          <div class="col-md-4">
-            <label class="form-label small text-muted">Role Name *</label>
-            <input class="form-control form-control-sm" placeholder="e.g. HR Manager" [(ngModel)]="form.name" />
-          </div>
-          <div class="col-md-8">
-            <label class="form-label small text-muted">Description</label>
-            <input class="form-control form-control-sm" placeholder="What this role is for" [(ngModel)]="form.description" />
-          </div>
-        </div>
-        <div class="d-flex gap-2">
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-header bg-white py-2 fw-semibold">{{ editingId ? 'Edit Role' : 'New Role' }}</div>
+    <div class="card-body">
+      <div class="row g-2">
+        <div class="col-md-4"><input class="form-control form-control-sm" placeholder="Role name *" [(ngModel)]="form.name" /></div>
+        <div class="col-md-8"><input class="form-control form-control-sm" placeholder="Description" [(ngModel)]="form.description" /></div>
+        <div class="col-12 d-flex gap-2">
           <button class="btn btn-primary btn-sm" [disabled]="!form.name" (click)="save()">{{ editingId ? 'Update' : 'Save' }}</button>
           <button class="btn btn-secondary btn-sm" (click)="showForm = false; editingId = null">Cancel</button>
         </div>
-
-        @if (editingId) {
-          <hr class="my-3" />
-          <div class="d-flex justify-content-between align-items-center mb-2">
-            <h6 class="mb-0 fw-semibold">Permissions</h6>
-            <button class="btn btn-outline-primary btn-sm" [disabled]="savingPermissions" (click)="savePermissions()">
-              @if (savingPermissions) {
-                <span class="spinner-border spinner-border-sm me-1"></span>
-              }
-              Save Permissions
-            </button>
-          </div>
-
-          @if (permissionsLoading) {
-            <app-loader />
-          }
-
-          @if (!permissionsLoading) {
-            <div class="row g-3">
-              @for (group of permissionGroups; track group.label) {
-                <div class="col-md-6 col-lg-4">
-                  <div class="card border h-100">
-                    <div class="card-body py-2 px-3">
-                      <div class="form-check mb-1">
-                        <input class="form-check-input" type="checkbox" [checked]="isGroupSelected(group)"
-                          [class.form-check-input-indeterminate]="isGroupPartial(group)"
-                          (change)="toggleGroup(group)" id="grp-{{group.label}}" />
-                        <label class="form-check-label fw-semibold small" for="grp-{{group.label}">{{ group.label }}</label>
-                      </div>
-                      <div class="ms-4">
-                        @for (perm of group.permissions; track perm) {
-                          <div class="form-check">
-                            <input class="form-check-input" type="checkbox" [checked]="isPermissionSelected(perm)"
-                              (change)="togglePermission(perm)" id="perm-{{perm}}" />
-                            <label class="form-check-label small text-muted" for="perm-{{perm}}">{{ perm }}</label>
-                          </div>
-                        }
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              }
-            </div>
-          }
-        }
       </div>
     </div>
+  </div>
   }
 
   @if (!loading && roles.length) {
-    <div class="card border-0 shadow-sm">
-      <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
-          <thead class="table-light">
-            <tr><th>Name</th><th>Description</th><th>Permissions</th><th>Type</th><th>Status</th><th></th></tr>
-          </thead>
-          <tbody>
-            @for (r of roles; track r.id) {
-              <tr>
-                <td class="fw-medium">{{ r.name }}</td>
-                <td class="text-muted small">{{ r.description || '-' }}</td>
-                <td>
-                  @if (r.permissions && r.permissions.length) {
-                    <span class="badge text-bg-primary rounded-pill">{{ r.permissions.length }} permissions</span>
-                  }
-                  @if (!r.permissions || !r.permissions.length) {
-                    <span class="text-muted small">None</span>
-                  }
-                </td>
-                <td>
-                  @if (r.systemRole) {
-                    <span class="badge rounded-pill text-bg-light border">System</span>
-                  }
-                  @if (!r.systemRole) {
-                    <span class="badge rounded-pill text-bg-info">Custom</span>
-                  }
-                </td>
-                <td>
-                  <span class="badge rounded-pill" [class.text-bg-success]="r.active" [class.text-bg-secondary]="!r.active">{{ r.active ? 'Active' : 'Inactive' }}</span>
-                </td>
-                <td class="text-end text-nowrap">
-                  @if (!r.systemRole) {
-                    <button class="btn btn-outline-primary btn-sm me-1" (click)="openEdit(r)" title="Edit & Permissions"><i class="bi bi-pencil"></i></button>
-                    <button class="btn btn-outline-danger btn-sm" (click)="deleteTarget = r" title="Delete"><i class="bi bi-trash"></i></button>
-                  }
-                  @if (r.systemRole) {
-                    <span class="text-muted small">Locked</span>
-                  }
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
+  <div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr><th>Name</th><th>Description</th><th>Type</th><th>Status</th><th></th></tr>
+        </thead>
+        <tbody>
+          @for (r of roles; track r.id) {
+          <tr>
+            <td class="fw-medium">{{ r.name }}</td>
+            <td class="text-muted small">{{ r.description || '-' }}</td>
+            <td>
+              @if (r.systemRole) { <span class="badge rounded-pill text-bg-light border">System</span> }
+              @else { <span class="badge rounded-pill text-bg-info">Custom</span> }
+            </td>
+            <td><span class="badge rounded-pill" [class.text-bg-success]="r.active" [class.text-bg-secondary]="!r.active">{{ r.active ? 'Active' : 'Inactive' }}</span></td>
+            <td class="text-end text-nowrap">
+              @if (!r.systemRole) {
+              <button class="btn btn-outline-secondary btn-sm me-1" (click)="openEdit(r)"><i class="bi bi-pencil"></i></button>
+              <button class="btn btn-outline-danger btn-sm" (click)="deleteTarget = r"><i class="bi bi-trash"></i></button>
+              } @else {
+              <span class="text-muted small">Locked</span>
+              }
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
     </div>
+  </div>
   }
-
-  @if (!loading && !roles.length && !showForm) {
-    <app-empty-state icon="bi-shield" message="No custom roles yet. Create one to get started." />
-  }
+  @if (!loading && !roles.length && !showForm) { <app-empty-state icon="bi-shield" message="No custom roles yet." /> }
 
   <app-confirm-dialog [visible]="!!deleteTarget" title="Delete Role" message="Delete this custom role? Any user assignments to this role will be lost." (confirmed)="doDelete()" (cancelled)="deleteTarget = null" />
 </div>

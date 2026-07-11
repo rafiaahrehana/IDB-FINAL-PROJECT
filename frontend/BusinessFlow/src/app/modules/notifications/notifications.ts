@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { Notification } from '../../core/models/notification.model';
@@ -24,7 +24,8 @@ export class Notifications implements OnInit {
 
   constructor(
     private notificationService: NotificationService,
-    private router: Router
+    private router: Router,
+    private cdr: ChangeDetectorRef,
   ) {}
 
   // LIFECYCLE HOOKS
@@ -33,10 +34,11 @@ export class Notifications implements OnInit {
   // LOAD NOTIFICATIONS
   load(): void {
     this.loading = true;
+    this.cdr.markForCheck();
     this.error = '';
     this.notificationService.list(this.filter === 'unread', this.page).subscribe({
-      next: (res: PagedResponse<Notification>) => { this.notifications = res.content; this.totalPages = res.totalPages; this.loading = false; },
-      error: () => { this.error = 'Failed to load notifications'; this.loading = false; }
+      next: (res: PagedResponse<Notification>) => { this.notifications = res.content; this.totalPages = res.totalPages; this.loading = false; this.cdr.markForCheck(); },
+      error: () => { this.error = 'Failed to load notifications'; this.loading = false; this.cdr.markForCheck(); }
     });
   }
 

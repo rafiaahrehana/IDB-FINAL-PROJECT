@@ -22,6 +22,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     Page<User> findByRoleIn(List<Role> roles, Pageable pageable);
 
+    long countByRoleIn(List<Role> roles);
+
     @Query("SELECT u FROM User u WHERE u.deleted = true AND u.deletedAt < :cutoff")
     List<User> findDeletedBefore(LocalDateTime cutoff);
 

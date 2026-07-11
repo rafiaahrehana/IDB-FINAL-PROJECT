@@ -21,14 +21,14 @@ public class SupportAuditLogController {
     private final SupportAuditService service;
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPPORT_MANAGER') or hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasRole('SUPPORT_MANAGER') or hasRole('COMPANY_ADMIN')")
     @Operation(summary = "Get Audit Log by ID")
     public ResponseEntity<SupportAuditLogResponse> getById(@PathVariable Long id) {
         return ResponseEntity.ok(service.getById(id));
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPPORT_MANAGER') or hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasRole('SUPPORT_MANAGER') or hasRole('COMPANY_ADMIN')")
     @Operation(summary = "Get all Audit Logs")
     public ResponseEntity<Page<SupportAuditLogResponse>> getAll(
             @RequestParam(defaultValue = "0") int page,
@@ -37,7 +37,7 @@ public class SupportAuditLogController {
     }
 
     @GetMapping("/action/{actionType}")
-    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPPORT_MANAGER') or hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasRole('SUPPORT_MANAGER') or hasRole('COMPANY_ADMIN')")
     @Operation(summary = "Get Audit Logs by Action Type")
     public ResponseEntity<Page<SupportAuditLogResponse>> getByActionType(
             @PathVariable String actionType,
@@ -47,14 +47,14 @@ public class SupportAuditLogController {
     }
 
     @GetMapping("/resource/{resourceId}")
-    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPPORT_MANAGER') or hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasRole('SUPPORT_MANAGER') or hasRole('COMPANY_ADMIN')")
     @Operation(summary = "Get Audit Logs by Resource ID")
     public ResponseEntity<List<SupportAuditLogResponse>> getByResourceId(@PathVariable Long resourceId) {
         return ResponseEntity.ok(service.getByResourceId(resourceId));
     }
 
     @GetMapping("/date-range")
-    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPPORT_MANAGER') or hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasRole('SUPPORT_MANAGER') or hasRole('COMPANY_ADMIN')")
     @Operation(summary = "Get Audit Logs by Date Range")
     public ResponseEntity<Page<SupportAuditLogResponse>> getByDateRange(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
@@ -65,7 +65,7 @@ public class SupportAuditLogController {
     }
 
     @GetMapping("/user/{userId}")
-    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPPORT_MANAGER') or hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasRole('SUPPORT_MANAGER') or hasRole('COMPANY_ADMIN')")
     @Operation(summary = "Get Audit Logs by User ID")
     public ResponseEntity<Page<SupportAuditLogResponse>> getByUser(
             @PathVariable Long userId,

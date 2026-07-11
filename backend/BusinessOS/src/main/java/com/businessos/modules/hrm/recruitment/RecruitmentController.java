@@ -2,6 +2,7 @@ package com.businessos.modules.hrm.recruitment;
 
 import com.businessos.modules.hrm.recruitment.jobapplication.JobApplicationRequest;
 import com.businessos.modules.hrm.recruitment.jobapplication.JobApplicationResponse;
+import com.businessos.enums.ApplicationStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;

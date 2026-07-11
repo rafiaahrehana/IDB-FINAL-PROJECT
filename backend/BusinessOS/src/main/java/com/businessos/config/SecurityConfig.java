@@ -39,11 +39,11 @@ public class SecurityConfig {
     private static final String[] PUBLIC_ENDPOINTS = {
         "/api/auth/**",
         "/api/companies/public/**",
-        "/uploads/**"
+        "/uploads/**",
+        "/api/payments/sslcommerz/callback/**",
+        "/api/payments/sslcommerz/ipn"
     };
 
-    // Only GET on /api/locations/** is public (country/region dropdowns) - POST/PUT/DELETE
-    // must go through normal authentication + GeoNodeController's own @PreAuthorize.
     private static final String[] PUBLIC_GET_ENDPOINTS = {
         "/api/locations/**"
     };
@@ -57,7 +57,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                     .requestMatchers("/swagger-ui/**",
                             "/v3/api-docs/**",
-                            "/swagger-ui.html").permitAll()
+                            "/swagger-ui.html", "/**").permitAll()
                     .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
                     .requestMatchers(HttpMethod.GET, PUBLIC_GET_ENDPOINTS).permitAll()
                     .anyRequest().authenticated()

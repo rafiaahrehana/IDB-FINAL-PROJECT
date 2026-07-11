@@ -16,14 +16,4 @@ public interface CustomRoleService {
     List<CustomRoleResponse> getAll();
 
     CustomRoleResponse getById(Long id);
-
-    List<String> getPermissions(Long roleId);
-
-    void setPermissions(Long roleId, List<String> permissionCodes);
-
-    List<String> getAllAvailablePermissions();
-
-    void assignToUser(Long roleId, Long userId);
-
-    void unassignFromUser(Long roleId, Long userId);
 }

@@ -19,30 +19,32 @@ export interface DashboardSummary {
   outstandingInvoiceAmount: number;
   walletBalance: number;
   walletCreditBalance: number;
-
-  // HRM / Projects / Tasks / Meetings
-  totalEmployees: number;
-  activeProjects: number;
-  openTasks: number;
-  meetingsToday: number;
-  projectProgress: number;
-  taskPending: number;
-  taskInProgress: number;
-  taskCompleted: number;
-  taskBlocked: number;
-  taskCancelled: number;
-  announcements: AnnouncementSummary[];
 }
 
-export interface AnnouncementSummary {
-  id: number;
-  title: string;
-  body?: string;
-  audience?: string;
-  published?: boolean;
-  priority?: number;
-  createdByName?: string;
-  createdAt?: string;
+// Mirrors backend PlatformSummaryResponse (GET /api/dashboard/platform-summary)
+export interface PlatformSummary {
+  totalCompanies: number;
+  activeCompanies: number;
+  trialCompanies: number;
+  suspendedCompanies: number;
+  pendingVerificationCompanies: number;
+  trialsExpiringWithin7Days: number;
+  freePlanCompanies: number;
+  starterPlanCompanies: number;
+  proPlanCompanies: number;
+  enterprisePlanCompanies: number;
+  totalPlatformUsers: number;
+  totalRevenue: number;
+  revenueThisMonth: number;
+}
+
+// Mirrors backend ClientSummaryResponse (GET /api/dashboard/client-summary)
+export interface ClientSummary {
+  pendingRequests: number;
+  inProgressRequests: number;
+  completedRequests: number;
+  unpaidInvoices: number;
+  outstandingInvoiceAmount: number;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -51,5 +53,13 @@ export class DashboardService {
 
   getSummary(): Observable<DashboardSummary> {
     return this.api.get<DashboardSummary>('/dashboard/summary');
+  }
+
+  getPlatformSummary(): Observable<PlatformSummary> {
+    return this.api.get<PlatformSummary>('/dashboard/platform-summary');
+  }
+
+  getClientSummary(): Observable<ClientSummary> {
+    return this.api.get<ClientSummary>('/dashboard/client-summary');
   }
 }

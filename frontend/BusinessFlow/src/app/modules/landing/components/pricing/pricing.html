@@ -1,0 +1,39 @@
+<section id="pricing" class="py-6 bg-light border-bottom">
+  <div class="container py-5">
+    <div class="text-center max-w-2xl mx-auto mb-5">
+      <h2 class="display-6 fw-bold text-dark slide-up">Simple, transparent pricing</h2>
+      <p class="text-muted slide-up" style="animation-delay: 0.1s;">No hidden fees. Pay only for what your team uses.</p>
+    </div>
+    
+    <div class="row g-4 align-items-center justify-content-center">
+      <div class="col-md-6 col-lg-4 slide-up" *ngFor="let plan of plans(); let i = index" [style.animation-delay]="(i * 0.1) + 's'">
+        <div class="card h-100 rounded-4 border p-4 p-xl-5 transition-all bg-white" 
+             [ngClass]="plan.highlighted ? 'border-primary shadow-lg position-relative' : 'border-light shadow-sm'">
+          
+          <div *ngIf="plan.highlighted" class="position-absolute top-0 start-50 translate-middle badge rounded-pill bg-primary-bos px-3 py-2">
+            Most Popular
+          </div>
+          
+          <h4 class="fw-bold text-dark mb-1">{{ plan.name }}</h4>
+          <p class="text-muted small mb-4">{{ plan.desc }}</p>
+          
+          <div class="mb-4">
+            <span class="display-5 fw-bold text-dark">{{ plan.price }}</span>
+            <span class="text-muted small ms-1">{{ plan.period }}</span>
+          </div>
+          
+          <button routerLink="/auth/register" class="btn w-100 rounded-3 py-2 mb-4 fw-medium" [ngClass]="plan.btnClass">
+            Get Started
+          </button>
+          
+          <ul class="list-unstyled m-0 d-flex flex-column gap-3 small">
+            <li *ngFor="let feature of plan.features" class="d-flex align-items-center gap-2">
+              <i class="bi bi-check-circle-fill text-primary-bos"></i>
+              <span class="text-secondary">{{ feature }}</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

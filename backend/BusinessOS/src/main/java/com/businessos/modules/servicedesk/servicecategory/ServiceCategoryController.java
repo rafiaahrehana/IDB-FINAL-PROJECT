@@ -37,6 +37,20 @@ public class ServiceCategoryController {
                 .collect(Collectors.toList()));
     }
 
+    /**
+     * Management listing including inactive categories - the public GET only returns
+     * active ones, which would make a disabled category impossible to re-enable.
+     */
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'SYSTEM_ADMIN', 'SUPPORT_MANAGER')")
+    @GetMapping("/all")
+    public ResponseEntity<List<ServiceCategoryResponse>> getAllIncludingInactive() {
+        return ResponseEntity.ok(
+            categoryRepository.findAllByOrderBySortOrderAsc()
+                .stream()
+                .map(ServiceCategoryMapper::toResponse)
+                .collect(Collectors.toList()));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<ServiceCategoryResponse> getById(@PathVariable Long id) {
         ServiceCategory category = categoryRepository.findById(id)
@@ -80,6 +94,7 @@ public class ServiceCategoryController {
         category.setDescription(request.getDescription());
         category.setIconUrl(request.getIconUrl());
         category.setSortOrder(request.getSortOrder());
+        categoryRepository.save(category);
         return ResponseEntity.ok(ServiceCategoryMapper.toResponse(category));
     }
 

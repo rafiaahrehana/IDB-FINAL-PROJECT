@@ -17,20 +17,10 @@ export class CoaService {
     return this.api.get<ChartOfAccount>(`${this.endpoint}/${id}`);
   }
   create(payload: Partial<ChartOfAccount>): Observable<ChartOfAccount> {
-    const request: any = { ...payload };
-    if (request.isHeaderAccount !== undefined) {
-      request.headerAccount = request.isHeaderAccount;
-      delete request.isHeaderAccount;
-    }
-    return this.api.post<ChartOfAccount>(this.endpoint, request);
+    return this.api.post<ChartOfAccount>(this.endpoint, payload);
   }
   update(id: number, payload: Partial<ChartOfAccount>): Observable<ChartOfAccount> {
-    const request: any = { ...payload };
-    if (request.isHeaderAccount !== undefined) {
-      request.headerAccount = request.isHeaderAccount;
-      delete request.isHeaderAccount;
-    }
-    return this.api.patch<ChartOfAccount>(`${this.endpoint}/${id}`, request);
+    return this.api.patch<ChartOfAccount>(`${this.endpoint}/${id}`, payload);
   }
   delete(id: number): Observable<void> {
     return this.api.delete<void>(`${this.endpoint}/${id}`);

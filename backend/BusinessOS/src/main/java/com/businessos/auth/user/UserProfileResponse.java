@@ -1,7 +1,7 @@
 package com.businessos.auth.user;
 
 import com.businessos.auth.role.enums.Role;
-import com.businessos.shared.location.LocationResponse;
+import com.businessos.shared.address.LocationResponse;
 import lombok.Builder;
 import lombok.Data;
 

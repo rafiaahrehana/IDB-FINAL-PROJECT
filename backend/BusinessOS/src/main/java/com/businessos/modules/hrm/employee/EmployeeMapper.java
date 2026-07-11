@@ -10,6 +10,12 @@ import org.springframework.stereotype.Component;
 @Component
 public class EmployeeMapper {
 
+    private final com.businessos.shared.address.LocationMapper locationMapper;
+
+    public EmployeeMapper(com.businessos.shared.address.LocationMapper locationMapper) {
+        this.locationMapper = locationMapper;
+    }
+
     public EmployeeResponse toDTO(Employee e) {
         User u = e.getUser();
         Department d = e.getDepartment();
@@ -38,6 +44,9 @@ public class EmployeeMapper {
         r.setEmploymentStatus(e.getEmploymentStatus());
         r.setGender(e.getGender());
         r.setDateOfBirth(e.getDateOfBirth());
+        r.setFatherName(e.getFatherName());
+        r.setMotherName(e.getMotherName());
+        r.setLocation(locationMapper.toResponse(e.getLocation()));
         r.setHireDate(e.getHireDate());
         r.setConfirmationDate(e.getConfirmationDate());
         r.setProbationEndDate(e.getProbationEndDate());
@@ -60,10 +69,6 @@ public class EmployeeMapper {
         r.setEmergencyContactRelation(e.getEmergencyContactRelation());
         r.setActive(e.isActive());
         r.setCreatedAt(e.getCreatedAt());
-        if (u != null && u.getCustomRole() != null) {
-            r.setCustomRoleId(u.getCustomRole().getId());
-            r.setCustomRoleName(u.getCustomRole().getName());
-        }
         return r;
     }
 }

@@ -16,10 +16,6 @@ public  class UserMapper {
         r.setEmailVerified(user.isEmailVerified());
         r.setLanguagePreference(user.getLanguagePreference());
         r.setCreatedAt(user.getCreatedAt());
-        if (user.getCustomRole() != null) {
-            r.setCustomRoleId(user.getCustomRole().getId());
-            r.setCustomRoleName(user.getCustomRole().getName());
-        }
         return r;
     }
 }

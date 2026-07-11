@@ -22,21 +22,13 @@ export class InvoiceService {
   create(payload: any): Observable<Invoice> {
     return this.api.post<Invoice>(this.endpoint, payload);
   }
-  update(id: number, payload: any): Observable<Invoice> {
-    return this.api.patch<Invoice>(`${this.endpoint}/${id}`, payload);
-  }
-  delete(id: number): Observable<void> {
-    return this.api.delete<void>(`${this.endpoint}/${id}`);
-  }
   send(id: number): Observable<Invoice> {
     return this.api.post<Invoice>(`${this.endpoint}/${id}/send`, {});
   }
-  // Backend marks an invoice paid via record-payment with the outstanding balance
-  markPaid(id: number, amount: number): Observable<Invoice> {
-    return this.api.post<Invoice>(`${this.endpoint}/${id}/record-payment?amount=${encodeURIComponent(amount)}`, {});
+  markPaid(id: number): Observable<Invoice> {
+    return this.api.post<Invoice>(`${this.endpoint}/${id}/mark-as-paid`, {});
   }
-  // Backend expects "amount" as a @RequestParam query param, not a JSON body
-  recordPayment(id: number, amount: number, method?: string): Observable<any> {
-    return this.api.post<any>(`${this.endpoint}/${id}/record-payment?amount=${encodeURIComponent(amount)}`, {});
+  recordPayment(id: number, amount: number, method: string): Observable<any> {
+    return this.api.post<any>(`${this.endpoint}/${id}/record-payment`, { amount, method });
   }
 }

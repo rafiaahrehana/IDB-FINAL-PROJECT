@@ -1,14 +1,18 @@
-<div class="container-fluid py-3">
-  <h4 class="mb-3">Support Messages</h4>
-  @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h4 class="page-title">Support Messages</h4>
+    </div>
+  </div>
+  @if (error) { <div class="badge-shadcn badge-shadcn-destructive py-2 px-3">{{ error }}</div> }
 
-  <div class="card mb-3"><div class="card-body py-2">
+  <div class="card-shadcn" style="margin-bottom: 1rem;"><div class="card-shadcn-content" style="padding: 0.5rem 1.5rem 1.5rem;">
     <div class="d-flex gap-2 align-items-end">
       <div>
-        <label class="form-label small mb-0">Ticket ID</label>
-        <input type="number" class="form-control form-control-sm" style="width:160px" [(ngModel)]="ticketId" (keyup.enter)="load()" />
+        <label class="field-label">Ticket ID</label>
+        <input type="number" class="input-shadcn input-shadcn-sm" style="width:160px" [(ngModel)]="ticketId" (keyup.enter)="load()" />
       </div>
-      <button class="btn btn-primary btn-sm" [disabled]="!ticketId" (click)="load()">Load</button>
+      <button class="btn-shadcn btn-shadcn-primary btn-shadcn-sm" [disabled]="!ticketId" (click)="load()">Load</button>
       <div class="form-check form-switch mb-0 ms-2">
         <input class="form-check-input" type="checkbox" id="showInternal" [(ngModel)]="showInternal" />
         <label class="form-check-label small" for="showInternal">Show internal notes</label>
@@ -19,9 +23,9 @@
   @if (loading) { <app-loader /> }
 
   @if (!loading && ticketId) {
-  <div class="card">
-    <div class="card-header py-2 fw-semibold">Ticket #{{ ticketId }} — Conversation</div>
-    <div class="card-body" style="max-height:420px; overflow-y:auto;">
+  <div class="card-shadcn">
+    <div class="card-shadcn-header" style="padding: 1rem 1.5rem;"><div class="card-shadcn-title" style="font-size: 0.9375rem;">Ticket #{{ ticketId }} — Conversation</div></div>
+    <div class="card-shadcn-content" style="max-height:420px; overflow-y:auto;">
       @for (m of external; track m.id) {
       <div class="border-bottom py-2">
         <div class="d-flex justify-content-between">
@@ -29,7 +33,7 @@
           <span class="text-muted small">{{ m.createdAt | date:'medium' }}</span>
         </div>
         <div class="small">{{ m.message }}</div>
-        @if (m.isResolution) { <span class="badge text-bg-success mt-1">Resolution</span> }
+        @if (m.isResolution) { <span class="badge-shadcn badge-shadcn-success mt-1">Resolution</span> }
         <button class="btn btn-link btn-sm p-0 text-danger" (click)="delete(m)">Delete</button>
       </div>
       }
@@ -38,7 +42,7 @@
       @if (showInternal) {
       <h6 class="small fw-semibold mt-3">Internal Notes</h6>
       @for (m of internal; track m.id) {
-      <div class="border-bottom py-2 bg-light-subtle">
+      <div class="border-bottom py-2">
         <div class="d-flex justify-content-between">
           <strong class="small">{{ m.sentByName || ('#' + m.sentById) }}</strong>
           <span class="text-muted small">{{ m.createdAt | date:'medium' }}</span>
@@ -50,10 +54,10 @@
       @if (!internal.length) { <p class="text-muted small mb-0">No internal notes.</p> }
       }
     </div>
-    <div class="card-footer">
+    <div class="card-shadcn-footer">
       <div class="input-group input-group-sm mb-2">
-        <input class="form-control" placeholder="Write a message..." [(ngModel)]="newMessage" (keyup.enter)="send()" />
-        <button class="btn btn-primary" [disabled]="!newMessage.trim()" (click)="send()">Send</button>
+        <input class="input-shadcn" placeholder="Write a message..." [(ngModel)]="newMessage" (keyup.enter)="send()" />
+        <button class="btn-shadcn btn-shadcn-primary" [disabled]="!newMessage.trim()" (click)="send()">Send</button>
       </div>
       <div class="form-check form-check-inline">
         <input class="form-check-input" type="checkbox" id="isInternalChk" [(ngModel)]="isInternal" />

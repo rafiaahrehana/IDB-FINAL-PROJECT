@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Payroll, CreatePayrollRequest, Employee } from '../../models/hrm.model';
@@ -41,6 +41,7 @@ export class PayrollPage implements OnInit {
   constructor(
     private payrollService: PayrollService,
     private employeeService: EmployeeService,
+    private cdr: ChangeDetectorRef,
   ) {
     const now = new Date();
     this.month = now.getMonth() + 1;
@@ -55,16 +56,19 @@ export class PayrollPage implements OnInit {
 
   load(): void {
     this.loading = true;
+    this.cdr.markForCheck();
     this.error = '';
     this.payrollService.listByPeriod(this.month, this.year, this.page, 50).subscribe({
       next: (res) => {
         this.payrolls = res.content;
         this.totalPages = res.totalPages;
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.error = 'Failed to load payroll';
         this.loading = false;
+        this.cdr.markForCheck();
       },
     });
   }
@@ -81,6 +85,7 @@ export class PayrollPage implements OnInit {
 
   save(): void {
     this.saving = true;
+    this.cdr.markForCheck();
     this.error = '';
     const payload: any = { ...this.form };
     Object.keys(payload).forEach((k) => {
@@ -89,6 +94,7 @@ export class PayrollPage implements OnInit {
     this.payrollService.create(payload).subscribe({
       next: () => {
         this.saving = false;
+        this.cdr.markForCheck();
         this.showForm = false;
         this.form = this.emptyForm();
         this.success = 'Payroll created';
@@ -96,6 +102,7 @@ export class PayrollPage implements OnInit {
       },
       error: (err) => {
         this.saving = false;
+        this.cdr.markForCheck();
         this.error = err?.error?.message || 'Failed to create payroll';
       },
     });

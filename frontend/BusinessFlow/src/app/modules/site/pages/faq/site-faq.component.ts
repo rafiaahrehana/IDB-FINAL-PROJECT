@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { SiteService } from '../../services/site.service';
 import { Faq } from '../../models/site.model';
 import { BreadcrumbComponent } from '../../components/breadcrumb/breadcrumb.component';
@@ -39,7 +39,10 @@ export class SiteFaqPage implements OnInit {
   private siteService = inject(SiteService);
   faqs: Faq[] = [];
   loading = true;
+
+  constructor(private cdr: ChangeDetectorRef) {}
+
   ngOnInit(): void {
-    this.siteService.getFaqs().subscribe(f => { this.faqs = f; this.loading = false; });
+    this.siteService.getFaqs().subscribe(f => { this.faqs = f; this.loading = false; this.cdr.markForCheck(); });
   }
 }

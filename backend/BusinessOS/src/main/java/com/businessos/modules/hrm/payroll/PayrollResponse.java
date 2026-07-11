@@ -1,5 +1,6 @@
 package com.businessos.modules.hrm.payroll;
 
+import com.businessos.enums.PayrollStatus;
 import lombok.Getter;
 import lombok.Setter;
 

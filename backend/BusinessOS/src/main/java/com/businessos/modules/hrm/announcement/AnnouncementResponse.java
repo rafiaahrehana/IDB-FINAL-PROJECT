@@ -1,5 +1,6 @@
 package com.businessos.modules.hrm.announcement;
 
+import com.businessos.enums.AnnouncementAudience;
 import lombok.Getter;
 import lombok.Setter;
 

@@ -11,43 +11,32 @@ export interface SupportTicket {
   assignedToAgentId?: number;
   assignedToAgentName?: string;
   assignedDate?: string;
-  firstResponseTime?: string;
-  resolutionTime?: string;
   firstResponseDeadline?: string;
   resolutionDeadline?: string;
   slaBreached: boolean;
   resolutionNotes?: string;
   closedDate?: string;
   satisfactionRating?: number;
-  satisfactionFeedback?: string;
   escalationLevel: number;
-  escalatedDate?: string;
-  clientId?: number;
-  clientName?: string;
   createdByName?: string;
   createdAt: string;
-  updatedAt?: string;
 }
 
 export interface SupportAgent {
   id: number;
   userId: number;
   fullName: string;
-  userName?: string;
   email?: string;
   department?: string;
   specialization?: string;
   status: string;
   totalTicketsHandled: number;
   avgResponseTimeMinutes: number;
-  avgResolutionTimeMinutes: number;
   satisfactionScore: number;
   acceptingTickets: boolean;
   maxConcurrentTickets: number;
   notes?: string;
-  lastActiveTime?: string;
   createdAt: string;
-  updatedAt?: string;
 }
 
 export interface SLAPolicy {

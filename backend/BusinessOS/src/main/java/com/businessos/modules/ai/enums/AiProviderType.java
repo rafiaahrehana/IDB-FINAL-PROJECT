@@ -4,5 +4,6 @@ public enum AiProviderType {
     GEMINI,
     CLAUDE,
     OPENAI,
+    GROQ,
     MOCK
 }

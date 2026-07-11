@@ -58,9 +58,9 @@ public class PerformanceReview extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String employeeComments;
 
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    @Builder.Default
     private ReviewStatus status = ReviewStatus.DRAFT;
 
     private LocalDate reviewDate;

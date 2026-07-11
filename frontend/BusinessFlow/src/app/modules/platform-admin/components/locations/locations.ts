@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { LocationService } from '../../../../shared/services/location.service';
@@ -45,7 +45,7 @@ export class Locations implements OnInit {
   showDeleteDialog = false;
   deleteTarget: GeoNodeDto | null = null;
 
-  constructor(private locationService: LocationService) {}
+  constructor(private locationService: LocationService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.loadCountries();
@@ -53,15 +53,18 @@ export class Locations implements OnInit {
 
   loadCountries(): void {
     this.loading = true;
+    this.cdr.markForCheck();
     this.error = '';
     this.locationService.getCountriesMaster().subscribe({
       next: (data) => {
         this.countries = data;
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error: (err) => {
         this.error = 'Failed to load countries';
         this.loading = false;
+        this.cdr.markForCheck();
         console.error(err);
       }
     });
@@ -163,6 +166,7 @@ export class Locations implements OnInit {
       return;
     }
     this.saving = true;
+    this.cdr.markForCheck();
     this.error = '';
 
     if (this.isEditMode && this.formNode.id) {
@@ -174,12 +178,14 @@ export class Locations implements OnInit {
         next: (res) => {
           this.success = 'Node updated successfully';
           this.saving = false;
+          this.cdr.markForCheck();
           this.showFormModal = false;
           this.refreshColumnAfterWrite(res.type, res);
         },
         error: (err) => {
           this.error = err?.error?.message || 'Failed to update node';
           this.saving = false;
+          this.cdr.markForCheck();
         }
       });
     } else {
@@ -193,12 +199,14 @@ export class Locations implements OnInit {
         next: (res) => {
           this.success = 'Node created successfully';
           this.saving = false;
+          this.cdr.markForCheck();
           this.showFormModal = false;
           this.refreshColumnAfterWrite(res.type, res);
         },
         error: (err) => {
           this.error = err?.error?.message || 'Failed to create node';
           this.saving = false;
+          this.cdr.markForCheck();
         }
       });
     }

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
@@ -44,7 +44,7 @@ export class Leaves implements OnInit {
   leaveTypes = LEAVE_TYPES;
   statuses = LEAVE_REQUEST_STATUSES;
 
-  constructor(private leaveService: LeaveService) {}
+  constructor(private leaveService: LeaveService, private cdr: ChangeDetectorRef) {}
 
   // LIFECYCLE HOOKS
   ngOnInit(): void {
@@ -55,13 +55,18 @@ export class Leaves implements OnInit {
   // LOAD LEAVE REQUESTS BASED ON CURRENT VIEW
   load(): void {
     this.loading = true;
+    this.cdr.markForCheck();
     this.error = '';
     const req = this.view === 'my'
       ? this.leaveService.listMine(this.page)
       : this.leaveService.list(this.page, 20, this.statusFilter || undefined);
     req.subscribe({
-      next: (res) => { this.requests = res.content; this.totalPages = res.totalPages; this.loading = false; },
-      error: () => { this.error = 'Failed to load leave requests'; this.loading = false; }
+      next: (res) => { this.requests = res.content; this.totalPages = res.totalPages; this.loading = false;
+        this.cdr.markForCheck();
+      },
+      error: () => { this.error = 'Failed to load leave requests'; this.loading = false;
+        this.cdr.markForCheck();
+      }
     });
   }
 

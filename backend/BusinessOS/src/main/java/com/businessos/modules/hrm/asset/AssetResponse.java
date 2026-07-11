@@ -1,5 +1,6 @@
 package com.businessos.modules.hrm.asset;
 
+import com.businessos.enums.AssetStatus;
 import lombok.Getter;
 import lombok.Setter;
 

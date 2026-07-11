@@ -111,9 +111,7 @@ export class LocationComponent implements OnInit {
       level4: [null, [Validators.required, LocationValidators.noWhitespaceValidator()]],
       streetAddress: [null, [Validators.required, LocationValidators.noWhitespaceValidator()]],
       postalCode: [null], // Optional
-      apartment: [null],
-      latitude: [null],
-      longitude: [null]
+      apartment: [null]
     });
   }
 

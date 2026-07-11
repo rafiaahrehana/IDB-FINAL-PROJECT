@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { SiteService } from '../../services/site.service';
 import { Service, ServiceCategory } from '../../models/site.model';
 import { BreadcrumbComponent } from '../../components/breadcrumb/breadcrumb.component';
@@ -56,11 +56,14 @@ export class SiteServicesPage implements OnInit {
   selectedCategory: string | null = null;
   loading = true;
 
+  constructor(private cdr: ChangeDetectorRef) {}
+
   ngOnInit(): void {
     this.siteService.getServices().subscribe(s => {
       this.services = s;
       this.filteredServices = s;
       this.loading = false;
+      this.cdr.markForCheck();
     });
   }
 

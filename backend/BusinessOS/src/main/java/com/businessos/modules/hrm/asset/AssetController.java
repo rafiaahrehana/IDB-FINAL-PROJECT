@@ -2,6 +2,7 @@ package com.businessos.modules.hrm.asset;
 
 import jakarta.validation.Valid;
 
+import com.businessos.enums.AssetStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;

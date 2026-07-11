@@ -1,5 +1,6 @@
 package com.businessos.modules.hrm.recruitment.offerletter;
 
+import com.businessos.enums.LetterType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;

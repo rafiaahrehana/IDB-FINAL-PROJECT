@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SalaryStructure, SalaryStructureRequest, Employee } from '../../models/hrm.model';
@@ -32,6 +32,7 @@ export class SalaryStructures implements OnInit {
   constructor(
     private salaryService: SalaryStructureService,
     private employeeService: EmployeeService,
+    private cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit(): void {
@@ -44,15 +45,18 @@ export class SalaryStructures implements OnInit {
       return;
     }
     this.loading = true;
+    this.cdr.markForCheck();
     this.error = '';
     this.salaryService.history(this.selectedEmployeeId).subscribe({
       next: (res) => {
         this.structures = res;
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.error = 'Failed to load salary structures';
         this.loading = false;
+        this.cdr.markForCheck();
       },
     });
   }
@@ -66,6 +70,7 @@ export class SalaryStructures implements OnInit {
 
   save(): void {
     this.saving = true;
+    this.cdr.markForCheck();
     this.error = '';
     const payload: any = { ...this.form };
     Object.keys(payload).forEach((k) => {
@@ -74,12 +79,14 @@ export class SalaryStructures implements OnInit {
     this.salaryService.create(payload).subscribe({
       next: () => {
         this.saving = false;
+        this.cdr.markForCheck();
         this.showForm = false;
         this.success = 'Salary structure created';
         this.load();
       },
       error: (err) => {
         this.saving = false;
+        this.cdr.markForCheck();
         this.error = err?.error?.message || 'Failed to create salary structure';
       },
     });

@@ -30,15 +30,9 @@ public class RegisterRequest {
     @NotBlank(message = "Subdomain is required")
     @Pattern(regexp = "^[a-z0-9]([a-z0-9-]{1,48}[a-z0-9])?$", message = "Subdomain must be 3-50 characters, lowercase letters, numbers and hyphens only")
     private String subdomain;
+    @Email(message = "Must be a valid email address")
+    private String companyEmail;
     @Size(max = 30)
     private String companyPhone;
-
-    private String country;
-    private String level1;
-    private String level2;
-    private String level3;
-    private String level4;
-    private String streetAddress;
-    private String postalCode;
-    private String apartment;
+    private com.businessos.shared.address.Location location;
 }

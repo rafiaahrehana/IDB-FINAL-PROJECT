@@ -3,7 +3,7 @@ package com.businessos.auth.user;
 import com.businessos.auth.role.entity.CustomRole;
 import com.businessos.auth.role.enums.Role;
 import com.businessos.core.base.BaseEntity;
-import com.businessos.shared.location.Location;
+import com.businessos.shared.address.Location;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
@@ -85,12 +85,12 @@ public class User extends BaseEntity implements UserDetails {
 
     @Override
     public boolean isAccountNonLocked() {
-        return active;
+        return true;
     }
 
     @Override
     public boolean isEnabled() {
-        return active && !isDeleted();
+        return !isDeleted();
     }
 
     public String getFullName() {

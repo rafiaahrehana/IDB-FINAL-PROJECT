@@ -1,81 +1,111 @@
-<div class="container-fluid py-3">
-  <h4 class="mb-3">General Ledger</h4>
-  @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
-  @if (success) { <div class="alert alert-success py-2">{{ success }}</div> }
-
-  <div class="card mb-3"><div class="card-body py-2">
-    <div class="row g-2 align-items-end">
-      <div class="col-md-3">
-        <label class="form-label small mb-0">Account</label>
-        <select class="form-select form-select-sm" [(ngModel)]="accountFilter">
-          <option [value]="undefined">All accounts</option>
-          @for (a of accounts; track a.id) { <option [value]="a.id">{{ a.accountCode }} - {{ a.accountName }}</option> }
-        </select>
-      </div>
-      <div class="col-md-2">
-        <label class="form-label small mb-0">Start Date</label>
-        <input type="date" class="form-control form-control-sm" [(ngModel)]="startDate" />
-      </div>
-      <div class="col-md-2">
-        <label class="form-label small mb-0">End Date</label>
-        <input type="date" class="form-control form-control-sm" [(ngModel)]="endDate" />
-      </div>
-      <div class="col-md-3 d-flex gap-2">
-        <button class="btn btn-primary btn-sm" (click)="applyFilters()">Filter</button>
-        <button class="btn btn-outline-secondary btn-sm" (click)="clearFilters()">Clear</button>
-      </div>
-      @if (accountBalance !== null) {
-      <div class="col-md-2 text-end">
-        <div class="small text-muted">Balance</div>
-        <div class="fw-bold">{{ accountBalance | currency }}</div>
-      </div>
-      }
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">General Ledger</h1>
+      <p class="page-subtitle">Financial records and accounting balances</p>
     </div>
-  </div></div>
+    <button class="btn-shadcn btn-shadcn-outline">
+      <i class="bi bi-download"></i> Export CSV
+    </button>
+  </div>
+
+  @if (error) {
+    <div class="card-shadcn" style="padding: 0.75rem 1rem; margin-bottom: 1rem; border-color: var(--color-destructive); background: #fef2f2;">
+      <span style="color: var(--color-destructive); font-size: 0.875rem;">{{ error }}</span>
+    </div>
+  }
+  @if (success) {
+    <div class="card-shadcn" style="padding: 0.75rem 1rem; margin-bottom: 1rem; border-color: #16a34a; background: #f0fdf4;">
+      <span style="color: #166534; font-size: 0.875rem;">{{ success }}</span>
+    </div>
+  }
+
+  <!-- Filters -->
+  <div class="card-shadcn" style="padding: 1rem; margin-bottom: 1rem;">
+    <div style="display: flex; gap: 0.75rem; align-items: center;">
+      <div style="position: relative; flex: 1; max-width: 320px;">
+        <i class="bi bi-search" style="position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); font-size: 14px; color: var(--color-muted-foreground);"></i>
+        <input type="text" class="input-shadcn" style="padding-left: 2.25rem;"
+               placeholder="Search accounts..." />
+      </div>
+      <select class="input-shadcn" style="width: auto;" [(ngModel)]="accountFilter">
+        <option [value]="undefined">All accounts</option>
+        @for (a of accounts; track a.id) { <option [value]="a.id">{{ a.accountName }}</option> }
+      </select>
+      <input type="date" class="input-shadcn" style="width: auto;" [(ngModel)]="startDate" />
+      <button class="btn-shadcn btn-shadcn-primary btn-shadcn-sm" (click)="applyFilters()">Filter</button>
+    </div>
+  </div>
 
   @if (loading) { <app-loader /> }
   @if (!loading && entries.length) {
-  <div class="card"><div class="table-responsive">
-    <table class="table table-hover table-sm align-middle mb-0">
-      <thead class="table-light"><tr><th>Date</th><th>Account</th><th>Description</th><th>Reference</th><th class="text-end">Debit</th><th class="text-end">Credit</th><th>Status</th><th></th></tr></thead>
-      <tbody>
-        @for (e of entries; track e.id) {
-        <tr>
-          <td class="small text-muted">{{ e.transactionDate | date:'mediumDate' }}</td>
-          <td class="small">{{ e.accountCode }} - {{ e.accountName }}</td>
-          <td class="small">{{ e.description || '-' }}</td>
-          <td class="small text-muted">{{ e.referenceNumber || (e.referenceType ? e.referenceType + ' #' + e.referenceId : '-') }}</td>
-          <td class="text-end">{{ e.debitAmount ? (e.debitAmount | currency) : '-' }}</td>
-          <td class="text-end">{{ e.creditAmount ? (e.creditAmount | currency) : '-' }}</td>
-          <td>
-            @if (e.isReconciled) { <span class="badge text-bg-success">Reconciled</span> }
-            @if (!e.isReconciled) { <span class="badge text-bg-secondary">Unreconciled</span> }
-          </td>
-          <td class="text-end">
-            @if (!e.isReconciled) { <button class="btn btn-outline-primary btn-sm" (click)="openReconcile(e)">Reconcile</button> }
-          </td>
-        </tr>
-        }
-      </tbody>
-    </table>
-  </div>
-  <div class="card-footer d-flex justify-content-end"><app-pagination [page]="page" [totalPages]="totalPages" (pageChange)="goToPage($event)" /></div>
-  </div>
+    <div class="card-shadcn">
+      <div class="table-shadcn-container">
+        <table class="table-shadcn">
+          <thead>
+            <tr>
+              <th>Account Name</th>
+              <th>Nature</th>
+              <th>Opening Balance</th>
+              <th>Total Debits</th>
+              <th>Total Credits</th>
+              <th>Closing Balance</th>
+              <th style="text-align: right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (e of entries; track e.id) {
+              <tr>
+                <td style="font-weight: 600;">{{ e.accountName }}</td>
+                <td style="color: var(--color-muted-foreground);">{{ e.description || 'Asset' }}</td>
+                <td>{{ 0 | currency }}</td>
+                <td style="color: #16a34a;">{{ e.debitAmount ? (e.debitAmount | currency) : '-' }}</td>
+                <td style="color: var(--color-destructive);">{{ e.creditAmount ? (e.creditAmount | currency) : '-' }}</td>
+                <td style="font-weight: 700;">{{ e.debitAmount || 0 | currency }}</td>
+                <td style="text-align: right;">
+                  <div style="display: flex; gap: 0.25rem; justify-content: flex-end;">
+                    <button class="btn-shadcn btn-shadcn-ghost btn-shadcn-icon btn-shadcn-sm" title="View">
+                      <i class="bi bi-eye"></i>
+                    </button>
+                    <button class="btn-shadcn btn-shadcn-ghost btn-shadcn-icon btn-shadcn-sm" title="Reconcile"
+                            (click)="openReconcile(e)"><i class="bi bi-pencil"></i></button>
+                    <button class="btn-shadcn btn-shadcn-ghost btn-shadcn-icon btn-shadcn-sm" title="Delete"
+                            style="color: var(--color-destructive);"><i class="bi bi-trash"></i></button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <div class="card-shadcn-footer" style="justify-content: space-between;">
+        <span style="font-size: 0.8125rem; color: var(--color-muted-foreground);">Showing {{ entries.length }} entries</span>
+        <app-pagination [page]="page" [totalPages]="totalPages" (pageChange)="goToPage($event)" />
+      </div>
+    </div>
   }
   @if (!loading && !entries.length) { <app-empty-state icon="bi-journal-text" message="No ledger entries found." /> }
 
   @if (reconcileTarget) {
-  <div class="modal d-block" style="background: rgba(0,0,0,.4)">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header"><h5 class="modal-title">Reconcile Entry</h5><button class="btn-close" (click)="reconcileTarget = null"></button></div>
-        <div class="modal-body"><input class="form-control" placeholder="Notes (optional)" [(ngModel)]="reconcileNotes" /></div>
-        <div class="modal-footer">
-          <button class="btn btn-secondary btn-sm" (click)="reconcileTarget = null">Cancel</button>
-          <button class="btn btn-primary btn-sm" (click)="doReconcile()">Confirm</button>
+    <div class="modal-overlay" (click)="reconcileTarget = null">
+      <div class="modal-dialog-shadcn" (click)="$event.stopPropagation()" style="max-width: 420px;">
+        <div class="modal-header-shadcn">
+          <h2 class="modal-title-shadcn">Reconcile Entry</h2>
+          <button class="btn-shadcn btn-shadcn-ghost btn-shadcn-icon btn-shadcn-sm" (click)="reconcileTarget = null">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+        <div class="modal-body-shadcn">
+          <div class="field-group">
+            <label class="field-label">Notes (optional)</label>
+            <input class="input-shadcn" placeholder="Reconciliation notes" [(ngModel)]="reconcileNotes" />
+          </div>
+        </div>
+        <div class="modal-footer-shadcn">
+          <button class="btn-shadcn btn-shadcn-outline" (click)="reconcileTarget = null">Cancel</button>
+          <button class="btn-shadcn btn-shadcn-primary" (click)="doReconcile()">Confirm</button>
         </div>
       </div>
     </div>
-  </div>
   }
 </div>

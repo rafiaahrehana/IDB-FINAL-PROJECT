@@ -2,6 +2,8 @@ export type EmploymentStatus =
   | 'PROBATION' | 'CONFIRMED' | 'ACTIVE' | 'ON_LEAVE'
   | 'SUSPENDED' | 'RESIGNED' | 'TERMINATED' | 'RETIRED';
 
+import { LocationRequest, LocationResponse } from '../../../shared/models/location.model';
+
 export type EmploymentType =
   | 'FULL_TIME' | 'PART_TIME' | 'CONTRACT' | 'INTERN' | 'CONSULTANT';
 
@@ -37,6 +39,9 @@ export interface Employee {
   employmentStatus: EmploymentStatus;
   gender?: Gender;
   dateOfBirth?: string;
+  fatherName?: string;
+  motherName?: string;
+  location?: LocationResponse;
   hireDate?: string;
   confirmationDate?: string;
   probationEndDate?: string;
@@ -54,14 +59,11 @@ export interface Employee {
   medicalAllowance?: number;
   transportAllowance?: number;
   bankName?: string;
-  bankAccountNumber?: string;
   emergencyContactName?: string;
   emergencyContactPhone?: string;
   emergencyContactRelation?: string;
   active: boolean;
   createdAt: string;
-  customRoleId?: number;
-  customRoleName?: string;
 }
 
 // CreateEmployeeRequest
@@ -82,9 +84,27 @@ export interface CreateEmployeeRequest {
   shiftId?: number;
   gender?: Gender;
   dateOfBirth?: string;
+  fatherName?: string;
+  motherName?: string;
+  location?: LocationRequest;
   hireDate?: string;
   basicSalary?: number;
-  customRoleId?: number;
+  nationalId?: string;
+  taxId?: string;
+  profileImageUrl?: string;
+  costCenter?: string;
+  officeLocation?: string;
+  confirmationDate?: string;
+  probationEndDate?: string;
+  contractEndDate?: string;
+  houseRent?: number;
+  medicalAllowance?: number;
+  transportAllowance?: number;
+  bankName?: string;
+  bankAccountNumber?: string;
+  emergencyContactName?: string;
+  emergencyContactPhone?: string;
+  emergencyContactRelation?: string;
 }
 
 // UpdateEmployeeRequest (all optional on backend)
@@ -95,6 +115,9 @@ export interface UpdateEmployeeRequest {
   employmentStatus?: EmploymentStatus;
   gender?: Gender;
   dateOfBirth?: string;
+  fatherName?: string;
+  motherName?: string;
+  location?: LocationRequest;
   hireDate?: string;
   confirmationDate?: string;
   probationEndDate?: string;
@@ -118,7 +141,6 @@ export interface UpdateEmployeeRequest {
   workPhone?: string;
   officialEmail?: string;
   profileImageUrl?: string;
-  customRoleId?: number;
 }
 
 // DepartmentResponse
@@ -625,8 +647,8 @@ export interface HrAssetRequest {
   warrantyExpiry?: string;
 }
 
-export type HrExpenseStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'PAID' | 'CANCELLED';
-export const HR_EXPENSE_STATUSES: HrExpenseStatus[] = ['PENDING', 'APPROVED', 'REJECTED', 'PAID', 'CANCELLED'];
+export type HrExpenseStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'REIMBURSED';
+export const HR_EXPENSE_STATUSES: HrExpenseStatus[] = ['PENDING', 'APPROVED', 'REJECTED', 'REIMBURSED'];
 
 export interface HrExpense {
   id: number;

@@ -3,8 +3,6 @@ package com.businessos.auth.role.dto;
 import lombok.Builder;
 import lombok.Getter;
 
-import java.util.List;
-
 @Getter
 @Builder
 public class CustomRoleResponse {
@@ -18,6 +16,4 @@ public class CustomRoleResponse {
     private Boolean active;
 
     private Boolean systemRole;
-
-    private List<String> permissions;
 }

@@ -4,7 +4,7 @@ import com.businessos.modules.hrm.recruitment.jobpost.JobPosting;
 import com.businessos.core.base.BaseEntity;
 import com.businessos.auth.user.User;
 import com.businessos.modules.company.Company;
-import com.businessos.modules.hrm.recruitment.ApplicationStatus;
+import com.businessos.enums.ApplicationStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
@@ -34,10 +34,9 @@ public class JobApplication extends BaseEntity {
     private String linkedInUrl;
     private String portfolioUrl;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
     @Builder.Default
-    private ApplicationStatus status = ApplicationStatus.APPLIED;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false) private ApplicationStatus status = ApplicationStatus.APPLIED;
 
     private LocalDateTime interviewAt;
     private String interviewNotes;

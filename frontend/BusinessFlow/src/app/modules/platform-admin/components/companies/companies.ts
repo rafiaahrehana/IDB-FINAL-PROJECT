@@ -1,4 +1,5 @@
-import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
@@ -10,6 +11,7 @@ import {
   SubscriptionPlan,
 } from '../../models/platform-admin.model';
 import { CompanyService } from '../../services/company.service';
+import { AuthService } from '../../../../core/services/auth.service';
 import { Pagination } from '../../../../shared/components/pagination/pagination';
 import { Loader } from '../../../../shared/components/loader/loader';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
@@ -31,6 +33,8 @@ export class Companies implements OnInit {
   success = '';
 
   statusFilter: CompanyStatus | '' = '';
+  planFilter: SubscriptionPlan | '' = '';
+  keyword = '';
 
   // KPI COUNTS DERIVED FROM CURRENT LOAD
   kpi = { total: 0, active: 0, trial: 0, suspended: 0 };
@@ -44,6 +48,8 @@ export class Companies implements OnInit {
 
   // PLAN CHANGE
   planTarget: Company | null = null;
+  planAmountPaid: number | null = null;
+  planTransactionRef = '';
   newPlan: SubscriptionPlan = 'STARTER';
 
   // STATUS CHANGE
@@ -52,13 +58,28 @@ export class Companies implements OnInit {
 
   deactivateTarget: Company | null = null;
 
+  // ACCESS COMPANY (impersonate)
+  impersonateTarget: Company | null = null;
+  impersonateReason = '';
+  impersonating = false;
+
   statuses = COMPANY_STATUSES;
   plans = SUBSCRIPTION_PLANS;
 
-  constructor(private companyService: CompanyService) {}
+  constructor(
+    private companyService: CompanyService,
+    private auth: AuthService,
+    private route: ActivatedRoute,
+    private cdr: ChangeDetectorRef,
+  ) {}
 
   // LIFECYCLE HOOKS
   ngOnInit(): void {
+    // Dashboard stat cards deep-link here pre-filtered (?status=TRIAL, ?plan=PRO ...)
+    const qp = this.route.snapshot.queryParamMap;
+    this.statusFilter = (qp.get('status') as CompanyStatus) || '';
+    this.planFilter = (qp.get('plan') as SubscriptionPlan) || '';
+    this.keyword = qp.get('keyword') || '';
     this.load();
     this.loadKpi();
   }
@@ -66,15 +87,17 @@ export class Companies implements OnInit {
   // LOAD COMPANIES (RESPECTS STATUS FILTER)
   load(): void {
     this.loading = true;
+    this.cdr.markForCheck();
     this.error = '';
-    this.companyService.list(this.page, 20, this.statusFilter || undefined).subscribe({
+    this.companyService.list(this.page, 20, this.statusFilter || undefined, this.planFilter || undefined, this.keyword || undefined).subscribe({
       next: (res) => {
         this.companies = res.content;
         this.totalPages = res.totalPages;
         this.totalCompanies = res.totalElements;
         this.loading = false;
+        this.cdr.markForCheck();
       },
-      error: () => { this.error = 'Failed to load companies'; this.loading = false; }
+      error: () => { this.error = 'Failed to load companies'; this.loading = false; this.cdr.markForCheck(); }
     });
   }
 
@@ -124,11 +147,17 @@ export class Companies implements OnInit {
   openPlanChange(c: Company): void {
     this.planTarget = c;
     this.newPlan = c.subscriptionPlan;
+    this.planAmountPaid = null;
+    this.planTransactionRef = '';
   }
 
   doChangePlan(): void {
     if (!this.planTarget) return;
-    this.companyService.changePlan(this.planTarget.id, this.newPlan).subscribe({
+    this.companyService.changePlan(
+      this.planTarget.id, this.newPlan,
+      this.planAmountPaid ?? undefined,
+      this.planTransactionRef || undefined
+    ).subscribe({
       next: () => { this.planTarget = null; this.success = 'Plan updated'; this.load(); },
       error: (err) => { this.error = err?.error?.message || 'Failed to change plan'; this.planTarget = null; }
     });
@@ -154,6 +183,29 @@ export class Companies implements OnInit {
     this.companyService.deactivate(this.deactivateTarget.id).subscribe({
       next: () => { this.deactivateTarget = null; this.success = 'Company deactivated'; this.load(); this.kpiReady = 0; this.loadKpi(); },
       error: () => { this.deactivateTarget = null; this.error = 'Cannot deactivate company'; }
+    });
+  }
+
+  // ACCESS COMPANY (impersonate)
+  openImpersonate(c: Company): void {
+    this.impersonateTarget = c;
+    this.impersonateReason = '';
+  }
+
+  doImpersonate(): void {
+    if (!this.impersonateTarget || !this.impersonateReason.trim()) return;
+    this.impersonating = true;
+    this.companyService.impersonate(this.impersonateTarget.id, this.impersonateReason.trim()).subscribe({
+      next: (res) => {
+        this.impersonating = false;
+        this.impersonateTarget = null;
+        this.auth.startImpersonation(res);
+      },
+      error: (err) => {
+        this.impersonating = false;
+        this.error = err?.error?.message || 'Failed to access company';
+        this.impersonateTarget = null;
+      }
     });
   }
 

@@ -1,0 +1,26 @@
+.bento-grid {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .bento-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 992px) {
+  .bento-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .bento-large {
+    grid-column: span 1;
+    grid-row: span 2;
+  }
+  
+  .bento-wide {
+    grid-column: span 2;
+  }
+}

@@ -16,6 +16,9 @@ public interface ClientInvoiceService {
     ClientInvoiceResponse update(Long id, ClientInvoiceRequest request);
     void sendInvoice(Long id);
     void recordPayment(Long id, java.math.BigDecimal amount);
+
+    /** System entry point (e.g. payment gateway callbacks) - no security context. */
+    void recordPaymentForCompany(Long companyId, Long id, java.math.BigDecimal amount);
     void markAsOverdue(Long id);
     List<ClientInvoiceResponse> getOverdueInvoices();
     void delete(Long id);

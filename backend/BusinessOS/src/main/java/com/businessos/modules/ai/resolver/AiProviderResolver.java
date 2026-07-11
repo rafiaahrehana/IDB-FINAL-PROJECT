@@ -2,6 +2,7 @@ package com.businessos.modules.ai.resolver;
 
 import com.businessos.modules.ai.client.ClaudeClient;
 import com.businessos.modules.ai.client.GeminiClient;
+import com.businessos.modules.ai.client.GroqClient;
 import com.businessos.modules.ai.client.MockAiClient;
 import com.businessos.modules.ai.client.OpenAiClient;
 import com.businessos.modules.ai.config.AiProperties;
@@ -25,6 +26,7 @@ public class AiProviderResolver {
     private final GeminiClient geminiClient;
     private final ClaudeClient claudeClient;
     private final OpenAiClient openAiClient;
+    private final GroqClient groqClient;
     private final MockAiClient mockAiClient;
     private final AiKeyDecryptor keyDecryptor;
 
@@ -70,6 +72,10 @@ public class AiProviderResolver {
                 openAiClient.setApiKey(apiKey);
                 yield new OpenAiProviderAdapter(openAiClient, config.getAiModel(), temp, maxTokens);
             }
+            case GROQ -> {
+                groqClient.setApiKey(apiKey);
+                yield new GroqProviderAdapter(groqClient, config.getAiModel(), temp, maxTokens);
+            }
             case MOCK -> new MockProviderAdapter(mockAiClient);
         };
     }
@@ -103,6 +109,15 @@ public class AiProviderResolver {
                     aiProperties.getOpenai().getMaxTokens()
                 );
             }
+            case GROQ -> {
+                groqClient.setApiKey(aiProperties.getGroq().getApiKey());
+                yield new GroqProviderAdapter(
+                    groqClient,
+                    aiProperties.getDefaultModel(),
+                    aiProperties.getGroq().getTemperature(),
+                    aiProperties.getGroq().getMaxTokens()
+                );
+            }
             case MOCK -> new MockProviderAdapter(mockAiClient);
         };
     }
@@ -116,6 +131,7 @@ public class AiProviderResolver {
             case GEMINI -> aiProperties.getGemini().getApiKey();
             case CLAUDE -> aiProperties.getClaude().getApiKey();
             case OPENAI -> aiProperties.getOpenai().getApiKey();
+            case GROQ   -> aiProperties.getGroq().getApiKey();
             case MOCK   -> "mock";
         };
     }

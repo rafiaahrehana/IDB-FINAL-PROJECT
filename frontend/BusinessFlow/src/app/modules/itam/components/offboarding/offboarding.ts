@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { OffboardingChecklist } from '../../models/itam.model';
@@ -30,7 +30,7 @@ export class Offboarding implements OnInit {
   selected: OffboardingChecklist | null = null;
   deleteTarget: OffboardingChecklist | null = null;
 
-  constructor(private offboardingService: OffboardingService) {}
+  constructor(private offboardingService: OffboardingService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.load();
@@ -39,15 +39,18 @@ export class Offboarding implements OnInit {
 
   load(): void {
     this.loading = true;
+    this.cdr.markForCheck();
     this.offboardingService.list(this.page).subscribe({
       next: (res) => {
         this.checklists = res.content;
         this.totalPages = res.totalPages;
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.error = 'Failed to load offboarding checklists';
         this.loading = false;
+        this.cdr.markForCheck();
       },
     });
   }

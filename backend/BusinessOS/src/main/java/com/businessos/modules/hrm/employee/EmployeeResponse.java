@@ -1,5 +1,7 @@
 package com.businessos.modules.hrm.employee;
 
+import com.businessos.enums.EmploymentStatus;
+import com.businessos.enums.EmploymentType;
 import com.businessos.enums.Gender;
 import lombok.Getter;
 import lombok.Setter;
@@ -31,6 +33,9 @@ public class EmployeeResponse {
     private EmploymentStatus employmentStatus;
     private Gender gender;
     private LocalDate dateOfBirth;
+    private String fatherName;
+    private String motherName;
+    private com.businessos.shared.address.LocationResponse location;
     private LocalDate hireDate;
     private LocalDate confirmationDate;
     private LocalDate probationEndDate;
@@ -53,6 +58,4 @@ public class EmployeeResponse {
     private String emergencyContactRelation;
     private boolean active;
     private LocalDateTime createdAt;
-    private Long customRoleId;
-    private String customRoleName;
 }

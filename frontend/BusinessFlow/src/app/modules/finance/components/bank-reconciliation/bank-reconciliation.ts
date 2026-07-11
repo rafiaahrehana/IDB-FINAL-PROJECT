@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { BankReconciliation, BankReconciliationRequest, ChartOfAccount } from '../../models/finance.model';
@@ -30,7 +30,7 @@ export class BankReconciliationPage implements OnInit {
   reconcileTarget: BankReconciliation | null = null;
   reconcileNotes = '';
 
-  constructor(private reconService: BankReconciliationService, private coaService: CoaService) {}
+  constructor(private reconService: BankReconciliationService, private coaService: CoaService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.coaService.list(0, 200).subscribe({ next: (res) => (this.accounts = res.content) });
@@ -44,15 +44,18 @@ export class BankReconciliationPage implements OnInit {
 
   load(): void {
     this.loading = true;
+    this.cdr.markForCheck();
     this.reconService.list(this.page).subscribe({
       next: (res) => {
         this.items = res.content;
         this.totalPages = res.totalPages;
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.error = 'Failed to load reconciliations';
         this.loading = false;
+        this.cdr.markForCheck();
       },
     });
   }

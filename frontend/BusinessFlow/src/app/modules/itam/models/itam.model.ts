@@ -64,15 +64,10 @@ export interface SoftwareLicense {
   nextRenewalDate?: string;
   renewalCost?: number;
   vendor?: string;
-  accountEmail?: string;
-  licenseUrl?: string;
-  installationLocation?: string;
-  estimatedUserCount?: number;
   notes?: string;
   active: boolean;
   autoRenew: boolean;
   createdAt: string;
-  updatedAt?: string;
 }
 
 export interface AssetAssignment {

@@ -17,6 +17,7 @@ public class CompanyMapper {
         r.setPrimaryColor(c.getPrimaryColor());
         r.setSecondaryColor(c.getSecondaryColor());
         r.setTagline(c.getTagline());
+        r.setPortalAbout(c.getPortalAbout());
         r.setStatus(c.getStatus());
         r.setSubscriptionPlan(c.getSubscriptionPlan());
         r.setSubscriptionStart(c.getSubscriptionStart());
@@ -38,6 +39,11 @@ public class CompanyMapper {
         r.setPrimaryColor(c.getPrimaryColor());
         r.setSecondaryColor(c.getSecondaryColor());
         r.setTagline(c.getTagline());
+        r.setPortalAbout(c.getPortalAbout());
+        r.setWebsite(c.getWebsite());
+        r.setLocation(c.getLocation());
+        r.setCompanyPhone(c.getCompanyPhone());
+        r.setCompanyEmail(c.getCompanyEmail());
         return r;
     }
 }

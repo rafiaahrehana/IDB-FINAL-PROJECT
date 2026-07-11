@@ -1,64 +1,302 @@
-<div class="container-fluid py-3">
-  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-    <h4 class="mb-0">Leads</h4>
-    <div class="d-flex gap-2">
-      <input type="text" class="form-control form-control-sm" style="width: 220px" placeholder="Search leads..."
-             [(ngModel)]="keyword" (keyup.enter)="page = 0; load()" />
-      <select class="form-select form-select-sm" style="width: 160px" [(ngModel)]="statusFilter" (change)="page = 0; load()">
-        <option value="">All statuses</option>
-        <option value="NEW">New</option>
-        <option value="CONTACTED">Contacted</option>
-        <option value="QUALIFIED">Qualified</option>
-        <option value="UNQUALIFIED">Unqualified</option>
-        <option value="CONVERTED">Converted</option>
-      </select>
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Leads</h1>
+      <p class="page-subtitle">Manage your sales pipeline and lead conversion</p>
+    </div>
+    <div style="display: flex; align-items: center; gap: 0.75rem;">
+      @if (activeCount !== null) {
+        <span class="badge-shadcn badge-shadcn-secondary">Active: {{ activeCount }}</span>
+      }
+      @if (myActiveCount !== null) {
+        <span class="badge-shadcn badge-shadcn-info">My active: {{ myActiveCount }}</span>
+      }
+      <button class="btn-shadcn btn-shadcn-primary" (click)="openCreate()">
+        <i class="bi bi-plus-lg"></i> New Lead
+      </button>
     </div>
   </div>
 
-  @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
-  @if (success) { <div class="alert alert-success py-2">{{ success }}</div> }
+  <!-- View Tabs -->
+  <div style="display: flex; gap: 0.25rem; margin-bottom: 1rem;">
+    @for (v of views; track v.key) {
+      <button class="btn-shadcn btn-shadcn-sm"
+              [class.btn-shadcn-primary]="view === v.key"
+              [class.btn-shadcn-ghost]="view !== v.key"
+              (click)="setView(v.key)">{{ v.label }}</button>
+    }
+  </div>
+
+  <!-- Filters -->
+  @if (view === 'ALL') {
+    <div class="card-shadcn" style="padding: 1rem; margin-bottom: 1rem;">
+      <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center;">
+        <div style="position: relative; flex: 1; min-width: 200px;">
+          <i class="bi bi-search" style="position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); font-size: 14px; color: var(--color-muted-foreground);"></i>
+          <input type="text" class="input-shadcn" style="padding-left: 2.25rem;"
+                 placeholder="Search leads..." [(ngModel)]="keyword" (keyup.enter)="page = 0; load()" />
+        </div>
+        <select class="input-shadcn" style="width: 160px; height: 2.5rem;"
+                [(ngModel)]="statusFilter" (change)="page = 0; load()">
+          <option value="">All statuses</option>
+          @for (s of statuses; track s) { <option [value]="s">{{ s.replaceAll('_', ' ') }}</option> }
+        </select>
+        <select class="input-shadcn" style="width: 150px; height: 2.5rem;"
+                [(ngModel)]="sourceFilter" (change)="page = 0; load()">
+          <option value="">All sources</option>
+          @for (s of sources; track s) { <option [value]="s">{{ s.replaceAll('_', ' ') }}</option> }
+        </select>
+        <select class="input-shadcn" style="width: 150px; height: 2.5rem;"
+                [(ngModel)]="priorityFilter" (change)="page = 0; load()">
+          <option value="">All priorities</option>
+          @for (p of priorities; track p) { <option [value]="p">{{ p }}</option> }
+        </select>
+      </div>
+    </div>
+  }
+
+  @if (error) {
+    <div class="card-shadcn" style="padding: 0.75rem 1rem; margin-bottom: 1rem; border-color: var(--color-destructive); background: #fef2f2;">
+      <span style="color: var(--color-destructive); font-size: 0.875rem;">
+        <i class="bi bi-exclamation-circle me-1"></i>{{ error }}
+      </span>
+    </div>
+  }
+  @if (success) {
+    <div class="card-shadcn" style="padding: 0.75rem 1rem; margin-bottom: 1rem; border-color: #16a34a; background: #f0fdf4;">
+      <span style="color: #166534; font-size: 0.875rem;">
+        <i class="bi bi-check-circle me-1"></i>{{ success }}
+      </span>
+    </div>
+  }
   @if (loading) { <app-loader /> }
 
   @if (!loading && leads.length) {
-  <div class="card">
-    <div class="table-responsive">
-      <table class="table table-hover table-sm align-middle mb-0">
-        <thead class="table-light">
-          <tr>
-            <th>Contact</th><th>Company</th><th>Email</th><th>Status</th>
-            <th>Source</th><th class="text-end">Est. Value</th><th>Assigned To</th><th></th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (lead of leads; track lead.id) {
-          <tr>
-            <td>{{ lead.contactName }}</td>
-            <td>{{ lead.companyName || '-' }}</td>
-            <td>{{ lead.email || '-' }}</td>
-            <td><span class="badge text-bg-secondary">{{ lead.status }}</span></td>
-            <td>{{ lead.source }}</td>
-            <td class="text-end">{{ lead.estimatedValue != null ? (lead.estimatedValue | currency) : '-' }}</td>
-            <td>{{ lead.assignedToName || '-' }}</td>
-            <td class="text-end">
-              @if (!lead.converted) {
-              <button class="btn btn-outline-success btn-sm me-1" (click)="convert(lead)">
-                <i class="bi bi-arrow-repeat"></i> Convert
-              </button>
-              }
-              <button class="btn btn-outline-primary btn-sm" [disabled]="!lead.converted" (click)="createOpportunity(lead)">
-                <i class="bi bi-graph-up-arrow"></i> Opportunity
-              </button>
-            </td>
-          </tr>
-          }
-        </tbody>
-      </table>
+    <div class="card-shadcn">
+      <div class="table-shadcn-container">
+        <table class="table-shadcn">
+          <thead>
+            <tr>
+              <th>Contact</th>
+              <th>Company</th>
+              <th>Email</th>
+              <th>Status</th>
+              <th>Source</th>
+              <th style="text-align: right;">Est. Value</th>
+              <th>Assigned To</th>
+              <th style="text-align: right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (lead of leads; track lead.id) {
+              <tr>
+                <td style="font-weight: 500;">{{ lead.contactName }}</td>
+                <td>{{ lead.companyName || '-' }}</td>
+                <td style="color: var(--color-muted-foreground);">{{ lead.email || '-' }}</td>
+                <td>
+                  <span class="badge-shadcn"
+                        [class.badge-shadcn-default]="lead.status === 'NEW'"
+                        [class.badge-shadcn-info]="lead.status === 'CONTACTED'"
+                        [class.badge-shadcn-success]="lead.status === 'QUALIFIED' || lead.status === 'WON'"
+                        [class.badge-shadcn-warning]="lead.status === 'PROPOSAL_SENT' || lead.status === 'NEGOTIATING'"
+                        [class.badge-shadcn-destructive]="lead.status === 'LOST'"
+                        [class.badge-shadcn-secondary]="lead.status === 'UNQUALIFIED'">
+                    {{ lead.status.replaceAll('_', ' ') }}
+                  </span>
+                </td>
+                <td style="color: var(--color-muted-foreground);">{{ lead.source }}</td>
+                <td style="text-align: right; font-weight: 500;">{{ lead.estimatedValue != null ? (lead.estimatedValue | currency) : '-' }}</td>
+                <td>{{ lead.assignedToName || '-' }}</td>
+                <td style="text-align: right;">
+                  <div style="display: flex; gap: 0.25rem; justify-content: flex-end;">
+                    @if (!lead.converted) {
+                      <button class="btn-shadcn btn-shadcn-ghost btn-shadcn-icon btn-shadcn-sm" style="color: #16a34a;"
+                              (click)="convert(lead)" title="Convert to client">
+                        <i class="bi bi-arrow-repeat"></i>
+                      </button>
+                    }
+                    <button class="btn-shadcn btn-shadcn-ghost btn-shadcn-icon btn-shadcn-sm"
+                            [disabled]="!lead.converted" (click)="createOpportunity(lead)" title="Create opportunity">
+                      <i class="bi bi-graph-up-arrow"></i>
+                    </button>
+                    <button class="btn-shadcn btn-shadcn-ghost btn-shadcn-icon btn-shadcn-sm" (click)="openActivities(lead)" title="Activities">
+                      <i class="bi bi-clock-history"></i>
+                    </button>
+                    <button class="btn-shadcn btn-shadcn-ghost btn-shadcn-icon btn-shadcn-sm" (click)="openEdit(lead)" title="Edit">
+                      <i class="bi bi-pencil"></i>
+                    </button>
+                    <button class="btn-shadcn btn-shadcn-ghost btn-shadcn-icon btn-shadcn-sm" style="color: var(--color-destructive);"
+                            (click)="deleteTarget = lead" title="Delete">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <div class="card-shadcn-footer" style="justify-content: flex-end;">
+        <app-pagination [page]="page" [totalPages]="totalPages" (pageChange)="goToPage($event)" />
+      </div>
     </div>
-    <div class="card-footer d-flex justify-content-end">
-      <app-pagination [page]="page" [totalPages]="totalPages" (pageChange)="goToPage($event)" />
-    </div>
-  </div>
   }
 
   @if (!loading && !leads.length) { <app-empty-state icon="bi-person-plus" message="No leads found." /> }
+
+  <!-- Create / Edit modal -->
+  @if (showForm) {
+    <div class="modal-overlay" (click)="showForm = false">
+      <div class="modal-dialog-shadcn" (click)="$event.stopPropagation()" style="max-width: 640px;">
+        <div class="modal-header-shadcn">
+          <h2 class="modal-title-shadcn">{{ editing ? 'Edit Lead' : 'New Lead' }}</h2>
+          <button class="btn-shadcn btn-shadcn-ghost btn-shadcn-icon btn-shadcn-sm" (click)="showForm = false">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+        <div class="modal-body-shadcn">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="field-group">
+              <label class="field-label">Contact Name <span style="color: var(--color-destructive);">*</span></label>
+              <input class="input-shadcn" [(ngModel)]="form.contactName" maxlength="150" placeholder="John Smith" />
+            </div>
+            <div class="field-group">
+              <label class="field-label">Company</label>
+              <input class="input-shadcn" [(ngModel)]="form.companyName" maxlength="150" placeholder="Acme Inc." />
+            </div>
+            <div class="field-group">
+              <label class="field-label">Email</label>
+              <input type="email" class="input-shadcn" [(ngModel)]="form.email" maxlength="255" placeholder="john@acme.com" />
+            </div>
+            <div class="field-group">
+              <label class="field-label">Phone</label>
+              <input class="input-shadcn" [(ngModel)]="form.phone" maxlength="30" placeholder="+1 555 0000" />
+            </div>
+            <div class="field-group">
+              <label class="field-label">Industry</label>
+              <input class="input-shadcn" [(ngModel)]="form.industry" maxlength="100" placeholder="Technology" />
+            </div>
+            <div class="field-group">
+              <label class="field-label">Job Title</label>
+              <input class="input-shadcn" [(ngModel)]="form.jobTitle" maxlength="100" placeholder="CTO" />
+            </div>
+            <div class="field-group">
+              <label class="field-label">Status</label>
+              <select class="input-shadcn" [(ngModel)]="form.status">
+                @for (s of statuses; track s) { <option [value]="s">{{ s.replaceAll('_', ' ') }}</option> }
+              </select>
+            </div>
+            <div class="field-group">
+              <label class="field-label">Source</label>
+              <select class="input-shadcn" [(ngModel)]="form.source">
+                @for (s of sources; track s) { <option [value]="s">{{ s.replaceAll('_', ' ') }}</option> }
+              </select>
+            </div>
+            <div class="field-group">
+              <label class="field-label">Priority</label>
+              <select class="input-shadcn" [(ngModel)]="form.priority">
+                @for (p of priorities; track p) { <option [value]="p">{{ p }}</option> }
+              </select>
+            </div>
+            <div class="field-group">
+              <label class="field-label">Estimated Value</label>
+              <input type="number" min="0" step="0.01" class="input-shadcn" [(ngModel)]="form.estimatedValue" placeholder="0.00" />
+            </div>
+            <div class="field-group">
+              <label class="field-label">Expected Close</label>
+              <input type="date" class="input-shadcn" [(ngModel)]="form.expectedCloseDate" />
+            </div>
+            <div class="field-group">
+              <label class="field-label">Assigned To</label>
+              <select class="input-shadcn" [(ngModel)]="form.assignedToId">
+                <option [ngValue]="null">Unassigned</option>
+                @for (e of employees; track e.id) { <option [ngValue]="e.id">{{ e.firstName }} {{ e.lastName }}</option> }
+              </select>
+            </div>
+            <div class="field-group" style="grid-column: 1 / -1;">
+              <label class="field-label">Notes</label>
+              <textarea class="textarea-shadcn" rows="3" [(ngModel)]="form.notes" maxlength="5000" placeholder="Additional notes about this lead..."></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer-shadcn">
+          <button class="btn-shadcn btn-shadcn-outline" (click)="showForm = false">Cancel</button>
+          <button class="btn-shadcn btn-shadcn-primary" (click)="save()" [disabled]="saving">
+            @if (saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
+            {{ editing ? 'Save Changes' : 'Create Lead' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Activities modal -->
+  @if (activityTarget) {
+    <div class="modal-overlay" (click)="activityTarget = null">
+      <div class="modal-dialog-shadcn" (click)="$event.stopPropagation()" style="max-width: 700px; max-height: 80vh;">
+        <div class="modal-header-shadcn">
+          <h2 class="modal-title-shadcn">Activities &middot; {{ activityTarget.contactName }}</h2>
+          <button class="btn-shadcn btn-shadcn-ghost btn-shadcn-icon btn-shadcn-sm" (click)="activityTarget = null">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+        <div class="modal-body-shadcn" style="overflow-y: auto;">
+          <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap;">
+            <select class="input-shadcn" style="width: 140px; height: 2.5rem;" [(ngModel)]="newLeadActivity.type">
+              @for (t of activityTypes; track t) { <option [value]="t">{{ t.replaceAll('_', ' ') }}</option> }
+            </select>
+            <input class="input-shadcn" style="flex: 1; height: 2.5rem;" placeholder="Subject *"
+                   [(ngModel)]="newLeadActivity.subject" (keyup.enter)="logLeadActivity()" />
+            <button class="btn-shadcn btn-shadcn-primary btn-shadcn-sm" (click)="logLeadActivity()">Log</button>
+          </div>
+          <input class="input-shadcn" style="width: 100%; height: 2.5rem; margin-bottom: 1rem;"
+                 placeholder="Description (optional)" [(ngModel)]="newLeadActivity.description" />
+
+          @if (activitiesLoading) { <app-loader /> }
+          @for (activity of leadActivities; track activity.id) {
+            <div style="padding: 0.75rem 0; border-bottom: 1px solid var(--color-border);">
+              <div style="display: flex; align-items: flex-start; gap: 0.5rem;">
+                <div style="flex: 1;">
+                  <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+                    <span class="badge-shadcn badge-shadcn-secondary">{{ activity.type.replaceAll('_', ' ') }}</span>
+                    <span style="font-weight: 500; font-size: 0.875rem;">{{ activity.subject }}</span>
+                    @if (activity.systemGenerated) {
+                      <span class="badge-shadcn badge-shadcn-outline" style="font-size: 0.625rem;">system</span>
+                    }
+                  </div>
+                  <div style="font-size: 0.75rem; color: var(--color-muted-foreground);">
+                    {{ activity.activityDate | date:'medium' }}
+                    @if (activity.performedByName) { &middot; {{ activity.performedByName }} }
+                  </div>
+                  @if (activity.description) {
+                    <div style="font-size: 0.8125rem; margin-top: 0.25rem;">{{ activity.description }}</div>
+                  }
+                </div>
+                @if (!activity.systemGenerated) {
+                  <button class="btn-shadcn btn-shadcn-ghost btn-shadcn-icon btn-shadcn-sm"
+                          style="color: var(--color-destructive); flex-shrink: 0;"
+                          (click)="deleteLeadActivity(activity)" title="Delete">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                }
+              </div>
+            </div>
+          }
+          @if (!activitiesLoading && !leadActivities.length) {
+            <div style="text-align: center; padding: 1.5rem; color: var(--color-muted-foreground); font-size: 0.8125rem;">
+              No activities logged yet.
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  <app-confirm-dialog
+    [visible]="!!deleteTarget"
+    title="Delete Lead"
+    [message]="'Delete lead ' + (deleteTarget?.contactName || '') + '? This cannot be undone.'"
+    confirmLabel="Delete"
+    (confirmed)="confirmDelete()"
+    (cancelled)="deleteTarget = null" />
 </div>

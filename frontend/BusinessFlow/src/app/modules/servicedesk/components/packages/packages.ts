@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
@@ -10,6 +10,7 @@ import {
   SUBSCRIPTION_STATUSES,
   SubscriptionStatus,
 } from '../../models/servicedesk.model';
+import { GatewayPaymentService } from '../../../../core/services/gateway-payment.service';
 import { ServicePackageService } from '../../services/service-package.service';
 import { CompanyServiceService } from '../../services/company-service.service';
 import { Pagination } from '../../../../shared/components/pagination/pagination';
@@ -51,7 +52,9 @@ export class Packages implements OnInit {
 
   constructor(
     private packageService: ServicePackageService,
-    private serviceService: CompanyServiceService
+    private gatewayPayment: GatewayPaymentService,
+    private serviceService: CompanyServiceService,
+    private cdr: ChangeDetectorRef,
   ) {}
 
   // LIFECYCLE HOOKS
@@ -68,16 +71,17 @@ export class Packages implements OnInit {
   // LOAD BASED ON TAB
   load(): void {
     this.loading = true;
+    this.cdr.markForCheck();
     this.error = '';
     if (this.tab === 'packages') {
       this.packageService.list(this.page).subscribe({
-        next: (res) => { this.packages = res.content; this.totalPages = res.totalPages; this.loading = false; },
-        error: () => { this.error = 'Failed to load'; this.loading = false; }
+        next: (res) => { this.packages = res.content; this.totalPages = res.totalPages; this.loading = false; this.cdr.markForCheck(); },
+        error: () => { this.error = 'Failed to load'; this.loading = false; this.cdr.markForCheck(); }
       });
     } else {
       this.packageService.listSubscriptions(this.page).subscribe({
-        next: (res) => { this.subscriptions = res.content; this.totalPages = res.totalPages; this.loading = false; },
-        error: () => { this.error = 'Failed to load'; this.loading = false; }
+        next: (res) => { this.subscriptions = res.content; this.totalPages = res.totalPages; this.loading = false; this.cdr.markForCheck(); },
+        error: () => { this.error = 'Failed to load'; this.loading = false; this.cdr.markForCheck(); }
       });
     }
   }
@@ -171,6 +175,17 @@ export class Packages implements OnInit {
       next: () => { this.success = 'Subscription activated'; this.load(); },
       error: (err) => this.error = err?.error?.message || 'Failed to activate'
     });
+  }
+
+  // SSLCommerz checkout for a pending subscription; on validated success the
+  // backend activates it (activateForCompany) and redirects to /payment-result
+  payOnline(s: PackageSubscription): void {
+    if (!s.pricePaid || s.pricePaid <= 0) {
+      this.error = 'This subscription has no payable amount - use Activate instead';
+      return;
+    }
+    this.gatewayPayment.redirectToGateway('PACKAGE_SUBSCRIPTION', s.id, s.pricePaid,
+      (msg) => (this.error = msg));
   }
 
   suspendSubscription(s: PackageSubscription): void {

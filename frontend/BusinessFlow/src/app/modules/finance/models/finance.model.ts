@@ -11,7 +11,6 @@ export interface ChartOfAccount {
   description?: string;
   notes?: string;
   createdAt: string;
-  updatedAt?: string;
 }
 
 export interface Expense {
@@ -31,35 +30,40 @@ export interface Expense {
   submittedAt?: string;
   notes?: string;
   createdAt: string;
-  updatedAt?: string;
-  title?: string;
-  currency?: string;
-  employeeId?: number;
-  referenceNumber?: string;
-  reimbursedDate?: string;
-  reimbursementMethod?: string;
 }
 
 export interface Invoice {
   id: number;
-  companyId: number;
   invoiceNumber: string;
-  clientName: string;
-  invoiceDate?: string;
-  dueDate?: string;
+  status: string;
+  type: string;
   subtotal: number;
+  taxRate: number;
   taxAmount: number;
+  discountAmount: number;
   totalAmount: number;
   paidAmount: number;
-  balanceAmount: number;
-  status: string;
-  paymentTerms?: string;
-  description?: string;
+  outstandingAmount: number;
+  dueDate?: string;
+  issuedAt?: string;
+  paidAt?: string;
   notes?: string;
-  sentDate?: string;
-  paidDate?: string;
+  clientId: number;
+  clientName?: string;
+  serviceRequestId?: number;
+  serviceRequestTitle?: string;
+  createdByName?: string;
+  payments?: Payment[];
   createdAt: string;
-  updatedAt?: string;
+}
+
+export interface Payment {
+  id: number;
+  amount: number;
+  method: string;
+  status: string;
+  reference?: string;
+  paidAt: string;
 }
 
 // NOTE: Vendor and VendorPayment were removed - there is no separate Vendor entity in the
@@ -122,7 +126,6 @@ export interface PaymentReceiptRequest {
 
 export interface GeneralLedgerEntry {
   id: number;
-  companyId: number;
   transactionDate: string;
   accountId: number;
   accountName: string;
@@ -142,7 +145,6 @@ export interface GeneralLedgerEntry {
 
 export interface BankReconciliation {
   id: number;
-  companyId?: number;
   bankAccountId: number;
   bankAccountName?: string;
   reconciliationDate: string;

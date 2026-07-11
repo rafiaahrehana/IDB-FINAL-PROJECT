@@ -1,0 +1,337 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Dashboard</h1>
+      <p class="page-subtitle">
+        @if (isCompanyRole()) { Live overview of your business }
+        @else if (isPlatformRole()) { Platform management overview }
+        @else { Welcome back }
+      </p>
+    </div>
+    @if (realtimeMetrics()) {
+      <div class="card-shadcn" style="padding: 0.5rem 1rem;">
+        <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; color: var(--color-muted-foreground);">
+          <span style="width: 6px; height: 6px; border-radius: 9999px; background: var(--color-success); animation: pulse 2s infinite;"></span>
+          Live
+          <span style="font-weight: 600; color: var(--color-foreground);">{{ realtimeMetrics().activeUsers || 0 }} users online</span>
+        </div>
+      </div>
+    }
+  </div>
+
+  @if (loading()) {
+    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem;">
+      @for (i of [1,2,3,4]; track i) {
+        <div class="skeleton-shadcn" style="height: 8rem;"></div>
+      }
+    </div>
+  }
+
+  <!-- Company View -->
+  @if (isCompanyRole() && summary()) {
+    <div style="margin-bottom: 1.5rem;">
+      <h3 style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-muted-foreground); margin-bottom: 0.75rem;">CRM</h3>
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem;">
+        <a routerLink="/crm/leads" class="card-shadcn" style="cursor: pointer; text-decoration: none; padding: 1.25rem;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+            <span style="font-size: 0.8125rem; color: var(--color-muted-foreground);">Total Leads</span>
+            <span style="width: 2rem; height: 2rem; border-radius: var(--radius-md); background: #f5f3ff; display: flex; align-items: center; justify-content: center;">
+              <i class="bi bi-people" style="color: var(--color-primary); font-size: 16px;"></i>
+            </span>
+          </div>
+          <div style="font-size: 1.5rem; font-weight: 700; letter-spacing: -0.025em;">{{ summary()!.totalLeads || 0 }}</div>
+          <div style="font-size: 0.75rem; color: var(--color-muted-foreground); margin-top: 0.25rem;">{{ summary()!.newLeads || 0 }} new, {{ summary()!.qualifiedLeads || 0 }} qualified</div>
+        </a>
+
+        <a routerLink="/crm/clients" class="card-shadcn" style="cursor: pointer; text-decoration: none; padding: 1.25rem;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+            <span style="font-size: 0.8125rem; color: var(--color-muted-foreground);">Accounts</span>
+            <span style="width: 2rem; height: 2rem; border-radius: var(--radius-md); background: #ecfeff; display: flex; align-items: center; justify-content: center;">
+              <i class="bi bi-building" style="color: #0891b2; font-size: 16px;"></i>
+            </span>
+          </div>
+          <div style="font-size: 1.5rem; font-weight: 700; letter-spacing: -0.025em;">{{ summary()!.totalClients || 0 }}</div>
+        </a>
+
+        <a routerLink="/crm/pipeline" class="card-shadcn" style="cursor: pointer; text-decoration: none; padding: 1.25rem;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+            <span style="font-size: 0.8125rem; color: var(--color-muted-foreground);">Open Opportunities</span>
+            <span style="width: 2rem; height: 2rem; border-radius: var(--radius-md); background: #f0fdf4; display: flex; align-items: center; justify-content: center;">
+              <i class="bi bi-kanban" style="color: #16a34a; font-size: 16px;"></i>
+            </span>
+          </div>
+          <div style="font-size: 1.5rem; font-weight: 700; letter-spacing: -0.025em;">{{ summary()!.openOpportunities || 0 }}</div>
+          <div style="font-size: 0.75rem; color: var(--color-muted-foreground); margin-top: 0.25rem;">{{ fmt(summary()!.pipelineValue) }} pipeline</div>
+        </a>
+
+        <a routerLink="/crm/pipeline" class="card-shadcn" style="cursor: pointer; text-decoration: none; padding: 1.25rem;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+            <span style="font-size: 0.8125rem; color: var(--color-muted-foreground);">Weighted Forecast</span>
+            <span style="width: 2rem; height: 2rem; border-radius: var(--radius-md); background: #fef3c7; display: flex; align-items: center; justify-content: center;">
+              <i class="bi bi-graph-up" style="color: #d97706; font-size: 16px;"></i>
+            </span>
+          </div>
+          <div style="font-size: 1.5rem; font-weight: 700; letter-spacing: -0.025em;">{{ fmt(summary()!.weightedForecast) }}</div>
+        </a>
+      </div>
+    </div>
+
+    <div style="margin-bottom: 1.5rem;">
+      <h3 style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-muted-foreground); margin-bottom: 0.75rem;">Servicedesk & Support</h3>
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem;">
+        <a routerLink="/servicedesk/requests" class="card-shadcn" style="cursor: pointer; text-decoration: none; padding: 1.25rem;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+            <span style="font-size: 0.8125rem; color: var(--color-muted-foreground);">Pending Requests</span>
+            <span style="width: 2rem; height: 2rem; border-radius: var(--radius-md); background: #fef3c7; display: flex; align-items: center; justify-content: center;">
+              <i class="bi bi-clock" style="color: #d97706; font-size: 16px;"></i>
+            </span>
+          </div>
+          <div style="font-size: 1.5rem; font-weight: 700;">{{ summary()!.pendingRequests || 0 }}</div>
+        </a>
+
+        <a routerLink="/servicedesk/requests" class="card-shadcn" style="cursor: pointer; text-decoration: none; padding: 1.25rem;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+            <span style="font-size: 0.8125rem; color: var(--color-muted-foreground);">In Progress</span>
+            <span style="width: 2rem; height: 2rem; border-radius: var(--radius-md); background: #dbeafe; display: flex; align-items: center; justify-content: center;">
+              <i class="bi bi-arrow-repeat" style="color: #2563eb; font-size: 16px;"></i>
+            </span>
+          </div>
+          <div style="font-size: 1.5rem; font-weight: 700;">{{ summary()!.inProgressRequests || 0 }}</div>
+        </a>
+
+        <a routerLink="/servicedesk/requests" class="card-shadcn" style="cursor: pointer; text-decoration: none; padding: 1.25rem;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+            <span style="font-size: 0.8125rem; color: var(--color-muted-foreground);">SLA Breached</span>
+            <span style="width: 2rem; height: 2rem; border-radius: var(--radius-md); background: {{ summary()!.slaBreachedOpen! > 0 ? '#fef2f2' : '#f0fdf4' }}; display: flex; align-items: center; justify-content: center;">
+              <i class="bi bi-shield-exclamation" [style.color]="summary()!.slaBreachedOpen! > 0 ? '#dc2626' : '#16a34a'" style="font-size: 16px;"></i>
+            </span>
+          </div>
+          <div style="font-size: 1.5rem; font-weight: 700;">{{ summary()!.slaBreachedOpen || 0 }}</div>
+        </a>
+
+        <a routerLink="/support/tickets" class="card-shadcn" style="cursor: pointer; text-decoration: none; padding: 1.25rem;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+            <span style="font-size: 0.8125rem; color: var(--color-muted-foreground);">Support Tickets</span>
+            <span style="width: 2rem; height: 2rem; border-radius: var(--radius-md); background: #f4f4f5; display: flex; align-items: center; justify-content: center;">
+              <i class="bi bi-chat-square-text" style="color: var(--color-foreground); font-size: 16px;"></i>
+            </span>
+          </div>
+          <div style="font-size: 1.5rem; font-weight: 700;">{{ summary()!.openTickets || 0 }}</div>
+          <div style="font-size: 0.75rem; color: var(--color-muted-foreground); margin-top: 0.25rem;">{{ summary()!.newTickets || 0 }} new</div>
+        </a>
+      </div>
+    </div>
+
+    <div style="margin-bottom: 1.5rem;">
+      <h3 style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-muted-foreground); margin-bottom: 0.75rem;">Finance</h3>
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
+        <a routerLink="/finance/invoices" class="card-shadcn" style="cursor: pointer; text-decoration: none; padding: 1.25rem;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+            <span style="font-size: 0.8125rem; color: var(--color-muted-foreground);">Outstanding Invoices</span>
+            <span style="width: 2rem; height: 2rem; border-radius: var(--radius-md); background: #fef2f2; display: flex; align-items: center; justify-content: center;">
+              <i class="bi bi-receipt" style="color: #dc2626; font-size: 16px;"></i>
+            </span>
+          </div>
+          <div style="font-size: 1.5rem; font-weight: 700;">{{ fmt(summary()!.outstandingInvoiceAmount) }}</div>
+        </a>
+
+        <a routerLink="/finance/wallet" class="card-shadcn" style="cursor: pointer; text-decoration: none; padding: 1.25rem;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+            <span style="font-size: 0.8125rem; color: var(--color-muted-foreground);">Wallet Balance</span>
+            <span style="width: 2rem; height: 2rem; border-radius: var(--radius-md); background: #f4f4f5; display: flex; align-items: center; justify-content: center;">
+              <i class="bi bi-wallet2" style="color: var(--color-foreground); font-size: 16px;"></i>
+            </span>
+          </div>
+          <div style="font-size: 1.5rem; font-weight: 700;">{{ fmt(summary()!.walletBalance) }}</div>
+        </a>
+
+        <a routerLink="/finance/wallet" class="card-shadcn" style="cursor: pointer; text-decoration: none; padding: 1.25rem;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+            <span style="font-size: 0.8125rem; color: var(--color-muted-foreground);">Wallet Credits</span>
+            <span style="width: 2rem; height: 2rem; border-radius: var(--radius-md); background: #f0fdf4; display: flex; align-items: center; justify-content: center;">
+              <i class="bi bi-cash" style="color: #16a34a; font-size: 16px;"></i>
+            </span>
+          </div>
+          <div style="font-size: 1.5rem; font-weight: 700;">{{ fmt(summary()!.walletCreditBalance) }}</div>
+        </a>
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+      <div class="card-shadcn">
+        <div class="card-shadcn-header" style="flex-direction: row; align-items: center; justify-content: space-between;">
+          <div>
+            <div class="card-shadcn-title">Recommendations</div>
+            <div class="card-shadcn-description">Actions that need your attention</div>
+          </div>
+          <span style="width: 2rem; height: 2rem; border-radius: var(--radius-md); background: #fef3c7; display: flex; align-items: center; justify-content: center;">
+            <i class="bi bi-lightbulb" style="color: #d97706; font-size: 16px;"></i>
+          </span>
+        </div>
+        <div class="card-shadcn-content">
+          @if (recommendations().length) {
+            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+              @for (rec of recommendations(); track rec.message) {
+                <a [routerLink]="rec.link" style="display: flex; align-items: flex-start; gap: 0.5rem; padding: 0.5rem; border-radius: var(--radius-md); text-decoration: none; color: var(--color-foreground);"
+                   [style.background]="rec.severity === 'CRITICAL' ? '#fef2f2' : rec.severity === 'WARNING' ? '#fffbeb' : '#f4f4f5'">
+                  <i [class]="recIconClass(rec.severity)"
+                     [style.color]="rec.severity === 'CRITICAL' ? '#dc2626' : rec.severity === 'WARNING' ? '#d97706' : '#2563eb'"
+                     style="flex-shrink: 0; margin-top: 1px; font-size: 16px;"></i>
+                  <span style="font-size: 0.8125rem; line-height: 1.5;">{{ rec.message }}</span>
+                </a>
+              }
+            </div>
+          } @else {
+            <p style="font-size: 0.8125rem; color: var(--color-muted-foreground);">Nothing needs your attention right now.</p>
+          }
+        </div>
+      </div>
+
+      <div class="card-shadcn">
+        <div class="card-shadcn-header" style="flex-direction: row; align-items: center; justify-content: space-between;">
+          <div>
+            <div class="card-shadcn-title">AI Business Insights</div>
+            <div class="card-shadcn-description">AI-generated analysis of your data</div>
+          </div>
+          <button class="btn-shadcn btn-shadcn-primary btn-shadcn-sm" [disabled]="insightsLoading()" (click)="generateInsights()">
+            @if (insightsLoading()) {
+              <span class="skeleton-shadcn" style="width: 1rem; height: 1rem; border-radius: 9999px;"></span>
+            }
+            Generate
+          </button>
+        </div>
+        <div class="card-shadcn-content">
+          @if (insights()) {
+            <p style="font-size: 0.8125rem; line-height: 1.6; white-space: pre-wrap;">{{ insights() }}</p>
+          } @else {
+            <p style="font-size: 0.8125rem; color: var(--color-muted-foreground);">Click Generate for an AI-written summary of your business activity.</p>
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Platform View -->
+  @if (isPlatformRole() && platformSummary()) {
+    <div style="margin-bottom: 1.5rem;">
+      <h3 style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-muted-foreground); margin-bottom: 0.75rem;">Companies</h3>
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem;">
+        <a routerLink="/platform/companies" class="card-shadcn" style="cursor: pointer; text-decoration: none; padding: 1.25rem;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+            <span style="font-size: 0.8125rem; color: var(--color-muted-foreground);">Total Companies</span>
+            <span style="width: 2rem; height: 2rem; border-radius: var(--radius-md); background: #f5f3ff; display: flex; align-items: center; justify-content: center;">
+              <i class="bi bi-building" style="color: var(--color-primary); font-size: 16px;"></i>
+            </span>
+          </div>
+          <div style="font-size: 1.5rem; font-weight: 700;">{{ platformSummary()!.totalCompanies || 0 }}</div>
+        </a>
+
+        <a routerLink="/platform/companies" [queryParams]="{status: 'ACTIVE'}" class="card-shadcn" style="cursor: pointer; text-decoration: none; padding: 1.25rem;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+            <span style="font-size: 0.8125rem; color: var(--color-muted-foreground);">Active</span>
+            <span style="width: 2rem; height: 2rem; border-radius: var(--radius-md); background: #f0fdf4; display: flex; align-items: center; justify-content: center;">
+              <i class="bi bi-check-circle" style="color: #16a34a; font-size: 16px;"></i>
+            </span>
+          </div>
+          <div style="font-size: 1.5rem; font-weight: 700;">{{ platformSummary()!.activeCompanies || 0 }}</div>
+        </a>
+
+        <a routerLink="/platform/companies" [queryParams]="{status: 'TRIAL'}" class="card-shadcn" style="cursor: pointer; text-decoration: none; padding: 1.25rem;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+            <span style="font-size: 0.8125rem; color: var(--color-muted-foreground);">On Trial</span>
+            <span style="width: 2rem; height: 2rem; border-radius: var(--radius-md); background: #dbeafe; display: flex; align-items: center; justify-content: center;">
+              <i class="bi bi-clock" style="color: #2563eb; font-size: 16px;"></i>
+            </span>
+          </div>
+          <div style="font-size: 1.5rem; font-weight: 700;">{{ platformSummary()!.trialCompanies || 0 }}</div>
+          <div style="font-size: 0.75rem; color: var(--color-muted-foreground);">{{ platformSummary()!.trialsExpiringWithin7Days || 0 }} expiring soon</div>
+        </a>
+
+        <a routerLink="/platform/companies" [queryParams]="{status: 'SUSPENDED'}" class="card-shadcn" style="cursor: pointer; text-decoration: none; padding: 1.25rem;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+            <span style="font-size: 0.8125rem; color: var(--color-muted-foreground);">Suspended</span>
+            <span style="width: 2rem; height: 2rem; border-radius: var(--radius-md); background: #fef2f2; display: flex; align-items: center; justify-content: center;">
+              <i class="bi bi-pause-circle" style="color: #dc2626; font-size: 16px;"></i>
+            </span>
+          </div>
+          <div style="font-size: 1.5rem; font-weight: 700;">{{ platformSummary()!.suspendedCompanies || 0 }}</div>
+        </a>
+      </div>
+    </div>
+
+    <h3 style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-muted-foreground); margin-bottom: 0.75rem;">Quick Actions</h3>
+    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem;">
+      @for (q of quickLinks(); track q.label) {
+        <a [routerLink]="q.link" class="card-shadcn" style="cursor: pointer; text-decoration: none; padding: 1rem;">
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <i [class]="iconClass(q.icon)" style="color: var(--color-primary); font-size: 20px;"></i>
+            <div>
+              <div style="font-size: 0.875rem; font-weight: 600;">{{ q.label }}</div>
+              <div style="font-size: 0.75rem; color: var(--color-muted-foreground);">{{ q.description }}</div>
+            </div>
+          </div>
+        </a>
+      }
+    </div>
+  }
+
+  <!-- Client View -->
+  @if (isClientRole() && clientSummary()) {
+    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem;">
+      <a routerLink="/servicedesk/requests" class="card-shadcn" style="cursor: pointer; text-decoration: none; padding: 1.25rem;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+          <span style="font-size: 0.8125rem; color: var(--color-muted-foreground);">Pending Requests</span>
+          <span style="width: 2rem; height: 2rem; border-radius: var(--radius-md); background: #fef3c7; display: flex; align-items: center; justify-content: center;">
+            <i class="bi bi-clock" style="color: #d97706; font-size: 16px;"></i>
+          </span>
+        </div>
+        <div style="font-size: 1.5rem; font-weight: 700;">{{ clientSummary()!.pendingRequests || 0 }}</div>
+      </a>
+
+      <a routerLink="/servicedesk/requests" class="card-shadcn" style="cursor: pointer; text-decoration: none; padding: 1.25rem;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+          <span style="font-size: 0.8125rem; color: var(--color-muted-foreground);">In Progress</span>
+          <span style="width: 2rem; height: 2rem; border-radius: var(--radius-md); background: #dbeafe; display: flex; align-items: center; justify-content: center;">
+            <i class="bi bi-arrow-repeat" style="color: #2563eb; font-size: 16px;"></i>
+          </span>
+        </div>
+        <div style="font-size: 1.5rem; font-weight: 700;">{{ clientSummary()!.inProgressRequests || 0 }}</div>
+      </a>
+
+      <div class="card-shadcn" style="padding: 1.25rem;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+          <span style="font-size: 0.8125rem; color: var(--color-muted-foreground);">Unpaid Invoices</span>
+          <span style="width: 2rem; height: 2rem; border-radius: var(--radius-md); background: {{ clientSummary()!.unpaidInvoices! > 0 ? '#fef2f2' : '#f0fdf4' }}; display: flex; align-items: center; justify-content: center;">
+            <i class="bi bi-receipt" [style.color]="clientSummary()!.unpaidInvoices! > 0 ? '#dc2626' : '#16a34a'" style="font-size: 16px;"></i>
+          </span>
+        </div>
+        <div style="font-size: 1.5rem; font-weight: 700;">{{ clientSummary()!.unpaidInvoices || 0 }}</div>
+      </div>
+
+      <div class="card-shadcn" style="padding: 1.25rem;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+          <span style="font-size: 0.8125rem; color: var(--color-muted-foreground);">Amount Due</span>
+          <span style="width: 2rem; height: 2rem; border-radius: var(--radius-md); background: #f4f4f5; display: flex; align-items: center; justify-content: center;">
+            <i class="bi bi-cash" style="color: var(--color-foreground); font-size: 16px;"></i>
+          </span>
+        </div>
+        <div style="font-size: 1.5rem; font-weight: 700;">{{ fmt(clientSummary()!.outstandingInvoiceAmount) }}</div>
+      </div>
+    </div>
+
+    <h3 style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-muted-foreground); margin-bottom: 0.75rem;">Quick Actions</h3>
+    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem;">
+      @for (q of quickLinks(); track q.label) {
+        <a [routerLink]="q.link" class="card-shadcn" style="cursor: pointer; text-decoration: none; padding: 1rem;">
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <i [class]="iconClass(q.icon)" style="color: var(--color-primary); font-size: 20px;"></i>
+            <div>
+              <div style="font-size: 0.875rem; font-weight: 600;">{{ q.label }}</div>
+              <div style="font-size: 0.75rem; color: var(--color-muted-foreground);">{{ q.description }}</div>
+            </div>
+          </div>
+        </a>
+      }
+    </div>
+  }
+</div>

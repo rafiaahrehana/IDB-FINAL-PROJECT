@@ -1,6 +1,7 @@
 package com.businessos.modules.hrm.announcement;
 
 import com.businessos.core.base.BaseEntity;
+import com.businessos.enums.AnnouncementAudience;
 import com.businessos.auth.user.User;
 import com.businessos.modules.hrm.department.Department;
 import com.businessos.modules.company.Company;

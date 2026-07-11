@@ -1,0 +1,116 @@
+<div class="landing">
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-md sticky-top bg-white border-bottom">
+    <div class="container">
+      <a class="navbar-brand fw-bold d-flex align-items-center gap-2" href="#top">
+        <i class="bi bi-grid-1x2-fill text-primary"></i>BusinessOS
+      </a>
+      <div class="d-flex align-items-center gap-2 ms-auto">
+        <a href="#features" class="nav-link d-none d-md-inline px-2 text-secondary">Features</a>
+        <a href="#pricing" class="nav-link d-none d-md-inline px-2 text-secondary">Pricing</a>
+        <a href="#faq" class="nav-link d-none d-md-inline px-2 text-secondary">FAQ</a>
+        <a routerLink="/auth/login" class="btn btn-outline-secondary btn-sm">Sign in</a>
+        <a routerLink="/auth/register" class="btn btn-primary btn-sm">Get started</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <header id="top" class="hero text-center text-white">
+    <div class="container py-5">
+      <h1 class="display-5 fw-bold mb-3">Run your entire business<br class="d-none d-md-block" /> from one place</h1>
+      <p class="lead mx-auto mb-4" style="max-width: 640px">
+        CRM, service desk, finance, HR, assets and AI - plus a branded portal your
+        clients use to request and track your services.
+      </p>
+      <div class="d-flex gap-2 justify-content-center">
+        <a routerLink="/auth/register" class="btn btn-light btn-lg px-4 fw-semibold">Create your company</a>
+        <a href="#features" class="btn btn-outline-light btn-lg px-4">See what's inside</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Features / Modules -->
+  <section id="features" class="py-5">
+    <div class="container">
+      <h2 class="fw-bold text-center mb-1">Everything your business runs on</h2>
+      <p class="text-secondary text-center mb-4">One login. Every module. No spreadsheets glue.</p>
+      <div class="row g-3">
+        @for (f of features; track f.title) {
+        <div class="col-md-6 col-lg-4">
+          <div class="card h-100 p-3">
+            <i class="bi fs-3 text-primary mb-2" [class]="f.icon"></i>
+            <div class="fw-semibold mb-1">{{ f.title }}</div>
+            <div class="text-secondary small">{{ f.text }}</div>
+          </div>
+        </div>
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- Pricing -->
+  <section id="pricing" class="py-5 bg-body-tertiary">
+    <div class="container">
+      <h2 class="fw-bold text-center mb-1">Simple plans that grow with you</h2>
+      <p class="text-secondary text-center mb-4">Start free. Upgrade when you're ready.</p>
+      <div class="row g-3 justify-content-center">
+        @for (p of plans; track p.name) {
+        <div class="col-md-6 col-lg-3">
+          <div class="card h-100 p-3 text-center" [class.plan-highlight]="p.highlight">
+            @if (p.highlight) { <span class="badge text-bg-primary align-self-center mb-2">Most popular</span> }
+            <div class="fs-5 fw-bold">{{ p.name }}</div>
+            <div class="text-secondary small mb-3">{{ p.tagline }}</div>
+            <ul class="list-unstyled small text-start mx-auto mb-3">
+              @for (feat of p.features; track feat) {
+              <li class="mb-1"><i class="bi bi-check-circle text-success me-1"></i>{{ feat }}</li>
+              }
+            </ul>
+            <a routerLink="/auth/register" class="btn btn-sm mt-auto" [class.btn-primary]="p.highlight" [class.btn-outline-primary]="!p.highlight">
+              {{ p.name === 'Enterprise' ? 'Contact sales' : 'Get started' }}
+            </a>
+          </div>
+        </div>
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section id="faq" class="py-5">
+    <div class="container" style="max-width: 760px">
+      <h2 class="fw-bold text-center mb-4">Frequently asked questions</h2>
+      @for (f of faqs; track f.q; let i = $index) {
+      <div class="card mb-2">
+        <button class="btn text-start d-flex justify-content-between align-items-center p-3" (click)="toggleFaq(i)">
+          <span class="fw-semibold">{{ f.q }}</span>
+          <i class="bi" [class.bi-chevron-down]="openFaq !== i" [class.bi-chevron-up]="openFaq === i"></i>
+        </button>
+        @if (openFaq === i) { <div class="px-3 pb-3 text-secondary small">{{ f.a }}</div> }
+      </div>
+      }
+    </div>
+  </section>
+
+  <!-- Contact / CTA -->
+  <section id="contact" class="py-5 text-center text-white cta">
+    <div class="container">
+      <h2 class="fw-bold mb-2">Ready to get organized?</h2>
+      <p class="mb-4">Create your company workspace in minutes - free to start.</p>
+      <a routerLink="/auth/register" class="btn btn-light btn-lg px-4 fw-semibold">Create your company</a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="py-4 border-top bg-white">
+    <div class="container d-flex flex-wrap justify-content-between align-items-center gap-2">
+      <span class="text-secondary small">© {{ year }} BusinessOS. All rights reserved.</span>
+      <div class="d-flex gap-3 small">
+        <a href="#features" class="text-secondary text-decoration-none">Features</a>
+        <a href="#pricing" class="text-secondary text-decoration-none">Pricing</a>
+        <a href="#faq" class="text-secondary text-decoration-none">FAQ</a>
+        <a routerLink="/auth/login" class="text-secondary text-decoration-none">Sign in</a>
+      </div>
+    </div>
+  </footer>
+</div>

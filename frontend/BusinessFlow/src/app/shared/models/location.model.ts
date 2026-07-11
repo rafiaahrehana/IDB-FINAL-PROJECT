@@ -7,8 +7,6 @@ export interface LocationRequest {
   streetAddress: string;
   postalCode?: string;
   apartment?: string;
-  latitude?: number;
-  longitude?: number;
 }
 
 export interface LocationResponse extends LocationRequest {

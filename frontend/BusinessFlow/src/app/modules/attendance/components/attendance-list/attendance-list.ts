@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AttendanceRecord } from '../../models/attendance.model';
@@ -23,7 +23,7 @@ export class AttendanceList implements OnInit {
   statusFilter = '';
   statuses = ['PRESENT', 'ABSENT', 'LATE', 'LEAVE', 'HALF_DAY'];
 
-  constructor(private attendanceService: AttendanceService) {}
+  constructor(private attendanceService: AttendanceService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.load();
@@ -31,6 +31,7 @@ export class AttendanceList implements OnInit {
 
   load(): void {
     this.loading = true;
+    this.cdr.markForCheck();
     const obs = this.statusFilter
       ? this.attendanceService.listByStatus(this.statusFilter, this.page)
       : this.attendanceService.list(this.page);
@@ -39,10 +40,12 @@ export class AttendanceList implements OnInit {
         this.records = res.content;
         this.totalPages = res.totalPages;
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.error = 'Failed to load records';
         this.loading = false;
+        this.cdr.markForCheck();
       },
     });
   }

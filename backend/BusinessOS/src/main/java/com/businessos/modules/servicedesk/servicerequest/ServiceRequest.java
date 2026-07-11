@@ -86,6 +86,13 @@ public class ServiceRequest extends BaseEntity {
 
     private LocalDateTime ratedAt;
 
+    /**
+     * Client answers to the service's dynamic form fields, keyed by
+     * ServiceFormField id, serialized as a JSON object.
+     */
+    @Column(columnDefinition = "TEXT")
+    private String formDataJson;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "hub_service_id", nullable = false)
     private CompanyService companyService;

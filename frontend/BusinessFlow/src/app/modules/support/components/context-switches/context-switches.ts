@@ -13,7 +13,7 @@ import { EmptyState } from '../../../../shared/components/empty-state/empty-stat
 @Component({
   selector: 'app-context-switches',
   imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './context-switches.html',
 })
 export class ContextSwitches implements OnInit {
@@ -49,11 +49,11 @@ export class ContextSwitches implements OnInit {
     this.showStart = true;
     this.startForm = { purpose: '' };
     if (!this.agents.length) {
-      this.agentService.list(0).subscribe({ next: (r) => (this.agents = r.content) });
+      this.agentService.list(0).subscribe({ next: (r) => { this.agents = r.content; this.cdr.markForCheck(); } });
     }
     if (!this.companies.length) {
       // Support roles are authorized to list companies (see CompanyController)
-      this.companyService.list(0, 100).subscribe({ next: (r) => (this.companies = r.content) });
+      this.companyService.list(0, 100).subscribe({ next: (r) => { this.companies = r.content; this.cdr.markForCheck(); } });
     }
   }
 
@@ -64,6 +64,7 @@ export class ContextSwitches implements OnInit {
     }
     this.starting = true;
     this.error = '';
+    this.cdr.markForCheck();
     this.contextSwitchService.switchContext({
       supportAgentId: this.startForm.supportAgentId,
       viewedCompanyId: this.startForm.viewedCompanyId,
@@ -73,11 +74,13 @@ export class ContextSwitches implements OnInit {
         this.success = 'Context switch started';
         this.showStart = false;
         this.starting = false;
+        this.cdr.markForCheck();
         this.loadActive();
       },
       error: (err) => {
         this.error = err?.error?.message || 'Failed to start switch';
         this.starting = false;
+        this.cdr.markForCheck();
       },
     });
   }
@@ -127,10 +130,11 @@ export class ContextSwitches implements OnInit {
     this.contextSwitchService.endContextSwitch(cs.id).subscribe({
       next: () => {
         this.success = 'Context switch ended';
+        this.cdr.markForCheck();
         this.loadActive();
         if (this.agentIdFilter) this.loadHistory();
       },
-      error: (err) => (this.error = err?.error?.message || 'Failed to end context switch'),
+      error: (err) => { this.error = err?.error?.message || 'Failed to end context switch'; this.cdr.markForCheck(); },
     });
   }
 }

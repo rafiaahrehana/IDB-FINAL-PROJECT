@@ -11,7 +11,7 @@ import { EmptyState } from '../../../../shared/components/empty-state/empty-stat
   selector: 'app-knowledge-base',
   imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState],
   templateUrl: './knowledge-base.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './knowledge-base.scss',
 })
 export class KnowledgeBase implements OnInit {
@@ -36,8 +36,8 @@ export class KnowledgeBase implements OnInit {
 
   load(): void {
     this.loading = true;
-    this.cdr.markForCheck();
     this.error = '';
+    this.cdr.markForCheck();
     const params: any = {};
     if (this.keyword.trim()) params.keyword = this.keyword.trim();
     if (this.statusFilter) params.status = this.statusFilter;
@@ -58,15 +58,15 @@ export class KnowledgeBase implements OnInit {
 
   open(article: KbArticle): void {
     this.kbService.getById(article.id).subscribe({
-      next: (a) => (this.selected = a),
-      error: () => (this.error = 'Failed to load article'),
+      next: (a) => { this.selected = a; this.cdr.markForCheck(); },
+      error: () => { this.error = 'Failed to load article'; this.cdr.markForCheck(); },
     });
   }
 
   markHelpful(): void {
     if (!this.selected) return;
     this.kbService.markHelpful(this.selected.id).subscribe({
-      next: (a) => (this.selected = a),
+      next: (a) => { this.selected = a; this.cdr.markForCheck(); },
     });
   }
 
@@ -111,9 +111,10 @@ export class KnowledgeBase implements OnInit {
         this.showEditor = false;
         this.draft = {};
         this.editingId = null;
+        this.cdr.markForCheck();
         this.load();
       },
-      error: (err) => (this.error = err?.error?.message || 'Failed to save article'),
+      error: (err) => { this.error = err?.error?.message || 'Failed to save article'; this.cdr.markForCheck(); },
     });
   }
 

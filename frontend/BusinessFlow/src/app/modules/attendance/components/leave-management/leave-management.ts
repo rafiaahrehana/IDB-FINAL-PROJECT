@@ -10,7 +10,7 @@ import { EmptyState } from '../../../../shared/components/empty-state/empty-stat
 @Component({
   selector: 'app-leave-management',
   imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './leave-management.html',
 })
 export class LeaveManagement implements OnInit {
@@ -56,9 +56,10 @@ export class LeaveManagement implements OnInit {
         this.showForm = false;
         this.form = {};
         this.success = 'Leave request submitted';
+        this.cdr.markForCheck();
         this.load();
       },
-      error: (err) => (this.error = err?.error?.message || 'Failed'),
+      error: (err) => { this.error = err?.error?.message || 'Failed'; this.cdr.markForCheck(); },
     });
   }
 
@@ -66,9 +67,10 @@ export class LeaveManagement implements OnInit {
     this.leaveService.approve(l.id).subscribe({
       next: () => {
         this.success = 'Approved';
+        this.cdr.markForCheck();
         this.load();
       },
-      error: (err) => (this.error = err?.error?.message || 'Failed'),
+      error: (err) => { this.error = err?.error?.message || 'Failed'; this.cdr.markForCheck(); },
     });
   }
 
@@ -78,11 +80,13 @@ export class LeaveManagement implements OnInit {
       next: () => {
         this.rejectTarget = null;
         this.success = 'Rejected';
+        this.cdr.markForCheck();
         this.load();
       },
       error: (err) => {
         this.error = err?.error?.message || 'Failed';
         this.rejectTarget = null;
+        this.cdr.markForCheck();
       },
     });
   }

@@ -1,35 +1,27 @@
 @if (auth.isAuthenticated$ | async) {
   <app-impersonation-banner />
-  <div class="app-layout">
+  <app-navbar />
+  <div class="d-flex" style="min-height: calc(100vh - 60px)">
     @if (auth.isPlatformUser()) {
-      <aside class="app-sidebar" [class.mobile-open]="mobileSidebarOpen()">
-        <app-platform-sidebar />
-      </aside>
+      <app-platform-sidebar />
     } @else {
-      <aside class="app-sidebar" [class.mobile-open]="mobileSidebarOpen()"
-             [class.collapsed]="sidebarCollapsed()">
-        <app-sidebar [collapsed]="sidebarCollapsed()" [mobileOpen]="mobileSidebarOpen()" (closeMobile)="closeMobileSidebar()" />
-      </aside>
+      <app-sidebar />
     }
-
-    <div class="app-main">
-      <app-navbar (toggleMobileSidebar)="toggleMobileSidebar()" />
-      <main class="app-content">
-        <router-outlet />
-      </main>
-    </div>
+    <main class="app-main flex-grow-1 overflow-auto p-4">
+      <router-outlet />
+    </main>
   </div>
 } @else {
   <router-outlet />
 }
 
-<div class="toast-container">
+<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1060">
   @for (toast of notifications.toasts(); track toast.id) {
-    <div class="toast-shadcn toast-shadcn-{{ toast.type }}">
+  <div class="toast show text-bg-{{ toast.type }}">
+    <div class="d-flex">
       <div class="toast-body">{{ toast.message }}</div>
-      <button class="toast-close" (click)="notifications.dismiss(toast.id)">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-      </button>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" (click)="notifications.dismiss(toast.id)"></button>
     </div>
+  </div>
   }
 </div>

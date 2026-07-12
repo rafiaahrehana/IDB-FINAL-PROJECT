@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Employee, HrAsset, HrAssetRequest } from '../../models/hrm.model';
@@ -13,6 +13,7 @@ import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/conf
   selector: 'app-hr-assets',
   imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState, ConfirmDialog],
   templateUrl: './assets.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Assets implements OnInit {
   // VARIABLES
@@ -36,7 +37,7 @@ export class Assets implements OnInit {
   constructor(
     private assetService: HrAssetService,
     private employeeService: EmployeeService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
   ) {}
 
   // LIFECYCLE HOOKS
@@ -45,20 +46,10 @@ export class Assets implements OnInit {
   // LOAD ASSETS
   load(): void {
     this.loading = true;
-    this.cdr.markForCheck();
     this.error = '';
     this.assetService.list(this.page).subscribe({
-      next: (res) => {
-        this.assets = res.content;
-        this.totalPages = res.totalPages;
-        this.loading = false;
-        this.cdr.markForCheck();
-      },
-      error: () => {
-        this.error = 'Failed to load assets';
-        this.loading = false;
-        this.cdr.markForCheck();
-      }
+      next: (res) => { this.assets = res.content; this.totalPages = res.totalPages; this.loading = false; this.cdr.markForCheck(); },
+      error: () => { this.error = 'Failed to load assets'; this.loading = false; this.cdr.markForCheck(); }
     });
   }
 
@@ -66,8 +57,8 @@ export class Assets implements OnInit {
   loadEmployees(): void {
     if (this.employees.length) return;
     this.employeeService.list(0, 200).subscribe({
-      next: (res) => this.employees = res.content,
-      error: () => this.employees = []
+      next: (res) => { this.employees = res.content; this.cdr.markForCheck(); },
+      error: () => { this.employees = []; this.cdr.markForCheck(); }
     });
   }
 
@@ -103,9 +94,9 @@ export class Assets implements OnInit {
     op.subscribe({
       next: () => {
         this.success = this.editingId ? 'Asset updated' : 'Asset created';
-        this.showForm = false; this.editingId = null; this.load();
+        this.showForm = false; this.editingId = null; this.cdr.markForCheck(); this.load();
       },
-      error: (err) => this.error = err?.error?.message || 'Failed to save asset'
+      error: (err) => { this.error = err?.error?.message || 'Failed to save asset'; this.cdr.markForCheck(); }
     });
   }
 
@@ -120,8 +111,8 @@ export class Assets implements OnInit {
   doAssign(): void {
     if (!this.assignTarget || !this.assignEmployeeId) return;
     this.assetService.assign(this.assignTarget.id, this.assignEmployeeId).subscribe({
-      next: () => { this.assignTarget = null; this.success = 'Asset assigned'; this.load(); },
-      error: (err) => { this.error = err?.error?.message || 'Failed to assign'; this.assignTarget = null; }
+      next: () => { this.assignTarget = null; this.success = 'Asset assigned'; this.cdr.markForCheck(); this.load(); },
+      error: (err) => { this.error = err?.error?.message || 'Failed to assign'; this.assignTarget = null; this.cdr.markForCheck(); }
     });
   }
 
@@ -129,8 +120,8 @@ export class Assets implements OnInit {
   doUnassign(): void {
     if (!this.unassignTarget) return;
     this.assetService.unassign(this.unassignTarget.id).subscribe({
-      next: () => { this.unassignTarget = null; this.success = 'Asset unassigned'; this.load(); },
-      error: (err) => { this.error = err?.error?.message || 'Failed to unassign'; this.unassignTarget = null; }
+      next: () => { this.unassignTarget = null; this.success = 'Asset unassigned'; this.cdr.markForCheck(); this.load(); },
+      error: (err) => { this.error = err?.error?.message || 'Failed to unassign'; this.unassignTarget = null; this.cdr.markForCheck(); }
     });
   }
 
@@ -138,8 +129,8 @@ export class Assets implements OnInit {
   doDelete(): void {
     if (!this.deleteTarget) return;
     this.assetService.delete(this.deleteTarget.id).subscribe({
-      next: () => { this.deleteTarget = null; this.success = 'Asset deleted'; this.load(); },
-      error: () => { this.deleteTarget = null; this.error = 'Cannot delete asset'; }
+      next: () => { this.deleteTarget = null; this.success = 'Asset deleted'; this.cdr.markForCheck(); this.load(); },
+      error: () => { this.deleteTarget = null; this.error = 'Cannot delete asset'; this.cdr.markForCheck(); }
     });
   }
 

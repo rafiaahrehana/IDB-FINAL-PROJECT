@@ -1,28 +1,26 @@
-<div class="page-container">
-  <div class="page-header">
-    <div>
-      <h4 class="page-title">Accounts</h4>
-    </div>
-    <div class="d-flex gap-2 align-items-center">
-      <select class="select-shadcn" style="width: 160px" [(ngModel)]="statusFilter" (change)="page = 0; load()">
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <h4 class="mb-0">Accounts</h4>
+    <div class="d-flex gap-2">
+      <select class="form-select form-select-sm" style="width: 160px" [(ngModel)]="statusFilter" (change)="page = 0; load()">
         <option value="">All statuses</option>
         @for (s of statuses; track s) { <option [value]="s">{{ s | titlecase }}</option> }
       </select>
-      <button class="btn-shadcn btn-shadcn-primary btn-shadcn-sm" (click)="openCreate()">
+      <button class="btn btn-primary btn-sm text-nowrap" (click)="openCreate()">
         <i class="bi bi-person-plus me-1"></i>Add Account
       </button>
     </div>
   </div>
 
-  @if (error) { <div class="badge-shadcn badge-shadcn-destructive py-2 px-3">{{ error }}</div> }
-  @if (success) { <div class="badge-shadcn badge-shadcn-success py-2 px-3">{{ success }}</div> }
+  @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
+  @if (success) { <div class="alert alert-success py-2">{{ success }}</div> }
   @if (loading) { <app-loader /> }
 
   @if (!loading && clients.length) {
-  <div class="card-shadcn">
-    <div class="table-shadcn-container">
-      <table class="table-shadcn">
-        <thead>
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table table-hover table-sm align-middle mb-0">
+        <thead class="table-light">
           <tr>
             <th>Account</th><th>Industry</th><th>Contact</th><th>Status</th>
             <th>Portal</th><th>Account Manager</th><th>Onboarded</th><th></th>
@@ -31,10 +29,10 @@
         <tbody>
           @for (client of clients; track client.id) {
           <tr>
-            <td><a [routerLink]="['/crm/clients', client.id]" class="text-primary">{{ client.clientCompanyName || (client.firstName + ' ' + client.lastName) }}</a></td>
+            <td><a [routerLink]="['/crm/clients', client.id]">{{ client.clientCompanyName || (client.firstName + ' ' + client.lastName) }}</a></td>
             <td>{{ client.industry || '-' }}</td>
             <td>{{ client.email || '-' }}</td>
-            <td><span class="badge-shadcn {{ statusClass(client.status) }}">{{ client.status }}</span></td>
+            <td><span class="badge {{ statusClass(client.status) }}">{{ client.status }}</span></td>
             <td>
               @if (client.portalAccessEnabled) { <i class="bi bi-check-circle text-success"></i> }
               @else { <i class="bi bi-dash-circle text-muted"></i> }
@@ -42,10 +40,10 @@
             <td>{{ client.accountManagerName || '-' }}</td>
             <td>{{ client.onboardedAt ? (client.onboardedAt | date:'mediumDate') : '-' }}</td>
             <td class="text-end text-nowrap">
-              <button class="btn-shadcn btn-shadcn-ghost btn-shadcn-sm me-1" (click)="openEdit(client)" title="Edit">
+              <button class="btn btn-outline-secondary btn-sm me-1" (click)="openEdit(client)" title="Edit">
                 <i class="bi bi-pencil"></i>
               </button>
-              <button class="btn-shadcn btn-shadcn-ghost btn-shadcn-sm" (click)="deleteTarget = client" title="Delete">
+              <button class="btn btn-outline-danger btn-sm" (click)="deleteTarget = client" title="Delete">
                 <i class="bi bi-trash"></i>
               </button>
             </td>
@@ -54,7 +52,7 @@
         </tbody>
       </table>
     </div>
-    <div class="card-shadcn-footer d-flex justify-content-end">
+    <div class="card-footer d-flex justify-content-end">
       <app-pagination [page]="page" [totalPages]="totalPages" (pageChange)="goToPage($event)" />
     </div>
   </div>
@@ -64,88 +62,68 @@
 
   <!-- Add Account modal -->
   @if (showCreate) {
-  <div class="modal-overlay" (click)="showCreate = false">
-    <div class="modal-dialog-shadcn" (click)="$event.stopPropagation()">
-      <div class="modal-header-shadcn">
-        <h5 class="modal-title-shadcn">Add Account</h5>
-        <button class="btn-shadcn btn-shadcn-ghost btn-shadcn-icon" (click)="showCreate = false">
-          <i class="bi bi-x-lg"></i>
-        </button>
-      </div>
-      <div class="modal-body-shadcn">
-        <div class="row g-3">
-          <div class="col-md-6">
-            <div class="field-group">
-              <label class="field-label">First Name <span class="text-danger">*</span></label>
-              <input class="input-shadcn input-shadcn-sm" [(ngModel)]="createForm.firstName" />
+  <div class="modal d-block" style="background: rgba(0,0,0,.4)">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header py-2">
+          <h5 class="modal-title fs-6 fw-semibold">Add Account</h5>
+          <button class="btn-close" (click)="showCreate = false"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-2">
+            <div class="col-md-6">
+              <label class="form-label small text-secondary mb-1">First Name <span class="text-danger">*</span></label>
+              <input class="form-control form-control-sm" [(ngModel)]="createForm.firstName" />
             </div>
-          </div>
-          <div class="col-md-6">
-            <div class="field-group">
-              <label class="field-label">Last Name <span class="text-danger">*</span></label>
-              <input class="input-shadcn input-shadcn-sm" [(ngModel)]="createForm.lastName" />
+            <div class="col-md-6">
+              <label class="form-label small text-secondary mb-1">Last Name <span class="text-danger">*</span></label>
+              <input class="form-control form-control-sm" [(ngModel)]="createForm.lastName" />
             </div>
-          </div>
-          <div class="col-md-6">
-            <div class="field-group">
-              <label class="field-label">Email <span class="text-danger">*</span></label>
-              <input type="email" class="input-shadcn input-shadcn-sm" [(ngModel)]="createForm.email" />
+            <div class="col-md-6">
+              <label class="form-label small text-secondary mb-1">Email <span class="text-danger">*</span></label>
+              <input type="email" class="form-control form-control-sm" [(ngModel)]="createForm.email" />
             </div>
-          </div>
-          <div class="col-md-6">
-            <div class="field-group">
-              <label class="field-label">Portal Password <span class="text-danger">*</span></label>
-              <input type="password" class="input-shadcn input-shadcn-sm" [(ngModel)]="createForm.password" autocomplete="new-password" />
+            <div class="col-md-6">
+              <label class="form-label small text-secondary mb-1">Portal Password <span class="text-danger">*</span></label>
+              <input type="password" class="form-control form-control-sm" [(ngModel)]="createForm.password" autocomplete="new-password" />
             </div>
-          </div>
-          <div class="col-md-6">
-            <div class="field-group">
-              <label class="field-label">Phone</label>
-              <input class="input-shadcn input-shadcn-sm" [(ngModel)]="createForm.phone" />
+            <div class="col-md-6">
+              <label class="form-label small text-secondary mb-1">Phone</label>
+              <input class="form-control form-control-sm" [(ngModel)]="createForm.phone" />
             </div>
-          </div>
-          <div class="col-md-6">
-            <div class="field-group">
-              <label class="field-label">Company Name</label>
-              <input class="input-shadcn input-shadcn-sm" [(ngModel)]="createForm.clientCompanyName" />
+            <div class="col-md-6">
+              <label class="form-label small text-secondary mb-1">Company Name</label>
+              <input class="form-control form-control-sm" [(ngModel)]="createForm.clientCompanyName" />
             </div>
-          </div>
-          <div class="col-md-6">
-            <div class="field-group">
-              <label class="field-label">Industry</label>
-              <input class="input-shadcn input-shadcn-sm" [(ngModel)]="createForm.industry" />
+            <div class="col-md-6">
+              <label class="form-label small text-secondary mb-1">Industry</label>
+              <input class="form-control form-control-sm" [(ngModel)]="createForm.industry" />
             </div>
-          </div>
-          <div class="col-md-6">
-            <div class="field-group">
-              <label class="field-label">Website</label>
-              <input class="input-shadcn input-shadcn-sm" [(ngModel)]="createForm.website" />
+            <div class="col-md-6">
+              <label class="form-label small text-secondary mb-1">Website</label>
+              <input class="form-control form-control-sm" [(ngModel)]="createForm.website" />
             </div>
-          </div>
-          <div class="col-md-6">
-            <div class="field-group">
-              <label class="field-label">Tax ID</label>
-              <input class="input-shadcn input-shadcn-sm" [(ngModel)]="createForm.taxId" />
+            <div class="col-md-6">
+              <label class="form-label small text-secondary mb-1">Tax ID</label>
+              <input class="form-control form-control-sm" [(ngModel)]="createForm.taxId" />
             </div>
-          </div>
-          <div class="col-md-6">
-            <div class="field-group">
-              <label class="field-label">Account Manager</label>
-              <select class="select-shadcn input-shadcn-sm" [(ngModel)]="createForm.accountManagerId">
+            <div class="col-md-6">
+              <label class="form-label small text-secondary mb-1">Account Manager</label>
+              <select class="form-select form-select-sm" [(ngModel)]="createForm.accountManagerId">
                 <option [ngValue]="null">— None —</option>
                 @for (e of employees; track e.id) { <option [ngValue]="e.id">{{ e.firstName }} {{ e.lastName }}</option> }
               </select>
             </div>
           </div>
+          <div class="form-text small mt-2">The email and password create the client's portal login.</div>
         </div>
-        <div class="field-hint mt-3">The email and password create the client's portal login.</div>
-      </div>
-      <div class="modal-footer-shadcn">
-        <button class="btn-shadcn btn-shadcn-outline btn-shadcn-sm" (click)="showCreate = false">Cancel</button>
-        <button class="btn-shadcn btn-shadcn-primary btn-shadcn-sm" (click)="saveCreate()" [disabled]="saving">
-          @if (saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
-          Create Account
-        </button>
+        <div class="modal-footer py-2">
+          <button class="btn btn-secondary btn-sm" (click)="showCreate = false">Cancel</button>
+          <button class="btn btn-primary btn-sm" (click)="saveCreate()" [disabled]="saving">
+            @if (saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
+            Create Account
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -153,65 +131,53 @@
 
   <!-- Edit Account modal -->
   @if (editing) {
-  <div class="modal-overlay" (click)="editing = null">
-    <div class="modal-dialog-shadcn" (click)="$event.stopPropagation()">
-      <div class="modal-header-shadcn">
-        <h5 class="modal-title-shadcn">Edit Account</h5>
-        <button class="btn-shadcn btn-shadcn-ghost btn-shadcn-icon" (click)="editing = null">
-          <i class="bi bi-x-lg"></i>
-        </button>
-      </div>
-      <div class="modal-body-shadcn">
-        <div class="row g-3">
-          <div class="col-12">
-            <div class="field-group">
-              <label class="field-label">Company Name</label>
-              <input class="input-shadcn input-shadcn-sm" [(ngModel)]="editForm.clientCompanyName" />
+  <div class="modal d-block" style="background: rgba(0,0,0,.4)">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header py-2">
+          <h5 class="modal-title fs-6 fw-semibold">Edit Account</h5>
+          <button class="btn-close" (click)="editing = null"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-2">
+            <div class="col-12">
+              <label class="form-label small text-secondary mb-1">Company Name</label>
+              <input class="form-control form-control-sm" [(ngModel)]="editForm.clientCompanyName" />
             </div>
-          </div>
-          <div class="col-md-6">
-            <div class="field-group">
-              <label class="field-label">Industry</label>
-              <input class="input-shadcn input-shadcn-sm" [(ngModel)]="editForm.industry" />
+            <div class="col-md-6">
+              <label class="form-label small text-secondary mb-1">Industry</label>
+              <input class="form-control form-control-sm" [(ngModel)]="editForm.industry" />
             </div>
-          </div>
-          <div class="col-md-6">
-            <div class="field-group">
-              <label class="field-label">Website</label>
-              <input class="input-shadcn input-shadcn-sm" [(ngModel)]="editForm.website" />
+            <div class="col-md-6">
+              <label class="form-label small text-secondary mb-1">Website</label>
+              <input class="form-control form-control-sm" [(ngModel)]="editForm.website" />
             </div>
-          </div>
-          <div class="col-md-6">
-            <div class="field-group">
-              <label class="field-label">Status</label>
-              <select class="select-shadcn input-shadcn-sm" [(ngModel)]="editForm.status">
+            <div class="col-md-6">
+              <label class="form-label small text-secondary mb-1">Status</label>
+              <select class="form-select form-select-sm" [(ngModel)]="editForm.status">
                 @for (s of statuses; track s) { <option [value]="s">{{ s | titlecase }}</option> }
               </select>
             </div>
-          </div>
-          <div class="col-md-6">
-            <div class="field-group">
-              <label class="field-label">Account Manager</label>
-              <select class="select-shadcn input-shadcn-sm" [(ngModel)]="editForm.accountManagerId">
+            <div class="col-md-6">
+              <label class="form-label small text-secondary mb-1">Account Manager</label>
+              <select class="form-select form-select-sm" [(ngModel)]="editForm.accountManagerId">
                 <option [ngValue]="null">— None —</option>
                 @for (e of employees; track e.id) { <option [ngValue]="e.id">{{ e.firstName }} {{ e.lastName }}</option> }
               </select>
             </div>
-          </div>
-          <div class="col-12 mt-2">
-            <div class="field-group" style="flex-direction: row; align-items: center; gap: 0.5rem;">
-              <input type="checkbox" class="input-shadcn" id="portalAccess" [(ngModel)]="editForm.portalAccessEnabled" style="width: auto;" />
-              <label class="field-label mb-0" for="portalAccess">Portal access enabled</label>
+            <div class="col-12 form-check mt-2 ms-1">
+              <input type="checkbox" class="form-check-input" id="portalAccess" [(ngModel)]="editForm.portalAccessEnabled" />
+              <label class="form-check-label small" for="portalAccess">Portal access enabled</label>
             </div>
           </div>
         </div>
-      </div>
-      <div class="modal-footer-shadcn">
-        <button class="btn-shadcn btn-shadcn-outline btn-shadcn-sm" (click)="editing = null">Cancel</button>
-        <button class="btn-shadcn btn-shadcn-primary btn-shadcn-sm" (click)="saveEdit()" [disabled]="saving">
-          @if (saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
-          Save Changes
-        </button>
+        <div class="modal-footer py-2">
+          <button class="btn btn-secondary btn-sm" (click)="editing = null">Cancel</button>
+          <button class="btn btn-primary btn-sm" (click)="saveEdit()" [disabled]="saving">
+            @if (saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
+            Save Changes
+          </button>
+        </div>
       </div>
     </div>
   </div>

@@ -12,7 +12,7 @@ import { EmptyState } from '../../../../shared/components/empty-state/empty-stat
   selector: 'app-approvals',
   imports: [CommonModule, FormsModule, RouterLink, Pagination, Loader, EmptyState],
   templateUrl: './approvals.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './approvals.scss',
 })
 export class Approvals implements OnInit {
@@ -31,8 +31,8 @@ export class Approvals implements OnInit {
 
   load(): void {
     this.loading = true;
-    this.cdr.markForCheck();
     this.error = '';
+    this.cdr.markForCheck();
     this.approvalService.pending(this.page).subscribe({
       next: (res) => {
         this.approvals = res.content;
@@ -51,7 +51,7 @@ export class Approvals implements OnInit {
   approve(approval: StageApproval): void {
     this.approvalService.approve(approval.id, this.notes[approval.id]).subscribe({
       next: () => this.load(),
-      error: (err) => (this.error = err?.error?.message || 'Failed to approve'),
+      error: (err) => { this.error = err?.error?.message || 'Failed to approve'; this.cdr.markForCheck(); },
     });
   }
 
@@ -63,7 +63,7 @@ export class Approvals implements OnInit {
     }
     this.approvalService.reject(approval.id, notes).subscribe({
       next: () => this.load(),
-      error: (err) => (this.error = err?.error?.message || 'Failed to reject'),
+      error: (err) => { this.error = err?.error?.message || 'Failed to reject'; this.cdr.markForCheck(); },
     });
   }
 

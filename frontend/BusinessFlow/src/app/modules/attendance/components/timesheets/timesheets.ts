@@ -11,7 +11,7 @@ import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/conf
 @Component({
   selector: 'app-timesheets',
   imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState, ConfirmDialog],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './timesheets.html',
 })
 export class Timesheets implements OnInit {
@@ -92,9 +92,10 @@ export class Timesheets implements OnInit {
       next: () => {
         this.showForm = false;
         this.success = this.editingId ? 'Timesheet updated' : 'Hours logged';
+        this.cdr.markForCheck();
         this.load();
       },
-      error: (err) => (this.error = err?.error?.message || 'Failed to save timesheet'),
+      error: (err) => { this.error = err?.error?.message || 'Failed to save timesheet'; this.cdr.markForCheck(); },
     });
   }
 
@@ -104,11 +105,13 @@ export class Timesheets implements OnInit {
       next: () => {
         this.deleteTarget = null;
         this.success = 'Deleted';
+        this.cdr.markForCheck();
         this.load();
       },
       error: () => {
         this.deleteTarget = null;
         this.error = 'Cannot delete an approved timesheet';
+        this.cdr.markForCheck();
       },
     });
   }
@@ -122,15 +125,18 @@ export class Timesheets implements OnInit {
   loadEmployeeTimesheets(): void {
     if (!this.employeeIdFilter) return;
     this.employeeLoading = true;
+    this.cdr.markForCheck();
     this.timesheetService.listForEmployee(this.employeeIdFilter, this.employeePage).subscribe({
       next: (res) => {
         this.employeeTimesheets = res.content;
         this.employeeTotalPages = res.totalPages;
         this.employeeLoading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.error = 'Failed to load timesheets for that employee';
         this.employeeLoading = false;
+        this.cdr.markForCheck();
       },
     });
   }
@@ -139,9 +145,10 @@ export class Timesheets implements OnInit {
     this.timesheetService.approve(t.id).subscribe({
       next: () => {
         this.success = 'Timesheet approved';
+        this.cdr.markForCheck();
         this.loadEmployeeTimesheets();
       },
-      error: (err) => (this.error = err?.error?.message || 'Failed to approve'),
+      error: (err) => { this.error = err?.error?.message || 'Failed to approve'; this.cdr.markForCheck(); },
     });
   }
 

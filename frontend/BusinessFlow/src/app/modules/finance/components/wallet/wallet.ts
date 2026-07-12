@@ -11,7 +11,7 @@ import { EmptyState } from '../../../../shared/components/empty-state/empty-stat
 @Component({
   selector: 'app-wallet',
   imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './wallet.html',
 })
 export class WalletPage implements OnInit {
@@ -44,14 +44,17 @@ export class WalletPage implements OnInit {
 
   loadWallet(): void {
     this.loadingWallet = true;
+    this.cdr.markForCheck();
     this.walletService.getWallet().subscribe({
       next: (w) => {
         this.wallet = w;
         this.loadingWallet = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.error = 'Failed to load wallet';
         this.loadingWallet = false;
+        this.cdr.markForCheck();
       },
     });
   }
@@ -87,16 +90,16 @@ export class WalletPage implements OnInit {
       next: (w) => {
         this.wallet = w;
         this.saving = false;
-        this.cdr.markForCheck();
         this.showTopUp = false;
         this.success = 'Wallet topped up successfully';
         this.page = 0;
+        this.cdr.markForCheck();
         this.loadTransactions();
       },
       error: (err) => {
         this.saving = false;
-        this.cdr.markForCheck();
         this.error = err?.error?.message || 'Failed to top up wallet';
+        this.cdr.markForCheck();
       },
     });
   }
@@ -105,7 +108,7 @@ export class WalletPage implements OnInit {
   topUpOnline(): void {
     if (!this.topUpForm.amount || this.topUpForm.amount <= 0) return;
     this.gatewayPayment.redirectToGateway('WALLET_TOPUP', null, this.topUpForm.amount,
-      (msg) => (this.error = msg));
+      (msg) => { this.error = msg; this.cdr.markForCheck(); });
   }
 
   goToPage(p: number): void {

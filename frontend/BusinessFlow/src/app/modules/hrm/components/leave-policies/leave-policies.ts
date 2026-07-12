@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
@@ -17,6 +17,7 @@ import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/conf
   selector: 'app-leave-policies',
   imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState, ConfirmDialog],
   templateUrl: './leave-policies.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LeavePolicies implements OnInit {
   policies: LeavePolicy[] = [];
@@ -45,7 +46,6 @@ export class LeavePolicies implements OnInit {
 
   load(): void {
     this.loading = true;
-    this.cdr.markForCheck();
     this.error = '';
     this.policyService.list(this.page, 20).subscribe({
       next: (res) => {
@@ -87,7 +87,6 @@ export class LeavePolicies implements OnInit {
 
   save(): void {
     this.saving = true;
-    this.cdr.markForCheck();
     this.error = '';
     const payload = this.cleanPayload();
     const request = this.isEdit && this.selectedId
@@ -97,15 +96,15 @@ export class LeavePolicies implements OnInit {
     request.subscribe({
       next: () => {
         this.saving = false;
-        this.cdr.markForCheck();
         this.showForm = false;
         this.success = this.isEdit ? 'Leave policy updated' : 'Leave policy created';
+        this.cdr.markForCheck();
         this.load();
       },
       error: (err) => {
         this.saving = false;
-        this.cdr.markForCheck();
         this.error = err?.error?.message || 'Failed to save policy';
+        this.cdr.markForCheck();
       }
     });
   }
@@ -116,11 +115,13 @@ export class LeavePolicies implements OnInit {
       next: () => {
         this.deleteTarget = null;
         this.success = 'Leave policy deleted';
+        this.cdr.markForCheck();
         this.load();
       },
       error: () => {
         this.deleteTarget = null;
         this.error = 'Failed to delete policy';
+        this.cdr.markForCheck();
       }
     });
   }

@@ -11,7 +11,7 @@ import { EmptyState } from '../../../../shared/components/empty-state/empty-stat
 @Component({
   selector: 'app-general-ledger',
   imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './general-ledger.html',
 })
 export class GeneralLedger implements OnInit {
@@ -34,20 +34,20 @@ export class GeneralLedger implements OnInit {
   constructor(private ledgerService: GeneralLedgerService, private coaService: CoaService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
-    this.coaService.list(0, 200).subscribe({ next: (res) => (this.accounts = res.content) });
+    this.coaService.list(0, 200).subscribe({ next: (res) => { this.accounts = res.content; this.cdr.markForCheck(); } });
     this.load();
   }
 
   load(): void {
     this.loading = true;
-    this.cdr.markForCheck();
     this.accountBalance = null;
+    this.cdr.markForCheck();
     let obs;
     if (this.startDate && this.endDate) {
       obs = this.ledgerService.getByDateRange(this.startDate, this.endDate, this.page);
     } else if (this.accountFilter) {
       obs = this.ledgerService.getByAccount(this.accountFilter, this.page);
-      this.ledgerService.getAccountBalance(this.accountFilter).subscribe({ next: (b) => (this.accountBalance = b) });
+      this.ledgerService.getAccountBalance(this.accountFilter).subscribe({ next: (b) => { this.accountBalance = b; this.cdr.markForCheck(); } });
     } else {
       obs = this.ledgerService.list(this.page);
     }
@@ -90,11 +90,13 @@ export class GeneralLedger implements OnInit {
       next: () => {
         this.reconcileTarget = null;
         this.success = 'Entry reconciled';
+        this.cdr.markForCheck();
         this.load();
       },
       error: (err) => {
         this.error = err?.error?.message || 'Failed to reconcile';
         this.reconcileTarget = null;
+        this.cdr.markForCheck();
       },
     });
   }

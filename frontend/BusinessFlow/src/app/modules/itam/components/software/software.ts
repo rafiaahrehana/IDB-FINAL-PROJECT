@@ -11,7 +11,7 @@ import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/conf
 @Component({
   selector: 'app-software',
   imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState, ConfirmDialog],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './software.html',
 })
 export class Software implements OnInit {
@@ -67,9 +67,10 @@ export class Software implements OnInit {
       next: () => {
         this.showForm = false;
         this.success = 'Saved';
+        this.cdr.markForCheck();
         this.load();
       },
-      error: (err) => (this.error = err?.error?.message || 'Failed'),
+      error: (err) => { this.error = err?.error?.message || 'Failed'; this.cdr.markForCheck(); },
     });
   }
 
@@ -79,11 +80,13 @@ export class Software implements OnInit {
       next: () => {
         this.deleteTarget = null;
         this.success = 'Deleted';
+        this.cdr.markForCheck();
         this.load();
       },
       error: () => {
         this.deleteTarget = null;
         this.error = 'Cannot delete';
+        this.cdr.markForCheck();
       },
     });
   }

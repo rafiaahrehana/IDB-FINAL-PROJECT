@@ -13,7 +13,7 @@ import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/conf
 @Component({
   selector: 'app-payment-receipts',
   imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState, ConfirmDialog],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './payment-receipts.html',
 })
 export class PaymentReceipts implements OnInit {
@@ -63,7 +63,7 @@ export class PaymentReceipts implements OnInit {
 
   loadClients(): void {
     if (this.clients.length) return;
-    this.clientService.list(0, 200).subscribe({ next: (res) => (this.clients = res.content), error: () => (this.clients = []) });
+    this.clientService.list(0, 200).subscribe({ next: (res) => { this.clients = res.content; this.cdr.markForCheck(); }, error: () => { this.clients = []; this.cdr.markForCheck(); } });
   }
 
   openCreate(): void {
@@ -78,9 +78,10 @@ export class PaymentReceipts implements OnInit {
       next: () => {
         this.showForm = false;
         this.success = 'Payment receipt created';
+        this.cdr.markForCheck();
         this.load();
       },
-      error: (err) => (this.error = err?.error?.message || 'Failed to create payment receipt'),
+      error: (err) => { this.error = err?.error?.message || 'Failed to create payment receipt'; this.cdr.markForCheck(); },
     });
   }
 
@@ -88,9 +89,10 @@ export class PaymentReceipts implements OnInit {
     this.receiptService.confirm(r.id).subscribe({
       next: () => {
         this.success = 'Payment confirmed';
+        this.cdr.markForCheck();
         this.load();
       },
-      error: (err) => (this.error = err?.error?.message || 'Failed to confirm'),
+      error: (err) => { this.error = err?.error?.message || 'Failed to confirm'; this.cdr.markForCheck(); },
     });
   }
 
@@ -105,11 +107,13 @@ export class PaymentReceipts implements OnInit {
       next: () => {
         this.depositTarget = null;
         this.success = 'Marked as deposited';
+        this.cdr.markForCheck();
         this.load();
       },
       error: (err) => {
         this.error = err?.error?.message || 'Failed to mark as deposited';
         this.depositTarget = null;
+        this.cdr.markForCheck();
       },
     });
   }
@@ -120,11 +124,13 @@ export class PaymentReceipts implements OnInit {
       next: () => {
         this.deleteTarget = null;
         this.success = 'Deleted';
+        this.cdr.markForCheck();
         this.load();
       },
       error: () => {
         this.deleteTarget = null;
         this.error = 'Cannot delete';
+        this.cdr.markForCheck();
       },
     });
   }

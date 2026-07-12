@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Announcement, AnnouncementRequest, ANNOUNCEMENT_AUDIENCES, Department } from '../../models/hrm.model';
@@ -13,6 +13,7 @@ import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/conf
   selector: 'app-announcements',
   imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState, ConfirmDialog],
   templateUrl: './announcements.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Announcements implements OnInit {
   announcements: Announcement[] = [];
@@ -44,7 +45,6 @@ export class Announcements implements OnInit {
 
   load(): void {
     this.loading = true;
-    this.cdr.markForCheck();
     this.error = '';
     this.announcementService.list(this.page, 20).subscribe({
       next: (res) => {
@@ -63,8 +63,8 @@ export class Announcements implements OnInit {
 
   loadDepartments(): void {
     this.departmentService.listActive().subscribe({
-      next: (d) => this.departments = d,
-      error: () => this.departments = []
+      next: (d) => { this.departments = d; this.cdr.markForCheck(); },
+      error: () => { this.departments = []; this.cdr.markForCheck(); }
     });
   }
 
@@ -75,21 +75,20 @@ export class Announcements implements OnInit {
 
   save(): void {
     this.saving = true;
-    this.cdr.markForCheck();
     this.error = '';
     const payload = this.cleanPayload();
     this.announcementService.create(payload).subscribe({
       next: () => {
         this.saving = false;
-        this.cdr.markForCheck();
         this.showForm = false;
         this.success = 'Announcement created successfully';
+        this.cdr.markForCheck();
         this.load();
       },
       error: (err) => {
         this.saving = false;
-        this.cdr.markForCheck();
         this.error = err?.error?.message || 'Failed to create announcement';
+        this.cdr.markForCheck();
       }
     });
   }
@@ -98,10 +97,12 @@ export class Announcements implements OnInit {
     this.announcementService.publish(a.id).subscribe({
       next: () => {
         this.success = 'Announcement published successfully';
+        this.cdr.markForCheck();
         this.load();
       },
       error: (err) => {
         this.error = err?.error?.message || 'Failed to publish announcement';
+        this.cdr.markForCheck();
       }
     });
   }
@@ -112,11 +113,13 @@ export class Announcements implements OnInit {
       next: () => {
         this.deleteTarget = null;
         this.success = 'Announcement deleted successfully';
+        this.cdr.markForCheck();
         this.load();
       },
       error: () => {
         this.deleteTarget = null;
         this.error = 'Failed to delete announcement';
+        this.cdr.markForCheck();
       }
     });
   }

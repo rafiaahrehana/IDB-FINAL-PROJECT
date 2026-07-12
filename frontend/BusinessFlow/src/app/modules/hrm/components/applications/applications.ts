@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
@@ -19,6 +19,7 @@ import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/conf
   selector: 'app-applications',
   imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState, ConfirmDialog],
   templateUrl: './applications.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Applications implements OnInit {
   // VARIABLES
@@ -55,15 +56,10 @@ export class Applications implements OnInit {
   // LOAD APPLICATIONS
   load(): void {
     this.loading = true;
-    this.cdr.markForCheck();
     this.error = '';
     this.recruitmentService.list(this.page, 20, this.statusFilter || undefined).subscribe({
-      next: (res) => { this.applications = res.content; this.totalPages = res.totalPages; this.loading = false;
-        this.cdr.markForCheck();
-      },
-      error: () => { this.error = 'Failed to load applications'; this.loading = false;
-        this.cdr.markForCheck();
-      }
+      next: (res) => { this.applications = res.content; this.totalPages = res.totalPages; this.loading = false; this.cdr.markForCheck(); },
+      error: () => { this.error = 'Failed to load applications'; this.loading = false; this.cdr.markForCheck(); }
     });
   }
 
@@ -71,8 +67,8 @@ export class Applications implements OnInit {
   loadJobs(): void {
     if (this.jobs.length) return;
     this.jobPostingService.list(0, 100, 'OPEN').subscribe({
-      next: (res) => this.jobs = res.content,
-      error: () => this.jobs = []
+      next: (res) => { this.jobs = res.content; this.cdr.markForCheck(); },
+      error: () => { this.jobs = []; this.cdr.markForCheck(); }
     });
   }
 
@@ -88,8 +84,8 @@ export class Applications implements OnInit {
   apply(): void {
     if (!this.selectedJobId) return;
     this.recruitmentService.apply(this.selectedJobId, this.form).subscribe({
-      next: () => { this.showForm = false; this.success = 'Application submitted'; this.load(); },
-      error: (err) => this.error = err?.error?.message || 'Failed to submit application'
+      next: () => { this.showForm = false; this.success = 'Application submitted'; this.cdr.markForCheck(); this.load(); },
+      error: (err) => { this.error = err?.error?.message || 'Failed to submit application'; this.cdr.markForCheck(); }
     });
   }
 
@@ -104,8 +100,8 @@ export class Applications implements OnInit {
   doStatusChange(): void {
     if (!this.statusTarget) return;
     this.recruitmentService.updateStatus(this.statusTarget.id, this.newStatus, this.statusNotes).subscribe({
-      next: () => { this.statusTarget = null; this.success = 'Application updated'; this.load(); },
-      error: (err) => { this.error = err?.error?.message || 'Failed to update'; this.statusTarget = null; }
+      next: () => { this.statusTarget = null; this.success = 'Application updated'; this.cdr.markForCheck(); this.load(); },
+      error: (err) => { this.error = err?.error?.message || 'Failed to update'; this.statusTarget = null; this.cdr.markForCheck(); }
     });
   }
 
@@ -113,8 +109,8 @@ export class Applications implements OnInit {
   doDelete(): void {
     if (!this.deleteTarget) return;
     this.recruitmentService.delete(this.deleteTarget.id).subscribe({
-      next: () => { this.deleteTarget = null; this.success = 'Application deleted'; this.load(); },
-      error: () => { this.deleteTarget = null; this.error = 'Cannot delete application'; }
+      next: () => { this.deleteTarget = null; this.success = 'Application deleted'; this.cdr.markForCheck(); this.load(); },
+      error: () => { this.deleteTarget = null; this.error = 'Cannot delete application'; this.cdr.markForCheck(); }
     });
   }
 

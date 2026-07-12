@@ -13,7 +13,7 @@ import { AuthService } from '../../../../core/services/auth.service';
 @Component({
   selector: 'app-tickets',
   imports: [CommonModule, FormsModule, RouterLink, Pagination, Loader, EmptyState],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './tickets.html',
 })
 export class Tickets implements OnInit {
@@ -76,7 +76,7 @@ export class Tickets implements OnInit {
     } else {
       this.load();
     }
-    this.agentService.available().subscribe({ next: (r) => (this.agents = r) });
+    this.agentService.available().subscribe({ next: (r) => { this.agents = r; this.cdr.markForCheck(); } });
   }
 
   load(): void {
@@ -85,41 +85,23 @@ export class Tickets implements OnInit {
     if (this.showCriticalOnly && this.isManager) {
       // Bare list, not a page
       this.ticketService.criticalOpen().subscribe({
-        next: (res) => {
-          this.tickets = res; this.totalPages = 1; this.loading = false;
-          this.cdr.markForCheck();
-        },
-        error: () => {
-          this.error = 'Failed to load tickets'; this.loading = false;
-          this.cdr.markForCheck();
-        },
+        next: (res) => { this.tickets = res; this.totalPages = 1; this.loading = false; this.cdr.markForCheck(); },
+        error: () => { this.error = 'Failed to load tickets'; this.loading = false; this.cdr.markForCheck(); },
       });
       return;
     }
     if (this.isEmployee) {
       this.ticketService.myTickets(undefined, this.page).subscribe({
-        next: (res) => {
-          this.tickets = res.content; this.totalPages = res.totalPages; this.loading = false;
-          this.cdr.markForCheck();
-        },
-        error: () => {
-          this.error = 'Failed to load tickets'; this.loading = false;
-          this.cdr.markForCheck();
-        },
+        next: (res) => { this.tickets = res.content; this.totalPages = res.totalPages; this.loading = false; this.cdr.markForCheck(); },
+        error: () => { this.error = 'Failed to load tickets'; this.loading = false; this.cdr.markForCheck(); },
       });
       return;
     }
     if (this.isAgent && !this.isManager) {
       if (this.myAgentId == null) { this.loading = false; this.cdr.markForCheck(); return; }
       this.ticketService.assignedToMe(this.myAgentId, this.page).subscribe({
-        next: (res) => {
-          this.tickets = res.content; this.totalPages = res.totalPages; this.loading = false;
-          this.cdr.markForCheck();
-        },
-        error: () => {
-          this.error = 'Failed to load tickets'; this.loading = false;
-          this.cdr.markForCheck();
-        },
+        next: (res) => { this.tickets = res.content; this.totalPages = res.totalPages; this.loading = false; this.cdr.markForCheck(); },
+        error: () => { this.error = 'Failed to load tickets'; this.loading = false; this.cdr.markForCheck(); },
       });
       return;
     }
@@ -163,6 +145,7 @@ export class Tickets implements OnInit {
       next: (ticket) => {
         this.selected = ticket;
         this.resolutionNotes = '';
+        this.cdr.markForCheck();
       },
     });
   }
@@ -173,9 +156,10 @@ export class Tickets implements OnInit {
         this.showCreate = false;
         this.form = {};
         this.success = 'Ticket created';
+        this.cdr.markForCheck();
         this.load();
       },
-      error: (err) => (this.error = err?.error?.message || 'Failed'),
+      error: (err) => { this.error = err?.error?.message || 'Failed'; this.cdr.markForCheck(); },
     });
   }
 
@@ -183,7 +167,7 @@ export class Tickets implements OnInit {
   // so we refresh the selected ticket from the server after each action.
   private refreshSelected(): void {
     if (!this.selected) return;
-    this.ticketService.getById(this.selected.id).subscribe({ next: (t) => (this.selected = t) });
+    this.ticketService.getById(this.selected.id).subscribe({ next: (t) => { this.selected = t; this.cdr.markForCheck(); } });
   }
 
   assign(): void {
@@ -191,10 +175,11 @@ export class Tickets implements OnInit {
     this.ticketService.assign(this.selected.id, this.assignAgentId).subscribe({
       next: () => {
         this.success = 'Assigned';
+        this.cdr.markForCheck();
         this.refreshSelected();
         this.load();
       },
-      error: (err) => (this.error = err?.error?.message || 'Failed'),
+      error: (err) => { this.error = err?.error?.message || 'Failed'; this.cdr.markForCheck(); },
     });
   }
 
@@ -203,10 +188,11 @@ export class Tickets implements OnInit {
     this.ticketService.resolve(this.selected.id, this.resolutionNotes).subscribe({
       next: () => {
         this.success = 'Resolved';
+        this.cdr.markForCheck();
         this.refreshSelected();
         this.load();
       },
-      error: (err) => (this.error = err?.error?.message || 'Failed'),
+      error: (err) => { this.error = err?.error?.message || 'Failed'; this.cdr.markForCheck(); },
     });
   }
 
@@ -215,10 +201,11 @@ export class Tickets implements OnInit {
     this.ticketService.close(this.selected.id).subscribe({
       next: () => {
         this.success = 'Closed';
+        this.cdr.markForCheck();
         this.refreshSelected();
         this.load();
       },
-      error: (err) => (this.error = err?.error?.message || 'Failed'),
+      error: (err) => { this.error = err?.error?.message || 'Failed'; this.cdr.markForCheck(); },
     });
   }
 
@@ -228,34 +215,35 @@ export class Tickets implements OnInit {
       next: () => {
         this.success = 'Reopened';
         this.reopenReason = '';
+        this.cdr.markForCheck();
         this.refreshSelected();
         this.load();
       },
-      error: (err) => (this.error = err?.error?.message || 'Failed'),
+      error: (err) => { this.error = err?.error?.message || 'Failed'; this.cdr.markForCheck(); },
     });
   }
 
   escalate(): void {
     if (!this.selected || !this.escalateReason.trim()) return;
     this.ticketService.escalate(this.selected.id, this.escalateReason.trim()).subscribe({
-      next: () => { this.success = 'Escalated'; this.escalateReason = ''; this.refreshSelected(); this.load(); },
-      error: (err) => (this.error = err?.error?.message || 'Failed'),
+      next: () => { this.success = 'Escalated'; this.escalateReason = ''; this.cdr.markForCheck(); this.refreshSelected(); this.load(); },
+      error: (err) => { this.error = err?.error?.message || 'Failed'; this.cdr.markForCheck(); },
     });
   }
 
   reassign(): void {
     if (!this.selected || !this.reassignAgentId || !this.reassignReason.trim()) return;
     this.ticketService.reassign(this.selected.id, this.reassignAgentId, this.reassignReason.trim()).subscribe({
-      next: () => { this.success = 'Reassigned'; this.reassignReason = ''; this.refreshSelected(); this.load(); },
-      error: (err) => (this.error = err?.error?.message || 'Failed'),
+      next: () => { this.success = 'Reassigned'; this.reassignReason = ''; this.cdr.markForCheck(); this.refreshSelected(); this.load(); },
+      error: (err) => { this.error = err?.error?.message || 'Failed'; this.cdr.markForCheck(); },
     });
   }
 
   submitSatisfaction(): void {
     if (!this.selected || !this.satisfactionFeedback.trim()) return;
     this.ticketService.recordSatisfaction(this.selected.id, this.satisfactionRating, this.satisfactionFeedback.trim()).subscribe({
-      next: () => { this.success = 'Thanks for your feedback'; this.satisfactionFeedback = ''; this.refreshSelected(); },
-      error: (err) => (this.error = err?.error?.message || 'Failed'),
+      next: () => { this.success = 'Thanks for your feedback'; this.satisfactionFeedback = ''; this.cdr.markForCheck(); this.refreshSelected(); },
+      error: (err) => { this.error = err?.error?.message || 'Failed'; this.cdr.markForCheck(); },
     });
   }
 

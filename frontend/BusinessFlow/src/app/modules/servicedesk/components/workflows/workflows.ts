@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
@@ -15,6 +15,7 @@ import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/conf
 @Component({
   selector: 'app-workflows',
   imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState, ConfirmDialog],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './workflows.html',
 })
 export class Workflows implements OnInit {
@@ -46,8 +47,8 @@ export class Workflows implements OnInit {
   // LOAD TEMPLATES
   load(): void {
     this.loading = true;
-    this.cdr.markForCheck();
     this.error = '';
+    this.cdr.markForCheck();
     this.workflowService.list(this.page).subscribe({
       next: (res) => { this.templates = res.content; this.totalPages = res.totalPages; this.loading = false; this.cdr.markForCheck(); },
       error: () => { this.error = 'Failed to load workflows'; this.loading = false; this.cdr.markForCheck(); }
@@ -75,9 +76,11 @@ export class Workflows implements OnInit {
     op.subscribe({
       next: () => {
         this.success = this.editingId ? 'Workflow updated' : 'Workflow created';
-        this.showForm = false; this.editingId = null; this.load();
+        this.showForm = false; this.editingId = null;
+        this.cdr.markForCheck();
+        this.load();
       },
-      error: (err) => this.error = err?.error?.message || 'Failed to save workflow'
+      error: (err) => { this.error = err?.error?.message || 'Failed to save workflow'; this.cdr.markForCheck(); }
     });
   }
 
@@ -85,7 +88,7 @@ export class Workflows implements OnInit {
   toggle(t: WorkflowTemplate): void {
     this.workflowService.toggle(t.id).subscribe({
       next: () => this.load(),
-      error: (err) => this.error = err?.error?.message || 'Failed to toggle workflow'
+      error: (err) => { this.error = err?.error?.message || 'Failed to toggle workflow'; this.cdr.markForCheck(); }
     });
   }
 
@@ -93,8 +96,8 @@ export class Workflows implements OnInit {
   doDelete(): void {
     if (!this.deleteTarget) return;
     this.workflowService.delete(this.deleteTarget.id).subscribe({
-      next: () => { this.deleteTarget = null; this.success = 'Workflow deleted'; this.load(); },
-      error: () => { this.deleteTarget = null; this.error = 'Cannot delete workflow'; }
+      next: () => { this.deleteTarget = null; this.success = 'Workflow deleted'; this.cdr.markForCheck(); this.load(); },
+      error: () => { this.deleteTarget = null; this.error = 'Cannot delete workflow'; this.cdr.markForCheck(); }
     });
   }
 
@@ -102,8 +105,8 @@ export class Workflows implements OnInit {
   openStages(t: WorkflowTemplate): void {
     // fetch a fresh copy for latest stages
     this.workflowService.getById(t.id).subscribe({
-      next: (res) => { this.stageTarget = res; this.resetStageForm(); },
-      error: () => this.error = 'Failed to load stages'
+      next: (res) => { this.stageTarget = res; this.resetStageForm(); this.cdr.markForCheck(); },
+      error: () => { this.error = 'Failed to load stages'; this.cdr.markForCheck(); }
     });
   }
 
@@ -130,24 +133,25 @@ export class Workflows implements OnInit {
     op.subscribe({
       next: () => {
         this.success = this.editingStageId ? 'Stage updated' : 'Stage added';
+        this.cdr.markForCheck();
         this.refreshStages();
       },
-      error: (err) => this.error = err?.error?.message || 'Failed to save stage'
+      error: (err) => { this.error = err?.error?.message || 'Failed to save stage'; this.cdr.markForCheck(); }
     });
   }
 
   removeStage(stageId: number): void {
     if (!this.stageTarget) return;
     this.workflowService.removeStage(this.stageTarget.id, stageId).subscribe({
-      next: () => { this.deleteStageId = null; this.success = 'Stage removed'; this.refreshStages(); },
-      error: (err) => this.error = err?.error?.message || 'Failed to remove stage'
+      next: () => { this.deleteStageId = null; this.success = 'Stage removed'; this.cdr.markForCheck(); this.refreshStages(); },
+      error: (err) => { this.error = err?.error?.message || 'Failed to remove stage'; this.cdr.markForCheck(); }
     });
   }
 
   private refreshStages(): void {
     if (!this.stageTarget) return;
     this.workflowService.getById(this.stageTarget.id).subscribe({
-      next: (res) => { this.stageTarget = res; this.resetStageForm(); this.load(); }
+      next: (res) => { this.stageTarget = res; this.resetStageForm(); this.cdr.markForCheck(); this.load(); }
     });
   }
 

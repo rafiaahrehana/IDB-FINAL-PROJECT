@@ -8,7 +8,7 @@ import { Loader } from '../../../../shared/components/loader/loader';
 @Component({
   selector: 'app-check-in-out',
   imports: [CommonModule, FormsModule, Loader],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './check-in-out.html',
 })
 export class CheckInOut implements OnInit {
@@ -54,9 +54,10 @@ export class CheckInOut implements OnInit {
           this.todayRecord = r;
           this.success = 'Checked in successfully';
           this.notes = '';
+          this.cdr.markForCheck();
           this.loadRecent();
         },
-        error: (err) => (this.error = err?.error?.message || 'Check-in failed'),
+        error: (err) => { this.error = err?.error?.message || 'Check-in failed'; this.cdr.markForCheck(); },
       });
   }
 
@@ -69,9 +70,10 @@ export class CheckInOut implements OnInit {
         next: (r) => {
           this.todayRecord = r;
           this.success = 'Checked out successfully';
+          this.cdr.markForCheck();
           this.loadRecent();
         },
-        error: (err) => (this.error = err?.error?.message || 'Check-out failed'),
+        error: (err) => { this.error = err?.error?.message || 'Check-out failed'; this.cdr.markForCheck(); },
       });
   }
 

@@ -13,7 +13,7 @@ import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/conf
   selector: 'app-departments',
   imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState, ConfirmDialog],
   templateUrl: './departments.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './departments.scss',
 })
 export class Departments implements OnInit {
@@ -41,12 +41,11 @@ export class Departments implements OnInit {
 
   ngOnInit(): void {
     this.load();
-    this.employeeService.list(0, 1000, undefined, 'ACTIVE').subscribe({ next: (res) => (this.employees = res.content) });
+    this.employeeService.list(0, 1000, undefined, 'ACTIVE').subscribe({ next: (res) => { this.employees = res.content; this.cdr.markForCheck(); } });
   }
 
   load(): void {
     this.loading = true;
-    this.cdr.markForCheck();
     this.error = '';
     this.departmentService.list(this.page, 20).subscribe({
       next: (res) => {
@@ -61,7 +60,7 @@ export class Departments implements OnInit {
         this.cdr.markForCheck();
       },
     });
-    this.departmentService.listActive().subscribe({ next: (d) => (this.activeDepartments = d) });
+    this.departmentService.listActive().subscribe({ next: (d) => { this.activeDepartments = d; this.cdr.markForCheck(); } });
   }
 
   openCreate(): void {
@@ -85,7 +84,6 @@ export class Departments implements OnInit {
 
   save(): void {
     this.saving = true;
-    this.cdr.markForCheck();
     this.error = '';
     const payload: any = { ...this.form };
     Object.keys(payload).forEach((k) => {
@@ -97,15 +95,15 @@ export class Departments implements OnInit {
     req.subscribe({
       next: () => {
         this.saving = false;
-        this.cdr.markForCheck();
         this.showForm = false;
         this.success = this.editingId ? 'Department updated' : 'Department created';
+        this.cdr.markForCheck();
         this.load();
       },
       error: (err) => {
         this.saving = false;
-        this.cdr.markForCheck();
         this.error = err?.error?.message || 'Failed to save department';
+        this.cdr.markForCheck();
       },
     });
   }
@@ -113,7 +111,7 @@ export class Departments implements OnInit {
   toggle(dept: Department): void {
     this.departmentService.toggle(dept.id).subscribe({
       next: () => this.load(),
-      error: () => (this.error = 'Failed to update department status'),
+      error: () => { this.error = 'Failed to update department status'; this.cdr.markForCheck(); },
     });
   }
 
@@ -123,11 +121,13 @@ export class Departments implements OnInit {
       next: () => {
         this.deleteTarget = null;
         this.success = 'Department deleted';
+        this.cdr.markForCheck();
         this.load();
       },
       error: (err) => {
         this.error = err?.error?.message || 'Failed to delete department';
         this.deleteTarget = null;
+        this.cdr.markForCheck();
       },
     });
   }

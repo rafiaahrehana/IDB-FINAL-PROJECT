@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
@@ -19,6 +19,7 @@ import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/conf
   selector: 'app-leaves',
   imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState, ConfirmDialog],
   templateUrl: './leaves.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Leaves implements OnInit {
   // VARIABLES
@@ -55,26 +56,21 @@ export class Leaves implements OnInit {
   // LOAD LEAVE REQUESTS BASED ON CURRENT VIEW
   load(): void {
     this.loading = true;
-    this.cdr.markForCheck();
     this.error = '';
     const req = this.view === 'my'
       ? this.leaveService.listMine(this.page)
       : this.leaveService.list(this.page, 20, this.statusFilter || undefined);
     req.subscribe({
-      next: (res) => { this.requests = res.content; this.totalPages = res.totalPages; this.loading = false;
-        this.cdr.markForCheck();
-      },
-      error: () => { this.error = 'Failed to load leave requests'; this.loading = false;
-        this.cdr.markForCheck();
-      }
+      next: (res) => { this.requests = res.content; this.totalPages = res.totalPages; this.loading = false; this.cdr.markForCheck(); },
+      error: () => { this.error = 'Failed to load leave requests'; this.loading = false; this.cdr.markForCheck(); }
     });
   }
 
   // LOAD MY BALANCES FOR CURRENT YEAR
   loadBalances(): void {
     this.leaveService.myBalances().subscribe({
-      next: (data) => this.balances = data,
-      error: () => this.balances = []
+      next: (data) => { this.balances = data; this.cdr.markForCheck(); },
+      error: () => { this.balances = []; this.cdr.markForCheck(); }
     });
   }
 
@@ -96,8 +92,8 @@ export class Leaves implements OnInit {
   // APPLY FOR LEAVE
   apply(): void {
     this.leaveService.apply(this.form).subscribe({
-      next: () => { this.success = 'Leave request submitted'; this.showForm = false; this.load(); this.loadBalances(); },
-      error: (err) => this.error = err?.error?.message || 'Failed to submit leave request'
+      next: () => { this.success = 'Leave request submitted'; this.showForm = false; this.cdr.markForCheck(); this.load(); this.loadBalances(); },
+      error: (err) => { this.error = err?.error?.message || 'Failed to submit leave request'; this.cdr.markForCheck(); }
     });
   }
 
@@ -115,8 +111,8 @@ export class Leaves implements OnInit {
       status: this.reviewAction,
       rejectionReason: this.reviewAction === 'REJECTED' ? this.rejectionReason : undefined,
     }).subscribe({
-      next: () => { this.reviewTarget = null; this.success = 'Leave request reviewed'; this.load(); },
-      error: (err) => { this.error = err?.error?.message || 'Failed to review'; this.reviewTarget = null; }
+      next: () => { this.reviewTarget = null; this.success = 'Leave request reviewed'; this.cdr.markForCheck(); this.load(); },
+      error: (err) => { this.error = err?.error?.message || 'Failed to review'; this.reviewTarget = null; this.cdr.markForCheck(); }
     });
   }
 
@@ -124,8 +120,8 @@ export class Leaves implements OnInit {
   doCancel(): void {
     if (!this.cancelTarget) return;
     this.leaveService.cancel(this.cancelTarget.id).subscribe({
-      next: () => { this.cancelTarget = null; this.success = 'Leave request cancelled'; this.load(); this.loadBalances(); },
-      error: (err) => { this.error = err?.error?.message || 'Cannot cancel'; this.cancelTarget = null; }
+      next: () => { this.cancelTarget = null; this.success = 'Leave request cancelled'; this.cdr.markForCheck(); this.load(); this.loadBalances(); },
+      error: (err) => { this.error = err?.error?.message || 'Cannot cancel'; this.cancelTarget = null; this.cdr.markForCheck(); }
     });
   }
 

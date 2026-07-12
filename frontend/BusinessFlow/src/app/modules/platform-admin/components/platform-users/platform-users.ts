@@ -11,7 +11,7 @@ import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/conf
 @Component({
   selector: 'app-platform-users',
   imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState, ConfirmDialog],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './platform-users.html',
 })
 export class PlatformUsers implements OnInit {
@@ -73,24 +73,24 @@ export class PlatformUsers implements OnInit {
 
   save(): void {
     this.saving = true;
-    this.cdr.markForCheck();
     this.error = '';
     this.success = '';
+    this.cdr.markForCheck();
     const op = this.editingId
       ? this.userService.update(this.editingId, this.form)
       : this.userService.create(this.form);
     op.subscribe({
       next: () => {
         this.saving = false;
-        this.cdr.markForCheck();
         this.showForm = false;
         this.success = this.editingId ? 'Platform user updated' : `Platform user ${this.form.email} created`;
+        this.cdr.markForCheck();
         this.load();
       },
       error: (err) => {
         this.saving = false;
-        this.cdr.markForCheck();
         this.error = err?.error?.message || 'Failed to save platform user';
+        this.cdr.markForCheck();
       },
     });
   }
@@ -101,11 +101,13 @@ export class PlatformUsers implements OnInit {
       next: () => {
         this.deactivateTarget = null;
         this.success = 'Platform user deactivated';
+        this.cdr.markForCheck();
         this.load();
       },
       error: (err) => {
         this.deactivateTarget = null;
         this.error = err?.error?.message || 'Failed to deactivate';
+        this.cdr.markForCheck();
       },
     });
   }

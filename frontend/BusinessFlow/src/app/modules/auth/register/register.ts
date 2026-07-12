@@ -1,10 +1,9 @@
 import { Component, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { LocationComponent } from '../../../shared/components/location/location.component';
-import { passwordsMatchValidator } from '../../../shared/validators/password-validators';
 
 // Mirrors backend @Pattern on RegisterRequest.password:
 // min 8 chars, at least one lowercase, one uppercase, one digit, one special character.
@@ -14,11 +13,19 @@ const PASSWORD_PATTERN =
 // Mirrors backend @Pattern on RegisterRequest.subdomain.
 const SUBDOMAIN_PATTERN = /^[a-z0-9]([a-z0-9-]{1,48}[a-z0-9])?$/;
 
+function passwordsMatchValidator(group: AbstractControl): ValidationErrors | null {
+  const password = group.get('password')?.value;
+  const confirmPassword = group.get('confirmPassword')?.value;
+  return password && confirmPassword && password !== confirmPassword
+    ? { passwordMismatch: true }
+    : null;
+}
+
 @Component({
   selector: 'app-register',
   imports: [CommonModule, ReactiveFormsModule, RouterLink, LocationComponent],
   templateUrl: './register.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './register.scss',
 })
 export class Register {
@@ -34,7 +41,7 @@ export class Register {
     private fb: FormBuilder,
     private authService: AuthService,
     private router: Router,
-    private cdr : ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
   ) {
     this.form = this.fb.group(
       {
@@ -49,7 +56,7 @@ export class Register {
         companyPhone: ['', Validators.maxLength(30)],
         location: [null as any],
       },
-      { validators: passwordsMatchValidator('password', 'confirmPassword') },
+      { validators: passwordsMatchValidator },
     );
   }
 
@@ -120,13 +127,14 @@ export class Register {
       return;
     }
     this.loading = true;
+    this.cdr.markForCheck();
     this.error = '';
+    this.cdr.markForCheck();
 
     const { confirmPassword, ...request } = this.form.getRawValue();
 
     this.authService.register(request as any).subscribe({
       next: () => {
-        
         this.loading = false;
         this.submitted = true;
         this.cdr.markForCheck();

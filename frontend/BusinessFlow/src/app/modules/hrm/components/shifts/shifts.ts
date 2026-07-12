@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Shift, ShiftRequest, SHIFT_TYPES } from '../../models/hrm.model';
@@ -12,6 +12,7 @@ import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/conf
   selector: 'app-shifts',
   imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState, ConfirmDialog],
   templateUrl: './shifts.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Shifts implements OnInit {
   shifts: Shift[] = [];
@@ -39,7 +40,6 @@ export class Shifts implements OnInit {
 
   load(): void {
     this.loading = true;
-    this.cdr.markForCheck();
     this.error = '';
     this.shiftService.list(this.page, 20).subscribe({
       next: (res) => {
@@ -82,7 +82,6 @@ export class Shifts implements OnInit {
 
   save(): void {
     this.saving = true;
-    this.cdr.markForCheck();
     this.error = '';
     const payload = this.cleanPayload();
     const request = this.isEdit && this.selectedId
@@ -92,15 +91,15 @@ export class Shifts implements OnInit {
     request.subscribe({
       next: () => {
         this.saving = false;
-        this.cdr.markForCheck();
         this.showForm = false;
         this.success = this.isEdit ? 'Shift updated' : 'Shift created';
+        this.cdr.markForCheck();
         this.load();
       },
       error: (err) => {
         this.saving = false;
-        this.cdr.markForCheck();
         this.error = err?.error?.message || 'Failed to save shift';
+        this.cdr.markForCheck();
       }
     });
   }
@@ -109,10 +108,12 @@ export class Shifts implements OnInit {
     this.shiftService.toggle(s.id).subscribe({
       next: () => {
         this.success = 'Shift status updated';
+        this.cdr.markForCheck();
         this.load();
       },
       error: (err) => {
         this.error = err?.error?.message || 'Failed to toggle status';
+        this.cdr.markForCheck();
       }
     });
   }
@@ -123,11 +124,13 @@ export class Shifts implements OnInit {
       next: () => {
         this.deleteTarget = null;
         this.success = 'Shift deleted';
+        this.cdr.markForCheck();
         this.load();
       },
       error: () => {
         this.deleteTarget = null;
         this.error = 'Failed to delete shift';
+        this.cdr.markForCheck();
       }
     });
   }

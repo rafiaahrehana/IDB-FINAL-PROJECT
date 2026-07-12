@@ -11,7 +11,7 @@ import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/conf
 @Component({
   selector: 'app-chart-of-accounts',
   imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState, ConfirmDialog],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './chart-of-accounts.html',
 })
 export class ChartOfAccounts implements OnInit {
@@ -79,9 +79,10 @@ export class ChartOfAccounts implements OnInit {
       next: () => {
         this.showForm = false;
         this.success = 'Saved';
+        this.cdr.markForCheck();
         this.load();
       },
-      error: (err) => (this.error = err?.error?.message || 'Failed to save'),
+      error: (err) => { this.error = err?.error?.message || 'Failed to save'; this.cdr.markForCheck(); },
     });
   }
 
@@ -95,11 +96,13 @@ export class ChartOfAccounts implements OnInit {
       next: () => {
         this.deleteTarget = null;
         this.success = 'Deleted';
+        this.cdr.markForCheck();
         this.load();
       },
       error: (err) => {
         this.deleteTarget = null;
         this.error = err?.error?.message || 'Cannot delete';
+        this.cdr.markForCheck();
       },
     });
   }

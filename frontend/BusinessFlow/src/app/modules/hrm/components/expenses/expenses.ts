@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
@@ -17,6 +17,7 @@ import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/conf
   selector: 'app-hr-expenses',
   imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState, ConfirmDialog],
   templateUrl: './expenses.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Expenses implements OnInit {
   // VARIABLES
@@ -48,23 +49,13 @@ export class Expenses implements OnInit {
   // LOAD EXPENSES BASED ON CURRENT VIEW
   load(): void {
     this.loading = true;
-    this.cdr.markForCheck();
     this.error = '';
     const req = this.view === 'my'
       ? this.expenseService.listMine(this.page)
       : this.expenseService.list(this.page);
     req.subscribe({
-      next: (res) => {
-        this.expenses = res.content;
-        this.totalPages = res.totalPages;
-        this.loading = false;
-        this.cdr.markForCheck();
-      },
-      error: () => {
-        this.error = 'Failed to load expenses';
-        this.loading = false;
-        this.cdr.markForCheck();
-      }
+      next: (res) => { this.expenses = res.content; this.totalPages = res.totalPages; this.loading = false; this.cdr.markForCheck(); },
+      error: () => { this.error = 'Failed to load expenses'; this.loading = false; this.cdr.markForCheck(); }
     });
   }
 
@@ -85,8 +76,8 @@ export class Expenses implements OnInit {
   // SUBMIT EXPENSE
   submit(): void {
     this.expenseService.submit(this.form).subscribe({
-      next: () => { this.showForm = false; this.success = 'Expense submitted'; this.load(); },
-      error: (err) => this.error = err?.error?.message || 'Failed to submit'
+      next: () => { this.showForm = false; this.success = 'Expense submitted'; this.cdr.markForCheck(); this.load(); },
+      error: (err) => { this.error = err?.error?.message || 'Failed to submit'; this.cdr.markForCheck(); }
     });
   }
 
@@ -94,8 +85,8 @@ export class Expenses implements OnInit {
   doApprove(): void {
     if (!this.approveTarget) return;
     this.expenseService.approve(this.approveTarget.id).subscribe({
-      next: () => { this.approveTarget = null; this.success = 'Expense approved'; this.load(); },
-      error: (err) => { this.error = err?.error?.message || 'Failed to approve'; this.approveTarget = null; }
+      next: () => { this.approveTarget = null; this.success = 'Expense approved'; this.cdr.markForCheck(); this.load(); },
+      error: (err) => { this.error = err?.error?.message || 'Failed to approve'; this.approveTarget = null; this.cdr.markForCheck(); }
     });
   }
 
@@ -103,8 +94,8 @@ export class Expenses implements OnInit {
   doReject(): void {
     if (!this.rejectTarget || !this.rejectionReason) return;
     this.expenseService.reject(this.rejectTarget.id, this.rejectionReason).subscribe({
-      next: () => { this.rejectTarget = null; this.rejectionReason = ''; this.success = 'Expense rejected'; this.load(); },
-      error: (err) => { this.error = err?.error?.message || 'Failed to reject'; this.rejectTarget = null; }
+      next: () => { this.rejectTarget = null; this.rejectionReason = ''; this.success = 'Expense rejected'; this.cdr.markForCheck(); this.load(); },
+      error: (err) => { this.error = err?.error?.message || 'Failed to reject'; this.rejectTarget = null; this.cdr.markForCheck(); }
     });
   }
 
@@ -112,8 +103,8 @@ export class Expenses implements OnInit {
   doReimburse(): void {
     if (!this.reimburseTarget) return;
     this.expenseService.reimburse(this.reimburseTarget.id).subscribe({
-      next: () => { this.reimburseTarget = null; this.success = 'Expense reimbursed'; this.load(); },
-      error: (err) => { this.error = err?.error?.message || 'Failed to reimburse'; this.reimburseTarget = null; }
+      next: () => { this.reimburseTarget = null; this.success = 'Expense reimbursed'; this.cdr.markForCheck(); this.load(); },
+      error: (err) => { this.error = err?.error?.message || 'Failed to reimburse'; this.reimburseTarget = null; this.cdr.markForCheck(); }
     });
   }
 
@@ -121,8 +112,8 @@ export class Expenses implements OnInit {
   doDelete(): void {
     if (!this.deleteTarget) return;
     this.expenseService.delete(this.deleteTarget.id).subscribe({
-      next: () => { this.deleteTarget = null; this.success = 'Expense deleted'; this.load(); },
-      error: () => { this.deleteTarget = null; this.error = 'Cannot delete expense'; }
+      next: () => { this.deleteTarget = null; this.success = 'Expense deleted'; this.cdr.markForCheck(); this.load(); },
+      error: () => { this.deleteTarget = null; this.error = 'Cannot delete expense'; this.cdr.markForCheck(); }
     });
   }
 

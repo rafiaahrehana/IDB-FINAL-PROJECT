@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ServiceCategory, ServiceCategoryRequest } from '../../models/servicedesk.model';
@@ -9,6 +9,7 @@ import { EmptyState } from '../../../../shared/components/empty-state/empty-stat
 @Component({
   selector: 'app-service-categories',
   imports: [CommonModule, FormsModule, Loader, EmptyState],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './categories.html',
 })
 export class Categories implements OnInit {
@@ -30,8 +31,8 @@ export class Categories implements OnInit {
   // LOAD CATEGORIES (management listing - includes inactive, bare list, not paged)
   load(): void {
     this.loading = true;
-    this.cdr.markForCheck();
     this.error = '';
+    this.cdr.markForCheck();
     this.categoryService.listAll().subscribe({
       next: (res) => { this.categories = res; this.loading = false; this.cdr.markForCheck(); },
       error: () => { this.error = 'Failed to load categories'; this.loading = false; this.cdr.markForCheck(); }
@@ -65,9 +66,11 @@ export class Categories implements OnInit {
     op.subscribe({
       next: () => {
         this.success = this.editingId ? 'Category updated' : 'Category created';
-        this.showForm = false; this.editingId = null; this.load();
+        this.showForm = false; this.editingId = null;
+        this.cdr.markForCheck();
+        this.load();
       },
-      error: (err) => this.error = err?.error?.message || 'Failed to save category'
+      error: (err) => { this.error = err?.error?.message || 'Failed to save category'; this.cdr.markForCheck(); }
     });
   }
 
@@ -75,7 +78,7 @@ export class Categories implements OnInit {
   toggle(c: ServiceCategory): void {
     this.categoryService.toggle(c.id).subscribe({
       next: () => this.load(),
-      error: (err) => this.error = err?.error?.message || 'Failed to toggle category'
+      error: (err) => { this.error = err?.error?.message || 'Failed to toggle category'; this.cdr.markForCheck(); }
     });
   }
 }

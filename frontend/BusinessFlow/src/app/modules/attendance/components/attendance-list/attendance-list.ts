@@ -10,7 +10,7 @@ import { EmptyState } from '../../../../shared/components/empty-state/empty-stat
 @Component({
   selector: 'app-attendance-list',
   imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './attendance-list.html',
 })
 export class AttendanceList implements OnInit {
@@ -54,9 +54,10 @@ export class AttendanceList implements OnInit {
     this.attendanceService.approve(r.id).subscribe({
       next: () => {
         this.success = 'Approved';
+        this.cdr.markForCheck();
         this.load();
       },
-      error: (err) => (this.error = err?.error?.message || 'Failed'),
+      error: (err) => { this.error = err?.error?.message || 'Failed'; this.cdr.markForCheck(); },
     });
   }
 

@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PerformanceReview, PerformanceReviewRequest, Employee } from '../../models/hrm.model';
@@ -13,6 +13,7 @@ import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/conf
   selector: 'app-performance-reviews',
   imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState, ConfirmDialog],
   templateUrl: './performance-reviews.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PerformanceReviews implements OnInit {
   reviews: PerformanceReview[] = [];
@@ -34,7 +35,7 @@ export class PerformanceReviews implements OnInit {
   constructor(
     private reviewService: PerformanceReviewService,
     private employeeService: EmployeeService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit(): void {
@@ -44,7 +45,6 @@ export class PerformanceReviews implements OnInit {
 
   load(): void {
     this.loading = true;
-    this.cdr.markForCheck();
     this.error = '';
     this.reviewService.list(this.page, 20).subscribe({
       next: (res) => {
@@ -63,8 +63,8 @@ export class PerformanceReviews implements OnInit {
 
   loadEmployees(): void {
     this.employeeService.list(0, 100).subscribe({
-      next: (res) => this.employees = res.content,
-      error: () => this.employees = []
+      next: (res) => { this.employees = res.content; this.cdr.markForCheck(); },
+      error: () => { this.employees = []; this.cdr.markForCheck(); }
     });
   }
 
@@ -97,7 +97,6 @@ export class PerformanceReviews implements OnInit {
 
   save(): void {
     this.saving = true;
-    this.cdr.markForCheck();
     this.error = '';
     const payload = this.cleanPayload();
     const request = this.isEdit && this.selectedId
@@ -107,15 +106,15 @@ export class PerformanceReviews implements OnInit {
     request.subscribe({
       next: () => {
         this.saving = false;
-        this.cdr.markForCheck();
         this.showForm = false;
         this.success = this.isEdit ? 'Performance review updated' : 'Performance review created';
+        this.cdr.markForCheck();
         this.load();
       },
       error: (err) => {
         this.saving = false;
-        this.cdr.markForCheck();
         this.error = err?.error?.message || 'Failed to save review';
+        this.cdr.markForCheck();
       }
     });
   }
@@ -124,10 +123,12 @@ export class PerformanceReviews implements OnInit {
     this.reviewService.finalise(r.id).subscribe({
       next: () => {
         this.success = 'Performance review finalised successfully';
+        this.cdr.markForCheck();
         this.load();
       },
       error: (err) => {
         this.error = err?.error?.message || 'Failed to finalise review';
+        this.cdr.markForCheck();
       }
     });
   }
@@ -138,11 +139,13 @@ export class PerformanceReviews implements OnInit {
       next: () => {
         this.deleteTarget = null;
         this.success = 'Performance review deleted';
+        this.cdr.markForCheck();
         this.load();
       },
       error: () => {
         this.deleteTarget = null;
         this.error = 'Failed to delete review';
+        this.cdr.markForCheck();
       }
     });
   }

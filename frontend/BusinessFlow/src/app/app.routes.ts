@@ -17,8 +17,9 @@ import { Preferences as NotificationPreferences } from './modules/preferences/pr
 
 // Portal (public landing + per-company public portal + owner settings)
 import { Landing } from './modules/landing/landing';
-import { CompanyPortal } from './modules/portal/company-portal/company-portal';
+import { PlatformPortal } from './modules/portal/platform-portal/platform-portal';
 import { CompanySettings } from './modules/portal/company-settings/company-settings';
+import { WebsiteView } from './modules/portal/website-view/website-view';
 import { PaymentResult } from './modules/portal/payment-result/payment-result';
 
 // Finance
@@ -59,13 +60,18 @@ import { Timesheets } from './modules/attendance/components/timesheets/timesheet
 
 export const routes: Routes = [
   { path: '', component: DashboardComponent, canActivate: [AuthGuard] },
-  { path: 'dashboard', component: DashboardComponent, canActivate: [AuthGuard] },
+  { path: 'dashboard', redirectTo: '', pathMatch: 'full' },
   // Public pages - no auth
   { path: 'home', component: Landing },
-  { path: 'portal/:subdomain', loadChildren: () => import('./modules/site/site.routes').then(m => m.SITE_ROUTES), canActivate: [AuthGuard] },
+  { path: 'portal/:subdomain', loadChildren: () => import('./modules/site/site.routes').then(m => m.SITE_ROUTES) },
   { path: 'payment-result', component: PaymentResult },
   // Owner-editable portal settings
-
+  {
+    path: 'website-view',
+    component: WebsiteView,
+    canActivate: [AuthGuard, RoleGuard],
+    data: { roles: ['COMPANY_OWNER'] },
+  },
   {
     path: 'portal-settings',
     component: CompanySettings,
@@ -80,6 +86,7 @@ export const routes: Routes = [
   { path: 'auth', redirectTo: 'auth/login', pathMatch: 'full' },
   { path: 'search', component: GlobalSearch, canActivate: [AuthGuard] },
   { path: 'ai', component: AiAssistant, canActivate: [AuthGuard] },
+  { path: 'ai/settings', loadComponent: () => import('./modules/ai/components/ai-settings/ai-settings').then(m => m.AiSettings), canActivate: [AuthGuard] },
   { path: 'notifications', component: Notifications, canActivate: [AuthGuard] },
   { path: 'notifications/preferences', component: NotificationPreferences, canActivate: [AuthGuard] },
   {
@@ -100,7 +107,10 @@ export const routes: Routes = [
   {
     path: 'platform',
     canActivate: [AuthGuard, RoleGuard],
-    data: { roles: ['SUPER_ADMIN', 'SYSTEM_ADMIN', 'PLATFORM_ACCOUNTANT', 'SALES_MANAGER'] },
+    // SUPPORT_AGENT/SUPPORT_MANAGER are admitted only for the Companies page (Access
+    // Company impersonation) - the platform-sidebar menu hides the other pages from them,
+    // and each individual endpoint still enforces its own narrower @PreAuthorize.
+    data: { roles: ['SUPER_ADMIN', 'SYSTEM_ADMIN', 'PLATFORM_ACCOUNTANT', 'SALES_MANAGER', 'SUPPORT_AGENT', 'SUPPORT_MANAGER'] },
     loadChildren: () => import('./modules/platform-admin/platform-admin.routes').then(m => m.PLATFORM_ADMIN_ROUTES)
   },
   {
@@ -110,6 +120,11 @@ export const routes: Routes = [
       { path: 'coa', component: ChartOfAccounts },
       { path: 'expenses', component: Expenses },
       { path: 'invoices', component: Invoices },
+      // 'vendors' and 'vendor-payments' routes/pages/services were removed entirely
+      // (not just unrouted): there is no separate Vendor entity in the backend - vendor
+      // identity is a free-text 'vendorName' field on Expense. Vendor payments are now
+      // handled entirely through the Expenses page (submit with vendorName -> approve/
+      // reject -> mark as paid). See ExpenseService.getByVendor for filtering by vendor.
       { path: 'journal-entries', component: JournalEntries },
       { path: 'reports', component: FinanceReports },
       { path: 'wallet', component: WalletPage },
@@ -137,6 +152,8 @@ export const routes: Routes = [
     path: 'itam',
     canActivate: [AuthGuard, RoleGuard],
     children: [
+      // 'hardware' now reuses the shared hrm/asset backend (AssetController /api/hr/assets)
+      // rather than a dedicated ITAM controller - see components/hardware/hardware.ts note.
       { path: 'hardware', component: Hardware },
       { path: 'software', component: Software },
       { path: 'assignments', component: Assignments },

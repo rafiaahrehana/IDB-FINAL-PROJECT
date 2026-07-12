@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, inject } from '@angular/core';
 import { SiteService } from '../../services/site.service';
 import { BlogPost } from '../../models/site.model';
 import { BreadcrumbComponent } from '../../components/breadcrumb/breadcrumb.component';
@@ -7,6 +7,7 @@ import { BlogCardComponent } from '../../components/blog-card/blog-card.componen
 @Component({
   selector: 'app-site-blog',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [BreadcrumbComponent, BlogCardComponent],
   template: `
     <div class="pt-5" style="margin-top: 72px">
@@ -40,10 +41,9 @@ import { BlogCardComponent } from '../../components/blog-card/blog-card.componen
 })
 export class SiteBlogPage implements OnInit {
   private siteService = inject(SiteService);
+  constructor(private cdr: ChangeDetectorRef) {}
   posts: BlogPost[] = [];
   loading = true;
-
-  constructor(private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.siteService.getBlogs().subscribe(p => {

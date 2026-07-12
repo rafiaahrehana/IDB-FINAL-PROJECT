@@ -12,7 +12,7 @@ import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/conf
   selector: 'app-designations',
   imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState, ConfirmDialog],
   templateUrl: './designations.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './designations.scss',
 })
 export class Designations implements OnInit {
@@ -38,7 +38,6 @@ export class Designations implements OnInit {
 
   load(): void {
     this.loading = true;
-    this.cdr.markForCheck();
     this.error = '';
     this.designationService.list(this.page, 20).subscribe({
       next: (res) => {
@@ -69,7 +68,6 @@ export class Designations implements OnInit {
 
   save(): void {
     this.saving = true;
-    this.cdr.markForCheck();
     this.error = '';
     const req = this.editingId
       ? this.designationService.update(this.editingId, this.form)
@@ -77,15 +75,15 @@ export class Designations implements OnInit {
     req.subscribe({
       next: () => {
         this.saving = false;
-        this.cdr.markForCheck();
         this.showForm = false;
         this.success = this.editingId ? 'Designation updated' : 'Designation created';
+        this.cdr.markForCheck();
         this.load();
       },
       error: (err) => {
         this.saving = false;
-        this.cdr.markForCheck();
         this.error = err?.error?.message || 'Failed to save designation';
+        this.cdr.markForCheck();
       },
     });
   }
@@ -93,7 +91,7 @@ export class Designations implements OnInit {
   toggle(d: Designation): void {
     this.designationService.toggle(d.id).subscribe({
       next: () => this.load(),
-      error: () => (this.error = 'Failed to update designation status'),
+      error: () => { this.error = 'Failed to update designation status'; this.cdr.markForCheck(); },
     });
   }
 
@@ -103,11 +101,13 @@ export class Designations implements OnInit {
       next: () => {
         this.deleteTarget = null;
         this.success = 'Designation deleted';
+        this.cdr.markForCheck();
         this.load();
       },
       error: (err) => {
         this.error = err?.error?.message || 'Failed to delete designation';
         this.deleteTarget = null;
+        this.cdr.markForCheck();
       },
     });
   }

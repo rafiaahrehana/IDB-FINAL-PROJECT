@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { LocationService } from '../../../../shared/services/location.service';
@@ -10,6 +10,7 @@ import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/conf
   selector: 'app-locations-management',
   standalone: true,
   imports: [CommonModule, FormsModule, Loader, ConfirmDialog],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './locations.html',
   styleUrl: './locations.scss'
 })
@@ -53,8 +54,8 @@ export class Locations implements OnInit {
 
   loadCountries(): void {
     this.loading = true;
-    this.cdr.markForCheck();
     this.error = '';
+    this.cdr.markForCheck();
     this.locationService.getCountriesMaster().subscribe({
       next: (data) => {
         this.countries = data;
@@ -116,15 +117,18 @@ export class Locations implements OnInit {
 
   loadChildren(parentId: number, targetLevel: number): void {
     this.error = '';
+    this.cdr.markForCheck();
     this.locationService.getChildrenMaster(parentId).subscribe({
       next: (data) => {
         if (targetLevel === 1) this.level1Nodes = data;
         else if (targetLevel === 2) this.level2Nodes = data;
         else if (targetLevel === 3) this.level3Nodes = data;
         else if (targetLevel === 4) this.level4Nodes = data;
+        this.cdr.markForCheck();
       },
       error: (err) => {
         this.error = `Failed to load children for level ${targetLevel}`;
+        this.cdr.markForCheck();
         console.error(err);
       }
     });
@@ -166,8 +170,8 @@ export class Locations implements OnInit {
       return;
     }
     this.saving = true;
-    this.cdr.markForCheck();
     this.error = '';
+    this.cdr.markForCheck();
 
     if (this.isEditMode && this.formNode.id) {
       const req = {
@@ -178,8 +182,8 @@ export class Locations implements OnInit {
         next: (res) => {
           this.success = 'Node updated successfully';
           this.saving = false;
-          this.cdr.markForCheck();
           this.showFormModal = false;
+          this.cdr.markForCheck();
           this.refreshColumnAfterWrite(res.type, res);
         },
         error: (err) => {
@@ -199,8 +203,8 @@ export class Locations implements OnInit {
         next: (res) => {
           this.success = 'Node created successfully';
           this.saving = false;
-          this.cdr.markForCheck();
           this.showFormModal = false;
+          this.cdr.markForCheck();
           this.refreshColumnAfterWrite(res.type, res);
         },
         error: (err) => {
@@ -230,12 +234,14 @@ export class Locations implements OnInit {
         this.success = 'Node deleted successfully';
         this.showDeleteDialog = false;
         this.deleteTarget = null;
+        this.cdr.markForCheck();
         this.refreshColumnAfterDelete(target);
       },
       error: (err) => {
         this.error = err?.error?.message || 'Failed to delete node';
         this.showDeleteDialog = false;
         this.deleteTarget = null;
+        this.cdr.markForCheck();
       }
     });
   }

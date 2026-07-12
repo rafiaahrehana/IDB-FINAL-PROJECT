@@ -53,17 +53,12 @@
               }
             ],
         "styles": [
-  "src/styles/tailwind.css",
+  "node_modules/bootstrap/scss/bootstrap.scss",
   "node_modules/bootstrap-icons/font/bootstrap-icons.css",
   "src/styles/global.scss"
 ],
 "scripts": [
   "node_modules/bootstrap/dist/js/bootstrap.bundle.js"
-],
-"allowedCommonJsDependencies": [
-  "@stomp/stompjs",
-  "sockjs-client",
-  "crypto-js"
 ]
           },
           "configurations": {
@@ -71,13 +66,13 @@
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "2MB",
-                  "maximumError": "3MB"
+                  "maximumWarning": "500kB",
+                  "maximumError": "1MB"
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "32kB",
-                  "maximumError": "64kB"
+                  "maximumWarning": "4kB",
+                  "maximumError": "8kB"
                 }
               ],
               "outputHashing": "all"

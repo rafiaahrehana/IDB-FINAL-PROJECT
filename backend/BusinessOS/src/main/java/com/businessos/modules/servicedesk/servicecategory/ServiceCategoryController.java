@@ -94,7 +94,6 @@ public class ServiceCategoryController {
         category.setDescription(request.getDescription());
         category.setIconUrl(request.getIconUrl());
         category.setSortOrder(request.getSortOrder());
-        categoryRepository.save(category);
         return ResponseEntity.ok(ServiceCategoryMapper.toResponse(category));
     }
 

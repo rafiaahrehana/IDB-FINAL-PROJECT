@@ -1,147 +1,101 @@
-<div class="page-container">
-  <div class="page-header">
-    <div>
-      <h1 class="page-title">Invoices</h1>
-      <p class="page-subtitle">Manage invoices and track payments</p>
-    </div>
-    <div style="display: flex; align-items: center; gap: 0.75rem;">
-      <select class="input-shadcn" style="width: 180px; height: 2.5rem;"
-              [(ngModel)]="statusFilter" (change)="page=0;load()">
-        <option value="">All statuses</option>
-        @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
-      </select>
-    </div>
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <h4 class="mb-0">Invoices</h4>
+    <select class="form-select form-select-sm" style="width:180px" [(ngModel)]="statusFilter" (change)="page=0;load()">
+      <option value="">All statuses</option>
+      @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
+    </select>
   </div>
-
-  @if (error) {
-    <div class="card-shadcn" style="padding: 0.75rem 1rem; margin-bottom: 1rem; border-color: var(--color-destructive); background: #fef2f2;">
-      <span style="color: var(--color-destructive); font-size: 0.875rem;">{{ error }}</span>
-    </div>
-  }
-  @if (success) {
-    <div class="card-shadcn" style="padding: 0.75rem 1rem; margin-bottom: 1rem; border-color: #16a34a; background: #f0fdf4;">
-      <span style="color: #166534; font-size: 0.875rem;">{{ success }}</span>
-    </div>
-  }
+  @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
+  @if (success) { <div class="alert alert-success py-2">{{ success }}</div> }
   @if (loading) { <app-loader /> }
 
-  <div style="display: grid; grid-template-columns: 1fr 420px; gap: 1.5rem;">
-    <div>
+  <div class="row g-3">
+    <div class="col-lg-7">
       @if (!loading && invoices.length) {
-        <div class="card-shadcn">
-          <div class="table-shadcn-container">
-            <table class="table-shadcn">
-              <thead>
-                <tr>
-                  <th>Invoice #</th>
-                  <th>Client</th>
-                  <th style="text-align: right;">Total</th>
-                  <th style="text-align: right;">Outstanding</th>
-                  <th>Due</th>
-                  <th>Status</th>
-                  <th style="text-align: right;">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (inv of invoices; track inv.id) {
-                  <tr [style.background]="inv.status === 'OVERDUE' ? '#fef2f2' : ''"
-                      style="cursor: pointer;" (click)="view(inv)">
-                    <td style="font-size: 0.8125rem; font-weight: 500;">{{ inv.invoiceNumber }}</td>
-                    <td>{{ inv.clientName }}</td>
-                    <td style="text-align: right;">{{ inv.totalAmount | currency }}</td>
-                    <td style="text-align: right; font-weight: 500;">{{ inv.outstandingAmount | currency }}</td>
-                    <td style="font-size: 0.8125rem;">{{ inv.dueDate | date:'mediumDate' }}</td>
-                    <td>
-                      <span class="badge-shadcn"
-                            [class.badge-shadcn-outline]="inv.status === 'DRAFT'"
-                            [class.badge-shadcn-info]="inv.status === 'ISSUED'"
-                            [class.badge-shadcn-success]="inv.status === 'PAID'"
-                            [class.badge-shadcn-warning]="inv.status === 'PARTIALLY_PAID'"
-                            [class.badge-shadcn-destructive]="inv.status === 'OVERDUE'">
-                        {{ inv.status }}
-                      </span>
-                    </td>
-                    <td style="text-align: right;" (click)="$event.stopPropagation()">
-                      <div style="display: flex; gap: 0.25rem; justify-content: flex-end;">
-                        @if (inv.status === 'DRAFT') {
-                          <button class="btn-shadcn btn-shadcn-outline btn-shadcn-sm" (click)="send(inv)">Send</button>
-                        }
-                        @if (inv.status === 'ISSUED' || inv.status === 'OVERDUE') {
-                          <button class="btn-shadcn btn-shadcn-primary btn-shadcn-sm" (click)="markPaid(inv)">Mark Paid</button>
-                        }
-                      </div>
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-          <div class="card-shadcn-footer" style="justify-content: flex-end;">
-            <app-pagination [page]="page" [totalPages]="totalPages" (pageChange)="goToPage($event)" />
-          </div>
+      <div class="card">
+        <div class="table-responsive">
+          <table class="table table-hover table-sm align-middle mb-0">
+            <thead class="table-light">
+              <tr><th>Invoice #</th><th>Client</th><th class="text-end">Total</th><th class="text-end">Outstanding</th><th>Due</th><th>Status</th><th></th></tr>
+            </thead>
+            <tbody>
+              @for (inv of invoices; track inv.id) {
+              <tr [class.table-warning]="inv.status === 'OVERDUE'" role="button" (click)="view(inv)">
+                <td class="small">{{ inv.invoiceNumber }}</td>
+                <td>{{ inv.clientName }}</td>
+                <td class="text-end">{{ inv.totalAmount | currency }}</td>
+                <td class="text-end">{{ inv.outstandingAmount | currency }}</td>
+                <td class="small">{{ inv.dueDate | date:'mediumDate' }}</td>
+                <td><span class="badge {{ statusClass(inv.status) }}">{{ inv.status }}</span></td>
+                <td class="text-end text-nowrap" (click)="$event.stopPropagation()">
+                  @if (inv.status === 'DRAFT') { <button class="btn btn-outline-primary btn-sm" (click)="send(inv)">Send</button> }
+                  @if (inv.status === 'ISSUED' || inv.status === 'OVERDUE') { <button class="btn btn-outline-success btn-sm" (click)="markPaid(inv)">Mark Paid</button> }
+                </td>
+              </tr>
+              }
+            </tbody>
+          </table>
         </div>
+        <div class="card-footer d-flex justify-content-end">
+          <app-pagination [page]="page" [totalPages]="totalPages" (pageChange)="goToPage($event)" />
+        </div>
+      </div>
       }
       @if (!loading && !invoices.length) { <app-empty-state icon="bi-receipt" message="No invoices found." /> }
     </div>
 
     @if (selected) {
-      <div class="card-shadcn">
-        <div class="card-shadcn-header" style="flex-direction: row; align-items: center; justify-content: space-between;">
-          <span class="card-shadcn-title">{{ selected.invoiceNumber }}</span>
-          <span class="badge-shadcn"
-                [class.badge-shadcn-outline]="selected.status === 'DRAFT'"
-                [class.badge-shadcn-info]="selected.status === 'ISSUED'"
-                [class.badge-shadcn-success]="selected.status === 'PAID'"
-                [class.badge-shadcn-warning]="selected.status === 'PARTIALLY_PAID'"
-                [class.badge-shadcn-destructive]="selected.status === 'OVERDUE'">
-            {{ selected.status }}
-          </span>
+    <div class="col-lg-5">
+      <div class="card">
+        <div class="card-header py-2 d-flex justify-content-between align-items-center">
+          <span class="fw-semibold">{{ selected.invoiceNumber }}</span>
+          <span class="badge {{ statusClass(selected.status) }}">{{ selected.status }}</span>
         </div>
-        <div class="card-shadcn-content">
-          <table class="table-shadcn">
+        <div class="card-body p-0">
+          <table class="table table-sm mb-0">
             <tbody>
-              <tr><td style="color: var(--color-muted-foreground);">Client</td><td>{{ selected.clientName }}</td></tr>
-              <tr><td style="color: var(--color-muted-foreground);">Subtotal</td><td>{{ selected.subtotal | currency }}</td></tr>
-              <tr><td style="color: var(--color-muted-foreground);">Tax</td><td>{{ selected.taxAmount | currency }}</td></tr>
-              <tr><td style="color: var(--color-muted-foreground);">Discount</td><td>{{ selected.discountAmount | currency }}</td></tr>
-              <tr><td style="color: var(--color-muted-foreground);">Total</td><td style="font-weight: 700;">{{ selected.totalAmount | currency }}</td></tr>
-              <tr><td style="color: var(--color-muted-foreground);">Paid</td><td style="color: #16a34a;">{{ selected.paidAmount | currency }}</td></tr>
-              <tr><td style="color: var(--color-muted-foreground);">Outstanding</td><td style="font-weight: 700;">{{ selected.outstandingAmount | currency }}</td></tr>
-              <tr><td style="color: var(--color-muted-foreground);">Due Date</td><td>{{ selected.dueDate | date:'mediumDate' }}</td></tr>
+              <tr><td class="text-muted">Client</td><td>{{ selected.clientName }}</td></tr>
+              <tr><td class="text-muted">Subtotal</td><td>{{ selected.subtotal | currency }}</td></tr>
+              <tr><td class="text-muted">Tax</td><td>{{ selected.taxAmount | currency }}</td></tr>
+              <tr><td class="text-muted">Discount</td><td>{{ selected.discountAmount | currency }}</td></tr>
+              <tr><td class="text-muted">Total</td><td class="fw-bold">{{ selected.totalAmount | currency }}</td></tr>
+              <tr><td class="text-muted">Paid</td><td class="text-success">{{ selected.paidAmount | currency }}</td></tr>
+              <tr><td class="text-muted">Outstanding</td><td class="fw-bold">{{ selected.outstandingAmount | currency }}</td></tr>
+              <tr><td class="text-muted">Due Date</td><td>{{ selected.dueDate | date:'mediumDate' }}</td></tr>
             </tbody>
           </table>
         </div>
-
         @if (selected.status === 'ISSUED' || selected.status === 'PARTIALLY_PAID' || selected.status === 'OVERDUE') {
-          <div class="card-shadcn-footer" style="flex-wrap: wrap; gap: 0.5rem;">
-            <input type="number" class="input-shadcn" style="width: 120px; height: 2.5rem;"
-                   placeholder="Amount" [(ngModel)]="paymentAmount" />
-            <select class="input-shadcn" style="width: 160px; height: 2.5rem;" [(ngModel)]="paymentMethod">
+        <div class="card-footer">
+          <div class="input-group input-group-sm">
+            <input type="number" class="form-control" placeholder="Amount" [(ngModel)]="paymentAmount" />
+            <select class="form-select" [(ngModel)]="paymentMethod">
               <option value="BANK_TRANSFER">Bank Transfer</option>
               <option value="CASH">Cash</option>
               <option value="CARD">Card</option>
               <option value="MOBILE_BANKING">Mobile Banking</option>
             </select>
-            <button class="btn-shadcn btn-shadcn-primary btn-shadcn-sm" (click)="recordPayment()">Record Payment</button>
-            <button class="btn-shadcn btn-shadcn-outline btn-shadcn-sm" style="color: #16a34a; border-color: #16a34a;"
-                    (click)="payOnline()" title="Pay via SSLCommerz">
-              <i class="bi bi-credit-card"></i> Pay Online
+            <button class="btn btn-primary" (click)="recordPayment()">Record Payment</button>
+            <button class="btn btn-success" (click)="payOnline()" title="Pay via SSLCommerz">
+              <i class="bi bi-credit-card me-1"></i>Pay Online
             </button>
           </div>
+        </div>
         }
-
         @if (selected.payments?.length) {
-          <div class="card-shadcn-content" style="border-top: 1px solid var(--color-border); padding-top: 1rem;">
-            <div style="font-weight: 600; font-size: 0.8125rem; margin-bottom: 0.5rem;">Payments</div>
-            @for (p of selected.payments; track p.id) {
-              <div style="display: flex; justify-content: space-between; font-size: 0.8125rem; color: var(--color-muted-foreground); padding: 0.25rem 0;">
-                <span>{{ p.paidAt | date:'short' }} &middot; {{ p.method }}</span>
-                <span style="font-weight: 500; color: var(--color-foreground);">{{ p.amount | currency }}</span>
-              </div>
-            }
+        <div class="card-footer small">
+          <strong>Payments</strong>
+          @for (p of selected.payments; track p.id) {
+          <div class="d-flex justify-content-between text-muted">
+            <span>{{ p.paidAt | date:'short' }} · {{ p.method }}</span>
+            <span>{{ p.amount | currency }}</span>
           </div>
+          }
+        </div>
         }
       </div>
+    </div>
     }
   </div>
 </div>

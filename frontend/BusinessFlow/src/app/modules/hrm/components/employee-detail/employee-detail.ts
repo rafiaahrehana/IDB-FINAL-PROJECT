@@ -21,7 +21,7 @@ import { LocationComponent } from '../../../../shared/components/location/locati
   selector: 'app-employee-detail',
   imports: [CommonModule, FormsModule, RouterLink, Loader, LocationComponent],
   templateUrl: './employee-detail.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './employee-detail.scss',
 })
 export class EmployeeDetail implements OnInit {
@@ -50,13 +50,12 @@ export class EmployeeDetail implements OnInit {
   ngOnInit(): void {
     const id = Number(this.route.snapshot.paramMap.get('id'));
     this.load(id);
-    this.departmentService.listActive().subscribe({ next: (d) => (this.departments = d) });
-    this.designationService.listActive().subscribe({ next: (d) => (this.designations = d) });
+    this.departmentService.listActive().subscribe({ next: (d) => { this.departments = d; this.cdr.markForCheck(); } });
+    this.designationService.listActive().subscribe({ next: (d) => { this.designations = d; this.cdr.markForCheck(); } });
   }
 
   load(id: number): void {
     this.loading = true;
-    this.cdr.markForCheck();
     this.employeeService.getById(id).subscribe({
       next: (emp) => {
         this.employee = emp;
@@ -112,7 +111,6 @@ export class EmployeeDetail implements OnInit {
   save(): void {
     if (!this.employee) return;
     this.saving = true;
-    this.cdr.markForCheck();
     this.error = '';
     const payload: any = { ...this.form };
     Object.keys(payload).forEach((k) => {
@@ -122,14 +120,14 @@ export class EmployeeDetail implements OnInit {
       next: (emp) => {
         this.employee = emp;
         this.saving = false;
-        this.cdr.markForCheck();
         this.editing = false;
         this.success = 'Employee updated successfully';
+        this.cdr.markForCheck();
       },
       error: (err) => {
         this.saving = false;
-        this.cdr.markForCheck();
         this.error = err?.error?.message || 'Failed to update employee';
+        this.cdr.markForCheck();
       },
     });
   }

@@ -12,7 +12,7 @@ import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/conf
   selector: 'app-salary-structures',
   imports: [CommonModule, FormsModule, Loader, EmptyState, ConfirmDialog],
   templateUrl: './salary-structures.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './salary-structures.scss',
 })
 export class SalaryStructures implements OnInit {
@@ -36,7 +36,7 @@ export class SalaryStructures implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.employeeService.list(0, 100).subscribe({ next: (res) => (this.employees = res.content) });
+    this.employeeService.list(0, 100).subscribe({ next: (res) => { this.employees = res.content; this.cdr.markForCheck(); } });
   }
 
   load(): void {
@@ -45,7 +45,6 @@ export class SalaryStructures implements OnInit {
       return;
     }
     this.loading = true;
-    this.cdr.markForCheck();
     this.error = '';
     this.salaryService.history(this.selectedEmployeeId).subscribe({
       next: (res) => {
@@ -70,7 +69,6 @@ export class SalaryStructures implements OnInit {
 
   save(): void {
     this.saving = true;
-    this.cdr.markForCheck();
     this.error = '';
     const payload: any = { ...this.form };
     Object.keys(payload).forEach((k) => {
@@ -79,15 +77,15 @@ export class SalaryStructures implements OnInit {
     this.salaryService.create(payload).subscribe({
       next: () => {
         this.saving = false;
-        this.cdr.markForCheck();
         this.showForm = false;
         this.success = 'Salary structure created';
+        this.cdr.markForCheck();
         this.load();
       },
       error: (err) => {
         this.saving = false;
-        this.cdr.markForCheck();
         this.error = err?.error?.message || 'Failed to create salary structure';
+        this.cdr.markForCheck();
       },
     });
   }
@@ -98,11 +96,13 @@ export class SalaryStructures implements OnInit {
       next: () => {
         this.deleteTarget = null;
         this.success = 'Salary structure deleted';
+        this.cdr.markForCheck();
         this.load();
       },
       error: (err) => {
         this.error = err?.error?.message || 'Failed to delete';
         this.deleteTarget = null;
+        this.cdr.markForCheck();
       },
     });
   }

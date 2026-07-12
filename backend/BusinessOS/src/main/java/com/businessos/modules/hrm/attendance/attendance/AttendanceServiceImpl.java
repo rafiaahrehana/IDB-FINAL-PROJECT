@@ -157,6 +157,14 @@ public class AttendanceServiceImpl implements AttendanceService {
 
     @Override
     @Transactional(readOnly = true)
+    public Page<AttendanceResponse> listAll(Pageable pageable) {
+        Long companyId = securityUtil.getCurrentCompanyId();
+        return attendanceRepository.findByCompanyIdAndDeletedFalse(companyId, pageable)
+                .map(AttendanceMapper::toResponse);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<AttendanceResponse> getLateAttendances(LocalDate date) {
         Long companyId = securityUtil.getCurrentCompanyId();
         return attendanceRepository.findLateAttendances(companyId, date)

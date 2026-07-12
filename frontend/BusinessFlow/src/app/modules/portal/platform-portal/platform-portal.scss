@@ -1,0 +1,159 @@
+// Every accent on this page derives from the tenant's two brand colors,
+// injected as --brand / --brand-2 on .portal. Soft tints are computed with
+// color-mix so no per-company CSS is ever generated.
+
+.portal {
+  --brand-soft: color-mix(in srgb, var(--brand) 9%, white);
+  --brand-border: color-mix(in srgb, var(--brand) 22%, white);
+  background: #f8fafc;
+  color: #1f2937;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.brand-text { color: var(--brand); }
+
+.btn-brand {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #fff;
+  &:hover, &:focus { background: color-mix(in srgb, var(--brand) 88%, black); border-color: color-mix(in srgb, var(--brand) 88%, black); color: #fff; }
+}
+
+// ---- Nav ----
+.portal-nav {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid #e5e7eb;
+}
+.portal-logo { height: 32px; width: 32px; object-fit: cover; }
+.portal-logo-fallback {
+  height: 32px; width: 32px;
+  background: var(--brand-soft);
+  color: var(--brand);
+}
+.nav-anchor {
+  color: #475569;
+  text-decoration: none;
+  font-size: 0.875rem;
+  &:hover { color: var(--brand); }
+}
+
+// ---- Hero ----
+.portal-hero {
+  position: relative;
+  overflow: hidden;
+  border-bottom: 1px solid #e5e7eb;
+  background: #fff;
+
+  // The one decorative element: a soft radial glow blending both brand colors
+  &::before {
+    content: '';
+    position: absolute;
+    top: -40%;
+    right: -12%;
+    width: 620px;
+    height: 620px;
+    border-radius: 50%;
+    background:
+      radial-gradient(closest-side, color-mix(in srgb, var(--brand) 16%, transparent), transparent 70%),
+      radial-gradient(closest-side, color-mix(in srgb, var(--brand-2) 12%, transparent), transparent 72%);
+    pointer-events: none;
+  }
+}
+
+.eyebrow {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--brand);
+}
+
+.hero-title {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 600;
+  font-size: clamp(1.9rem, 4vw, 2.75rem);
+  line-height: 1.15;
+}
+
+.hero-tagline {
+  color: #475569;
+  font-size: 1.1rem;
+  max-width: 34rem;
+}
+
+.hero-panel {
+  position: relative;
+  background: #fff;
+  border: 1px solid var(--brand-border);
+  box-shadow: 0 12px 32px -16px color-mix(in srgb, var(--brand) 30%, transparent);
+}
+
+// Entrance: single orchestrated fade-up, nothing else moves on load
+.hero-in { animation: rise 0.5s ease both; }
+.hero-in-late { animation-delay: 0.12s; }
+@keyframes rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+
+// ---- Sections ----
+.section { padding-top: 3.5rem; padding-bottom: 3.5rem; }
+.section-alt { background: #fff; border-top: 1px solid #e5e7eb; border-bottom: 1px solid #e5e7eb; }
+.about-text { color: #475569; white-space: pre-wrap; line-height: 1.7; }
+
+// ---- Service cards ----
+.service-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    border-color: var(--brand-border);
+    box-shadow: 0 10px 24px -14px color-mix(in srgb, var(--brand) 35%, transparent);
+  }
+  &.featured { border-color: var(--brand-border); }
+}
+.icon-tile {
+  height: 38px; width: 38px;
+  background: var(--brand-soft);
+  color: var(--brand);
+}
+.featured-badge { background: var(--brand-soft); color: var(--brand); font-weight: 600; }
+.mode-badge { background: #f1f5f9; color: #475569; font-weight: 500; }
+.service-desc {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+// ---- Process steps ----
+.step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 22px; width: 22px;
+  border-radius: 50%;
+  background: var(--brand-soft);
+  color: var(--brand);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+// ---- Contact ----
+.contact-line {
+  color: #1f2937;
+  text-decoration: none;
+  &:hover { color: var(--brand); }
+}
+
+footer { margin-top: auto; }
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-in, .hero-in-late { animation: none; }
+  .service-card { transition: none; }
+}

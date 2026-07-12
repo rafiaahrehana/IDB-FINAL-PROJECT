@@ -1,149 +1,94 @@
-<div class="page-container">
-  <div class="page-header">
-    <div>
-      <h1 class="page-title">Payment Receipts</h1>
-      <p class="page-subtitle">Record and manage incoming payments</p>
-    </div>
-    <button class="btn-shadcn btn-shadcn-primary" (click)="openCreate()">
-      <i class="bi bi-plus-lg"></i> Record Payment
-    </button>
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <h4 class="mb-0">Payment Receipts</h4>
+    <button class="btn btn-primary btn-sm" (click)="openCreate()"><i class="bi bi-plus"></i> Record Payment</button>
   </div>
-
-  @if (error) {
-    <div class="card-shadcn" style="padding: 0.75rem 1rem; margin-bottom: 1rem; border-color: var(--color-destructive); background: #fef2f2;">
-      <span style="color: var(--color-destructive); font-size: 0.875rem;">{{ error }}</span>
-    </div>
-  }
-  @if (success) {
-    <div class="card-shadcn" style="padding: 0.75rem 1rem; margin-bottom: 1rem; border-color: #16a34a; background: #f0fdf4;">
-      <span style="color: #166534; font-size: 0.875rem;">{{ success }}</span>
-    </div>
-  }
+  @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
+  @if (success) { <div class="alert alert-success py-2">{{ success }}</div> }
   @if (loading) { <app-loader /> }
 
   @if (showForm) {
-    <div class="card-shadcn" style="padding: 1.5rem; margin-bottom: 1.5rem;">
-      <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem;">Record Payment</h3>
-      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1rem;">
-        <div class="field-group">
-          <label class="field-label">Client *</label>
-          <select class="input-shadcn" [(ngModel)]="form.clientId">
-            <option [value]="0" disabled>Select client</option>
-            @for (c of clients; track c.id) { <option [value]="c.id">{{ c.clientCompanyName || (c.firstName + ' ' + c.lastName) }}</option> }
-          </select>
-        </div>
-        <div class="field-group">
-          <label class="field-label">Amount *</label>
-          <input type="number" class="input-shadcn" placeholder="0.00" [(ngModel)]="form.amount" />
-        </div>
-        <div class="field-group">
-          <label class="field-label">Payment Date *</label>
-          <input type="date" class="input-shadcn" [(ngModel)]="form.paymentDate" />
-        </div>
+  <div class="card mb-3"><div class="card-body">
+    <div class="row g-2">
+      <div class="col-md-4">
+        <label class="form-label small text-muted mb-1">Client *</label>
+        <select class="form-select form-select-sm" [(ngModel)]="form.clientId">
+          <option [value]="0" disabled>Select client</option>
+          @for (c of clients; track c.id) { <option [value]="c.id">{{ c.clientCompanyName || (c.firstName + ' ' + c.lastName) }}</option> }
+        </select>
       </div>
-      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1rem;">
-        <div class="field-group">
-          <label class="field-label">Method *</label>
-          <select class="input-shadcn" [(ngModel)]="form.paymentMethod">
-            @for (m of methods; track m) { <option [value]="m">{{ m }}</option> }
-          </select>
-        </div>
-        <div class="field-group">
-          <label class="field-label">Transaction Reference</label>
-          <input class="input-shadcn" placeholder="Bank tx id" [(ngModel)]="form.transactionReference" />
-        </div>
-        <div class="field-group">
-          <label class="field-label">Notes</label>
-          <input class="input-shadcn" placeholder="Additional notes" [(ngModel)]="form.notes" />
-        </div>
+      <div class="col-md-3">
+        <label class="form-label small text-muted mb-1">Amount *</label>
+        <input type="number" class="form-control form-control-sm" [(ngModel)]="form.amount" />
       </div>
-      <div style="display: flex; gap: 0.5rem;">
-        <button class="btn-shadcn btn-shadcn-primary btn-shadcn-sm"
-                [disabled]="!form.clientId || !form.amount" (click)="save()">Save</button>
-        <button class="btn-shadcn btn-shadcn-ghost btn-shadcn-sm" (click)="showForm = false">Cancel</button>
+      <div class="col-md-2">
+        <label class="form-label small text-muted mb-1">Payment Date *</label>
+        <input type="date" class="form-control form-control-sm" [(ngModel)]="form.paymentDate" />
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small text-muted mb-1">Method *</label>
+        <select class="form-select form-select-sm" [(ngModel)]="form.paymentMethod">
+          @for (m of methods; track m) { <option [value]="m">{{ m }}</option> }
+        </select>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label small text-muted mb-1">Transaction Reference</label>
+        <input class="form-control form-control-sm" [(ngModel)]="form.transactionReference" />
+      </div>
+      <div class="col-md-6">
+        <label class="form-label small text-muted mb-1">Notes</label>
+        <input class="form-control form-control-sm" [(ngModel)]="form.notes" />
+      </div>
+      <div class="col-12 d-flex gap-2">
+        <button class="btn btn-primary btn-sm" [disabled]="!form.clientId || !form.amount" (click)="save()">Save</button>
+        <button class="btn btn-secondary btn-sm" (click)="showForm = false">Cancel</button>
       </div>
     </div>
+  </div></div>
   }
 
   @if (!loading && receipts.length) {
-    <div class="card-shadcn">
-      <div class="table-shadcn-container">
-        <table class="table-shadcn">
-          <thead>
-            <tr>
-              <th>Receipt #</th>
-              <th>Client</th>
-              <th>Invoice</th>
-              <th style="text-align: right;">Amount</th>
-              <th>Date</th>
-              <th>Method</th>
-              <th>Status</th>
-              <th style="text-align: right;">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (r of receipts; track r.id) {
-              <tr>
-                <td style="font-size: 0.8125rem; font-weight: 500;">{{ r.receiptNumber }}</td>
-                <td>{{ r.clientName || ('#' + r.clientId) }}</td>
-                <td style="font-size: 0.8125rem; color: var(--color-muted-foreground);">{{ r.invoiceNumber || '-' }}</td>
-                <td style="text-align: right; font-weight: 500;">{{ r.amount | currency }}</td>
-                <td style="font-size: 0.8125rem;">{{ r.paymentDate | date:'mediumDate' }}</td>
-                <td><span class="badge-shadcn badge-shadcn-secondary">{{ r.paymentMethod }}</span></td>
-                <td>
-                  <span class="badge-shadcn"
-                        [class.badge-shadcn-warning]="r.status === 'PENDING'"
-                        [class.badge-shadcn-info]="r.status === 'CONFIRMED'"
-                        [class.badge-shadcn-success]="r.status === 'DEPOSITED'">
-                    {{ r.status }}
-                  </span>
-                </td>
-                <td style="text-align: right;">
-                  <div style="display: flex; gap: 0.25rem; justify-content: flex-end;">
-                    @if (r.status === 'PENDING') {
-                      <button class="btn-shadcn btn-shadcn-outline btn-shadcn-sm" (click)="confirm(r)">Confirm</button>
-                    }
-                    @if (r.status === 'CONFIRMED') {
-                      <button class="btn-shadcn btn-shadcn-primary btn-shadcn-sm" (click)="openDeposit(r)">Deposit</button>
-                    }
-                    <button class="btn-shadcn btn-shadcn-ghost btn-shadcn-icon btn-shadcn-sm"
-                            style="color: var(--color-destructive);"
-                            (click)="deleteTarget = r"><i class="bi bi-trash"></i></button>
-                  </div>
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
-      <div class="card-shadcn-footer" style="justify-content: flex-end;">
-        <app-pagination [page]="page" [totalPages]="totalPages" (pageChange)="goToPage($event)" />
-      </div>
-    </div>
+  <div class="card"><div class="table-responsive">
+    <table class="table table-hover table-sm align-middle mb-0">
+      <thead class="table-light"><tr><th>Receipt #</th><th>Client</th><th>Invoice</th><th class="text-end">Amount</th><th>Date</th><th>Method</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        @for (r of receipts; track r.id) {
+        <tr>
+          <td class="small">{{ r.receiptNumber }}</td>
+          <td>{{ r.clientName || ('#' + r.clientId) }}</td>
+          <td class="small text-muted">{{ r.invoiceNumber || '-' }}</td>
+          <td class="text-end">{{ r.amount | currency }}</td>
+          <td class="small text-muted">{{ r.paymentDate | date:'mediumDate' }}</td>
+          <td><span class="badge text-bg-light border">{{ r.paymentMethod }}</span></td>
+          <td><span class="badge {{ statusClass(r.status) }}">{{ r.status }}</span></td>
+          <td class="text-end text-nowrap">
+            @if (r.status === 'PENDING') { <button class="btn btn-outline-primary btn-sm me-1" (click)="confirm(r)">Confirm</button> }
+            @if (r.status === 'CONFIRMED') { <button class="btn btn-outline-success btn-sm me-1" (click)="openDeposit(r)">Deposit</button> }
+            <button class="btn btn-outline-danger btn-sm" (click)="deleteTarget = r"><i class="bi bi-trash"></i></button>
+          </td>
+        </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  <div class="card-footer d-flex justify-content-end"><app-pagination [page]="page" [totalPages]="totalPages" (pageChange)="goToPage($event)" /></div>
+  </div>
   }
   @if (!loading && !receipts.length && !showForm) { <app-empty-state icon="bi-receipt-cutoff" message="No payment receipts yet." /> }
 
   @if (depositTarget) {
-    <div class="modal-overlay" (click)="depositTarget = null">
-      <div class="modal-dialog-shadcn" (click)="$event.stopPropagation()" style="max-width: 420px;">
-        <div class="modal-header-shadcn">
-          <h2 class="modal-title-shadcn">Mark as Deposited</h2>
-          <button class="btn-shadcn btn-shadcn-ghost btn-shadcn-icon btn-shadcn-sm" (click)="depositTarget = null">
-            <i class="bi bi-x-lg"></i>
-          </button>
-        </div>
-        <div class="modal-body-shadcn">
-          <div class="field-group">
-            <label class="field-label">Bank Name *</label>
-            <input class="input-shadcn" placeholder="e.g. Chase Bank" [(ngModel)]="depositBank" />
-          </div>
-        </div>
-        <div class="modal-footer-shadcn">
-          <button class="btn-shadcn btn-shadcn-outline" (click)="depositTarget = null">Cancel</button>
-          <button class="btn-shadcn btn-shadcn-primary" [disabled]="!depositBank.trim()" (click)="doDeposit()">Confirm</button>
+  <div class="modal d-block" style="background: rgba(0,0,0,.4)">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title">Mark as Deposited</h5><button class="btn-close" (click)="depositTarget = null"></button></div>
+        <div class="modal-body"><input class="form-control" placeholder="Bank name *" [(ngModel)]="depositBank" /></div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary btn-sm" (click)="depositTarget = null">Cancel</button>
+          <button class="btn btn-primary btn-sm" [disabled]="!depositBank.trim()" (click)="doDeposit()">Confirm</button>
         </div>
       </div>
     </div>
+  </div>
   }
 
   <app-confirm-dialog [visible]="!!deleteTarget" title="Delete Payment Receipt" message="Delete this payment receipt?" (confirmed)="doDelete()" (cancelled)="deleteTarget = null" />

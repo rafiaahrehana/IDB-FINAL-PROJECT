@@ -11,7 +11,7 @@ import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/conf
 @Component({
   selector: 'app-platform-expenses',
   imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState, ConfirmDialog],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './platform-expenses.html',
 })
 export class PlatformExpenses implements OnInit {
@@ -68,9 +68,10 @@ export class PlatformExpenses implements OnInit {
         this.showForm = false;
         this.form = {};
         this.success = 'Expense submitted';
+        this.cdr.markForCheck();
         this.load();
       },
-      error: (err) => (this.error = err?.error?.message || 'Failed to submit'),
+      error: (err) => { this.error = err?.error?.message || 'Failed to submit'; this.cdr.markForCheck(); },
     });
   }
 
@@ -90,11 +91,13 @@ export class PlatformExpenses implements OnInit {
       next: () => {
         this.approvalTarget = null;
         this.success = 'Done';
+        this.cdr.markForCheck();
         this.load();
       },
       error: (err) => {
         this.error = err?.error?.message || 'Failed';
         this.approvalTarget = null;
+        this.cdr.markForCheck();
       },
     });
   }
@@ -105,11 +108,13 @@ export class PlatformExpenses implements OnInit {
       next: () => {
         this.deleteTarget = null;
         this.success = 'Deleted';
+        this.cdr.markForCheck();
         this.load();
       },
       error: () => {
         this.deleteTarget = null;
         this.error = 'Cannot delete';
+        this.cdr.markForCheck();
       },
     });
   }
@@ -126,11 +131,13 @@ export class PlatformExpenses implements OnInit {
       next: () => {
         this.payTarget = null;
         this.success = 'Marked as paid';
+        this.cdr.markForCheck();
         this.load();
       },
       error: (err) => {
         this.error = err?.error?.message || 'Failed to mark as paid';
         this.payTarget = null;
+        this.cdr.markForCheck();
       },
     });
   }

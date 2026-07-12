@@ -1,9 +1,8 @@
 import { Injectable } from '@angular/core';
 import { CanActivate, ActivatedRouteSnapshot, RouterStateSnapshot, Router, CanActivateChild } from '@angular/router';
-import { Observable, of, switchMap, map, catchError } from 'rxjs';
 import { AuthService } from '../services/auth.service';
 import { NotificationService } from '../../shared/services/notification.service';
-
+ 
 @Injectable({
   providedIn: 'root'
 })
@@ -13,40 +12,29 @@ export class AuthGuard implements CanActivate, CanActivateChild {
     private router: Router,
     private notificationService: NotificationService
   ) {}
-
-  canActivate(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): Observable<boolean> {
+ 
+  canActivate(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): boolean {
     return this.checkAuth(state.url);
   }
-
-  canActivateChild(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): Observable<boolean> {
+ 
+  canActivateChild(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): boolean {
     return this.checkAuth(state.url);
   }
-
-  private checkAuth(url: string): Observable<boolean> {
+ 
+  private checkAuth(url: string): boolean {
     if (this.authService.isAuthenticated()) {
-      return of(true);
+      return true;
     }
 
-    if (this.authService.getRefreshToken()) {
-      return this.authService.refreshToken().pipe(
-        map(() => true),
-        catchError(() => {
-          this.sendRedirect(url);
-          return of(false);
-        })
-      );
-    }
-
-    this.sendRedirect(url);
-    return of(false);
-  }
-
-  private sendRedirect(url: string): void {
+    // A visitor landing on the app root gets the public landing page;
+    // deep links still go to login with a returnUrl.
     if (url === '/' || url === '') {
       this.router.navigate(['/home']);
-      return;
+      return false;
     }
+
     this.notificationService.warning('Please log in first');
     this.router.navigate(['/auth/login'], { queryParams: { returnUrl: url } });
+    return false;
   }
 }

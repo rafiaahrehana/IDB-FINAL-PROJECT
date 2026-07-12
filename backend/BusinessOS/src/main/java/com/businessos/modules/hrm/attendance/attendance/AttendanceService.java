@@ -27,6 +27,8 @@ public interface AttendanceService {
 
     Page<AttendanceResponse> getByStatus(AttendanceStatus status, Pageable pageable);
 
+    Page<AttendanceResponse> listAll(Pageable pageable);
+
     List<AttendanceResponse> getLateAttendances(LocalDate date);
 
     List<AttendanceResponse> getAbsentees(LocalDate date);

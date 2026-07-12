@@ -1,33 +1,29 @@
-<div class="page-container">
-  <div class="page-header">
-    <div>
-      <h4 class="page-title">SLA Policies</h4>
-    </div>
-    <div>
-      <button class="btn-shadcn btn-shadcn-primary btn-shadcn-sm" (click)="openCreate()"><i class="bi bi-plus"></i> Add Policy</button>
-    </div>
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0">SLA Policies</h4>
+    <button class="btn btn-primary btn-sm" (click)="openCreate()"><i class="bi bi-plus"></i> Add Policy</button>
   </div>
-  @if (error) { <div class="badge-shadcn badge-shadcn-destructive py-2 px-3">{{ error }}</div> }
-  @if (success) { <div class="badge-shadcn badge-shadcn-success py-2 px-3">{{ success }}</div> }
+  @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
+  @if (success) { <div class="alert alert-success py-2">{{ success }}</div> }
   @if (loading) { <app-loader /> }
 
   @if (showForm) {
-  <div class="card-shadcn" style="margin-bottom: 1rem;"><div class="card-shadcn-content">
+  <div class="card mb-3"><div class="card-body">
     <div class="row g-2">
-      <div class="col-md-4"><input class="input-shadcn input-shadcn-sm" placeholder="Policy Name *" [(ngModel)]="form.policyName" /></div>
+      <div class="col-md-4"><input class="form-control form-control-sm" placeholder="Policy Name *" [(ngModel)]="form.policyName" /></div>
       <div class="col-md-4">
-        <select class="select-shadcn input-shadcn-sm" [(ngModel)]="form.applicablePriority">
+        <select class="form-select form-select-sm" [(ngModel)]="form.applicablePriority">
           @for (p of priorities; track p) { <option [value]="p">{{ p }}</option> }
         </select>
       </div>
-      <div class="col-md-4"><input class="input-shadcn input-shadcn-sm" placeholder="Description" [(ngModel)]="form.description" /></div>
+      <div class="col-md-4"><input class="form-control form-control-sm" placeholder="Description" [(ngModel)]="form.description" /></div>
       <div class="col-md-3">
-        <label class="field-label">First Response (hrs)</label>
-        <input type="number" class="input-shadcn input-shadcn-sm" [(ngModel)]="form.firstResponseTimeHours" />
+        <label class="form-label small mb-0">First Response (hrs)</label>
+        <input type="number" class="form-control form-control-sm" [(ngModel)]="form.firstResponseTimeHours" />
       </div>
       <div class="col-md-3">
-        <label class="field-label">Resolution (hrs)</label>
-        <input type="number" class="input-shadcn input-shadcn-sm" [(ngModel)]="form.resolutionTimeHours" />
+        <label class="form-label small mb-0">Resolution (hrs)</label>
+        <input type="number" class="form-control form-control-sm" [(ngModel)]="form.resolutionTimeHours" />
       </div>
       <div class="col-md-3 d-flex align-items-end">
         <div class="form-check">
@@ -41,40 +37,40 @@
           <label class="form-check-label small" for="activeChk">Active</label>
         </div>
       </div>
-      <div class="col-md-8"><input class="input-shadcn input-shadcn-sm" placeholder="Notes" [(ngModel)]="form.notes" /></div>
+      <div class="col-md-8"><input class="form-control form-control-sm" placeholder="Notes" [(ngModel)]="form.notes" /></div>
       <div class="col-md-4 d-flex gap-2 justify-content-end">
-        <button class="btn-shadcn btn-shadcn-primary btn-shadcn-sm" [disabled]="!form.policyName.trim()" (click)="save()">Save</button>
-        <button class="btn-shadcn btn-shadcn-outline btn-shadcn-sm" (click)="showForm = false">✕</button>
+        <button class="btn btn-primary btn-sm" [disabled]="!form.policyName.trim()" (click)="save()">Save</button>
+        <button class="btn btn-secondary btn-sm" (click)="showForm = false">✕</button>
       </div>
     </div>
   </div></div>
   }
 
   @if (!loading && policies.length) {
-  <div class="card-shadcn"><div class="table-shadcn-container">
-    <table class="table-shadcn">
-      <thead>
+  <div class="card"><div class="table-responsive">
+    <table class="table table-hover table-sm align-middle mb-0">
+      <thead class="table-light">
         <tr><th>Policy Name</th><th>Priority</th><th>First Response</th><th>Resolution</th><th>Business Hours Only</th><th>Status</th><th></th></tr>
       </thead>
       <tbody>
         @for (p of policies; track p.id) {
         <tr>
           <td>{{ p.policyName }}</td>
-          <td><span class="badge-shadcn" [class]="priorityClass(p.applicablePriority)">{{ p.applicablePriority }}</span></td>
+          <td><span class="badge" [class]="priorityClass(p.applicablePriority)">{{ p.applicablePriority }}</span></td>
           <td>{{ p.firstResponseTimeHours }}h</td>
           <td>{{ p.resolutionTimeHours }}h</td>
           <td>{{ p.businessHoursOnly ? 'Yes' : 'No' }}</td>
           <td>
-            <span class="badge-shadcn" [class.badge-shadcn-success]="p.active" [class.badge-shadcn-secondary]="!p.active">
+            <span class="badge" [class.text-bg-success]="p.active" [class.text-bg-secondary]="!p.active">
               {{ p.active ? 'Active' : 'Inactive' }}
             </span>
           </td>
           <td class="text-end">
-            <button class="btn-shadcn btn-shadcn-outline btn-shadcn-sm me-1" (click)="toggleActive(p)" title="Toggle status">
+            <button class="btn btn-outline-secondary btn-sm me-1" (click)="toggleActive(p)" title="Toggle status">
               <i class="bi" [class.bi-toggle-on]="p.active" [class.bi-toggle-off]="!p.active"></i>
             </button>
-            <button class="btn-shadcn btn-shadcn-outline btn-shadcn-sm me-1" (click)="openEdit(p)"><i class="bi bi-pencil"></i></button>
-            <button class="btn-shadcn btn-shadcn-ghost btn-shadcn-sm" (click)="deleteTarget = p"><i class="bi bi-trash"></i></button>
+            <button class="btn btn-outline-secondary btn-sm me-1" (click)="openEdit(p)"><i class="bi bi-pencil"></i></button>
+            <button class="btn btn-outline-danger btn-sm" (click)="deleteTarget = p"><i class="bi bi-trash"></i></button>
           </td>
         </tr>
         }

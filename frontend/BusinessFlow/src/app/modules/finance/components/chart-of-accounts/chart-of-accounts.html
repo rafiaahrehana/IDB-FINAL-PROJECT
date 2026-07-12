@@ -1,103 +1,64 @@
-<div class="page-container">
-  <div class="page-header">
-    <div>
-      <h1 class="page-title">Chart of Accounts</h1>
-      <p class="page-subtitle">Manage your account structure</p>
-    </div>
-    <button class="btn-shadcn btn-shadcn-primary" (click)="openCreate()">
-      <i class="bi bi-plus-lg"></i> New Account
-    </button>
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0">Chart of Accounts</h4>
+    <button class="btn btn-primary btn-sm" (click)="openCreate()"><i class="bi bi-plus"></i> New Account</button>
   </div>
-
-  @if (error) {
-    <div class="card-shadcn" style="padding: 0.75rem 1rem; margin-bottom: 1rem; border-color: var(--color-destructive); background: #fef2f2;">
-      <span style="color: var(--color-destructive); font-size: 0.875rem;">{{ error }}</span>
-    </div>
-  }
-  @if (success) {
-    <div class="card-shadcn" style="padding: 0.75rem 1rem; margin-bottom: 1rem; border-color: #16a34a; background: #f0fdf4;">
-      <span style="color: #166534; font-size: 0.875rem;">{{ success }}</span>
-    </div>
-  }
+  @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
+  @if (success) { <div class="alert alert-success py-2">{{ success }}</div> }
   @if (loading) { <app-loader /> }
 
   @if (showForm) {
-    <div class="card-shadcn" style="padding: 1.5rem; margin-bottom: 1.5rem;">
-      <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem;">{{ editId ? 'Edit' : 'New' }} Account</h3>
-      <div style="display: grid; grid-template-columns: 100px 1fr 160px 1fr auto; gap: 1rem; align-items: end;">
-        <div class="field-group">
-          <label class="field-label">Code *</label>
-          <input class="input-shadcn" placeholder="1000" [(ngModel)]="form.accountCode" />
-        </div>
-        <div class="field-group">
-          <label class="field-label">Name *</label>
-          <input class="input-shadcn" placeholder="Cash" [(ngModel)]="form.accountName" />
-        </div>
-        <div class="field-group">
-          <label class="field-label">Type *</label>
-          <select class="input-shadcn" [(ngModel)]="form.type">
-            <option value="">Select type</option>
+  <div class="card mb-3">
+    <div class="card-header py-2 fw-semibold">{{ editId ? 'Edit' : 'New' }} Account</div>
+    <div class="card-body">
+      <div class="row g-2">
+        <div class="col-md-2"><input class="form-control form-control-sm" placeholder="Code *" [(ngModel)]="form.accountCode" /></div>
+        <div class="col-md-4"><input class="form-control form-control-sm" placeholder="Name *" [(ngModel)]="form.accountName" /></div>
+        <div class="col-md-2">
+          <select class="form-select form-select-sm" [(ngModel)]="form.type">
+            <option value="">Type *</option>
             @for (t of accountTypes; track t) { <option [value]="t">{{ t }}</option> }
           </select>
         </div>
-        <div class="field-group">
-          <label class="field-label">Description</label>
-          <input class="input-shadcn" placeholder="Main cash account" [(ngModel)]="form.description" />
-        </div>
-        <div style="display: flex; gap: 0.5rem;">
-          <button class="btn-shadcn btn-shadcn-primary btn-shadcn-sm" (click)="save()">Save</button>
-          <button class="btn-shadcn btn-shadcn-ghost btn-shadcn-sm" (click)="showForm = false">Cancel</button>
+        <div class="col-md-4"><input class="form-control form-control-sm" placeholder="Description" [(ngModel)]="form.description" /></div>
+        <div class="col-12 d-flex gap-2">
+          <div class="form-check form-check-inline"><input class="form-check-input" type="checkbox" id="active" [(ngModel)]="form.active" /><label class="form-check-label small" for="active">Active</label></div>
+          <button class="btn btn-primary btn-sm" (click)="save()">Save</button>
+          <button class="btn btn-secondary btn-sm" (click)="showForm = false">Cancel</button>
         </div>
       </div>
     </div>
+  </div>
   }
 
   @if (!loading && accounts.length) {
-    <div class="card-shadcn">
-      <div class="table-shadcn-container">
-        <table class="table-shadcn">
-          <thead>
-            <tr>
-              <th>Code</th>
-              <th>Name</th>
-              <th>Type</th>
-              <th style="text-align: right;">Balance</th>
-              <th>Active</th>
-              <th style="text-align: right;">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (a of accounts; track a.id) {
-              <tr>
-                <td style="font-family: monospace; font-weight: 500;">{{ a.accountCode }}</td>
-                <td [style.font-weight]="a.isHeaderAccount ? '600' : '400'">{{ a.accountName }}</td>
-                <td><span class="badge-shadcn badge-shadcn-secondary">{{ a.type }}</span></td>
-                <td style="text-align: right;">{{ a.balance | currency }}</td>
-                <td>
-                  <span class="badge-shadcn"
-                        [class.badge-shadcn-success]="a.active"
-                        [class.badge-shadcn-outline]="!a.active">
-                    {{ a.active ? 'Active' : 'Inactive' }}
-                  </span>
-                </td>
-                <td style="text-align: right;">
-                  <div style="display: flex; gap: 0.25rem; justify-content: flex-end;">
-                    <button class="btn-shadcn btn-shadcn-ghost btn-shadcn-icon btn-shadcn-sm" (click)="openEdit(a)">
-                      <i class="bi bi-pencil"></i>
-                    </button>
-                    <button class="btn-shadcn btn-shadcn-ghost btn-shadcn-icon btn-shadcn-sm" style="color: var(--color-destructive);"
-                            (click)="confirmDelete(a)"><i class="bi bi-trash"></i></button>
-                  </div>
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
-      <div class="card-shadcn-footer" style="justify-content: flex-end;">
-        <app-pagination [page]="page" [totalPages]="totalPages" (pageChange)="goToPage($event)" />
-      </div>
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table table-hover table-sm align-middle mb-0">
+        <thead class="table-light">
+          <tr><th>Code</th><th>Name</th><th>Type</th><th class="text-end">Balance</th><th>Active</th><th></th></tr>
+        </thead>
+        <tbody>
+          @for (a of accounts; track a.id) {
+          <tr>
+            <td class="fw-mono">{{ a.accountCode }}</td>
+            <td [class.fw-semibold]="a.isHeaderAccount">{{ a.accountName }}</td>
+            <td><span class="badge text-bg-light border">{{ a.type }}</span></td>
+            <td class="text-end">{{ a.balance | currency }}</td>
+            <td><span class="badge" [class.text-bg-success]="a.active" [class.text-bg-secondary]="!a.active">{{ a.active ? 'Active' : 'Inactive' }}</span></td>
+            <td class="text-end">
+              <button class="btn btn-outline-secondary btn-sm me-1" (click)="openEdit(a)"><i class="bi bi-pencil"></i></button>
+              <button class="btn btn-outline-danger btn-sm" (click)="confirmDelete(a)"><i class="bi bi-trash"></i></button>
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
     </div>
+    <div class="card-footer d-flex justify-content-end">
+      <app-pagination [page]="page" [totalPages]="totalPages" (pageChange)="goToPage($event)" />
+    </div>
+  </div>
   }
   @if (!loading && !accounts.length && !showForm) { <app-empty-state icon="bi-journal-bookmark" message="No accounts yet." /> }
 

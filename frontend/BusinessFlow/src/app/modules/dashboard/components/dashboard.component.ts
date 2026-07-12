@@ -1,166 +1,206 @@
-import { Component, OnInit, ChangeDetectionStrategy, signal } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
-import { DashboardService, DashboardSummary, PlatformSummary, ClientSummary } from '../../../core/services/dashboard.service';
+import {
+  DashboardService,
+  DashboardSummary,
+  PlatformSummary,
+  ClientSummary,
+} from '../../../core/services/dashboard.service';
 import { AiService } from '../../../core/services/ai.service';
-import { WebSocketService } from '../../../core/services/websocket.service';
-import { RbacService } from '../../../core/services/rbac.service';
+import { Loader } from '../../../shared/components/loader/loader';
+import { StatCard } from '../../../shared/components/stat-card/stat-card';
+
+interface QuickLink {
+  label: string;
+  description: string;
+  icon: string;
+  link: string;
+}
+
+// The dashboard is role-aware. Backend endpoints and their @PreAuthorize roles:
+//   /api/dashboard/summary + /recommendations + /insights -> COMPANY_OWNER, EMPLOYEE
+//   /api/dashboard/platform-summary -> all 7 platform staff roles
+//   /api/dashboard/client-summary   -> CLIENT
+const COMPANY_ROLES = ['COMPANY_OWNER', 'EMPLOYEE'];
+// Roles allowed into /platform routes (must match RoleGuard data in app.routes.ts)
+const PLATFORM_ADMIN_ROLES = ['SUPER_ADMIN', 'SYSTEM_ADMIN', 'PLATFORM_ACCOUNTANT', 'SALES_MANAGER'];
 
 @Component({
   selector: 'app-dashboard',
-  standalone: true,
-  imports: [RouterLink],
+  imports: [CommonModule, RouterLink, Loader, StatCard],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DashboardComponent implements OnInit {
-  readonly loading = signal(true);
-  readonly summary = signal<DashboardSummary | null>(null);
-  readonly platformSummary = signal<PlatformSummary | null>(null);
-  readonly clientSummary = signal<ClientSummary | null>(null);
-  readonly recommendations = signal<any[]>([]);
-  readonly insights = signal('');
-  readonly insightsLoading = signal(false);
-  readonly realtimeMetrics = signal<any>(null);
+  summary?: DashboardSummary;
+  platformSummary?: PlatformSummary;
+  clientSummary?: ClientSummary;
+  recommendations: any[] = [];
+  insights = '';
+  insightsError = '';
+  insightsLoading = false;
+  loading = false;
 
-  readonly isCompanyRole = signal(false);
-  readonly isPlatformRole = signal(false);
-  readonly isClientRole = signal(false);
-  readonly canManagePlatform = signal(false);
-  readonly quickLinks = signal<any[]>([]);
+  // Role flags resolved once from the logged-in user
+  isCompanyRole = false;
+  isPlatformRole = false;
+  isClientRole = false;
+  canManagePlatform = false;
+
+  subtitle = '';
+  quickLinks: QuickLink[] = [];
 
   constructor(
     public auth: AuthService,
-    public rbac: RbacService,
     private dashboardService: DashboardService,
     private aiService: AiService,
-    private ws: WebSocketService
+    private cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit(): void {
-    const user = this.auth.getCurrentUser();
-    const roles: string[] = user?.roles || [];
+    const roles = this.auth.getCurrentUser()?.roles ?? [];
 
-    this.isCompanyRole.set(roles.some((r: string) => ['COMPANY_OWNER', 'EMPLOYEE'].includes(r)));
-    this.isClientRole.set(roles.includes('CLIENT'));
-    this.isPlatformRole.set(!this.isCompanyRole() && !this.isClientRole() && roles.length > 0);
-    this.canManagePlatform.set(roles.some((r: string) => ['SUPER_ADMIN', 'SYSTEM_ADMIN'].includes(r)));
+    this.isCompanyRole = roles.some(r => COMPANY_ROLES.includes(r));
+    this.isClientRole = roles.includes('CLIENT');
+    this.isPlatformRole = !this.isCompanyRole && !this.isClientRole && roles.length > 0;
+    this.canManagePlatform = roles.some(r => PLATFORM_ADMIN_ROLES.includes(r));
 
-    if (this.isCompanyRole()) {
+    if (this.isCompanyRole) {
+      this.subtitle = 'Live overview of your company';
       this.loadCompanyDashboard();
-    } else if (this.isPlatformRole()) {
-      this.quickLinks.set(this.buildPlatformQuickLinks(roles));
+    } else if (this.isPlatformRole) {
+      this.subtitle = 'Platform overview';
+      this.quickLinks = this.buildPlatformQuickLinks(roles);
       this.loadPlatformDashboard();
-    } else if (this.isClientRole()) {
-      this.quickLinks.set(this.buildClientQuickLinks());
+    } else if (this.isClientRole) {
+      this.subtitle = 'Welcome back';
+      this.quickLinks = this.buildClientQuickLinks();
       this.loadClientDashboard();
     }
-
-    this.connectRealtimeMetrics();
   }
 
-  private connectRealtimeMetrics(): void {
-    this.ws.subscribe('/v1/metrics/stream').subscribe({
-      next: (data: any) => this.realtimeMetrics.set(data),
-      error: () => {},
-    });
-  }
+  // ---------- COMPANY_OWNER / EMPLOYEE ----------
 
   private loadCompanyDashboard(): void {
-    this.loading.set(true);
+    this.loading = true;
+    this.cdr.markForCheck();
     this.dashboardService.getSummary().subscribe({
-      next: (s) => { this.summary.set(s); this.loading.set(false); },
-      error: () => this.loading.set(false),
+      next: (s) => {
+        this.summary = s;
+        this.loading = false;
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.loading = false;
+        this.cdr.markForCheck();
+      },
     });
     this.aiService.recommendations().subscribe({
-      next: (recs) => this.recommendations.set(recs),
+      next: (recs) => {
+        this.recommendations = recs;
+        this.cdr.markForCheck();
+      },
     });
   }
 
   generateInsights(): void {
-    this.insightsLoading.set(true);
+    this.insightsLoading = true;
+    this.insightsError = '';
+    this.cdr.markForCheck();
     this.aiService.insights().subscribe({
-      next: (res) => { this.insights.set(res.insights); this.insightsLoading.set(false); },
-      error: () => { this.insights.set('Failed to generate insights'); this.insightsLoading.set(false); },
+      next: (res) => {
+        this.insights = res.insights;
+        this.insightsLoading = false;
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        this.insightsError =
+          err?.error?.message || 'Insights failed - check your AI provider config';
+        this.insightsLoading = false;
+        this.cdr.markForCheck();
+      },
     });
   }
+
+  // ---------- PLATFORM STAFF ----------
 
   private loadPlatformDashboard(): void {
-    this.loading.set(true);
+    this.loading = true;
+    this.cdr.markForCheck();
     this.dashboardService.getPlatformSummary().subscribe({
-      next: (s) => { this.platformSummary.set(s); this.loading.set(false); },
-      error: () => this.loading.set(false),
+      next: (s) => {
+        this.platformSummary = s;
+        this.loading = false;
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.loading = false;
+        this.cdr.markForCheck();
+      },
     });
   }
 
-  private loadClientDashboard(): void {
-    this.loading.set(true);
-    this.dashboardService.getClientSummary().subscribe({
-      next: (s) => { this.clientSummary.set(s); this.loading.set(false); },
-      error: () => this.loading.set(false),
-    });
-  }
-
-  private buildPlatformQuickLinks(roles: string[]): any[] {
-    const links: any[] = [];
-    if (this.canManagePlatform()) {
+  private buildPlatformQuickLinks(roles: string[]): QuickLink[] {
+    const links: QuickLink[] = [];
+    if (this.canManagePlatform) {
       links.push(
-        { label: 'Companies', description: 'Manage tenant companies', icon: 'building-2', link: '/platform/companies' },
-        { label: 'Platform Users', description: 'SaaS staff accounts', icon: 'shield', link: '/platform/platform-users' },
-        { label: 'Feature Flags', description: 'Toggle features', icon: 'flag', link: '/platform/feature-flags' },
-        { label: 'Custom Roles', description: 'Permission sets', icon: 'shield-check', link: '/platform/custom-roles' },
+        { label: 'Companies', description: 'Manage tenant companies', icon: 'bi-buildings', link: '/platform/companies' },
+        { label: 'Platform Users', description: 'SaaS staff accounts', icon: 'bi-person-badge', link: '/platform/platform-users' },
+        { label: 'Feature Flags', description: 'Toggle platform features', icon: 'bi-toggles', link: '/platform/feature-flags' },
+        { label: 'Custom Roles', description: 'Role permission sets', icon: 'bi-shield-check', link: '/platform/custom-roles' },
       );
     }
     if (roles.includes('SUPPORT_AGENT') || roles.includes('SUPPORT_MANAGER')) {
       links.push(
-        { label: 'Support Tickets', description: 'Resolve tenant tickets', icon: 'messages-square', link: '/support/tickets' },
-        { label: 'SLA Policies', description: 'Response targets', icon: 'timer', link: '/support/sla-policies' },
+        { label: 'Support Tickets', description: 'Resolve tenant tickets', icon: 'bi-ticket-perforated', link: '/support/tickets' },
+        { label: 'SLA Policies', description: 'Response time targets', icon: 'bi-stopwatch', link: '/support/sla-policies' },
       );
     }
     links.push(
-      { label: 'Notifications', description: 'Latest updates', icon: 'bell', link: '/notifications' },
-      { label: 'Settings', description: 'Profile & preferences', icon: 'settings', link: '/notifications/preferences' },
+      { label: 'Notifications', description: 'Your latest updates', icon: 'bi-bell', link: '/notifications' },
+      { label: 'Settings', description: 'Profile & preferences', icon: 'bi-gear', link: '/notifications/preferences' },
     );
     return links;
   }
 
-  private buildClientQuickLinks(): any[] {
+  // ---------- CLIENT ----------
+
+  private loadClientDashboard(): void {
+    this.loading = true;
+    this.cdr.markForCheck();
+    this.dashboardService.getClientSummary().subscribe({
+      next: (s) => {
+        this.clientSummary = s;
+        this.loading = false;
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.loading = false;
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  private buildClientQuickLinks(): QuickLink[] {
     return [
-      { label: 'Service Requests', description: 'Track your requests', icon: 'clipboard-check', link: '/servicedesk/requests' },
-      { label: 'Knowledge Base', description: 'Guides and answers', icon: 'book-open', link: '/servicedesk/kb' },
-      { label: 'Notifications', description: 'Latest updates', icon: 'bell', link: '/notifications' },
-      { label: 'Settings', description: 'Profile & preferences', icon: 'settings', link: '/notifications/preferences' },
+      { label: 'My Service Requests', description: 'Track your requests', icon: 'bi-clipboard-check', link: '/servicedesk/requests' },
+      { label: 'Knowledge Base', description: 'Guides and answers', icon: 'bi-journal-text', link: '/servicedesk/kb' },
+      { label: 'Notifications', description: 'Your latest updates', icon: 'bi-bell', link: '/notifications' },
+      { label: 'Settings', description: 'Profile & preferences', icon: 'bi-gear', link: '/notifications/preferences' },
     ];
   }
 
+  // ---------- shared ----------
+
   fmt(n: number | undefined): string {
     if (n == null) return '-';
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
-  }
-
-  iconClass(icon: string): string {
-    const map: Record<string, string> = {
-      'building-2': 'bi bi-building', 'building': 'bi bi-building',
-      'shield': 'bi bi-shield', 'shield-check': 'bi bi-shield-check',
-      'shield-alert': 'bi bi-shield-exclamation',
-      'flag': 'bi bi-flag', 'bell': 'bi bi-bell',
-      'messages-square': 'bi bi-chat-square-text',
-      'timer': 'bi bi-stopwatch', 'settings': 'bi bi-gear',
-      'clipboard-check': 'bi bi-clipboard-check',
-      'book-open': 'bi bi-book', 'users': 'bi bi-people',
-      'kanban': 'bi bi-kanban', 'trending-up': 'bi bi-graph-up',
-      'clock': 'bi bi-clock', 'loader': 'bi bi-arrow-repeat',
-      'receipt': 'bi bi-receipt', 'wallet': 'bi bi-wallet2',
-      'banknote': 'bi bi-cash', 'lightbulb': 'bi bi-lightbulb',
-      'check-circle': 'bi bi-check-circle', 'pause-circle': 'bi bi-pause-circle',
-    };
-    return map[icon] || 'bi bi-grid';
-  }
-
-  recIconClass(severity: string): string {
-    if (severity === 'CRITICAL') return 'bi bi-exclamation-circle';
-    if (severity === 'WARNING') return 'bi bi-exclamation-triangle';
-    return 'bi bi-info-circle';
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      maximumFractionDigits: 0,
+    }).format(n);
   }
 }

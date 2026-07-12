@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
@@ -10,6 +10,7 @@ import { Notification } from '../../../core/models/notification.model';
   imports: [CommonModule, RouterLink],
   templateUrl: './notification-bell.html',
   styleUrl: './notification-bell.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class NotificationBell implements OnInit, OnDestroy {
   // VARIABLES
@@ -22,13 +23,17 @@ export class NotificationBell implements OnInit, OnDestroy {
 
   constructor(
     private notificationService: NotificationService,
-    private router: Router
+    private router: Router,
+    private cdr: ChangeDetectorRef
   ) {}
 
   // LIFECYCLE HOOKS
   ngOnInit(): void {
     this.notificationService.startPolling();
-    this.countSub = this.notificationService.unreadCount$.subscribe(n => this.unread = n);
+    this.countSub = this.notificationService.unreadCount$.subscribe(n => {
+      this.unread = n;
+      this.cdr.markForCheck();
+    });
   }
 
   ngOnDestroy(): void {
@@ -49,8 +54,15 @@ export class NotificationBell implements OnInit, OnDestroy {
   loadRecent(): void {
     this.loading = true;
     this.notificationService.list(false, 0, 5).subscribe({
-      next: (res) => { this.recent = res.content; this.loading = false; },
-      error: () => { this.loading = false; }
+      next: (res) => {
+        this.recent = res.content;
+        this.loading = false;
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.loading = false;
+        this.cdr.markForCheck();
+      }
     });
   }
 
@@ -61,6 +73,7 @@ export class NotificationBell implements OnInit, OnDestroy {
         next: () => {
           n.read = true;
           this.notificationService.refreshCount();
+          this.cdr.markForCheck();
         }
       });
     }
@@ -74,6 +87,7 @@ export class NotificationBell implements OnInit, OnDestroy {
       next: () => {
         this.recent.forEach(n => n.read = true);
         this.notificationService.refreshCount();
+        this.cdr.markForCheck();
       }
     });
   }

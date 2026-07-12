@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
@@ -23,6 +23,7 @@ type EditorTab = 'basics' | 'fields' | 'documents' | 'stages';
 @Component({
   selector: 'app-service-templates',
   imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState, ConfirmDialog],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './templates.html',
 })
 export class Templates implements OnInit {
@@ -57,8 +58,8 @@ export class Templates implements OnInit {
   // LOAD TEMPLATES
   load(): void {
     this.loading = true;
-    this.cdr.markForCheck();
     this.error = '';
+    this.cdr.markForCheck();
     this.templateService.list(this.page).subscribe({
       next: (res) => { this.templates = res.content; this.totalPages = res.totalPages; this.loading = false; this.cdr.markForCheck(); },
       error: () => { this.error = 'Failed to load templates'; this.loading = false; this.cdr.markForCheck(); }
@@ -68,7 +69,7 @@ export class Templates implements OnInit {
   // LOAD CATEGORY LOOKUP
   loadCategories(): void {
     if (this.categories.length) return;
-    this.categoryService.lookup().subscribe({ next: (res) => this.categories = res, error: () => this.categories = [] });
+    this.categoryService.lookup().subscribe({ next: (res) => { this.categories = res; this.cdr.markForCheck(); }, error: () => { this.categories = []; this.cdr.markForCheck(); } });
   }
 
   // OPEN CREATE
@@ -99,9 +100,10 @@ export class Templates implements OnInit {
         };
         this.editorTab = 'basics';
         this.editorOpen = true;
+        this.cdr.markForCheck();
         this.loadCategories();
       },
-      error: () => this.error = 'Failed to load template'
+      error: () => { this.error = 'Failed to load template'; this.cdr.markForCheck(); }
     });
   }
 
@@ -120,9 +122,10 @@ export class Templates implements OnInit {
       next: () => {
         this.success = this.editingId ? 'Template updated' : 'Template created';
         this.closeEditor();
+        this.cdr.markForCheck();
         this.load();
       },
-      error: (err) => this.error = err?.error?.message || 'Failed to save template'
+      error: (err) => { this.error = err?.error?.message || 'Failed to save template'; this.cdr.markForCheck(); }
     });
   }
 
@@ -163,8 +166,8 @@ export class Templates implements OnInit {
   doDelete(): void {
     if (!this.deleteTarget) return;
     this.templateService.delete(this.deleteTarget.id).subscribe({
-      next: () => { this.deleteTarget = null; this.success = 'Template deleted'; this.load(); },
-      error: () => { this.deleteTarget = null; this.error = 'Cannot delete template'; }
+      next: () => { this.deleteTarget = null; this.success = 'Template deleted'; this.cdr.markForCheck(); this.load(); },
+      error: () => { this.deleteTarget = null; this.error = 'Cannot delete template'; this.cdr.markForCheck(); }
     });
   }
 

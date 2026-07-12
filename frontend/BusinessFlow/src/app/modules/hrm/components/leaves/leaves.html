@@ -1,29 +1,27 @@
-<div class="page-container">
-  <div class="page-header">
-    <div>
-      <h4 class="page-title">Leaves</h4>
-    </div>
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <h4 class="mb-0">Leaves</h4>
     <div class="d-flex gap-2 align-items-center">
       <div class="btn-group btn-group-sm" role="group">
-        <button class="btn-shadcn btn-shadcn-sm" [class.btn-shadcn-primary]="view === 'my'" [class.btn-shadcn-outline]="view !== 'my'" (click)="setView('my')">My Requests</button>
-        <button class="btn-shadcn btn-shadcn-sm" [class.btn-shadcn-primary]="view === 'all'" [class.btn-shadcn-outline]="view !== 'all'" (click)="setView('all')">All Requests</button>
+        <button class="btn" [class.btn-primary]="view === 'my'" [class.btn-outline-secondary]="view !== 'my'" (click)="setView('my')">My Requests</button>
+        <button class="btn" [class.btn-primary]="view === 'all'" [class.btn-outline-secondary]="view !== 'all'" (click)="setView('all')">All Requests</button>
       </div>
       @if (view === 'all') {
-      <select class="select-shadcn input-shadcn-sm" style="width:150px" [(ngModel)]="statusFilter" (change)="page=0;load()">
+      <select class="form-select form-select-sm" style="width:150px" [(ngModel)]="statusFilter" (change)="page=0;load()">
         <option value="">All statuses</option>
         @for (s of statuses; track s) { <option [value]="s">{{ s | titlecase }}</option> }
       </select>
       }
-      <button class="btn-shadcn btn-shadcn-primary btn-shadcn-sm" (click)="openApply()"><i class="bi bi-plus"></i> Apply for Leave</button>
+      <button class="btn btn-primary btn-sm" (click)="openApply()"><i class="bi bi-plus"></i> Apply for Leave</button>
     </div>
   </div>
-  @if (error) { <div class="badge-shadcn badge-shadcn-destructive py-2 px-3">{{ error }}</div> }
-  @if (success) { <div class="badge-shadcn badge-shadcn-success py-2 px-3">{{ success }}</div> }
+  @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
+  @if (success) { <div class="alert alert-success py-2">{{ success }}</div> }
 
   @if (view === 'my' && balances.length) {
-  <div class="card-shadcn mb-3">
-    <div class="card-shadcn-header"><div class="card-shadcn-title">Leave Balances · {{ balances[0].year }}</div></div>
-    <div class="card-shadcn-content">
+  <div class="card mb-3">
+    <div class="card-header py-2 fw-semibold">Leave Balances · {{ balances[0].year }}</div>
+    <div class="card-body py-3">
       <div class="row g-3">
         @for (b of balances; track b.id) {
         <div class="col-md-3 col-sm-6">
@@ -45,31 +43,27 @@
   @if (loading) { <app-loader /> }
 
   @if (showForm) {
-  <div class="card-shadcn mb-3">
-    <div class="card-shadcn-header"><div class="card-shadcn-title">Apply for Leave</div></div>
-    <div class="card-shadcn-content">
+  <div class="card mb-3">
+    <div class="card-header py-2 fw-semibold">Apply for Leave</div>
+    <div class="card-body">
       <div class="row g-2">
         <div class="col-md-3">
-          <select class="select-shadcn input-shadcn-sm" [(ngModel)]="form.leaveType">
+          <select class="form-select form-select-sm" [(ngModel)]="form.leaveType">
             @for (t of leaveTypes; track t) { <option [value]="t">{{ t | titlecase }}</option> }
           </select>
         </div>
         <div class="col-md-3">
-          <div class="field-group">
-            <label class="field-label">Start date</label>
-            <input class="input-shadcn input-shadcn-sm" type="date" [(ngModel)]="form.startDate" />
-          </div>
+          <label class="form-label small text-muted mb-1">Start date</label>
+          <input class="form-control form-control-sm" type="date" [(ngModel)]="form.startDate" />
         </div>
         <div class="col-md-3">
-          <div class="field-group">
-            <label class="field-label">End date</label>
-            <input class="input-shadcn input-shadcn-sm" type="date" [(ngModel)]="form.endDate" />
-          </div>
+          <label class="form-label small text-muted mb-1">End date</label>
+          <input class="form-control form-control-sm" type="date" [(ngModel)]="form.endDate" />
         </div>
-        <div class="col-12"><textarea class="textarea-shadcn" rows="2" placeholder="Reason" [(ngModel)]="form.reason"></textarea></div>
+        <div class="col-12"><textarea class="form-control form-control-sm" rows="2" placeholder="Reason" [(ngModel)]="form.reason"></textarea></div>
         <div class="col-12 d-flex gap-2">
-          <button class="btn-shadcn btn-shadcn-primary btn-shadcn-sm" [disabled]="!form.leaveType || !form.startDate || !form.endDate" (click)="apply()">Submit</button>
-          <button class="btn-shadcn btn-shadcn-outline btn-shadcn-sm" (click)="showForm = false">Cancel</button>
+          <button class="btn btn-primary btn-sm" [disabled]="!form.leaveType || !form.startDate || !form.endDate" (click)="apply()">Submit</button>
+          <button class="btn btn-secondary btn-sm" (click)="showForm = false">Cancel</button>
         </div>
       </div>
     </div>
@@ -77,10 +71,10 @@
   }
 
   @if (!loading && requests.length) {
-  <div class="card-shadcn">
-    <div class="table-shadcn-container">
-      <table class="table-shadcn">
-        <thead>
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table table-hover table-sm align-middle mb-0">
+        <thead class="table-light">
           <tr>
             @if (view === 'all') { <th>Employee</th> }
             <th>Type</th><th>Start</th><th>End</th><th class="text-end">Days</th><th>Reason</th><th>Status</th><th>Reviewed By</th><th></th>
@@ -95,15 +89,15 @@
             <td>{{ r.endDate | date:'mediumDate' }}</td>
             <td class="text-end">{{ r.totalDays }}</td>
             <td class="text-truncate" style="max-width:220px" [title]="r.reason">{{ r.reason || '-' }}</td>
-            <td><span class="badge-shadcn {{ statusClass(r.status) }}">{{ r.status }}</span></td>
+            <td><span class="badge {{ statusClass(r.status) }}">{{ r.status }}</span></td>
             <td class="text-muted small">{{ r.reviewedByName || '-' }}</td>
             <td class="text-end text-nowrap">
               @if (view === 'all' && r.status === 'PENDING') {
-              <button class="btn-shadcn btn-shadcn-outline btn-shadcn-sm me-1" (click)="openReview(r, 'APPROVED')">Approve</button>
-              <button class="btn-shadcn btn-shadcn-outline btn-shadcn-sm me-1" (click)="openReview(r, 'REJECTED')">Reject</button>
+              <button class="btn btn-outline-success btn-sm me-1" (click)="openReview(r, 'APPROVED')">Approve</button>
+              <button class="btn btn-outline-danger btn-sm me-1" (click)="openReview(r, 'REJECTED')">Reject</button>
               }
               @if (view === 'my' && r.status === 'PENDING') {
-              <button class="btn-shadcn btn-shadcn-outline btn-shadcn-sm" (click)="cancelTarget = r">Cancel</button>
+              <button class="btn btn-outline-secondary btn-sm" (click)="cancelTarget = r">Cancel</button>
               }
             </td>
           </tr>
@@ -111,7 +105,7 @@
         </tbody>
       </table>
     </div>
-    <div class="card-shadcn-footer d-flex justify-content-end">
+    <div class="card-footer d-flex justify-content-end">
       <app-pagination [page]="page" [totalPages]="totalPages" (pageChange)="goToPage($event)" />
     </div>
   </div>
@@ -119,27 +113,29 @@
   @if (!loading && !requests.length && !showForm) { <app-empty-state icon="bi-calendar-x" message="No leave requests found." /> }
 
   @if (reviewTarget) {
-  <div class="modal-overlay" (click)="reviewTarget = null">
-    <div class="modal-dialog-shadcn" (click)="$event.stopPropagation()">
-      <div class="modal-header-shadcn">
-        <div class="modal-title-shadcn">{{ reviewAction === 'APPROVED' ? 'Approve' : 'Reject' }} Leave Request</div>
-        <button class="btn-shadcn btn-shadcn-ghost btn-shadcn-icon btn-shadcn-sm" (click)="reviewTarget = null"><i class="bi bi-x-lg"></i></button>
-      </div>
-      <div class="modal-body-shadcn">
-        <div class="text-muted small mb-2">
-          {{ reviewTarget.employeeName }} · {{ reviewTarget.leaveType | titlecase }} · {{ reviewTarget.totalDays }} day(s)
+  <div class="modal d-block" style="background: rgba(0,0,0,.4)">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header py-2">
+          <h5 class="modal-title fs-6 fw-semibold">{{ reviewAction === 'APPROVED' ? 'Approve' : 'Reject' }} Leave Request</h5>
+          <button class="btn-close" (click)="reviewTarget = null"></button>
         </div>
-        @if (reviewAction === 'REJECTED') {
-        <textarea class="textarea-shadcn" rows="3" placeholder="Rejection reason (required)" [(ngModel)]="rejectionReason"></textarea>
-        }
-      </div>
-      <div class="modal-footer-shadcn">
-        <button class="btn-shadcn btn-shadcn-outline btn-shadcn-sm" (click)="reviewTarget = null">Cancel</button>
-        <button class="btn-shadcn btn-shadcn-sm"
-                [class.btn-shadcn-primary]="reviewAction === 'APPROVED'"
-                [class.btn-shadcn-destructive]="reviewAction === 'REJECTED'"
-                [disabled]="reviewAction === 'REJECTED' && !rejectionReason"
-                (click)="doReview()">Confirm</button>
+        <div class="modal-body">
+          <div class="text-muted small mb-2">
+            {{ reviewTarget.employeeName }} · {{ reviewTarget.leaveType | titlecase }} · {{ reviewTarget.totalDays }} day(s)
+          </div>
+          @if (reviewAction === 'REJECTED') {
+          <textarea class="form-control form-control-sm" rows="3" placeholder="Rejection reason (required)" [(ngModel)]="rejectionReason"></textarea>
+          }
+        </div>
+        <div class="modal-footer py-2">
+          <button class="btn btn-secondary btn-sm" (click)="reviewTarget = null">Cancel</button>
+          <button class="btn btn-sm"
+                  [class.btn-success]="reviewAction === 'APPROVED'"
+                  [class.btn-danger]="reviewAction === 'REJECTED'"
+                  [disabled]="reviewAction === 'REJECTED' && !rejectionReason"
+                  (click)="doReview()">Confirm</button>
+        </div>
       </div>
     </div>
   </div>

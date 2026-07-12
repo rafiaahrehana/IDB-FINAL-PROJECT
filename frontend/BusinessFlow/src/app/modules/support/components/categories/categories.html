@@ -1,39 +1,35 @@
-<div class="page-container">
-  <div class="page-header">
-    <div>
-      <h4 class="page-title">Ticket Categories</h4>
-    </div>
-    <div>
-      <button class="btn-shadcn btn-shadcn-primary btn-shadcn-sm" (click)="showForm = !showForm; form = {}"><i class="bi bi-plus"></i> Add Category</button>
-    </div>
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0">Ticket Categories</h4>
+    <button class="btn btn-primary btn-sm" (click)="showForm = !showForm; form = {}"><i class="bi bi-plus"></i> Add Category</button>
   </div>
-  @if (error) { <div class="badge-shadcn badge-shadcn-destructive py-2 px-3">{{ error }}</div> }
-  @if (success) { <div class="badge-shadcn badge-shadcn-success py-2 px-3">{{ success }}</div> }
+  @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
+  @if (success) { <div class="alert alert-success py-2">{{ success }}</div> }
   @if (loading) { <app-loader /> }
   @if (showForm) {
-  <div class="card-shadcn" style="margin-bottom: 1rem;"><div class="card-shadcn-content">
+  <div class="card mb-3"><div class="card-body">
     <div class="row g-2">
-      <div class="col-md-4"><input class="input-shadcn input-shadcn-sm" placeholder="Name *" [(ngModel)]="form.name" /></div>
-      <div class="col-md-6"><input class="input-shadcn input-shadcn-sm" placeholder="Description" [(ngModel)]="form.description" /></div>
+      <div class="col-md-4"><input class="form-control form-control-sm" placeholder="Name *" [(ngModel)]="form.name" /></div>
+      <div class="col-md-6"><input class="form-control form-control-sm" placeholder="Description" [(ngModel)]="form.description" /></div>
       <div class="col-md-2 d-flex gap-2">
-        <button class="btn-shadcn btn-shadcn-primary btn-shadcn-sm" (click)="save()">Save</button>
-        <button class="btn-shadcn btn-shadcn-outline btn-shadcn-sm" (click)="showForm = false">✕</button>
+        <button class="btn btn-primary btn-sm" (click)="save()">Save</button>
+        <button class="btn btn-secondary btn-sm" (click)="showForm = false">✕</button>
       </div>
     </div>
   </div></div>
   }
   @if (!loading && categories.length) {
-  <div class="card-shadcn"><div class="table-shadcn-container">
-    <table class="table-shadcn">
-      <thead><tr><th>Name</th><th>Description</th><th></th></tr></thead>
+  <div class="card"><div class="table-responsive">
+    <table class="table table-hover table-sm align-middle mb-0">
+      <thead class="table-light"><tr><th>Name</th><th>Description</th><th></th></tr></thead>
       <tbody>
         @for (c of categories; track c.id) {
         <tr>
           <td>{{ c.name }}</td>
           <td class="text-muted small">{{ c.description || '-' }}</td>
           <td class="text-end">
-            <button class="btn-shadcn btn-shadcn-outline btn-shadcn-sm me-1" (click)="form = {...c}; showForm = true"><i class="bi bi-pencil"></i></button>
-            <button class="btn-shadcn btn-shadcn-ghost btn-shadcn-sm" (click)="deleteTarget = c"><i class="bi bi-trash"></i></button>
+            <button class="btn btn-outline-secondary btn-sm me-1" (click)="form = {...c}; showForm = true"><i class="bi bi-pencil"></i></button>
+            <button class="btn btn-outline-danger btn-sm" (click)="deleteTarget = c"><i class="bi bi-trash"></i></button>
           </td>
         </tr>
         }

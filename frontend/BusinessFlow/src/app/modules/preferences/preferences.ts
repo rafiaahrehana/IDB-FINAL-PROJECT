@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ViewChild, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
@@ -22,6 +22,7 @@ interface PrefRow {
 @Component({
   selector: 'app-notification-preferences',
   imports: [CommonModule, FormsModule, Loader, LocationComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './preferences.html',
   styleUrl: './preferences.scss'
 })
@@ -105,6 +106,7 @@ export class Preferences implements OnInit {
   loadProfile(): void {
     this.loadingProfile = true;
     this.error = '';
+    this.cdr.markForCheck();
     this.authService.getProfile().subscribe({
       next: (res) => {
         this.profile = res;
@@ -116,6 +118,7 @@ export class Preferences implements OnInit {
           languagePreference: res.languagePreference || 'EN'
         };
         this.loadingProfile = false;
+        this.cdr.markForCheck();
         
         if (res.location) {
           setTimeout(() => {
@@ -128,6 +131,7 @@ export class Preferences implements OnInit {
       error: () => {
         this.error = 'Failed to load profile details';
         this.loadingProfile = false;
+        this.cdr.markForCheck();
       }
     });
   }
@@ -142,6 +146,7 @@ export class Preferences implements OnInit {
     this.savingProfile = true;
     this.error = '';
     this.success = '';
+    this.cdr.markForCheck();
 
     const payload: any = {
       firstName: this.profileForm.firstName.trim(),
@@ -164,6 +169,7 @@ export class Preferences implements OnInit {
         this.profile = res;
         this.success = 'Profile and location updated successfully';
         this.savingProfile = false;
+        this.cdr.markForCheck();
         if (res.location && this.locationComponent) {
           this.locationComponent.resolveExistingLocation(res.location);
         }
@@ -171,6 +177,7 @@ export class Preferences implements OnInit {
       error: (err) => {
         this.error = err?.error?.message || 'Failed to update profile details';
         this.savingProfile = false;
+        this.cdr.markForCheck();
       }
     });
   }
@@ -195,6 +202,7 @@ export class Preferences implements OnInit {
     this.changingPassword = true;
     this.error = '';
     this.success = '';
+    this.cdr.markForCheck();
 
     this.authService.changePassword({ currentPassword, newPassword, confirmPassword }).subscribe({
       next: () => {
@@ -203,11 +211,13 @@ export class Preferences implements OnInit {
         // Backend revokes ALL refresh tokens on password change, so this session
         // can no longer refresh - log out and send the user back to sign in.
         this.success = 'Password changed successfully. Redirecting to sign in...';
+        this.cdr.markForCheck();
         setTimeout(() => this.authService.logout(), 2000);
       },
       error: (err) => {
         this.error = err?.error?.message || 'Failed to change password';
         this.changingPassword = false;
+        this.cdr.markForCheck();
       }
     });
   }
@@ -215,8 +225,8 @@ export class Preferences implements OnInit {
   // LOAD PREFERENCES
   load(): void {
     this.loading = true;
-    this.cdr.markForCheck();
     this.error = '';
+    this.cdr.markForCheck();
     this.notificationService.getPreferences().subscribe({
       next: (res: NotificationPreference) => { this.preference = res; this.loading = false; this.cdr.markForCheck(); },
       error: () => { this.error = 'Failed to load preferences'; this.loading = false; this.cdr.markForCheck(); }
@@ -227,9 +237,9 @@ export class Preferences implements OnInit {
   save(): void {
     if (!this.preference) return;
     this.saving = true;
-    this.cdr.markForCheck();
     this.error = '';
     this.success = '';
+    this.cdr.markForCheck();
     const payload: UpdateNotificationPreferenceRequest = {
       emailOnServiceRequest: this.preference.emailOnServiceRequest,
       emailOnStatusChange: this.preference.emailOnStatusChange,
@@ -242,16 +252,16 @@ export class Preferences implements OnInit {
       emailMarketing: this.preference.emailMarketing,
     };
     this.notificationService.updatePreferences(payload).subscribe({
-      next: (res: NotificationPreference) => { this.preference = res; this.saving = false; this.cdr.markForCheck(); this.success = 'Preferences saved'; },
-      error: (err: any) => { this.saving = false; this.cdr.markForCheck(); this.error = err?.error?.message || 'Failed to save preferences'; }
+      next: (res: NotificationPreference) => { this.preference = res; this.saving = false; this.success = 'Preferences saved'; this.cdr.markForCheck(); },
+      error: (err: any) => { this.saving = false; this.error = err?.error?.message || 'Failed to save preferences'; this.cdr.markForCheck(); }
     });
   }
 
   // RESET TO DEFAULTS
   reset(): void {
     this.notificationService.resetPreferences().subscribe({
-      next: (res: NotificationPreference) => { this.preference = res; this.success = 'Preferences reset to defaults'; },
-      error: (err: any) => this.error = err?.error?.message || 'Failed to reset preferences'
+      next: (res: NotificationPreference) => { this.preference = res; this.success = 'Preferences reset to defaults'; this.cdr.markForCheck(); },
+      error: (err: any) => { this.error = err?.error?.message || 'Failed to reset preferences'; this.cdr.markForCheck(); }
     });
   }
 }

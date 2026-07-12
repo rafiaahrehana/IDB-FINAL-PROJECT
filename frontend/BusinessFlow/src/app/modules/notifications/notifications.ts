@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { Notification } from '../../core/models/notification.model';
@@ -11,6 +11,7 @@ import { PagedResponse } from '../../core/services/api.service';
 @Component({
   selector: 'app-notifications',
   imports: [CommonModule, RouterLink, Pagination, Loader, EmptyState],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './notifications.html',
 })
 export class Notifications implements OnInit {
@@ -34,8 +35,8 @@ export class Notifications implements OnInit {
   // LOAD NOTIFICATIONS
   load(): void {
     this.loading = true;
-    this.cdr.markForCheck();
     this.error = '';
+    this.cdr.markForCheck();
     this.notificationService.list(this.filter === 'unread', this.page).subscribe({
       next: (res: PagedResponse<Notification>) => { this.notifications = res.content; this.totalPages = res.totalPages; this.loading = false; this.cdr.markForCheck(); },
       error: () => { this.error = 'Failed to load notifications'; this.loading = false; this.cdr.markForCheck(); }
@@ -54,7 +55,7 @@ export class Notifications implements OnInit {
   openNotification(n: Notification): void {
     if (!n.read) {
       this.notificationService.markAsRead(n.id).subscribe({
-        next: () => { n.read = true; this.notificationService.refreshCount(); }
+        next: () => { n.read = true; this.notificationService.refreshCount(); this.cdr.markForCheck(); }
       });
     }
     if (n.actionUrl) this.router.navigateByUrl(n.actionUrl);
@@ -63,7 +64,7 @@ export class Notifications implements OnInit {
   // MARK ALL AS READ
   markAllRead(): void {
     this.notificationService.markAllAsRead().subscribe({
-      next: () => { this.notificationService.refreshCount(); this.load(); }
+      next: () => { this.notificationService.refreshCount(); this.cdr.markForCheck(); this.load(); }
     });
   }
 

@@ -1,54 +1,54 @@
-<div class="page-container">
-  <div class="page-header">
-    <div>
-      <h4 class="page-title">Sales Pipeline</h4>
-    </div>
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <h4 class="mb-0">Sales Pipeline</h4>
     <div class="d-flex gap-2 align-items-center flex-wrap">
       @if (summary) {
-      <span class="badge-shadcn badge-shadcn-outline">Open: <strong>{{ summary.openPipelineValue | currency }}</strong></span>
-      <span class="badge-shadcn badge-shadcn-outline">Forecast: <strong>{{ summary.weightedForecast | currency }}</strong></span>
-      <span class="badge-shadcn badge-shadcn-success">Won: {{ summary.wonValue | currency }}</span>
-      <span class="badge-shadcn badge-shadcn-outline">Open deals: {{ summary.totalOpenDeals }}</span>
+      <span class="badge text-bg-light border">Open: <strong>{{ summary.openPipelineValue | currency }}</strong></span>
+      <span class="badge text-bg-light border">Forecast: <strong>{{ summary.weightedForecast | currency }}</strong></span>
+      <span class="badge text-bg-success">Won: {{ summary.wonValue | currency }}</span>
+      <span class="badge text-bg-light border">Open deals: {{ summary.totalOpenDeals }}</span>
       }
-      <button class="btn-shadcn btn-shadcn-primary btn-shadcn-sm" (click)="openCreate()">
+      <button class="btn btn-primary btn-sm" (click)="openCreate()">
         <i class="bi bi-plus-lg me-1"></i>New Opportunity
       </button>
     </div>
   </div>
 
-  @if (error) { <div class="badge-shadcn badge-shadcn-destructive py-2 px-3">{{ error }}</div> }
+  @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
   @if (loading) { <app-loader /> }
 
   @if (!loading) {
-  <div class="d-flex gap-3 overflow-auto align-items-start pb-2">
+  <div class="d-flex gap-2 overflow-auto align-items-start pb-2">
     @for (stage of stages; track stage) {
-    <div class="card-shadcn flex-shrink-0 pipeline-column">
-      <div class="card-shadcn-header d-flex justify-content-between align-items-center"
+    <div class="card flex-shrink-0" style="width: 240px">
+      <div class="card-header py-2 d-flex justify-content-between small fw-semibold"
            [class.text-success]="stage === 'CLOSED_WON'" [class.text-danger]="stage === 'CLOSED_LOST'">
-        <span class="card-shadcn-title">{{ stageLabel(stage) }}</span>
-        <span class="badge-shadcn badge-shadcn-outline">{{ columnTotal(stage) | currency }}</span>
+        <span>{{ stageLabel(stage) }}</span>
+        <span>{{ columnTotal(stage) | currency }}</span>
       </div>
-      <div class="card-shadcn-content pipeline-column-body">
+      <div class="card-body p-2">
         @for (deal of columns[stage]; track deal.id) {
-        <div class="pipeline-card">
-          <div class="d-flex justify-content-between align-items-start">
+        <div class="card mb-2">
+          <div class="card-body p-2">
+            <div class="d-flex justify-content-between align-items-start">
             <div class="fw-semibold small">{{ deal.name }}</div>
-            <button class="btn-shadcn btn-shadcn-ghost btn-shadcn-icon btn-shadcn-sm p-0" (click)="openEdit(deal)" title="Edit">
+            <button class="btn btn-link btn-sm p-0 text-secondary" (click)="openEdit(deal)" title="Edit">
               <i class="bi bi-pencil small"></i>
             </button>
           </div>
           <div class="text-muted small">{{ deal.clientCompanyName }}</div>
-          <div class="d-flex justify-content-between small mt-1">
-            <span class="fw-medium">{{ deal.amount | currency }}</span>
-            <span class="text-muted">{{ deal.probability }}%</span>
+            <div class="d-flex justify-content-between small mt-1">
+              <span>{{ deal.amount | currency }}</span>
+              <span class="text-muted">{{ deal.probability }}%</span>
+            </div>
+            @if (deal.nextStep) { <div class="small text-primary mt-1">Next: {{ deal.nextStep }}</div> }
+            <select class="form-select form-select-sm mt-2" [ngModel]="deal.stage" (ngModelChange)="move(deal, $event)">
+              @for (s of stages; track s) { <option [value]="s">{{ stageLabel(s) }}</option> }
+            </select>
           </div>
-          @if (deal.nextStep) { <div class="small text-primary mt-1">Next: {{ deal.nextStep }}</div> }
-          <select class="select-shadcn input-shadcn-sm mt-2" [ngModel]="deal.stage" (ngModelChange)="move(deal, $event)">
-            @for (s of stages; track s) { <option [value]="s">{{ stageLabel(s) }}</option> }
-          </select>
         </div>
         }
-        @if (!columns[stage]?.length) { <div class="text-muted small text-center py-3">Empty</div> }
+        @if (!columns[stage]?.length) { <div class="text-muted small text-center py-2">Empty</div> }
       </div>
     </div>
     }
@@ -56,100 +56,81 @@
   }
 
   @if (lostReasonFor) {
-  <div class="modal-overlay" (click)="lostReasonFor = null">
-    <div class="modal-dialog-shadcn" (click)="$event.stopPropagation()">
-      <div class="modal-header-shadcn">
-        <h5 class="modal-title-shadcn">Close "{{ lostReasonFor.name }}" as Lost</h5>
-        <button type="button" class="btn-shadcn btn-shadcn-ghost btn-shadcn-icon" (click)="lostReasonFor = null">
-          <i class="bi bi-x-lg"></i>
-        </button>
-      </div>
-      <div class="modal-body-shadcn">
-        <div class="field-group">
-          <label class="field-label">Reason</label>
-          <textarea class="textarea-shadcn" rows="3" placeholder="Why was this deal lost?" [(ngModel)]="lostReason"></textarea>
+  <div class="modal d-block" tabindex="-1" style="background: rgba(0,0,0,.4)">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Close "{{ lostReasonFor.name }}" as Lost</h5>
+          <button type="button" class="btn-close" (click)="lostReasonFor = null"></button>
         </div>
-      </div>
-      <div class="modal-footer-shadcn">
-        <button class="btn-shadcn btn-shadcn-outline btn-shadcn-sm" (click)="lostReasonFor = null">Cancel</button>
-        <button class="btn-shadcn btn-shadcn-destructive btn-shadcn-sm" [disabled]="!lostReason.trim()" (click)="confirmLost()">Close as Lost</button>
+        <div class="modal-body">
+          <textarea class="form-control" rows="3" placeholder="Why was this deal lost?" [(ngModel)]="lostReason"></textarea>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary btn-sm" (click)="lostReasonFor = null">Cancel</button>
+          <button class="btn btn-danger btn-sm" [disabled]="!lostReason.trim()" (click)="confirmLost()">Close as Lost</button>
+        </div>
       </div>
     </div>
   </div>
   }  @if (showForm) {
-  <div class="modal-overlay" (click)="showForm = false">
-    <div class="modal-dialog-shadcn" (click)="$event.stopPropagation()">
-      <div class="modal-header-shadcn">
-        <h5 class="modal-title-shadcn">{{ editing ? 'Edit Opportunity' : 'New Opportunity' }}</h5>
-        <button type="button" class="btn-shadcn btn-shadcn-ghost btn-shadcn-icon" (click)="showForm = false">
-          <i class="bi bi-x-lg"></i>
-        </button>
-      </div>
-      <div class="modal-body-shadcn">
-        <div class="row g-3">
-          <div class="col-md-6">
-            <div class="field-group">
-              <label class="field-label">Name <span class="text-danger">*</span></label>
-              <input class="input-shadcn input-shadcn-sm" [(ngModel)]="form.name" />
+  <div class="modal d-block" tabindex="-1" style="background: rgba(0,0,0,.4)">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fs-6 fw-semibold">{{ editing ? 'Edit Opportunity' : 'New Opportunity' }}</h5>
+          <button type="button" class="btn-close" (click)="showForm = false"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-2">
+            <div class="col-md-6">
+              <label class="form-label small text-secondary mb-1">Name *</label>
+              <input class="form-control form-control-sm" [(ngModel)]="form.name" />
             </div>
-          </div>
-          <div class="col-md-6">
-            <div class="field-group">
-              <label class="field-label">Client <span class="text-danger">*</span></label>
-              <select class="select-shadcn input-shadcn-sm" [(ngModel)]="form.clientId" [disabled]="!!editing">
+            <div class="col-md-6">
+              <label class="form-label small text-secondary mb-1">Client *</label>
+              <select class="form-select form-select-sm" [(ngModel)]="form.clientId" [disabled]="!!editing">
                 <option [ngValue]="null">— Select client —</option>
                 @for (c of clients; track c.id) { <option [ngValue]="c.id">{{ c.clientCompanyName }}</option> }
               </select>
             </div>
-          </div>
-          @if (!editing) {
-          <div class="col-md-6">
-            <div class="field-group">
-              <label class="field-label">Stage</label>
-              <select class="select-shadcn input-shadcn-sm" [(ngModel)]="form.stage">
+            @if (!editing) {
+            <div class="col-md-6">
+              <label class="form-label small text-secondary mb-1">Stage</label>
+              <select class="form-select form-select-sm" [(ngModel)]="form.stage">
                 @for (s of openStages; track s) { <option [value]="s">{{ stageLabel(s) }}</option> }
               </select>
             </div>
-          </div>
-          }
-          <div class="col-md-3">
-            <div class="field-group">
-              <label class="field-label">Amount</label>
-              <input type="number" min="0" step="0.01" class="input-shadcn input-shadcn-sm" [(ngModel)]="form.amount" />
+            }
+            <div class="col-md-3">
+              <label class="form-label small text-secondary mb-1">Amount</label>
+              <input type="number" min="0" step="0.01" class="form-control form-control-sm" [(ngModel)]="form.amount" />
             </div>
-          </div>
-          <div class="col-md-3">
-            <div class="field-group">
-              <label class="field-label">Probability %</label>
-              <input type="number" min="0" max="100" class="input-shadcn input-shadcn-sm" [(ngModel)]="form.probability" />
+            <div class="col-md-3">
+              <label class="form-label small text-secondary mb-1">Probability %</label>
+              <input type="number" min="0" max="100" class="form-control form-control-sm" [(ngModel)]="form.probability" />
             </div>
-          </div>
-          <div class="col-md-6">
-            <div class="field-group">
-              <label class="field-label">Expected Close</label>
-              <input type="date" class="input-shadcn input-shadcn-sm" [(ngModel)]="form.expectedCloseDate" />
+            <div class="col-md-6">
+              <label class="form-label small text-secondary mb-1">Expected Close</label>
+              <input type="date" class="form-control form-control-sm" [(ngModel)]="form.expectedCloseDate" />
             </div>
-          </div>
-          <div class="col-md-6">
-            <div class="field-group">
-              <label class="field-label">Next Step</label>
-              <input class="input-shadcn input-shadcn-sm" [(ngModel)]="form.nextStep" maxlength="255" />
+            <div class="col-md-6">
+              <label class="form-label small text-secondary mb-1">Next Step</label>
+              <input class="form-control form-control-sm" [(ngModel)]="form.nextStep" maxlength="255" />
             </div>
-          </div>
-          <div class="col-12">
-            <div class="field-group">
-              <label class="field-label">Description</label>
-              <textarea class="textarea-shadcn input-shadcn-sm" rows="2" [(ngModel)]="form.description"></textarea>
+            <div class="col-12">
+              <label class="form-label small text-secondary mb-1">Description</label>
+              <textarea class="form-control form-control-sm" rows="2" [(ngModel)]="form.description"></textarea>
             </div>
           </div>
         </div>
-      </div>
-      <div class="modal-footer-shadcn">
-        <button class="btn-shadcn btn-shadcn-outline btn-shadcn-sm" (click)="showForm = false">Cancel</button>
-        <button class="btn-shadcn btn-shadcn-primary btn-shadcn-sm" [disabled]="saving" (click)="save()">
-          @if (saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
-          {{ editing ? 'Save Changes' : 'Create' }}
-        </button>
+        <div class="modal-footer py-2">
+          <button class="btn btn-secondary btn-sm" (click)="showForm = false">Cancel</button>
+          <button class="btn btn-primary btn-sm" [disabled]="saving" (click)="save()">
+            @if (saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
+            {{ editing ? 'Save Changes' : 'Create' }}
+          </button>
+        </div>
       </div>
     </div>
   </div>

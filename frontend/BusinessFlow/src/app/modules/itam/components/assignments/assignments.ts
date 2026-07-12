@@ -9,7 +9,7 @@ import { Pagination } from '../../../../shared/components/pagination/pagination'
 @Component({
   selector: 'app-assignments',
   imports: [CommonModule, FormsModule, Loader, EmptyState, Pagination],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './assignments.html',
 })
 export class Assignments implements OnInit {

@@ -10,7 +10,7 @@ import { EmptyState } from '../../../../shared/components/empty-state/empty-stat
 @Component({
   selector: 'app-messages',
   imports: [CommonModule, FormsModule, Loader, EmptyState],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './messages.html',
 })
 export class Messages {
@@ -35,8 +35,8 @@ export class Messages {
   load(): void {
     if (!this.ticketId) return;
     this.loading = true;
-    this.cdr.markForCheck();
     this.error = '';
+    this.cdr.markForCheck();
     this.messageService.getExternalMessages(this.ticketId).subscribe({
       next: (res) => {
         this.external = res;
@@ -49,7 +49,7 @@ export class Messages {
         this.cdr.markForCheck();
       },
     });
-    this.messageService.getInternalNotes(this.ticketId).subscribe({ next: (res) => (this.internal = res) });
+    this.messageService.getInternalNotes(this.ticketId).subscribe({ next: (res) => { this.internal = res; this.cdr.markForCheck(); } });
   }
 
   send(): void {
@@ -59,16 +59,17 @@ export class Messages {
       .subscribe({
         next: () => {
           this.newMessage = '';
+          this.cdr.markForCheck();
           this.load();
         },
-        error: (err) => (this.error = err?.error?.message || 'Failed to send message'),
+        error: (err) => { this.error = err?.error?.message || 'Failed to send message'; this.cdr.markForCheck(); },
       });
   }
 
   delete(m: SupportMessage): void {
     this.messageService.delete(m.id).subscribe({
       next: () => this.load(),
-      error: (err) => (this.error = err?.error?.message || 'Failed to delete message'),
+      error: (err) => { this.error = err?.error?.message || 'Failed to delete message'; this.cdr.markForCheck(); },
     });
   }
 }

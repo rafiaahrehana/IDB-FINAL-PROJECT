@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, inject } from '@angular/core';
 import { SiteService } from '../../services/site.service';
 import { Service, ServiceCategory } from '../../models/site.model';
 import { BreadcrumbComponent } from '../../components/breadcrumb/breadcrumb.component';
@@ -7,6 +7,7 @@ import { ServiceCardComponent } from '../../components/service-card/service-card
 @Component({
   selector: 'app-site-services',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [BreadcrumbComponent, ServiceCardComponent],
   template: `
     <div class="pt-5" style="margin-top: 72px">
@@ -50,13 +51,12 @@ import { ServiceCardComponent } from '../../components/service-card/service-card
 })
 export class SiteServicesPage implements OnInit {
   private siteService = inject(SiteService);
+  constructor(private cdr: ChangeDetectorRef) {}
   services: Service[] = [];
   filteredServices: Service[] = [];
   categories: ServiceCategory[] = [];
   selectedCategory: string | null = null;
   loading = true;
-
-  constructor(private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.siteService.getServices().subscribe(s => {

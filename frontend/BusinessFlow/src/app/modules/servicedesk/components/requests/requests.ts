@@ -22,7 +22,7 @@ const PAYMENT_METHODS = ['BKASH', 'NAGAD', 'ROCKET', 'SSLCOMMERZ', 'BANK_TRANSFE
   selector: 'app-requests',
   imports: [CommonModule, FormsModule, RouterLink, Pagination, Loader, EmptyState],
   templateUrl: './requests.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './requests.scss',
 })
 export class Requests implements OnInit {
@@ -86,8 +86,8 @@ export class Requests implements OnInit {
 
   load(): void {
     this.loading = true;
-    this.cdr.markForCheck();
     this.error = '';
+    this.cdr.markForCheck();
     const source =
       this.tab === 'my'
         ? this.requestService.my(this.page)
@@ -130,15 +130,15 @@ export class Requests implements OnInit {
     this.showForm = true;
     if (!this.services.length) {
       this.companyServiceService.listActive().subscribe({
-        next: (res) => (this.services = res),
-        error: () => (this.services = []),
+        next: (res) => { this.services = res; this.cdr.markForCheck(); },
+        error: () => { this.services = []; this.cdr.markForCheck(); },
       });
     }
     if (!this.subscriptions.length) {
       // Requests raised under an ACTIVE subscription consume its quota and cost zero
       this.packageService.mySubscriptions(0, 50).subscribe({
-        next: (res) => (this.subscriptions = res.content.filter((s) => s.status === 'ACTIVE')),
-        error: () => (this.subscriptions = []),
+        next: (res) => { this.subscriptions = res.content.filter((s) => s.status === 'ACTIVE'); this.cdr.markForCheck(); },
+        error: () => { this.subscriptions = []; this.cdr.markForCheck(); },
       });
     }
   }
@@ -149,8 +149,8 @@ export class Requests implements OnInit {
     this.fieldAnswers = {};
     if (!this.form.hubServiceId) return;
     this.formFieldService.list(this.form.hubServiceId).subscribe({
-      next: (fields) => (this.formFields = fields),
-      error: () => (this.formFields = []),
+      next: (fields) => { this.formFields = fields; this.cdr.markForCheck(); },
+      error: () => { this.formFields = []; this.cdr.markForCheck(); },
     });
   }
 
@@ -176,8 +176,8 @@ export class Requests implements OnInit {
       }
     }
     this.saving = true;
-    this.cdr.markForCheck();
     this.error = '';
+    this.cdr.markForCheck();
     const answered: Record<string, string> = {};
     for (const [key, value] of Object.entries(this.fieldAnswers)) {
       if (value != null && String(value).trim()) answered[key] = String(value);
@@ -197,8 +197,8 @@ export class Requests implements OnInit {
         this.success = 'Request submitted';
         this.showForm = false;
         this.saving = false;
-        this.cdr.markForCheck();
         this.page = 0;
+        this.cdr.markForCheck();
         this.load();
       },
       error: (err) => {

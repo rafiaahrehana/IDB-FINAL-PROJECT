@@ -12,7 +12,7 @@ import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/conf
 @Component({
   selector: 'app-journal-entries',
   imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState, ConfirmDialog],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './journal-entries.html',
 })
 export class JournalEntries implements OnInit {
@@ -64,8 +64,8 @@ export class JournalEntries implements OnInit {
   loadAccounts(): void {
     if (this.accounts.length) return;
     this.coaService.list(0, 200).subscribe({
-      next: (res) => (this.accounts = res.content),
-      error: () => (this.error = 'Failed to load accounts'),
+      next: (res) => { this.accounts = res.content; this.cdr.markForCheck(); },
+      error: () => { this.error = 'Failed to load accounts'; this.cdr.markForCheck(); },
     });
   }
 
@@ -83,9 +83,10 @@ export class JournalEntries implements OnInit {
         this.showForm = false;
         this.form = {};
         this.success = 'Journal entry created';
+        this.cdr.markForCheck();
         this.load();
       },
-      error: (err) => (this.error = err?.error?.message || 'Failed to create journal entry'),
+      error: (err) => { this.error = err?.error?.message || 'Failed to create journal entry'; this.cdr.markForCheck(); },
     });
   }
 
@@ -96,11 +97,13 @@ export class JournalEntries implements OnInit {
       next: () => {
         this.approveTarget = null;
         this.success = 'Journal entry approved';
+        this.cdr.markForCheck();
         this.load();
       },
       error: (err) => {
         this.error = err?.error?.message || 'Failed to approve';
         this.approveTarget = null;
+        this.cdr.markForCheck();
       },
     });
   }
@@ -112,11 +115,13 @@ export class JournalEntries implements OnInit {
       next: () => {
         this.postTarget = null;
         this.success = 'Journal entry posted';
+        this.cdr.markForCheck();
         this.load();
       },
       error: (err) => {
         this.error = err?.error?.message || 'Failed to post';
         this.postTarget = null;
+        this.cdr.markForCheck();
       },
     });
   }
@@ -128,11 +133,13 @@ export class JournalEntries implements OnInit {
       next: () => {
         this.deleteTarget = null;
         this.success = 'Journal entry deleted';
+        this.cdr.markForCheck();
         this.load();
       },
       error: () => {
         this.deleteTarget = null;
         this.error = 'Cannot delete journal entry';
+        this.cdr.markForCheck();
       },
     });
   }

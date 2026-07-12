@@ -79,7 +79,10 @@ export class Leads implements OnInit {
   ngOnInit(): void {
     this.load();
     this.loadStats();
-    this.employeeService.list(0, 100).subscribe({ next: (res) => { this.employees = res.content; this.cdr.markForCheck(); } });
+    this.employeeService.list(0, 100).subscribe({ next: (res) => {
+      this.employees = res.content;
+      this.cdr.markForCheck();
+    } });
   }
 
   private emptyForm(): any {
@@ -125,18 +128,26 @@ export class Leads implements OnInit {
   setView(view: typeof this.view): void {
     this.view = view;
     this.page = 0;
+    this.cdr.markForCheck();
     this.load();
   }
 
   loadStats(): void {
-    this.leadService.countActive().subscribe({ next: (n) => { this.activeCount = n; this.cdr.markForCheck(); } });
-    this.leadService.countMyActive().subscribe({ next: (n) => { this.myActiveCount = n; this.cdr.markForCheck(); } });
+    this.leadService.countActive().subscribe({ next: (n) => {
+      this.activeCount = n;
+      this.cdr.markForCheck();
+    } });
+    this.leadService.countMyActive().subscribe({ next: (n) => {
+      this.myActiveCount = n;
+      this.cdr.markForCheck();
+    } });
   }
 
   openCreate(): void {
     this.editing = null;
     this.form = this.emptyForm();
     this.showForm = true;
+    this.cdr.markForCheck();
   }
 
   openEdit(lead: Lead): void {
@@ -149,11 +160,13 @@ export class Leads implements OnInit {
       assignedToId: lead.assignedToId ?? null, notes: lead.notes || '',
     };
     this.showForm = true;
+    this.cdr.markForCheck();
   }
 
   save(): void {
     if (!this.form.contactName?.trim()) {
       this.error = 'Contact name is required';
+      this.cdr.markForCheck();
       return;
     }
     this.saving = true;
@@ -171,9 +184,9 @@ export class Leads implements OnInit {
         this.success = this.editing ? 'Lead updated' : 'Lead created';
         this.saving = false;
         this.showForm = false;
-        this.cdr.markForCheck();
         this.load();
         this.loadStats();
+        this.cdr.markForCheck();
       },
       error: (err) => {
         this.error = err?.error?.message || 'Failed to save lead';
@@ -189,9 +202,9 @@ export class Leads implements OnInit {
       next: () => {
         this.success = 'Lead deleted';
         this.deleteTarget = null;
-        this.cdr.markForCheck();
         this.load();
         this.loadStats();
+        this.cdr.markForCheck();
       },
       error: (err) => {
         this.error = err?.error?.message || 'Failed to delete lead';
@@ -206,11 +219,14 @@ export class Leads implements OnInit {
       next: () => {
         this.success = `Lead "${lead.contactName}" converted to client`;
         this.error = '';
-        this.cdr.markForCheck();
         this.load();
         this.loadStats();
+        this.cdr.markForCheck();
       },
-      error: (err) => { this.error = err?.error?.message || 'Failed to convert lead'; this.cdr.markForCheck(); },
+      error: (err) => {
+        this.error = err?.error?.message || 'Failed to convert lead';
+        this.cdr.markForCheck();
+      },
     });
   }
 
@@ -231,7 +247,10 @@ export class Leads implements OnInit {
         this.error = '';
         this.cdr.markForCheck();
       },
-      error: (err) => { this.error = err?.error?.message || 'Failed to create opportunity'; this.cdr.markForCheck(); },
+      error: (err) => {
+        this.error = err?.error?.message || 'Failed to create opportunity';
+        this.cdr.markForCheck();
+      },
     });
   }
 
@@ -240,6 +259,7 @@ export class Leads implements OnInit {
   openActivities(lead: Lead): void {
     this.activityTarget = lead;
     this.newLeadActivity = { type: 'NOTE' };
+    this.cdr.markForCheck();
     this.loadLeadActivities();
   }
 
@@ -267,8 +287,12 @@ export class Leads implements OnInit {
       next: () => {
         this.newLeadActivity = { type: 'NOTE' };
         this.loadLeadActivities();
+        this.cdr.markForCheck();
       },
-      error: (err) => { this.error = err?.error?.message || 'Failed to log activity'; this.cdr.markForCheck(); },
+      error: (err) => {
+        this.error = err?.error?.message || 'Failed to log activity';
+        this.cdr.markForCheck();
+      },
     });
   }
 
@@ -276,12 +300,24 @@ export class Leads implements OnInit {
     if (!this.activityTarget) return;
     this.leadService.deleteActivity(this.activityTarget.id, activity.id).subscribe({
       next: () => this.loadLeadActivities(),
-      error: (err) => { this.error = err?.error?.message || 'Failed to delete activity'; this.cdr.markForCheck(); },
+      error: (err) => {
+        this.error = err?.error?.message || 'Failed to delete activity';
+        this.cdr.markForCheck();
+      },
     });
+  }
+
+  statusClass(status: string): string {
+    return {
+      NEW: 'text-bg-primary', CONTACTED: 'text-bg-info', QUALIFIED: 'text-bg-success',
+      PROPOSAL_SENT: 'text-bg-warning', NEGOTIATING: 'text-bg-warning',
+      WON: 'text-bg-success', LOST: 'text-bg-danger', UNQUALIFIED: 'text-bg-secondary',
+    }[status] || 'text-bg-secondary';
   }
 
   goToPage(p: number): void {
     this.page = p;
+    this.cdr.markForCheck();
     this.load();
   }
 }

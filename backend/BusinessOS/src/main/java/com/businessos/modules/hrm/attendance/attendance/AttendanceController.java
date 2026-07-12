@@ -23,6 +23,15 @@ public class AttendanceController {
     private final AttendanceService attendanceService;
     private final SecurityUtil securityUtil;
 
+    @GetMapping
+    @PreAuthorize("hasRole('HR_MANAGER') or hasRole('COMPANY_ADMIN')")
+    public ResponseEntity<Page<AttendanceResponse>> listAll(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(attendanceService.listAll(
+                PageRequest.of(page, size, Sort.by("attendanceDate").descending())));
+    }
+
     @PostMapping("/check-in")
     @PreAuthorize("hasRole('EMPLOYEE') or hasRole('MANAGER')")
     public ResponseEntity<AttendanceResponse> checkIn(

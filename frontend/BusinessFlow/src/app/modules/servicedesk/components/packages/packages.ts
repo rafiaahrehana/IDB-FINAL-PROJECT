@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
@@ -23,6 +23,7 @@ type Tab = 'packages' | 'subscriptions';
 @Component({
   selector: 'app-service-packages',
   imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState, ConfirmDialog],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './packages.html',
 })
 export class Packages implements OnInit {
@@ -71,8 +72,8 @@ export class Packages implements OnInit {
   // LOAD BASED ON TAB
   load(): void {
     this.loading = true;
-    this.cdr.markForCheck();
     this.error = '';
+    this.cdr.markForCheck();
     if (this.tab === 'packages') {
       this.packageService.list(this.page).subscribe({
         next: (res) => { this.packages = res.content; this.totalPages = res.totalPages; this.loading = false; this.cdr.markForCheck(); },
@@ -90,8 +91,8 @@ export class Packages implements OnInit {
   loadServices(): void {
     if (this.availableServices.length) return;
     this.serviceService.listActive().subscribe({
-      next: (res) => this.availableServices = res,
-      error: () => this.availableServices = []
+      next: (res) => { this.availableServices = res; this.cdr.markForCheck(); },
+      error: () => { this.availableServices = []; this.cdr.markForCheck(); }
     });
   }
 
@@ -134,9 +135,11 @@ export class Packages implements OnInit {
     op.subscribe({
       next: () => {
         this.success = this.editingId ? 'Package updated' : 'Package created';
-        this.showForm = false; this.editingId = null; this.load();
+        this.showForm = false; this.editingId = null;
+        this.cdr.markForCheck();
+        this.load();
       },
-      error: (err) => this.error = err?.error?.message || 'Failed to save package'
+      error: (err) => { this.error = err?.error?.message || 'Failed to save package'; this.cdr.markForCheck(); }
     });
   }
 
@@ -156,7 +159,7 @@ export class Packages implements OnInit {
   toggle(p: ServicePackage): void {
     this.packageService.toggle(p.id).subscribe({
       next: () => this.load(),
-      error: (err) => this.error = err?.error?.message || 'Failed to toggle package'
+      error: (err) => { this.error = err?.error?.message || 'Failed to toggle package'; this.cdr.markForCheck(); }
     });
   }
 
@@ -164,16 +167,16 @@ export class Packages implements OnInit {
   doDelete(): void {
     if (!this.deleteTarget) return;
     this.packageService.delete(this.deleteTarget.id).subscribe({
-      next: () => { this.deleteTarget = null; this.success = 'Package deleted'; this.load(); },
-      error: () => { this.deleteTarget = null; this.error = 'Cannot delete package'; }
+      next: () => { this.deleteTarget = null; this.success = 'Package deleted'; this.cdr.markForCheck(); this.load(); },
+      error: () => { this.deleteTarget = null; this.error = 'Cannot delete package'; this.cdr.markForCheck(); }
     });
   }
 
   // SUBSCRIPTION ACTIONS
   activateSubscription(s: PackageSubscription): void {
     this.packageService.activateSubscription(s.id).subscribe({
-      next: () => { this.success = 'Subscription activated'; this.load(); },
-      error: (err) => this.error = err?.error?.message || 'Failed to activate'
+      next: () => { this.success = 'Subscription activated'; this.cdr.markForCheck(); this.load(); },
+      error: (err) => { this.error = err?.error?.message || 'Failed to activate'; this.cdr.markForCheck(); }
     });
   }
 
@@ -185,20 +188,20 @@ export class Packages implements OnInit {
       return;
     }
     this.gatewayPayment.redirectToGateway('PACKAGE_SUBSCRIPTION', s.id, s.pricePaid,
-      (msg) => (this.error = msg));
+      (msg) => { this.error = msg; this.cdr.markForCheck(); });
   }
 
   suspendSubscription(s: PackageSubscription): void {
     this.packageService.suspendSubscription(s.id).subscribe({
-      next: () => { this.success = 'Subscription suspended'; this.load(); },
-      error: (err) => this.error = err?.error?.message || 'Failed to suspend'
+      next: () => { this.success = 'Subscription suspended'; this.cdr.markForCheck(); this.load(); },
+      error: (err) => { this.error = err?.error?.message || 'Failed to suspend'; this.cdr.markForCheck(); }
     });
   }
 
   reactivateSubscription(s: PackageSubscription): void {
     this.packageService.reactivateSubscription(s.id).subscribe({
-      next: () => { this.success = 'Subscription reactivated'; this.load(); },
-      error: (err) => this.error = err?.error?.message || 'Failed to reactivate'
+      next: () => { this.success = 'Subscription reactivated'; this.cdr.markForCheck(); this.load(); },
+      error: (err) => { this.error = err?.error?.message || 'Failed to reactivate'; this.cdr.markForCheck(); }
     });
   }
 
@@ -210,8 +213,8 @@ export class Packages implements OnInit {
   doCancel(): void {
     if (!this.cancelTarget) return;
     this.packageService.cancelSubscription(this.cancelTarget.id, this.cancelReason).subscribe({
-      next: () => { this.cancelTarget = null; this.success = 'Subscription cancelled'; this.load(); },
-      error: (err) => { this.error = err?.error?.message || 'Failed to cancel'; this.cancelTarget = null; }
+      next: () => { this.cancelTarget = null; this.success = 'Subscription cancelled'; this.cdr.markForCheck(); this.load(); },
+      error: (err) => { this.error = err?.error?.message || 'Failed to cancel'; this.cancelTarget = null; this.cdr.markForCheck(); }
     });
   }
 

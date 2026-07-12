@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
@@ -19,7 +19,7 @@ const TASK_STATUSES = ['PENDING', 'IN_PROGRESS', 'COMPLETED', 'BLOCKED', 'CANCEL
   selector: 'app-request-detail',
   imports: [CommonModule, FormsModule],
   templateUrl: './request-detail.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './request-detail.scss',
 })
 export class RequestDetail implements OnInit {
@@ -65,6 +65,7 @@ export class RequestDetail implements OnInit {
     private formFieldService: ServiceFormFieldService,
     private auth: AuthService,
     private employeeService: EmployeeService,
+    private cdr: ChangeDetectorRef,
   ) {}
 
   // Answers are stored keyed by field id; resolve labels from the service's
@@ -79,12 +80,14 @@ export class RequestDetail implements OnInit {
           label: labels.get(id) || `Field ${id}`,
           value,
         }));
+        this.cdr.markForCheck();
       },
       error: () => {
         this.formAnswers = Object.entries(r.formData!).map(([id, value]) => ({
           label: `Field ${id}`,
           value,
         }));
+        this.cdr.markForCheck();
       },
     });
   }
@@ -96,8 +99,10 @@ export class RequestDetail implements OnInit {
     this.canDecideQuotation = this.isClient || this.auth.hasRole('COMPANY_OWNER');
     this.loadAll();
     if (this.isStaff) {
-      // For the "Assign To" dropdown; a page of 100 covers typical team sizes
-      this.employeeService.list(0, 100).subscribe({ next: (res) => (this.employees = res.content) });
+      this.employeeService.list(0, 100).subscribe({ next: (res) => {
+        this.employees = res.content;
+        this.cdr.markForCheck();
+      } });
     }
   }
 
@@ -107,21 +112,37 @@ export class RequestDetail implements OnInit {
         this.request = r;
         this.newStatus = r.status;
         this.resolveFormAnswers(r);
+        this.cdr.markForCheck();
       },
-      error: () => (this.error = 'Failed to load request'),
+      error: () => {
+        this.error = 'Failed to load request';
+        this.cdr.markForCheck();
+      },
     });
     this.approvalService
       .forRequest(this.requestId)
-      .subscribe({ next: (a) => (this.approvals = a) });
-    this.requestService.comments(this.requestId).subscribe({ next: (c) => (this.comments = c.content) });
+      .subscribe({ next: (a) => {
+        this.approvals = a;
+        this.cdr.markForCheck();
+      } });
+    this.requestService.comments(this.requestId).subscribe({ next: (c) => {
+      this.comments = c.content;
+      this.cdr.markForCheck();
+    } });
     if (this.isStaff) {
-      this.requestService.history(this.requestId).subscribe({ next: (h) => (this.history = h) });
+      this.requestService.history(this.requestId).subscribe({ next: (h) => {
+        this.history = h;
+        this.cdr.markForCheck();
+      } });
       this.loadTasks();
     }
   }
 
   loadTasks(): void {
-    this.requestService.getTasks(this.requestId).subscribe({ next: (t) => (this.tasks = t) });
+    this.requestService.getTasks(this.requestId).subscribe({ next: (t) => {
+      this.tasks = t;
+      this.cdr.markForCheck();
+    } });
   }
 
   // ----- Lifecycle (staff) -----
@@ -130,14 +151,19 @@ export class RequestDetail implements OnInit {
     if (!this.request || !this.newStatus || this.newStatus === this.request.status) return;
     this.error = '';
     this.info = '';
+    this.cdr.markForCheck();
     this.requestService.changeStatus(this.requestId, this.newStatus, this.statusReason || undefined).subscribe({
       next: (r) => {
         this.request = r;
         this.statusReason = '';
         this.info = 'Status updated';
         this.loadAll();
+        this.cdr.markForCheck();
       },
-      error: (err) => (this.error = err?.error?.message || 'Failed to change status'),
+      error: (err) => {
+        this.error = err?.error?.message || 'Failed to change status';
+        this.cdr.markForCheck();
+      },
     });
   }
 
@@ -145,13 +171,18 @@ export class RequestDetail implements OnInit {
     if (!this.assignEmployeeId) return;
     this.error = '';
     this.info = '';
+    this.cdr.markForCheck();
     this.requestService.assign(this.requestId, this.assignEmployeeId).subscribe({
       next: (r) => {
         this.request = r;
         this.assignEmployeeId = null;
         this.info = 'Request assigned';
+        this.cdr.markForCheck();
       },
-      error: (err) => (this.error = err?.error?.message || 'Failed to assign'),
+      error: (err) => {
+        this.error = err?.error?.message || 'Failed to assign';
+        this.cdr.markForCheck();
+      },
     });
   }
 
@@ -160,12 +191,17 @@ export class RequestDetail implements OnInit {
   cancel(): void {
     this.error = '';
     this.info = '';
+    this.cdr.markForCheck();
     this.requestService.cancel(this.requestId).subscribe({
       next: () => {
         this.info = 'Request cancelled';
         this.loadAll();
+        this.cdr.markForCheck();
       },
-      error: (err) => (this.error = err?.error?.message || 'Failed to cancel request'),
+      error: (err) => {
+        this.error = err?.error?.message || 'Failed to cancel request';
+        this.cdr.markForCheck();
+      },
     });
   }
 
@@ -179,8 +215,12 @@ export class RequestDetail implements OnInit {
         this.showTaskForm = false;
         this.loadTasks();
         this.refreshRequestOnly();
+        this.cdr.markForCheck();
       },
-      error: (err) => (this.error = err?.error?.message || 'Failed to create task'),
+      error: (err) => {
+        this.error = err?.error?.message || 'Failed to create task';
+        this.cdr.markForCheck();
+      },
     });
   }
 
@@ -191,7 +231,10 @@ export class RequestDetail implements OnInit {
         this.loadTasks();
         this.refreshRequestOnly();
       },
-      error: (err) => (this.error = err?.error?.message || 'Failed to update task'),
+      error: (err) => {
+        this.error = err?.error?.message || 'Failed to update task';
+        this.cdr.markForCheck();
+      },
     });
   }
 
@@ -201,13 +244,18 @@ export class RequestDetail implements OnInit {
         this.loadTasks();
         this.refreshRequestOnly();
       },
-      error: (err) => (this.error = err?.error?.message || 'Failed to delete task'),
+      error: (err) => {
+        this.error = err?.error?.message || 'Failed to delete task';
+        this.cdr.markForCheck();
+      },
     });
   }
 
-  // Refresh the request header (task counts, status) without reloading every panel
   private refreshRequestOnly(): void {
-    this.requestService.getById(this.requestId).subscribe({ next: (r) => (this.request = r) });
+    this.requestService.getById(this.requestId).subscribe({ next: (r) => {
+      this.request = r;
+      this.cdr.markForCheck();
+    } });
   }
 
   addComment(): void {
@@ -216,45 +264,64 @@ export class RequestDetail implements OnInit {
       next: () => {
         this.newComment = '';
         this.loadAll();
+        this.cdr.markForCheck();
       },
-      error: (err) => (this.error = err?.error?.message || 'Failed to add comment'),
+      error: (err) => {
+        this.error = err?.error?.message || 'Failed to add comment';
+        this.cdr.markForCheck();
+      },
     });
   }
 
   submitQuotation(): void {
     this.error = '';
     this.info = '';
+    this.cdr.markForCheck();
     this.requestService.submitQuotation(this.requestId, this.quotationForm).subscribe({
       next: (r) => {
         this.request = r;
         this.info = 'Quotation submitted';
+        this.cdr.markForCheck();
       },
-      error: (err) => (this.error = err?.error?.message || 'Failed to submit quotation'),
+      error: (err) => {
+        this.error = err?.error?.message || 'Failed to submit quotation';
+        this.cdr.markForCheck();
+      },
     });
   }
 
   acceptQuotation(): void {
     this.error = '';
     this.info = '';
+    this.cdr.markForCheck();
     this.requestService.acceptQuotation(this.requestId).subscribe({
       next: (r) => {
         this.request = r;
         this.info = 'Quotation accepted';
+        this.cdr.markForCheck();
       },
-      error: (err) => (this.error = err?.error?.message || 'Failed to accept quotation'),
+      error: (err) => {
+        this.error = err?.error?.message || 'Failed to accept quotation';
+        this.cdr.markForCheck();
+      },
     });
   }
 
   rejectQuotation(): void {
     this.error = '';
     this.info = '';
+    this.cdr.markForCheck();
     this.requestService.rejectQuotation(this.requestId, this.rejectReason || undefined).subscribe({
       next: (r) => {
         this.request = r;
         this.rejectReason = '';
         this.info = 'Quotation rejected';
+        this.cdr.markForCheck();
       },
-      error: (err) => (this.error = err?.error?.message || 'Failed to reject quotation'),
+      error: (err) => {
+        this.error = err?.error?.message || 'Failed to reject quotation';
+        this.cdr.markForCheck();
+      },
     });
   }
 

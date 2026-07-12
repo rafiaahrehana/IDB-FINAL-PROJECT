@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, inject } from '@angular/core';
 import { SiteService } from '../../services/site.service';
 import { TeamMember } from '../../models/site.model';
 import { BreadcrumbComponent } from '../../components/breadcrumb/breadcrumb.component';
@@ -6,6 +6,7 @@ import { BreadcrumbComponent } from '../../components/breadcrumb/breadcrumb.comp
 @Component({
   selector: 'app-site-team',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [BreadcrumbComponent],
   template: `
     <div class="pt-5" style="margin-top: 72px">
@@ -51,12 +52,14 @@ import { BreadcrumbComponent } from '../../components/breadcrumb/breadcrumb.comp
 })
 export class SiteTeamPage implements OnInit {
   private siteService = inject(SiteService);
+  constructor(private cdr: ChangeDetectorRef) {}
   members: TeamMember[] = [];
   loading = true;
-
-  constructor(private cdr: ChangeDetectorRef) {}
-
   ngOnInit(): void {
-    this.siteService.getTeam().subscribe(t => { this.members = t; this.loading = false; this.cdr.markForCheck(); });
+    this.siteService.getTeam().subscribe(t => {
+      this.members = t;
+      this.loading = false;
+      this.cdr.markForCheck();
+    });
   }
 }

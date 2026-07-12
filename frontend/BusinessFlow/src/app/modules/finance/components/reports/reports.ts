@@ -9,7 +9,7 @@ type ReportType = 'PROFIT_LOSS' | 'BALANCE_SHEET' | 'TRIAL_BALANCE';
 @Component({
   selector: 'app-finance-reports',
   imports: [CommonModule, FormsModule],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './reports.html',
 })
 export class Reports {
@@ -36,6 +36,7 @@ export class Reports {
     if (this.reportType === 'PROFIT_LOSS') {
       if (!this.startDate || !this.endDate) {
         this.error = 'Please select a start and end date';
+        this.cdr.markForCheck();
         return;
       }
       this.loading = true;
@@ -49,6 +50,7 @@ export class Reports {
 
     if (!this.asOfDate) {
       this.error = 'Please select an as-of date';
+      this.cdr.markForCheck();
       return;
     }
     this.loading = true;

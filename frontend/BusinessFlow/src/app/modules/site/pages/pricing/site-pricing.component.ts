@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, inject } from '@angular/core';
 import { SiteService } from '../../services/site.service';
 import { PricingPlan } from '../../models/site.model';
 import { BreadcrumbComponent } from '../../components/breadcrumb/breadcrumb.component';
@@ -7,6 +7,7 @@ import { PricingCardComponent } from '../../components/pricing-card/pricing-card
 @Component({
   selector: 'app-site-pricing',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [BreadcrumbComponent, PricingCardComponent],
   template: `
     <div class="pt-5" style="margin-top: 72px">
@@ -35,12 +36,14 @@ import { PricingCardComponent } from '../../components/pricing-card/pricing-card
 })
 export class SitePricingPage implements OnInit {
   private siteService = inject(SiteService);
+  constructor(private cdr: ChangeDetectorRef) {}
   plans: PricingPlan[] = [];
   loading = true;
-
-  constructor(private cdr: ChangeDetectorRef) {}
-
   ngOnInit(): void {
-    this.siteService.getPricing().subscribe(p => { this.plans = p; this.loading = false; this.cdr.markForCheck(); });
+    this.siteService.getPricing().subscribe(p => {
+      this.plans = p;
+      this.loading = false;
+      this.cdr.markForCheck();
+    });
   }
 }

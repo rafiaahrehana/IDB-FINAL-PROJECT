@@ -19,7 +19,7 @@ import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/conf
 @Component({
   selector: 'app-hardware',
   imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState, ConfirmDialog],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './hardware.html',
 })
 export class Hardware implements OnInit {
@@ -101,9 +101,10 @@ export class Hardware implements OnInit {
       next: () => {
         this.showForm = false;
         this.success = 'Saved';
+        this.cdr.markForCheck();
         this.load();
       },
-      error: (err) => (this.error = err?.error?.message || 'Failed'),
+      error: (err) => { this.error = err?.error?.message || 'Failed'; this.cdr.markForCheck(); },
     });
   }
 
@@ -113,11 +114,13 @@ export class Hardware implements OnInit {
       next: () => {
         this.assignTarget = null;
         this.success = 'Assigned';
+        this.cdr.markForCheck();
         this.load();
       },
       error: (err) => {
         this.assignTarget = null;
         this.error = err?.error?.message || 'Failed';
+        this.cdr.markForCheck();
       },
     });
   }
@@ -126,9 +129,10 @@ export class Hardware implements OnInit {
     this.assetService.unassign(a.id).subscribe({
       next: () => {
         this.success = 'Returned';
+        this.cdr.markForCheck();
         this.load();
       },
-      error: (err) => (this.error = err?.error?.message || 'Failed'),
+      error: (err) => { this.error = err?.error?.message || 'Failed'; this.cdr.markForCheck(); },
     });
   }
 
@@ -138,11 +142,13 @@ export class Hardware implements OnInit {
       next: () => {
         this.deleteTarget = null;
         this.success = 'Deleted';
+        this.cdr.markForCheck();
         this.load();
       },
       error: () => {
         this.deleteTarget = null;
         this.error = 'Cannot delete';
+        this.cdr.markForCheck();
       },
     });
   }

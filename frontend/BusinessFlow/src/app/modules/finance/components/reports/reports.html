@@ -1,136 +1,82 @@
-<div class="page-container">
-  <div class="page-header">
-    <div>
-      <h1 class="page-title">Finance Reports</h1>
-      <p class="page-subtitle">Generate financial statements and analysis</p>
-    </div>
-  </div>
+<div class="container-fluid py-3">
+  <h4 class="mb-3">Finance Reports</h4>
+  @if (error) { <div class="alert alert-warning py-2">{{ error }}</div> }
 
-  @if (error) {
-    <div class="card-shadcn" style="padding: 0.75rem 1rem; margin-bottom: 1rem; border-color: #d97706; background: #fffbeb;">
-      <span style="color: #92400e; font-size: 0.875rem;">{{ error }}</span>
-    </div>
-  }
-
-  <!-- Report Controls -->
-  <div class="card-shadcn" style="padding: 1.25rem; margin-bottom: 1.5rem;">
-    <div style="display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap;">
-      <div class="field-group" style="width: 200px;">
-        <label class="field-label">Report Type</label>
-        <select class="input-shadcn" [(ngModel)]="reportType">
+  <div class="card mb-3"><div class="card-body py-2">
+    <div class="row g-2 align-items-end">
+      <div class="col-md-3">
+        <label class="form-label small mb-0">Report Type</label>
+        <select class="form-select form-select-sm" [(ngModel)]="reportType">
           <option value="PROFIT_LOSS">Profit &amp; Loss</option>
           <option value="BALANCE_SHEET">Balance Sheet</option>
           <option value="TRIAL_BALANCE">Trial Balance</option>
         </select>
       </div>
       @if (reportType === 'PROFIT_LOSS') {
-        <div class="field-group" style="width: 180px;">
-          <label class="field-label">Start Date</label>
-          <input type="date" class="input-shadcn" [(ngModel)]="startDate" />
-        </div>
-        <div class="field-group" style="width: 180px;">
-          <label class="field-label">End Date</label>
-          <input type="date" class="input-shadcn" [(ngModel)]="endDate" />
-        </div>
+      <div class="col-md-3">
+        <label class="form-label small mb-0">Start Date</label>
+        <input type="date" class="form-control form-control-sm" [(ngModel)]="startDate" />
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small mb-0">End Date</label>
+        <input type="date" class="form-control form-control-sm" [(ngModel)]="endDate" />
+      </div>
       }
       @if (reportType !== 'PROFIT_LOSS') {
-        <div class="field-group" style="width: 180px;">
-          <label class="field-label">As Of Date</label>
-          <input type="date" class="input-shadcn" [(ngModel)]="asOfDate" />
-        </div>
+      <div class="col-md-3">
+        <label class="form-label small mb-0">As Of Date</label>
+        <input type="date" class="form-control form-control-sm" [(ngModel)]="asOfDate" />
+      </div>
       }
-      <button class="btn-shadcn btn-shadcn-primary" (click)="generate()">Generate</button>
+      <div class="col-md-3">
+        <button class="btn btn-primary btn-sm" (click)="generate()">Generate</button>
+      </div>
     </div>
-  </div>
+  </div></div>
 
-  @if (loading) {
-    <div style="display: flex; justify-content: center; padding: 3rem;">
-      <div class="spinner-border" style="color: var(--color-primary);"></div>
-    </div>
-  }
+  @if (loading) { <div class="text-center py-5"><div class="spinner-border text-primary"></div></div> }
 
   @if (profitLoss) {
-    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem;">
-      <div class="card-shadcn" style="padding: 1.25rem;">
-        <div style="font-size: 0.8125rem; color: var(--color-muted-foreground); margin-bottom: 0.25rem;">Period</div>
-        <div style="font-weight: 600;">{{ profitLoss.periodStart }} &rarr; {{ profitLoss.periodEnd }}</div>
-      </div>
-      <div class="card-shadcn" style="padding: 1.25rem;">
-        <div style="font-size: 0.8125rem; color: var(--color-muted-foreground); margin-bottom: 0.25rem;">Total Revenue</div>
-        <div style="font-weight: 700; color: #16a34a;">{{ profitLoss.totalRevenue | currency }}</div>
-      </div>
-      <div class="card-shadcn" style="padding: 1.25rem;">
-        <div style="font-size: 0.8125rem; color: var(--color-muted-foreground); margin-bottom: 0.25rem;">Total Expense</div>
-        <div style="font-weight: 700; color: var(--color-destructive);">{{ profitLoss.totalExpense | currency }}</div>
-      </div>
-      <div class="card-shadcn" style="padding: 1.25rem;">
-        <div style="font-size: 0.8125rem; color: var(--color-muted-foreground); margin-bottom: 0.25rem;">Net Profit</div>
-        <div style="font-weight: 700;">{{ profitLoss.netProfit | currency }}</div>
-      </div>
-    </div>
+  <div class="row g-3">
+    <div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body py-2"><div class="text-muted small">Period</div><div class="fw-bold">{{ profitLoss.periodStart }} → {{ profitLoss.periodEnd }}</div></div></div></div>
+    <div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body py-2"><div class="text-muted small">Total Revenue</div><div class="fw-bold">{{ profitLoss.totalRevenue | currency }}</div></div></div></div>
+    <div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body py-2"><div class="text-muted small">Total Expense</div><div class="fw-bold">{{ profitLoss.totalExpense | currency }}</div></div></div></div>
+    <div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body py-2"><div class="text-muted small">Net Profit</div><div class="fw-bold">{{ profitLoss.netProfit | currency }}</div></div></div></div>
+  </div>
   }
 
   @if (balanceSheet) {
-    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem;">
-      <div class="card-shadcn" style="padding: 1.25rem;">
-        <div style="font-size: 0.8125rem; color: var(--color-muted-foreground); margin-bottom: 0.25rem;">As Of</div>
-        <div style="font-weight: 600;">{{ balanceSheet.asOfDate }}</div>
-      </div>
-      <div class="card-shadcn" style="padding: 1.25rem;">
-        <div style="font-size: 0.8125rem; color: var(--color-muted-foreground); margin-bottom: 0.25rem;">Total Assets</div>
-        <div style="font-weight: 700;">{{ balanceSheet.totalAssets | currency }}</div>
-      </div>
-      <div class="card-shadcn" style="padding: 1.25rem;">
-        <div style="font-size: 0.8125rem; color: var(--color-muted-foreground); margin-bottom: 0.25rem;">Total Liabilities</div>
-        <div style="font-weight: 700;">{{ balanceSheet.totalLiabilities | currency }}</div>
-      </div>
-      <div class="card-shadcn" style="padding: 1.25rem;">
-        <div style="font-size: 0.8125rem; color: var(--color-muted-foreground); margin-bottom: 0.25rem;">Total Equity</div>
-        <div style="font-weight: 700;">{{ balanceSheet.totalEquity | currency }}</div>
-      </div>
-    </div>
+  <div class="row g-3">
+    <div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body py-2"><div class="text-muted small">As Of</div><div class="fw-bold">{{ balanceSheet.asOfDate }}</div></div></div></div>
+    <div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body py-2"><div class="text-muted small">Total Assets</div><div class="fw-bold">{{ balanceSheet.totalAssets | currency }}</div></div></div></div>
+    <div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body py-2"><div class="text-muted small">Total Liabilities</div><div class="fw-bold">{{ balanceSheet.totalLiabilities | currency }}</div></div></div></div>
+    <div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body py-2"><div class="text-muted small">Total Equity</div><div class="fw-bold">{{ balanceSheet.totalEquity | currency }}</div></div></div></div>
+  </div>
   }
 
   @if (trialBalance) {
-    <div class="card-shadcn">
-      <div class="card-shadcn-header">
-        <span class="card-shadcn-title">Trial Balance &mdash; {{ trialBalance.asOfDate }}</span>
-      </div>
-      <div class="table-shadcn-container">
-        <table class="table-shadcn">
-          <thead>
-            <tr>
-              <th>Code</th>
-              <th>Account</th>
-              <th style="text-align: right;">Debit</th>
-              <th style="text-align: right;">Credit</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (a of trialBalance.accounts; track a.accountId) {
-              <tr>
-                <td style="font-family: monospace;">{{ a.accountCode }}</td>
-                <td>{{ a.accountName }}</td>
-                <td style="text-align: right;">{{ a.debitBalance | currency }}</td>
-                <td style="text-align: right;">{{ a.creditBalance | currency }}</td>
-              </tr>
-            }
-          </tbody>
-          <tfoot>
-            <tr style="font-weight: 700;">
-              <td colspan="2">Total</td>
-              <td style="text-align: right;">{{ trialBalance.totalDebit | currency }}</td>
-              <td style="text-align: right;">{{ trialBalance.totalCredit | currency }}</td>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
+  <div class="card">
+    <div class="card-header py-2 fw-semibold">Trial Balance — {{ trialBalance.asOfDate }}</div>
+    <div class="table-responsive">
+      <table class="table table-hover table-sm align-middle mb-0">
+        <thead class="table-light"><tr><th>Code</th><th>Account</th><th class="text-end">Debit</th><th class="text-end">Credit</th></tr></thead>
+        <tbody>
+          @for (a of trialBalance.accounts; track a.accountId) {
+          <tr>
+            <td>{{ a.accountCode }}</td>
+            <td>{{ a.accountName }}</td>
+            <td class="text-end">{{ a.debitBalance | currency }}</td>
+            <td class="text-end">{{ a.creditBalance | currency }}</td>
+          </tr>
+          }
+        </tbody>
+        <tfoot>
+          <tr class="fw-bold"><td colspan="2">Total</td><td class="text-end">{{ trialBalance.totalDebit | currency }}</td><td class="text-end">{{ trialBalance.totalCredit | currency }}</td></tr>
+        </tfoot>
+      </table>
     </div>
+  </div>
   }
 
-  @if (!loading && !profitLoss && !balanceSheet && !trialBalance) {
-    <div style="text-align: center; padding: 3rem; color: var(--color-muted-foreground); font-size: 0.875rem;">
-      Select a report type and dates, then click Generate.
-    </div>
-  }
+  @if (!loading && !profitLoss && !balanceSheet && !trialBalance) { <div class="text-muted">Select a report type and dates, then click Generate.</div> }
 </div>

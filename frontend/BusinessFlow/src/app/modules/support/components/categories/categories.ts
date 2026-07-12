@@ -9,7 +9,7 @@ import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/conf
 @Component({
   selector: 'app-categories',
   imports: [CommonModule, FormsModule, Loader, EmptyState, ConfirmDialog],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './categories.html',
 })
 export class Categories implements OnInit {
@@ -59,9 +59,10 @@ export class Categories implements OnInit {
         this.showForm = false;
         this.form = {};
         this.success = 'Saved';
+        this.cdr.markForCheck();
         this.load();
       },
-      error: (err) => (this.error = err?.error?.message || 'Failed'),
+      error: (err) => { this.error = err?.error?.message || 'Failed'; this.cdr.markForCheck(); },
     });
   }
 
@@ -71,11 +72,13 @@ export class Categories implements OnInit {
       next: () => {
         this.deleteTarget = null;
         this.success = 'Deleted';
+        this.cdr.markForCheck();
         this.load();
       },
       error: () => {
         this.deleteTarget = null;
         this.error = 'Cannot delete';
+        this.cdr.markForCheck();
       },
     });
   }

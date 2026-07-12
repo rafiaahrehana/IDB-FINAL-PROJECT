@@ -8,7 +8,7 @@ import { AuthService } from '../../../core/services/auth.service';
   selector: 'app-forgot-password',
   imports: [CommonModule, ReactiveFormsModule, RouterLink],
   templateUrl: './forgot-password.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './forgot-password.scss',
 })
 export class ForgotPassword {
@@ -35,14 +35,15 @@ export class ForgotPassword {
     this.loading = true;
     this.cdr.markForCheck();
     this.error = '';
+    this.cdr.markForCheck();
 
     this.authService.forgotPassword(this.form.getRawValue() as any).subscribe({
       // Backend always returns 200 regardless of whether the email exists, to avoid
       // leaking which accounts are registered - so we always show the same message.
       next: () => {
         this.loading = false;
-        this.cdr.markForCheck();
         this.submitted = true;
+        this.cdr.markForCheck();
       },
       error: (err) => {
         this.error = err?.error?.message || 'Something went wrong. Please try again.';

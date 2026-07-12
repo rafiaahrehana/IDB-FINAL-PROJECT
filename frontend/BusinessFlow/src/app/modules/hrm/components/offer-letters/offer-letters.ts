@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { OfferLetter, OfferLetterRequest, LetterType, LETTER_TYPES, Employee } from '../../models/hrm.model';
@@ -13,6 +13,7 @@ import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/conf
   selector: 'app-offer-letters',
   imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState, ConfirmDialog],
   templateUrl: './offer-letters.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class OfferLetters implements OnInit {
   letters: OfferLetter[] = [];
@@ -36,7 +37,7 @@ export class OfferLetters implements OnInit {
   constructor(
     private letterService: OfferLetterService,
     private employeeService: EmployeeService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit(): void {
@@ -46,7 +47,6 @@ export class OfferLetters implements OnInit {
 
   load(): void {
     this.loading = true;
-    this.cdr.markForCheck();
     this.error = '';
     this.letterService.list(this.page, 20).subscribe({
       next: (res) => {
@@ -65,8 +65,8 @@ export class OfferLetters implements OnInit {
 
   loadEmployees(): void {
     this.employeeService.list(0, 100).subscribe({
-      next: (res) => this.employees = res.content,
-      error: () => this.employees = []
+      next: (res) => { this.employees = res.content; this.cdr.markForCheck(); },
+      error: () => { this.employees = []; this.cdr.markForCheck(); }
     });
   }
 
@@ -78,21 +78,20 @@ export class OfferLetters implements OnInit {
 
   save(): void {
     this.saving = true;
-    this.cdr.markForCheck();
     this.error = '';
     const payload = this.cleanPayload();
     this.letterService.create(payload).subscribe({
       next: () => {
         this.saving = false;
-        this.cdr.markForCheck();
         this.showForm = false;
         this.success = 'Letter record created successfully';
+        this.cdr.markForCheck();
         this.load();
       },
       error: (err) => {
         this.saving = false;
-        this.cdr.markForCheck();
         this.error = err?.error?.message || 'Failed to create letter';
+        this.cdr.markForCheck();
       }
     });
   }
@@ -101,10 +100,12 @@ export class OfferLetters implements OnInit {
     this.letterService.issue(l.id).subscribe({
       next: () => {
         this.success = 'Letter marked as issued';
+        this.cdr.markForCheck();
         this.load();
       },
       error: (err) => {
         this.error = err?.error?.message || 'Failed to issue letter';
+        this.cdr.markForCheck();
       }
     });
   }
@@ -115,11 +116,13 @@ export class OfferLetters implements OnInit {
       next: () => {
         this.deleteTarget = null;
         this.success = 'Letter record deleted';
+        this.cdr.markForCheck();
         this.load();
       },
       error: () => {
         this.deleteTarget = null;
         this.error = 'Failed to delete letter';
+        this.cdr.markForCheck();
       }
     });
   }

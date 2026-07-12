@@ -1,133 +1,89 @@
-<div class="page-container">
-  <div class="page-header">
-    <div>
-      <h1 class="page-title">Bank Reconciliation</h1>
-      <p class="page-subtitle">Reconcile bank statements with general ledger</p>
-    </div>
-    <button class="btn-shadcn btn-shadcn-primary" (click)="openCreate()">
-      <i class="bi bi-plus-lg"></i> New Reconciliation
-    </button>
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <h4 class="mb-0">Bank Reconciliation</h4>
+    <button class="btn btn-primary btn-sm" (click)="openCreate()"><i class="bi bi-plus"></i> New Reconciliation</button>
   </div>
-
-  @if (error) {
-    <div class="card-shadcn" style="padding: 0.75rem 1rem; margin-bottom: 1rem; border-color: var(--color-destructive); background: #fef2f2;">
-      <span style="color: var(--color-destructive); font-size: 0.875rem;">{{ error }}</span>
-    </div>
-  }
-  @if (success) {
-    <div class="card-shadcn" style="padding: 0.75rem 1rem; margin-bottom: 1rem; border-color: #16a34a; background: #f0fdf4;">
-      <span style="color: #166534; font-size: 0.875rem;">{{ success }}</span>
-    </div>
-  }
+  @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
+  @if (success) { <div class="alert alert-success py-2">{{ success }}</div> }
 
   @if (pending.length) {
-    <div class="card-shadcn" style="padding: 0.75rem 1rem; margin-bottom: 1rem; border-color: #d97706; background: #fffbeb;">
-      <span style="color: #92400e; font-size: 0.875rem;">
-        <strong>{{ pending.length }}</strong> reconciliation(s) pending review.
-      </span>
-    </div>
+  <div class="alert alert-warning py-2">
+    <strong>{{ pending.length }}</strong> reconciliation(s) pending review.
+  </div>
   }
 
   @if (showForm) {
-    <div class="card-shadcn" style="padding: 1.5rem; margin-bottom: 1.5rem;">
-      <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem;">New Reconciliation</h3>
-      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1rem;">
-        <div class="field-group">
-          <label class="field-label">Bank Account *</label>
-          <select class="input-shadcn" [(ngModel)]="form.bankAccountId">
-            <option [value]="0" disabled>Select account</option>
-            @for (a of accounts; track a.id) { <option [value]="a.id">{{ a.accountCode }} - {{ a.accountName }}</option> }
-          </select>
-        </div>
-        <div class="field-group">
-          <label class="field-label">Statement Balance *</label>
-          <input type="number" class="input-shadcn" placeholder="0.00" [(ngModel)]="form.bankStatementBalance" />
-        </div>
-        <div class="field-group">
-          <label class="field-label">Outstanding Deposits</label>
-          <input type="number" class="input-shadcn" placeholder="0.00" [(ngModel)]="form.outstandingDeposits" />
-        </div>
-        <div class="field-group">
-          <label class="field-label">Outstanding Checks</label>
-          <input type="number" class="input-shadcn" placeholder="0.00" [(ngModel)]="form.outstandingChecks" />
-        </div>
+  <div class="card mb-3"><div class="card-body">
+    <div class="row g-2">
+      <div class="col-md-4">
+        <label class="form-label small text-muted mb-1">Bank Account *</label>
+        <select class="form-select form-select-sm" [(ngModel)]="form.bankAccountId">
+          <option [value]="0" disabled>Select account</option>
+          @for (a of accounts; track a.id) { <option [value]="a.id">{{ a.accountCode }} - {{ a.accountName }}</option> }
+        </select>
       </div>
-      <div style="display: flex; gap: 0.5rem;">
-        <button class="btn-shadcn btn-shadcn-primary btn-shadcn-sm"
-                [disabled]="!form.bankAccountId || !form.bankStatementBalance" (click)="save()">Save</button>
-        <button class="btn-shadcn btn-shadcn-ghost btn-shadcn-sm" (click)="showForm = false">Cancel</button>
+      <div class="col-md-3">
+        <label class="form-label small text-muted mb-1">Bank Statement Balance *</label>
+        <input type="number" class="form-control form-control-sm" [(ngModel)]="form.bankStatementBalance" />
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small text-muted mb-1">Outstanding Deposits</label>
+        <input type="number" class="form-control form-control-sm" [(ngModel)]="form.outstandingDeposits" />
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small text-muted mb-1">Outstanding Checks</label>
+        <input type="number" class="form-control form-control-sm" [(ngModel)]="form.outstandingChecks" />
+      </div>
+      <div class="col-12 d-flex gap-2">
+        <button class="btn btn-primary btn-sm" [disabled]="!form.bankAccountId || !form.bankStatementBalance" (click)="save()">Save</button>
+        <button class="btn btn-secondary btn-sm" (click)="showForm = false">Cancel</button>
       </div>
     </div>
+  </div></div>
   }
 
   @if (loading) { <app-loader /> }
   @if (!loading && items.length) {
-    <div class="card-shadcn">
-      <div class="table-shadcn-container">
-        <table class="table-shadcn">
-          <thead>
-            <tr>
-              <th>Account</th>
-              <th>Date</th>
-              <th style="text-align: right;">GL Balance</th>
-              <th style="text-align: right;">Bank Balance</th>
-              <th style="text-align: right;">Difference</th>
-              <th>Status</th>
-              <th style="text-align: right;">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (item of items; track item.id) {
-              <tr [style.background]="item.difference !== 0 && !item.reconciled ? '#fef2f2' : ''">
-                <td>{{ item.bankAccountName || ('#' + item.bankAccountId) }}</td>
-                <td style="font-size: 0.8125rem; color: var(--color-muted-foreground);">{{ item.reconciliationDate | date:'mediumDate' }}</td>
-                <td style="text-align: right;">{{ item.glBalance | currency }}</td>
-                <td style="text-align: right;">{{ item.bankStatementBalance | currency }}</td>
-                <td style="text-align: right; font-weight: 600;">{{ item.difference | currency }}</td>
-                <td>
-                  <span class="badge-shadcn"
-                        [class.badge-shadcn-success]="item.reconciled"
-                        [class.badge-shadcn-warning]="!item.reconciled">
-                    {{ item.reconciled ? 'Reconciled' : 'Pending' }}
-                  </span>
-                </td>
-                <td style="text-align: right;">
-                  @if (!item.reconciled) {
-                    <button class="btn-shadcn btn-shadcn-outline btn-shadcn-sm" (click)="openReconcile(item)">Reconcile</button>
-                  }
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
-      <div class="card-shadcn-footer" style="justify-content: flex-end;">
-        <app-pagination [page]="page" [totalPages]="totalPages" (pageChange)="goToPage($event)" />
-      </div>
-    </div>
+  <div class="card"><div class="table-responsive">
+    <table class="table table-hover table-sm align-middle mb-0">
+      <thead class="table-light"><tr><th>Account</th><th>Date</th><th class="text-end">GL Balance</th><th class="text-end">Bank Balance</th><th class="text-end">Difference</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        @for (item of items; track item.id) {
+        <tr [class.table-danger]="item.difference !== 0 && !item.reconciled">
+          <td>{{ item.bankAccountName || ('#' + item.bankAccountId) }}</td>
+          <td class="small text-muted">{{ item.reconciliationDate | date:'mediumDate' }}</td>
+          <td class="text-end">{{ item.glBalance | currency }}</td>
+          <td class="text-end">{{ item.bankStatementBalance | currency }}</td>
+          <td class="text-end fw-semibold">{{ item.difference | currency }}</td>
+          <td>
+            @if (item.reconciled) { <span class="badge text-bg-success">Reconciled</span> }
+            @if (!item.reconciled) { <span class="badge text-bg-warning">Pending</span> }
+          </td>
+          <td class="text-end">
+            @if (!item.reconciled) { <button class="btn btn-outline-primary btn-sm" (click)="openReconcile(item)">Reconcile</button> }
+          </td>
+        </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  <div class="card-footer d-flex justify-content-end"><app-pagination [page]="page" [totalPages]="totalPages" (pageChange)="goToPage($event)" /></div>
+  </div>
   }
   @if (!loading && !items.length && !showForm) { <app-empty-state icon="bi-bank" message="No bank reconciliations yet." /> }
 
   @if (reconcileTarget) {
-    <div class="modal-overlay" (click)="reconcileTarget = null">
-      <div class="modal-dialog-shadcn" (click)="$event.stopPropagation()" style="max-width: 420px;">
-        <div class="modal-header-shadcn">
-          <h2 class="modal-title-shadcn">Mark as Reconciled</h2>
-          <button class="btn-shadcn btn-shadcn-ghost btn-shadcn-icon btn-shadcn-sm" (click)="reconcileTarget = null">
-            <i class="bi bi-x-lg"></i>
-          </button>
-        </div>
-        <div class="modal-body-shadcn">
-          <div class="field-group">
-            <label class="field-label">Discrepancy Notes (optional)</label>
-            <input class="input-shadcn" placeholder="Any notes about discrepancies" [(ngModel)]="reconcileNotes" />
-          </div>
-        </div>
-        <div class="modal-footer-shadcn">
-          <button class="btn-shadcn btn-shadcn-outline" (click)="reconcileTarget = null">Cancel</button>
-          <button class="btn-shadcn btn-shadcn-primary" (click)="doReconcile()">Confirm</button>
+  <div class="modal d-block" style="background: rgba(0,0,0,.4)">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title">Mark as Reconciled</h5><button class="btn-close" (click)="reconcileTarget = null"></button></div>
+        <div class="modal-body"><input class="form-control" placeholder="Discrepancy notes (optional)" [(ngModel)]="reconcileNotes" /></div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary btn-sm" (click)="reconcileTarget = null">Cancel</button>
+          <button class="btn btn-primary btn-sm" (click)="doReconcile()">Confirm</button>
         </div>
       </div>
     </div>
+  </div>
   }
 </div>

@@ -18,7 +18,7 @@ const CLIENT_STATUSES = ['ACTIVE', 'INACTIVE', 'BLOCKED'] as const;
   selector: 'app-clients',
   imports: [CommonModule, FormsModule, RouterLink, Pagination, Loader, EmptyState, ConfirmDialog],
   templateUrl: './clients.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './clients.scss',
 })
 export class Clients implements OnInit {
@@ -47,12 +47,12 @@ export class Clients implements OnInit {
   constructor(
     private clientService: ClientService,
     private employeeService: EmployeeService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit(): void {
     this.load();
-    this.employeeService.list(0, 100).subscribe({ next: (res) => (this.employees = res.content) });
+    this.employeeService.list(0, 100).subscribe({ next: (res) => { this.employees = res.content; this.cdr.markForCheck(); } });
   }
 
   private emptyCreateForm(): any {
@@ -65,6 +65,7 @@ export class Clients implements OnInit {
   load(): void {
     this.loading = true;
     this.error = '';
+    this.cdr.markForCheck();
     this.clientService.list(this.page, 20, this.statusFilter || undefined).subscribe({
       next: (res) => {
         this.clients = res.content;
@@ -83,16 +84,19 @@ export class Clients implements OnInit {
   openCreate(): void {
     this.createForm = this.emptyCreateForm();
     this.showCreate = true;
+    this.cdr.markForCheck();
   }
 
   saveCreate(): void {
     const f = this.createForm;
     if (!f.firstName?.trim() || !f.lastName?.trim() || !f.email?.trim() || !f.password) {
       this.error = 'First name, last name, email and password are required';
+      this.cdr.markForCheck();
       return;
     }
     this.saving = true;
     this.error = '';
+    this.cdr.markForCheck();
     const payload: any = {};
     Object.entries(f).forEach(([k, v]) => { if (v !== '' && v !== null) payload[k] = v; });
     this.clientService.create(payload).subscribe({
@@ -100,6 +104,7 @@ export class Clients implements OnInit {
         this.success = 'Account created';
         this.saving = false;
         this.showCreate = false;
+        this.cdr.markForCheck();
         this.load();
       },
       error: (err) => {
@@ -120,17 +125,20 @@ export class Clients implements OnInit {
       accountManagerId: client.accountManagerId ?? null,
       portalAccessEnabled: client.portalAccessEnabled ?? false,
     };
+    this.cdr.markForCheck();
   }
 
   saveEdit(): void {
     if (!this.editing) return;
     this.saving = true;
     this.error = '';
+    this.cdr.markForCheck();
     this.clientService.update(this.editing.id, this.editForm).subscribe({
       next: () => {
         this.success = 'Account updated';
         this.saving = false;
         this.editing = null;
+        this.cdr.markForCheck();
         this.load();
       },
       error: (err) => {

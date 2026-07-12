@@ -1,15 +1,22 @@
 import { Component, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
-import { passwordsMatchValidator, PASSWORD_PATTERN } from '../../../shared/validators/password-validators';
+
+function passwordsMatchValidator(group: AbstractControl): ValidationErrors | null {
+  const password = group.get('newPassword')?.value;
+  const confirmPassword = group.get('confirmPassword')?.value;
+  return password && confirmPassword && password !== confirmPassword
+    ? { passwordMismatch: true }
+    : null;
+}
 
 @Component({
   selector: 'app-reset-password',
   imports: [CommonModule, ReactiveFormsModule, RouterLink],
   templateUrl: './reset-password.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './reset-password.scss',
 })
 export class ResetPassword {
@@ -29,10 +36,10 @@ export class ResetPassword {
     this.token = this.route.snapshot.queryParamMap.get('token');
     this.form = this.fb.group(
       {
-        newPassword: ['', [Validators.required, Validators.minLength(8), Validators.pattern(PASSWORD_PATTERN)]],
+        newPassword: ['', [Validators.required, Validators.minLength(8)]],
         confirmPassword: ['', Validators.required],
       },
-      { validators: passwordsMatchValidator('newPassword', 'confirmPassword') },
+      { validators: passwordsMatchValidator },
     );
 
     if (!this.token) {
@@ -48,14 +55,15 @@ export class ResetPassword {
     this.loading = true;
     this.cdr.markForCheck();
     this.error = '';
+    this.cdr.markForCheck();
 
     this.authService
       .resetPassword({ token: this.token, ...this.form.getRawValue() } as any)
       .subscribe({
         next: () => {
           this.loading = false;
-          this.cdr.markForCheck();
           this.submitted = true;
+          this.cdr.markForCheck();
         },
         error: (err) => {
           this.error = err?.error?.message || 'This link is invalid or has expired. Please request a new one.';

@@ -1,28 +1,26 @@
-<div class="page-container">
-  <div class="page-header">
-    <div>
-      <h4 class="page-title">Salary Structures</h4>
-    </div>
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h4 class="mb-0">Salary Structures</h4>
     <div class="d-flex gap-2">
-      <select class="select-shadcn input-shadcn-sm" style="width: 240px" [(ngModel)]="selectedEmployeeId" (change)="load()">
+      <select class="form-select form-select-sm" style="width: 240px" [(ngModel)]="selectedEmployeeId" (change)="load()">
         <option [ngValue]="null" disabled>Select employee</option>
         @for (e of employees; track e.id) { <option [ngValue]="e.id">{{ e.firstName }} {{ e.lastName }}</option> }
       </select>
-      <button class="btn-shadcn btn-shadcn-primary btn-shadcn-sm text-nowrap" [disabled]="!selectedEmployeeId" (click)="openCreate()">
+      <button class="btn btn-primary btn-sm text-nowrap" [disabled]="!selectedEmployeeId" (click)="openCreate()">
         <i class="bi bi-plus-lg me-1"></i>New Structure
       </button>
     </div>
   </div>
 
-  @if (error) { <div class="badge-shadcn badge-shadcn-destructive py-2 px-3">{{ error }}</div> }
-  @if (success) { <div class="badge-shadcn badge-shadcn-success py-2 px-3">{{ success }}</div> }
+  @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
+  @if (success) { <div class="alert alert-success py-2">{{ success }}</div> }
   @if (loading) { <app-loader /> }
 
   @if (!loading && selectedEmployeeId && structures.length) {
-  <div class="card-shadcn">
-    <div class="table-shadcn-container">
-      <table class="table-shadcn">
-        <thead>
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table table-hover table-sm align-middle mb-0">
+        <thead class="table-light">
           <tr>
             <th>Effective From</th><th>Effective To</th>
             <th class="text-end">Gross</th><th class="text-end">Basic</th>
@@ -36,7 +34,7 @@
           <tr>
             <td>
               {{ s.effectiveFrom | date:'mediumDate' }}
-              @if (isCurrent(s)) { <span class="badge-shadcn badge-shadcn-success ms-1">CURRENT</span> }
+              @if (isCurrent(s)) { <span class="badge text-bg-success ms-1">CURRENT</span> }
             </td>
             <td>{{ s.effectiveTo ? (s.effectiveTo | date:'mediumDate') : '-' }}</td>
             <td class="text-end">{{ s.grossSalary | number:'1.2-2' }}</td>
@@ -47,7 +45,7 @@
             <td class="text-end fw-semibold">{{ s.netSalary | number:'1.2-2' }}</td>
             <td>{{ s.approvedByName || '-' }}</td>
             <td class="text-end">
-              <button class="btn-shadcn btn-shadcn-destructive btn-shadcn-sm py-0" title="Delete" (click)="deleteTarget = s"><i class="bi bi-trash"></i></button>
+              <button class="btn btn-outline-danger btn-sm py-0" title="Delete" (click)="deleteTarget = s"><i class="bi bi-trash"></i></button>
             </td>
           </tr>
           }
@@ -66,91 +64,71 @@
 </div>
 
 @if (showForm) {
-<div class="modal-overlay" (click)="showForm = false">
-  <div class="modal-dialog-shadcn modal-lg" (click)="$event.stopPropagation()">
-    <form #f="ngForm" (ngSubmit)="f.valid && save()">
-      <div class="modal-header-shadcn">
-        <h5 class="modal-title">New Salary Structure</h5>
-        <button type="button" class="btn-shadcn btn-shadcn-ghost btn-shadcn-icon btn-shadcn-sm" (click)="showForm = false"><i class="bi bi-x-lg"></i></button>
-      </div>
-      <div class="modal-body-shadcn">
-        <div class="row g-3">
-          <div class="col-md-4">
-            <div class="field-group">
-              <label class="field-label">Effective From *</label>
-              <input type="date" class="input-shadcn input-shadcn-sm" name="effectiveFrom" [(ngModel)]="form.effectiveFrom" required>
+<div class="modal d-block" tabindex="-1" style="background: rgba(0,0,0,.4)">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <form #f="ngForm" (ngSubmit)="f.valid && save()">
+        <div class="modal-header">
+          <h5 class="modal-title">New Salary Structure</h5>
+          <button type="button" class="btn-close" (click)="showForm = false"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label">Effective From *</label>
+              <input type="date" class="form-control form-control-sm" name="effectiveFrom" [(ngModel)]="form.effectiveFrom" required>
             </div>
-          </div>
-          <div class="col-md-4">
-            <div class="field-group">
-              <label class="field-label">Gross Salary *</label>
-              <input type="number" class="input-shadcn input-shadcn-sm" name="grossSalary" [(ngModel)]="form.grossSalary" required min="0.01" step="0.01">
+            <div class="col-md-4">
+              <label class="form-label">Gross Salary *</label>
+              <input type="number" class="form-control form-control-sm" name="grossSalary" [(ngModel)]="form.grossSalary" required min="0.01" step="0.01">
             </div>
-          </div>
-          <div class="col-md-4">
-            <div class="field-group">
-              <label class="field-label">Basic Salary *</label>
-              <input type="number" class="input-shadcn input-shadcn-sm" name="basicSalary" [(ngModel)]="form.basicSalary" required min="0.01" step="0.01">
+            <div class="col-md-4">
+              <label class="form-label">Basic Salary *</label>
+              <input type="number" class="form-control form-control-sm" name="basicSalary" [(ngModel)]="form.basicSalary" required min="0.01" step="0.01">
             </div>
-          </div>
-          <div class="col-md-3">
-            <div class="field-group">
-              <label class="field-label">House Rent</label>
-              <input type="number" class="input-shadcn input-shadcn-sm" name="houseRent" [(ngModel)]="form.houseRent" min="0">
+            <div class="col-md-3">
+              <label class="form-label">House Rent</label>
+              <input type="number" class="form-control form-control-sm" name="houseRent" [(ngModel)]="form.houseRent" min="0">
             </div>
-          </div>
-          <div class="col-md-3">
-            <div class="field-group">
-              <label class="field-label">Medical</label>
-              <input type="number" class="input-shadcn input-shadcn-sm" name="medicalAllowance" [(ngModel)]="form.medicalAllowance" min="0">
+            <div class="col-md-3">
+              <label class="form-label">Medical</label>
+              <input type="number" class="form-control form-control-sm" name="medicalAllowance" [(ngModel)]="form.medicalAllowance" min="0">
             </div>
-          </div>
-          <div class="col-md-3">
-            <div class="field-group">
-              <label class="field-label">Transport</label>
-              <input type="number" class="input-shadcn input-shadcn-sm" name="transportAllowance" [(ngModel)]="form.transportAllowance" min="0">
+            <div class="col-md-3">
+              <label class="form-label">Transport</label>
+              <input type="number" class="form-control form-control-sm" name="transportAllowance" [(ngModel)]="form.transportAllowance" min="0">
             </div>
-          </div>
-          <div class="col-md-3">
-            <div class="field-group">
-              <label class="field-label">Food</label>
-              <input type="number" class="input-shadcn input-shadcn-sm" name="foodAllowance" [(ngModel)]="form.foodAllowance" min="0">
+            <div class="col-md-3">
+              <label class="form-label">Food</label>
+              <input type="number" class="form-control form-control-sm" name="foodAllowance" [(ngModel)]="form.foodAllowance" min="0">
             </div>
-          </div>
-          <div class="col-md-4">
-            <div class="field-group">
-              <label class="field-label">Special Allowance</label>
-              <input type="number" class="input-shadcn input-shadcn-sm" name="specialAllowance" [(ngModel)]="form.specialAllowance" min="0">
+            <div class="col-md-4">
+              <label class="form-label">Special Allowance</label>
+              <input type="number" class="form-control form-control-sm" name="specialAllowance" [(ngModel)]="form.specialAllowance" min="0">
             </div>
-          </div>
-          <div class="col-md-4">
-            <div class="field-group">
-              <label class="field-label">Provident Fund</label>
-              <input type="number" class="input-shadcn input-shadcn-sm" name="providentFund" [(ngModel)]="form.providentFund" min="0">
+            <div class="col-md-4">
+              <label class="form-label">Provident Fund</label>
+              <input type="number" class="form-control form-control-sm" name="providentFund" [(ngModel)]="form.providentFund" min="0">
             </div>
-          </div>
-          <div class="col-md-4">
-            <div class="field-group">
-              <label class="field-label">Tax Deduction</label>
-              <input type="number" class="input-shadcn input-shadcn-sm" name="taxDeduction" [(ngModel)]="form.taxDeduction" min="0">
+            <div class="col-md-4">
+              <label class="form-label">Tax Deduction</label>
+              <input type="number" class="form-control form-control-sm" name="taxDeduction" [(ngModel)]="form.taxDeduction" min="0">
             </div>
-          </div>
-          <div class="col-12">
-            <div class="field-group">
-              <label class="field-label">Notes</label>
-              <textarea class="textarea-shadcn" name="notes" [(ngModel)]="form.notes" rows="2"></textarea>
+            <div class="col-12">
+              <label class="form-label">Notes</label>
+              <textarea class="form-control form-control-sm" name="notes" [(ngModel)]="form.notes" rows="2"></textarea>
             </div>
           </div>
         </div>
-      </div>
-      <div class="modal-footer-shadcn">
-        <button type="button" class="btn-shadcn btn-shadcn-outline btn-shadcn-sm" (click)="showForm = false">Cancel</button>
-        <button type="submit" class="btn-shadcn btn-shadcn-primary btn-shadcn-sm" [disabled]="f.invalid || saving">
-          @if (saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
-          Create
-        </button>
-      </div>
-    </form>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" (click)="showForm = false">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm" [disabled]="f.invalid || saving">
+            @if (saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
+            Create
+          </button>
+        </div>
+      </form>
+    </div>
   </div>
 </div>
 }

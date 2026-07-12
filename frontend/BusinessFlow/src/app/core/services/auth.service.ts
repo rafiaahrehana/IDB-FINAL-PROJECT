@@ -168,10 +168,8 @@ export class AuthService {
           roles: [response.role],
           companyId: response.companyId
         };
-        const persist = sessionStorage.getItem('auth_remember_me') !== 'false';
-        sessionStorage.removeItem('auth_remember_me');
-        this.setTokens(response.accessToken, response.refreshToken, persist);
-        this.setUserInStorage(user, persist);
+        this.setTokens(response.accessToken, response.refreshToken);
+        this.setUserInStorage(user);
         this.currentUserSubject.next(user);
         this.isAuthenticatedSubject.next(true);
       }),
@@ -184,6 +182,7 @@ export class AuthService {
         companyId: response.companyId
       } as User)),
       catchError(error => {
+        console.error('Login failed', error);
         return throwError(() => error);
       })
     );
@@ -272,8 +271,7 @@ export class AuthService {
       refreshToken
     }).pipe(
       tap(response => {
-        const persist = !sessionStorage.getItem(this.TOKEN_KEY);
-        this.setTokens(response.accessToken, response.refreshToken, persist);
+        this.setTokens(response.accessToken, response.refreshToken);
         this.isAuthenticatedSubject.next(true);
       }),
       catchError(error => {
@@ -287,14 +285,14 @@ export class AuthService {
    * Get current access token
    */
   getAccessToken(): string | null {
-    return localStorage.getItem(this.TOKEN_KEY) || sessionStorage.getItem(this.TOKEN_KEY);
+    return localStorage.getItem(this.TOKEN_KEY);
   }
  
   /**
    * Get refresh token
    */
   getRefreshToken(): string | null {
-    return localStorage.getItem(this.REFRESH_TOKEN_KEY) || sessionStorage.getItem(this.REFRESH_TOKEN_KEY);
+    return localStorage.getItem(this.REFRESH_TOKEN_KEY);
   }
  
   /**
@@ -373,10 +371,9 @@ export class AuthService {
   /**
    * Store tokens in localStorage
    */
-  private setTokens(accessToken: string, refreshToken: string, persist = true): void {
-    const storage = persist ? localStorage : sessionStorage;
-    storage.setItem(this.TOKEN_KEY, accessToken);
-    storage.setItem(this.REFRESH_TOKEN_KEY, refreshToken);
+  private setTokens(accessToken: string, refreshToken: string): void {
+    localStorage.setItem(this.TOKEN_KEY, accessToken);
+    localStorage.setItem(this.REFRESH_TOKEN_KEY, refreshToken);
   }
  
   /**
@@ -384,9 +381,7 @@ export class AuthService {
    */
   private clearTokens(): void {
     localStorage.removeItem(this.TOKEN_KEY);
-    sessionStorage.removeItem(this.TOKEN_KEY);
     localStorage.removeItem(this.REFRESH_TOKEN_KEY);
-    sessionStorage.removeItem(this.REFRESH_TOKEN_KEY);
   }
  
   /**
@@ -416,16 +411,15 @@ export class AuthService {
   /**
    * Store user in localStorage
    */
-  private setUserInStorage(user: User, persist = true): void {
-    const storage = persist ? localStorage : sessionStorage;
-    storage.setItem(this.USER_KEY, JSON.stringify(user));
+  private setUserInStorage(user: User): void {
+    localStorage.setItem(this.USER_KEY, JSON.stringify(user));
   }
  
   /**
    * Get user from localStorage
    */
   private getUserFromStorage(): User | null {
-    const user = localStorage.getItem(this.USER_KEY) || sessionStorage.getItem(this.USER_KEY);
+    const user = localStorage.getItem(this.USER_KEY);
     return (user && user !== 'undefined') ? JSON.parse(user) : null;
   }
  
@@ -434,7 +428,6 @@ export class AuthService {
    */
   private clearUserStorage(): void {
     localStorage.removeItem(this.USER_KEY);
-    sessionStorage.removeItem(this.USER_KEY);
   }
  
   /**
@@ -443,7 +436,7 @@ export class AuthService {
   private initializeAuthState(): void {
     const isAuthenticated = this.hasValidToken();
     this.isAuthenticatedSubject.next(isAuthenticated);
-
+ 
     if (isAuthenticated) {
       const user = this.getUserFromStorage();
       this.currentUserSubject.next(user);

@@ -13,7 +13,7 @@ import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/conf
   selector: 'app-payroll',
   imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState, ConfirmDialog],
   templateUrl: './payroll.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './payroll.scss',
 })
 export class PayrollPage implements OnInit {
@@ -51,12 +51,11 @@ export class PayrollPage implements OnInit {
 
   ngOnInit(): void {
     this.load();
-    this.employeeService.list(0, 100).subscribe({ next: (res) => (this.employees = res.content) });
+    this.employeeService.list(0, 100).subscribe({ next: (res) => { this.employees = res.content; this.cdr.markForCheck(); } });
   }
 
   load(): void {
     this.loading = true;
-    this.cdr.markForCheck();
     this.error = '';
     this.payrollService.listByPeriod(this.month, this.year, this.page, 50).subscribe({
       next: (res) => {
@@ -85,7 +84,6 @@ export class PayrollPage implements OnInit {
 
   save(): void {
     this.saving = true;
-    this.cdr.markForCheck();
     this.error = '';
     const payload: any = { ...this.form };
     Object.keys(payload).forEach((k) => {
@@ -94,16 +92,16 @@ export class PayrollPage implements OnInit {
     this.payrollService.create(payload).subscribe({
       next: () => {
         this.saving = false;
-        this.cdr.markForCheck();
         this.showForm = false;
         this.form = this.emptyForm();
         this.success = 'Payroll created';
+        this.cdr.markForCheck();
         this.load();
       },
       error: (err) => {
         this.saving = false;
-        this.cdr.markForCheck();
         this.error = err?.error?.message || 'Failed to create payroll';
+        this.cdr.markForCheck();
       },
     });
   }
@@ -112,9 +110,10 @@ export class PayrollPage implements OnInit {
     this.payrollService.approve(p.id).subscribe({
       next: () => {
         this.success = 'Payroll approved';
+        this.cdr.markForCheck();
         this.load();
       },
-      error: (err) => (this.error = err?.error?.message || 'Failed to approve payroll'),
+      error: (err) => { this.error = err?.error?.message || 'Failed to approve payroll'; this.cdr.markForCheck(); },
     });
   }
 
@@ -131,11 +130,13 @@ export class PayrollPage implements OnInit {
         next: () => {
           this.payTarget = null;
           this.success = 'Payroll marked as paid';
+          this.cdr.markForCheck();
           this.load();
         },
         error: (err) => {
           this.payTarget = null;
           this.error = err?.error?.message || 'Failed to mark as paid';
+          this.cdr.markForCheck();
         },
       });
   }
@@ -146,11 +147,13 @@ export class PayrollPage implements OnInit {
       next: () => {
         this.deleteTarget = null;
         this.success = 'Payroll deleted';
+        this.cdr.markForCheck();
         this.load();
       },
       error: (err) => {
         this.error = err?.error?.message || 'Failed to delete payroll';
         this.deleteTarget = null;
+        this.cdr.markForCheck();
       },
     });
   }

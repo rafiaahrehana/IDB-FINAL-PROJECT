@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -18,6 +18,7 @@ import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/conf
 @Component({
   selector: 'app-service-form-fields',
   imports: [CommonModule, FormsModule, RouterLink, Loader, EmptyState, ConfirmDialog],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './service-form-fields.html',
 })
 export class ServiceFormFields implements OnInit {
@@ -54,16 +55,16 @@ export class ServiceFormFields implements OnInit {
   // LOAD PARENT SERVICE (FOR HEADER CONTEXT)
   loadService(): void {
     this.serviceService.getById(this.serviceId).subscribe({
-      next: (res) => this.service = res,
-      error: () => this.service = null
+      next: (res) => { this.service = res; this.cdr.markForCheck(); },
+      error: () => { this.service = null; this.cdr.markForCheck(); }
     });
   }
 
   // LOAD FORM FIELDS
   loadFields(): void {
     this.loading = true;
-    this.cdr.markForCheck();
     this.error = '';
+    this.cdr.markForCheck();
     this.fieldService.list(this.serviceId).subscribe({
       next: (res) => { this.fields = res || []; this.loading = false; this.cdr.markForCheck(); },
       error: () => { this.error = 'Failed to load form fields'; this.loading = false; this.cdr.markForCheck(); }
@@ -91,9 +92,11 @@ export class ServiceFormFields implements OnInit {
     op.subscribe({
       next: () => {
         this.success = this.editingId ? 'Field updated' : 'Field added';
-        this.showForm = false; this.editingId = null; this.loadFields();
+        this.showForm = false; this.editingId = null;
+        this.cdr.markForCheck();
+        this.loadFields();
       },
-      error: (err) => this.error = err?.error?.message || 'Failed to save field'
+      error: (err) => { this.error = err?.error?.message || 'Failed to save field'; this.cdr.markForCheck(); }
     });
   }
 
@@ -101,8 +104,8 @@ export class ServiceFormFields implements OnInit {
   doDelete(): void {
     if (!this.deleteTarget) return;
     this.fieldService.delete(this.serviceId, this.deleteTarget.id).subscribe({
-      next: () => { this.deleteTarget = null; this.success = 'Field removed'; this.loadFields(); },
-      error: () => { this.deleteTarget = null; this.error = 'Cannot delete field'; }
+      next: () => { this.deleteTarget = null; this.success = 'Field removed'; this.cdr.markForCheck(); this.loadFields(); },
+      error: () => { this.deleteTarget = null; this.error = 'Cannot delete field'; this.cdr.markForCheck(); }
     });
   }
 }

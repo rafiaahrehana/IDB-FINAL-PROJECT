@@ -13,7 +13,7 @@ import { EmptyState } from '../../../../shared/components/empty-state/empty-stat
 @Component({
   selector: 'app-global-search',
   imports: [CommonModule, FormsModule, RouterLink, Loader, EmptyState],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './global-search.html',
 })
 export class GlobalSearch implements OnInit {
@@ -58,9 +58,9 @@ export class GlobalSearch implements OnInit {
   doSearch(): void {
     if (this.query.trim().length < 2) return;
     this.loading = true;
-    this.cdr.markForCheck();
     this.error = '';
     this.askResult = undefined;
+    this.cdr.markForCheck();
     this.searchService.search(this.query.trim()).subscribe({
       next: (res) => {
         this.results = res.results;
@@ -80,14 +80,17 @@ export class GlobalSearch implements OnInit {
     if (this.query.trim().length < 2) return;
     this.asking = true;
     this.error = '';
+    this.cdr.markForCheck();
     this.searchService.ask(this.query.trim()).subscribe({
       next: (res) => {
         this.askResult = res;
         this.asking = false;
+        this.cdr.markForCheck();
       },
       error: (err) => {
         this.error = err?.error?.message || 'AI answer failed — check your AI provider config';
         this.asking = false;
+        this.cdr.markForCheck();
       },
     });
   }

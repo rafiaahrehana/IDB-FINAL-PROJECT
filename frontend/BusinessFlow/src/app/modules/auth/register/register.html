@@ -242,7 +242,7 @@
                 <button type="button" class="btn btn-outline-secondary flex-grow-1" style="height:50px;border-radius:12px;font-weight:600;" (click)="skipLocationAndSubmit()" [disabled]="loading">
                   Skip &amp; Submit
                 </button>
-                <button type="submit" class="btn-signin flex-grow-1 mb-0" [disabled]="loading">
+                <button type="submit" class="btn-signin flex-grow-1 mb-0" [disabled]="loading || (!form.controls.location.value && false)">
                   @if (loading) {
                     <span class="spinner-border spinner-border-sm me-2"></span>
                   }

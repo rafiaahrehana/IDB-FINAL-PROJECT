@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, inject } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { NgClass } from '@angular/common';
 import { SiteService } from '../../services/site.service';
@@ -8,6 +8,7 @@ import { BreadcrumbComponent } from '../../components/breadcrumb/breadcrumb.comp
 @Component({
   selector: 'app-site-service-detail',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [BreadcrumbComponent, NgClass, RouterLink],
   template: `
     <div class="pt-5" style="margin-top: 72px">
@@ -84,10 +85,9 @@ import { BreadcrumbComponent } from '../../components/breadcrumb/breadcrumb.comp
 export class SiteServiceDetailPage implements OnInit {
   private route = inject(ActivatedRoute);
   private siteService = inject(SiteService);
+  constructor(private cdr: ChangeDetectorRef) {}
   service: Service | null = null;
   loading = true;
-
-  constructor(private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.route.params.subscribe(p => {

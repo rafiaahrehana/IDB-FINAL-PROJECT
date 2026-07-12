@@ -7,7 +7,7 @@ import { Loader } from '../../../../shared/components/loader/loader';
 @Component({
   selector: 'app-attendance-reports',
   imports: [CommonModule, FormsModule, Loader],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './reports.html',
 })
 export class Reports implements OnInit {

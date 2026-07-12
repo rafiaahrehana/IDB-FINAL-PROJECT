@@ -1,0 +1,32 @@
+<div class="website-view-page">
+
+  <!-- Header bar -->
+  <div class="d-flex align-items-center justify-content-between px-4 py-3 border-bottom bg-white">
+    <div>
+      <h5 class="mb-0 fw-bold">Website View</h5>
+      <small class="text-muted">Preview of your public portal</small>
+    </div>
+    <a routerLink="/portal-settings" class="btn btn-primary btn-sm">
+      <i class="bi bi-gear me-1"></i>Portal Settings
+    </a>
+  </div>
+
+  @if (loading) {
+    <div class="d-flex justify-content-center align-items-center" style="height: calc(100vh - 65px);">
+      <app-loader />
+    </div>
+  } @else if (error) {
+    <div class="d-flex justify-content-center align-items-center" style="height: calc(100vh - 65px);">
+      <div class="text-center text-danger">
+        <i class="bi bi-exclamation-triangle fs-1"></i>
+        <p class="mt-2">{{ error }}</p>
+      </div>
+    </div>
+  } @else if (subdomain) {
+    <!-- Full-page iframe preview -->
+    <div class="iframe-wrapper">
+      <iframe [src]="portalUrl" class="portal-iframe" frameborder="0" title="Portal Preview"></iframe>
+    </div>
+  }
+
+</div>

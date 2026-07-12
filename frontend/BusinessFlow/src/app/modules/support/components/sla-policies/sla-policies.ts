@@ -10,7 +10,7 @@ import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/conf
 @Component({
   selector: 'app-sla-policies',
   imports: [CommonModule, FormsModule, Loader, EmptyState, ConfirmDialog],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './sla-policies.html',
 })
 export class SlaPolicies implements OnInit {
@@ -90,16 +90,17 @@ export class SlaPolicies implements OnInit {
       next: () => {
         this.showForm = false;
         this.success = this.editingId ? 'Policy updated' : 'Policy created';
+        this.cdr.markForCheck();
         this.load();
       },
-      error: (err) => (this.error = err?.error?.message || 'Failed to save policy'),
+      error: (err) => { this.error = err?.error?.message || 'Failed to save policy'; this.cdr.markForCheck(); },
     });
   }
 
   toggleActive(p: SLAPolicy): void {
     this.slaService.updateStatus(p.id, !p.active).subscribe({
       next: () => this.load(),
-      error: (err) => (this.error = err?.error?.message || 'Failed to update status'),
+      error: (err) => { this.error = err?.error?.message || 'Failed to update status'; this.cdr.markForCheck(); },
     });
   }
 
@@ -109,11 +110,13 @@ export class SlaPolicies implements OnInit {
       next: () => {
         this.deleteTarget = null;
         this.success = 'Policy deleted';
+        this.cdr.markForCheck();
         this.load();
       },
       error: () => {
         this.deleteTarget = null;
         this.error = 'Cannot delete policy';
+        this.cdr.markForCheck();
       },
     });
   }

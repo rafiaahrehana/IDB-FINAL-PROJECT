@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
@@ -20,6 +20,7 @@ import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/conf
   selector: 'app-job-postings',
   imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState, ConfirmDialog],
   templateUrl: './job-postings.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class JobPostings implements OnInit {
   postings: JobPosting[] = [];
@@ -44,7 +45,7 @@ export class JobPostings implements OnInit {
   constructor(
     private postingService: JobPostingService,
     private departmentService: DepartmentService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit(): void {
@@ -54,7 +55,6 @@ export class JobPostings implements OnInit {
 
   load(): void {
     this.loading = true;
-    this.cdr.markForCheck();
     this.error = '';
     this.postingService.list(this.page, 20).subscribe({
       next: (res) => {
@@ -73,8 +73,8 @@ export class JobPostings implements OnInit {
 
   loadDepartments(): void {
     this.departmentService.listActive().subscribe({
-      next: (d) => this.departments = d,
-      error: () => this.departments = []
+      next: (d) => { this.departments = d; this.cdr.markForCheck(); },
+      error: () => { this.departments = []; this.cdr.markForCheck(); }
     });
   }
 
@@ -106,7 +106,6 @@ export class JobPostings implements OnInit {
 
   save(): void {
     this.saving = true;
-    this.cdr.markForCheck();
     this.error = '';
     const payload = this.cleanPayload();
     const request = this.isEdit && this.selectedId
@@ -116,15 +115,15 @@ export class JobPostings implements OnInit {
     request.subscribe({
       next: () => {
         this.saving = false;
-        this.cdr.markForCheck();
         this.showForm = false;
         this.success = this.isEdit ? 'Job posting updated' : 'Job posting created';
+        this.cdr.markForCheck();
         this.load();
       },
       error: (err) => {
         this.saving = false;
-        this.cdr.markForCheck();
         this.error = err?.error?.message || 'Failed to save job posting';
+        this.cdr.markForCheck();
       }
     });
   }
@@ -133,10 +132,12 @@ export class JobPostings implements OnInit {
     this.postingService.publish(p.id).subscribe({
       next: () => {
         this.success = 'Job posting published successfully';
+        this.cdr.markForCheck();
         this.load();
       },
       error: (err) => {
         this.error = err?.error?.message || 'Failed to publish job posting';
+        this.cdr.markForCheck();
       }
     });
   }
@@ -145,10 +146,12 @@ export class JobPostings implements OnInit {
     this.postingService.close(p.id).subscribe({
       next: () => {
         this.success = 'Job posting closed successfully';
+        this.cdr.markForCheck();
         this.load();
       },
       error: (err) => {
         this.error = err?.error?.message || 'Failed to close job posting';
+        this.cdr.markForCheck();
       }
     });
   }
@@ -159,11 +162,13 @@ export class JobPostings implements OnInit {
       next: () => {
         this.deleteTarget = null;
         this.success = 'Job posting deleted';
+        this.cdr.markForCheck();
         this.load();
       },
       error: () => {
         this.deleteTarget = null;
         this.error = 'Failed to delete job posting';
+        this.cdr.markForCheck();
       }
     });
   }

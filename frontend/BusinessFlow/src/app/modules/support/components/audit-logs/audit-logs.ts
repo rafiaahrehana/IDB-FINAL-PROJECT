@@ -10,7 +10,7 @@ import { EmptyState } from '../../../../shared/components/empty-state/empty-stat
 @Component({
   selector: 'app-audit-logs',
   imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './audit-logs.html',
 })
 export class AuditLogs implements OnInit {
@@ -33,8 +33,8 @@ export class AuditLogs implements OnInit {
 
   load(): void {
     this.loading = true;
-    this.cdr.markForCheck();
     this.error = '';
+    this.cdr.markForCheck();
 
     let obs;
     if (this.startDate && this.endDate) {

@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AverageRating, ServiceReview } from '../../models/servicedesk.model';
 import { ServiceReviewService } from '../../services/service-review.service';
@@ -10,6 +10,7 @@ import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/conf
 @Component({
   selector: 'app-service-reviews',
   imports: [CommonModule, Pagination, Loader, EmptyState, ConfirmDialog],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './reviews.html',
 })
 export class Reviews implements OnInit {
@@ -35,8 +36,8 @@ export class Reviews implements OnInit {
   // LOAD REVIEWS
   load(): void {
     this.loading = true;
-    this.cdr.markForCheck();
     this.error = '';
+    this.cdr.markForCheck();
     this.reviewService.list(this.page).subscribe({
       next: (res) => { this.reviews = res.content; this.totalPages = res.totalPages; this.loading = false; this.cdr.markForCheck(); },
       error: () => { this.error = 'Failed to load reviews'; this.loading = false; this.cdr.markForCheck(); }
@@ -46,8 +47,8 @@ export class Reviews implements OnInit {
   // LOAD OVERALL AVERAGE
   loadAverage(): void {
     this.reviewService.averageRating().subscribe({
-      next: (res) => this.average = res,
-      error: () => this.average = null
+      next: (res) => { this.average = res; this.cdr.markForCheck(); },
+      error: () => { this.average = null; this.cdr.markForCheck(); }
     });
   }
 
@@ -55,8 +56,8 @@ export class Reviews implements OnInit {
   doDelete(): void {
     if (!this.deleteTarget) return;
     this.reviewService.delete(this.deleteTarget.id).subscribe({
-      next: () => { this.deleteTarget = null; this.success = 'Review deleted'; this.load(); this.loadAverage(); },
-      error: () => { this.deleteTarget = null; this.error = 'Cannot delete review'; }
+      next: () => { this.deleteTarget = null; this.success = 'Review deleted'; this.cdr.markForCheck(); this.load(); this.loadAverage(); },
+      error: () => { this.deleteTarget = null; this.error = 'Cannot delete review'; this.cdr.markForCheck(); }
     });
   }
 

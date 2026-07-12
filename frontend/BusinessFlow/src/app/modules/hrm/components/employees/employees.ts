@@ -24,7 +24,7 @@ import { LocationComponent } from '../../../../shared/components/location/locati
   selector: 'app-employees',
   imports: [CommonModule, FormsModule, RouterLink, Pagination, Loader, EmptyState, ConfirmDialog, LocationComponent],
   templateUrl: './employees.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './employees.scss',
 })
 export class Employees implements OnInit {
@@ -57,13 +57,12 @@ export class Employees implements OnInit {
 
   ngOnInit(): void {
     this.load();
-    this.departmentService.listActive().subscribe({ next: (d) => (this.departments = d) });
-    this.designationService.listActive().subscribe({ next: (d) => (this.designations = d) });
+    this.departmentService.listActive().subscribe({ next: (d) => { this.departments = d; this.cdr.markForCheck(); } });
+    this.designationService.listActive().subscribe({ next: (d) => { this.designations = d; this.cdr.markForCheck(); } });
   }
 
   load(): void {
     this.loading = true;
-    this.cdr.markForCheck();
     this.error = '';
     this.employeeService
       .list(this.page, 20, this.departmentFilter || undefined, this.statusFilter || undefined)
@@ -84,22 +83,21 @@ export class Employees implements OnInit {
 
   save(): void {
     this.saving = true;
-    this.cdr.markForCheck();
     this.error = '';
     this.employeeService.create(this.cleanPayload()).subscribe({
       next: () => {
         this.saving = false;
-        this.cdr.markForCheck();
         this.showForm = false;
         this.form = this.emptyForm();
         this.success = 'Employee created successfully';
         this.page = 0;
+        this.cdr.markForCheck();
         this.load();
       },
       error: (err) => {
         this.saving = false;
-        this.cdr.markForCheck();
         this.error = err?.error?.message || 'Failed to create employee';
+        this.cdr.markForCheck();
       },
     });
   }
@@ -110,11 +108,13 @@ export class Employees implements OnInit {
       next: () => {
         this.terminateTarget = null;
         this.success = 'Employee terminated';
+        this.cdr.markForCheck();
         this.load();
       },
       error: () => {
         this.terminateTarget = null;
         this.error = 'Failed to terminate employee';
+        this.cdr.markForCheck();
       },
     });
   }

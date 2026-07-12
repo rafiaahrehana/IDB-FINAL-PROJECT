@@ -13,7 +13,7 @@ import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/conf
   selector: 'app-client-detail',
   imports: [CommonModule, FormsModule, ConfirmDialog],
   templateUrl: './client-detail.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './client-detail.scss',
 })
 export class ClientDetail implements OnInit {
@@ -37,7 +37,7 @@ export class ClientDetail implements OnInit {
     private contactService: ContactService,
     private activityService: ActivityService,
     private opportunityService: OpportunityService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit(): void {
@@ -47,30 +47,40 @@ export class ClientDetail implements OnInit {
 
   loadAll(): void {
     this.clientService.getById(this.clientId).subscribe({
-      next: (c) => {(this.client = c);
+      next: (c) => {
+        this.client = c;
         this.cdr.markForCheck();
       },
-      error: () => (this.error = 'Failed to load account'),
+      error: () => {
+        this.error = 'Failed to load account';
+        this.cdr.markForCheck();
+      },
     });
     this.loadContacts();
     this.loadTimeline();
     this.opportunityService.list(0, 50, { clientId: this.clientId }).subscribe({
-      next: (res) => {(this.opportunities = res.content); this.cdr.markForCheck();},
-      error: () => (this.error = 'Failed to load opportunities'),
+      next: (res) => {
+        this.opportunities = res.content;
+        this.cdr.markForCheck();
+      },
     });
   }
 
   loadContacts(): void {
     this.contactService.listByClient(this.clientId).subscribe({
-      next: (list) => {(this.contacts = list); this.cdr.markForCheck();},
-      error: () => (this.error = 'Failed to load contacts'),
+      next: (list) => {
+        this.contacts = list;
+        this.cdr.markForCheck();
+      },
     });
   }
 
   loadTimeline(): void {
     this.activityService.timeline({ clientId: this.clientId }, 0, 30).subscribe({
-      next: (res) => {(this.activities = res.content); this.cdr.markForCheck();},
-      error: () => (this.error = 'Failed to load timeline'),
+      next: (res) => {
+        this.activities = res.content;
+        this.cdr.markForCheck();
+      },
     });
   }
 
@@ -78,6 +88,7 @@ export class ClientDetail implements OnInit {
     this.editingContact = contact;
     this.newContact = { ...contact };
     this.showContactForm = true;
+    this.cdr.markForCheck();
   }
 
   saveContact(): void {
@@ -91,8 +102,12 @@ export class ClientDetail implements OnInit {
         this.editingContact = null;
         this.showContactForm = false;
         this.loadContacts();
+        this.cdr.markForCheck();
       },
-      error: (err) => (this.error = err?.error?.message || 'Failed to save contact'),
+      error: (err) => {
+        this.error = err?.error?.message || 'Failed to save contact';
+        this.cdr.markForCheck();
+      },
     });
   }
 
@@ -102,31 +117,48 @@ export class ClientDetail implements OnInit {
       next: () => {
         this.deleteContactTarget = null;
         this.loadContacts();
+        this.cdr.markForCheck();
       },
       error: (err) => {
         this.error = err?.error?.message || 'Failed to delete contact';
         this.deleteContactTarget = null;
+        this.cdr.markForCheck();
       },
     });
   }
 
   completeActivity(activity: CrmActivity): void {
     this.activityService.markCompleted(activity.id).subscribe({
-      next: () => this.loadTimeline(),
-      error: (err) => (this.error = err?.error?.message || 'Failed to complete activity'),
+      next: () => {
+        this.loadTimeline();
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        this.error = err?.error?.message || 'Failed to complete activity';
+        this.cdr.markForCheck();
+      },
     });
   }
 
   deleteActivity(activity: CrmActivity): void {
     this.activityService.delete(activity.id).subscribe({
-      next: () => this.loadTimeline(),
-      error: (err) => (this.error = err?.error?.message || 'Failed to delete activity'),
+      next: () => {
+        this.loadTimeline();
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        this.error = err?.error?.message || 'Failed to delete activity';
+        this.cdr.markForCheck();
+      },
     });
   }
 
   makePrimary(contact: ClientContact): void {
     this.contactService.markPrimary(this.clientId, contact.id).subscribe({
-      next: () => this.loadContacts(),
+      next: () => {
+        this.loadContacts();
+        this.cdr.markForCheck();
+      },
     });
   }
 
@@ -136,8 +168,12 @@ export class ClientDetail implements OnInit {
       next: () => {
         this.newActivity = { type: 'NOTE' };
         this.loadTimeline();
+        this.cdr.markForCheck();
       },
-      error: (err) => (this.error = err?.error?.message || 'Failed to log activity'),
+      error: (err) => {
+        this.error = err?.error?.message || 'Failed to log activity';
+        this.cdr.markForCheck();
+      },
     });
   }
 

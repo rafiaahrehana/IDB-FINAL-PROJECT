@@ -11,7 +11,7 @@ import { EmptyState } from '../../../../shared/components/empty-state/empty-stat
 @Component({
   selector: 'app-invoices',
   imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './invoices.html',
 })
 export class Invoices implements OnInit {
@@ -59,16 +59,17 @@ export class Invoices implements OnInit {
   }
 
   view(invoice: Invoice): void {
-    this.invoiceService.getById(invoice.id).subscribe({ next: (i) => (this.selected = i) });
+    this.invoiceService.getById(invoice.id).subscribe({ next: (i) => { this.selected = i; this.cdr.markForCheck(); } });
   }
 
   send(invoice: Invoice): void {
     this.invoiceService.send(invoice.id).subscribe({
       next: () => {
         this.success = 'Invoice sent';
+        this.cdr.markForCheck();
         this.load();
       },
-      error: (err) => (this.error = err?.error?.message || 'Failed'),
+      error: (err) => { this.error = err?.error?.message || 'Failed'; this.cdr.markForCheck(); },
     });
   }
 
@@ -76,10 +77,11 @@ export class Invoices implements OnInit {
     this.invoiceService.markPaid(invoice.id).subscribe({
       next: () => {
         this.success = 'Marked as paid';
+        this.cdr.markForCheck();
         this.load();
         if (this.selected?.id === invoice.id) this.view(invoice);
       },
-      error: (err) => (this.error = err?.error?.message || 'Failed'),
+      error: (err) => { this.error = err?.error?.message || 'Failed'; this.cdr.markForCheck(); },
     });
   }
 
@@ -91,10 +93,11 @@ export class Invoices implements OnInit {
         next: () => {
           this.success = 'Payment recorded';
           this.paymentAmount = null;
+          this.cdr.markForCheck();
           this.view(this.selected!);
           this.load();
         },
-        error: (err) => (this.error = err?.error?.message || 'Failed'),
+        error: (err) => { this.error = err?.error?.message || 'Failed'; this.cdr.markForCheck(); },
       });
   }
 
@@ -105,10 +108,11 @@ export class Invoices implements OnInit {
     const remaining = (this.selected.totalAmount ?? 0) - (this.selected.paidAmount ?? 0);
     if (remaining <= 0) {
       this.error = 'This invoice has no outstanding balance';
+      this.cdr.markForCheck();
       return;
     }
     this.gatewayPayment.redirectToGateway('INVOICE', this.selected.id, remaining,
-      (msg) => (this.error = msg));
+      (msg) => { this.error = msg; this.cdr.markForCheck(); });
   }
 
   statusClass(s: string): string {

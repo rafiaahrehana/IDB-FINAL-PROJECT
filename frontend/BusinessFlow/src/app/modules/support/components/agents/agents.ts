@@ -10,7 +10,7 @@ import { EmptyState } from '../../../../shared/components/empty-state/empty-stat
 @Component({
   selector: 'app-agents',
   imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './agents.html',
 })
 export class Agents implements OnInit {
@@ -53,16 +53,17 @@ export class Agents implements OnInit {
         this.showForm = false;
         this.form = {};
         this.success = 'Agent created';
+        this.cdr.markForCheck();
         this.load();
       },
-      error: (err) => (this.error = err?.error?.message || 'Failed'),
+      error: (err) => { this.error = err?.error?.message || 'Failed'; this.cdr.markForCheck(); },
     });
   }
 
   toggleAccepting(a: SupportAgent): void {
     this.agentService.setAccepting(a.id, !a.acceptingTickets).subscribe({
       next: () => this.load(),
-      error: (err) => (this.error = err?.error?.message || 'Failed'),
+      error: (err) => { this.error = err?.error?.message || 'Failed'; this.cdr.markForCheck(); },
     });
   }
 

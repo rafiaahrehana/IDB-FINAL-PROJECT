@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
@@ -17,7 +17,7 @@ type Tab = 'devices' | 'enrollments';
 @Component({
   selector: 'app-biometric-data-page',
   imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState, ConfirmDialog],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './biometric-data.html',
 })
 export class BiometricDataPage implements OnInit {
@@ -44,7 +44,7 @@ export class BiometricDataPage implements OnInit {
   enrollForm: BiometricEnrollmentRequest = this.emptyEnrollForm();
   deleteEnrollmentTarget: BiometricEnrollment | null = null;
 
-  constructor(private deviceService: BiometricDeviceService, private dataService: BiometricDataService) {}
+  constructor(private deviceService: BiometricDeviceService, private dataService: BiometricDataService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.loadDevices();
@@ -61,15 +61,18 @@ export class BiometricDataPage implements OnInit {
   // DEVICES
   loadDevices(): void {
     this.deviceLoading = true;
+    this.cdr.markForCheck();
     this.deviceService.list(this.devicePage).subscribe({
       next: (res) => {
         this.devices = res.content;
         this.deviceTotalPages = res.totalPages;
         this.deviceLoading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.error = 'Failed to load devices';
         this.deviceLoading = false;
+        this.cdr.markForCheck();
       },
     });
   }
@@ -106,9 +109,10 @@ export class BiometricDataPage implements OnInit {
       next: () => {
         this.showDeviceForm = false;
         this.success = this.editingDeviceId ? 'Device updated' : 'Device registered';
+        this.cdr.markForCheck();
         this.loadDevices();
       },
-      error: (err) => (this.error = err?.error?.message || 'Failed to save device'),
+      error: (err) => { this.error = err?.error?.message || 'Failed to save device'; this.cdr.markForCheck(); },
     });
   }
 
@@ -118,11 +122,13 @@ export class BiometricDataPage implements OnInit {
       next: () => {
         this.deleteDeviceTarget = null;
         this.success = 'Device deleted';
+        this.cdr.markForCheck();
         this.loadDevices();
       },
       error: () => {
         this.deleteDeviceTarget = null;
         this.error = 'Cannot delete device';
+        this.cdr.markForCheck();
       },
     });
   }
@@ -136,14 +142,17 @@ export class BiometricDataPage implements OnInit {
   loadEnrollments(): void {
     if (!this.employeeIdLookup) return;
     this.enrollmentLoading = true;
+    this.cdr.markForCheck();
     this.dataService.getByEmployee(this.employeeIdLookup).subscribe({
       next: (res) => {
         this.enrollments = res;
         this.enrollmentLoading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.error = 'Failed to load enrollments for that employee';
         this.enrollmentLoading = false;
+        this.cdr.markForCheck();
       },
     });
   }
@@ -158,9 +167,10 @@ export class BiometricDataPage implements OnInit {
       next: () => {
         this.showEnrollForm = false;
         this.success = 'Employee enrolled';
+        this.cdr.markForCheck();
         this.loadEnrollments();
       },
-      error: (err) => (this.error = err?.error?.message || 'Failed to enroll'),
+      error: (err) => { this.error = err?.error?.message || 'Failed to enroll'; this.cdr.markForCheck(); },
     });
   }
 
@@ -170,11 +180,13 @@ export class BiometricDataPage implements OnInit {
       next: () => {
         this.deleteEnrollmentTarget = null;
         this.success = 'Enrollment removed';
+        this.cdr.markForCheck();
         this.loadEnrollments();
       },
       error: () => {
         this.deleteEnrollmentTarget = null;
         this.error = 'Cannot delete enrollment';
+        this.cdr.markForCheck();
       },
     });
   }

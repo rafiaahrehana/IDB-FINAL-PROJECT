@@ -11,7 +11,7 @@ import { EmptyState } from '../../../../shared/components/empty-state/empty-stat
 @Component({
   selector: 'app-bank-reconciliation',
   imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './bank-reconciliation.html',
 })
 export class BankReconciliationPage implements OnInit {
@@ -33,7 +33,7 @@ export class BankReconciliationPage implements OnInit {
   constructor(private reconService: BankReconciliationService, private coaService: CoaService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
-    this.coaService.list(0, 200).subscribe({ next: (res) => (this.accounts = res.content) });
+    this.coaService.list(0, 200).subscribe({ next: (res) => { this.accounts = res.content; this.cdr.markForCheck(); } });
     this.load();
     this.loadPending();
   }
@@ -61,7 +61,7 @@ export class BankReconciliationPage implements OnInit {
   }
 
   loadPending(): void {
-    this.reconService.getPending().subscribe({ next: (res) => (this.pending = res) });
+    this.reconService.getPending().subscribe({ next: (res) => { this.pending = res; this.cdr.markForCheck(); } });
   }
 
   openCreate(): void {
@@ -75,10 +75,11 @@ export class BankReconciliationPage implements OnInit {
       next: () => {
         this.showForm = false;
         this.success = 'Reconciliation created';
+        this.cdr.markForCheck();
         this.load();
         this.loadPending();
       },
-      error: (err) => (this.error = err?.error?.message || 'Failed to create reconciliation'),
+      error: (err) => { this.error = err?.error?.message || 'Failed to create reconciliation'; this.cdr.markForCheck(); },
     });
   }
 
@@ -93,12 +94,14 @@ export class BankReconciliationPage implements OnInit {
       next: () => {
         this.reconcileTarget = null;
         this.success = 'Marked as reconciled';
+        this.cdr.markForCheck();
         this.load();
         this.loadPending();
       },
       error: (err) => {
         this.error = err?.error?.message || 'Failed to reconcile';
         this.reconcileTarget = null;
+        this.cdr.markForCheck();
       },
     });
   }

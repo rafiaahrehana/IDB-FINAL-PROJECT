@@ -12,7 +12,7 @@ import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/conf
 @Component({
   selector: 'app-shift-assignments',
   imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState, ConfirmDialog],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './shift-assignments.html',
 })
 export class ShiftAssignments implements OnInit {
@@ -35,7 +35,7 @@ export class ShiftAssignments implements OnInit {
   constructor(private assignmentService: ShiftAssignmentService, private shiftService: ShiftService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
-    this.shiftService.listActive().subscribe({ next: (res) => (this.shifts = res) });
+    this.shiftService.listActive().subscribe({ next: (res) => { this.shifts = res; this.cdr.markForCheck(); } });
     this.load();
   }
 
@@ -89,9 +89,10 @@ export class ShiftAssignments implements OnInit {
       next: () => {
         this.showForm = false;
         this.success = this.editingId ? 'Assignment updated' : 'Shift assigned';
+        this.cdr.markForCheck();
         this.load();
       },
-      error: (err) => (this.error = err?.error?.message || 'Failed to save assignment'),
+      error: (err) => { this.error = err?.error?.message || 'Failed to save assignment'; this.cdr.markForCheck(); },
     });
   }
 
@@ -99,9 +100,10 @@ export class ShiftAssignments implements OnInit {
     this.assignmentService.endAssignment(a.id).subscribe({
       next: () => {
         this.success = 'Assignment ended';
+        this.cdr.markForCheck();
         this.load();
       },
-      error: (err) => (this.error = err?.error?.message || 'Failed to end assignment'),
+      error: (err) => { this.error = err?.error?.message || 'Failed to end assignment'; this.cdr.markForCheck(); },
     });
   }
 
@@ -111,11 +113,13 @@ export class ShiftAssignments implements OnInit {
       next: () => {
         this.deleteTarget = null;
         this.success = 'Deleted';
+        this.cdr.markForCheck();
         this.load();
       },
       error: () => {
         this.deleteTarget = null;
         this.error = 'Cannot delete';
+        this.cdr.markForCheck();
       },
     });
   }
@@ -123,10 +127,11 @@ export class ShiftAssignments implements OnInit {
   lookupByEmployee(): void {
     if (!this.employeeIdLookup) return;
     this.assignmentService.getByEmployee(this.employeeIdLookup).subscribe({
-      next: (res) => (this.lookedUpAssignment = res),
+      next: (res) => { this.lookedUpAssignment = res; this.cdr.markForCheck(); },
       error: () => {
         this.lookedUpAssignment = null;
         this.error = 'No active shift assignment for that employee';
+        this.cdr.markForCheck();
       },
     });
   }

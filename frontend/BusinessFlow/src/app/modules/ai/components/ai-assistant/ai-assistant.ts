@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AiService, AiGenerateResponse } from '../../../../core/services/ai.service';
@@ -7,7 +7,7 @@ import { Loader } from '../../../../shared/components/loader/loader';
 @Component({
   selector: 'app-ai-assistant',
   imports: [CommonModule, FormsModule, Loader],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './ai-assistant.html',
 })
 export class AiAssistant implements OnInit {
@@ -31,7 +31,7 @@ export class AiAssistant implements OnInit {
   loadingHistory = false;
   error = '';
 
-  constructor(private aiService: AiService) {}
+  constructor(private aiService: AiService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.loadHistory();
@@ -41,33 +41,42 @@ export class AiAssistant implements OnInit {
     if (!this.prompt.trim()) return;
     this.generating = true;
     this.error = '';
+    this.cdr.markForCheck();
     this.aiService.generate(this.feature, this.prompt.trim()).subscribe({
       next: (res) => {
         this.result = res;
         this.generating = false;
         this.loadHistory();
+        this.cdr.markForCheck();
       },
       error: (err) => {
         this.error =
           err?.error?.message || 'Generation failed — check your AI provider configuration';
         this.generating = false;
+        this.cdr.markForCheck();
       },
     });
   }
 
   loadHistory(): void {
     this.loadingHistory = true;
+    this.cdr.markForCheck();
     this.aiService.conversations().subscribe({
       next: (res) => {
         this.history = res.content;
         this.loadingHistory = false;
+        this.cdr.markForCheck();
       },
-      error: () => (this.loadingHistory = false),
+      error: () => {
+        this.loadingHistory = false;
+        this.cdr.markForCheck();
+      },
     });
   }
 
   reuse(item: AiGenerateResponse): void {
     this.feature = item.feature;
     this.result = item;
+    this.cdr.markForCheck();
   }
 }

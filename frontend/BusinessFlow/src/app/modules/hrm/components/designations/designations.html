@@ -1,28 +1,26 @@
-<div class="page-container">
-  <div class="page-header">
-    <div>
-      <h4 class="page-title">Designations</h4>
-    </div>
-    <button class="btn-shadcn btn-shadcn-primary btn-shadcn-sm" (click)="openCreate()">
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0">Designations</h4>
+    <button class="btn btn-primary btn-sm" (click)="openCreate()">
       <i class="bi bi-plus-lg me-1"></i>Add Designation
     </button>
   </div>
 
   @if (error) {
-    <div class="badge-shadcn badge-shadcn-destructive py-2 px-3">{{ error }}</div>
+    <div class="alert alert-danger py-2">{{ error }}</div>
   }
   @if (success) {
-    <div class="badge-shadcn badge-shadcn-success py-2 px-3">{{ success }}</div>
+    <div class="alert alert-success py-2">{{ success }}</div>
   }
   @if (loading) {
     <app-loader />
   }
 
   @if (!loading && designations.length) {
-    <div class="card-shadcn">
-      <div class="table-shadcn-container">
-        <table class="table-shadcn">
-          <thead>
+    <div class="card">
+      <div class="table-responsive">
+        <table class="table table-hover table-sm align-middle mb-0">
+          <thead class="table-light">
             <tr>
               <th style="width: 80px">Level</th>
               <th>Name</th>
@@ -36,7 +34,7 @@
             @for (d of designations; track d.id) {
               <tr>
                 <td>
-                  <span class="badge-shadcn badge-shadcn-secondary">L{{ d.level }}</span>
+                  <span class="badge text-bg-light border">L{{ d.level }}</span>
                 </td>
                 <td>{{ d.name }}</td>
                 <td>{{ d.code }}</td>
@@ -45,23 +43,23 @@
                 </td>
                 <td>
                   <span
-                    class="badge-shadcn"
-                    [class.badge-shadcn-success]="d.active"
-                    [class.badge-shadcn-secondary]="!d.active"
+                    class="badge"
+                    [class.text-bg-success]="d.active"
+                    [class.text-bg-secondary]="!d.active"
                   >
                     {{ d.active ? 'ACTIVE' : 'INACTIVE' }}
                   </span>
                 </td>
                 <td class="text-end text-nowrap">
                   <button
-                    class="btn-shadcn btn-shadcn-outline btn-shadcn-sm py-0 me-1"
+                    class="btn btn-outline-secondary btn-sm py-0 me-1"
                     title="Edit"
                     (click)="openEdit(d)"
                   >
                     <i class="bi bi-pencil"></i>
                   </button>
                   <button
-                    class="btn-shadcn btn-shadcn-outline btn-shadcn-sm py-0 me-1"
+                    class="btn btn-outline-secondary btn-sm py-0 me-1"
                     [title]="d.active ? 'Deactivate' : 'Activate'"
                     (click)="toggle(d)"
                   >
@@ -72,7 +70,7 @@
                     ></i>
                   </button>
                   <button
-                    class="btn-shadcn btn-shadcn-destructive btn-shadcn-sm py-0"
+                    class="btn btn-outline-danger btn-sm py-0"
                     title="Delete"
                     (click)="deleteTarget = d"
                   >
@@ -84,7 +82,7 @@
           </tbody>
         </table>
       </div>
-      <div class="card-shadcn-footer d-flex justify-content-end">
+      <div class="card-footer d-flex justify-content-end">
         <app-pagination [page]="page" [totalPages]="totalPages" (pageChange)="goToPage($event)" />
       </div>
     </div>
@@ -96,57 +94,51 @@
 </div>
 
 @if (showForm) {
-  <div class="modal-overlay" (click)="showForm = false">
-    <div class="modal-dialog-shadcn" (click)="$event.stopPropagation()">
-      <form #f="ngForm" (ngSubmit)="f.valid && save()">
-        <div class="modal-header-shadcn">
-          <h5 class="modal-title">{{ editingId ? 'Edit Designation' : 'Add Designation' }}</h5>
-          <button type="button" class="btn-shadcn btn-shadcn-ghost btn-shadcn-icon btn-shadcn-sm" (click)="showForm = false"><i class="bi bi-x-lg"></i></button>
-        </div>
-        <div class="modal-body-shadcn">
-          <div class="row g-3">
-            <div class="col-md-6">
-              <div class="field-group">
-                <label class="field-label">Name *</label>
+  <div class="modal d-block" tabindex="-1" style="background: rgba(0, 0, 0, 0.4)">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form #f="ngForm" (ngSubmit)="f.valid && save()">
+          <div class="modal-header">
+            <h5 class="modal-title">{{ editingId ? 'Edit Designation' : 'Add Designation' }}</h5>
+            <button type="button" class="btn-close" (click)="showForm = false"></button>
+          </div>
+          <div class="modal-body">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Name *</label>
                 <input
-                  class="input-shadcn input-shadcn-sm"
+                  class="form-control form-control-sm"
                   name="name"
                   [(ngModel)]="form.name"
                   required
                   maxlength="100"
                 />
               </div>
-            </div>
-            <div class="col-md-3">
-              <div class="field-group">
-                <label class="field-label">Code *</label>
+              <div class="col-md-3">
+                <label class="form-label">Code *</label>
                 <input
-                  class="input-shadcn input-shadcn-sm"
+                  class="form-control form-control-sm"
                   name="code"
                   [(ngModel)]="form.code"
                   required
                   maxlength="30"
                 />
               </div>
-            </div>
-            <div class="col-md-3">
-              <div class="field-group">
-                <label class="field-label">Level *</label>
+              <div class="col-md-3">
+                <label class="form-label">Level *</label>
                 <input
                   type="number"
-                  class="input-shadcn input-shadcn-sm"
+                  class="form-control form-control-sm"
                   name="level"
                   [(ngModel)]="form.level"
                   required
                   min="1"
                 />
               </div>
-            </div>
-            <div class="col-12">
-              <div class="field-group">
-                <label class="field-label">Description</label>
+              <div class="col-12">
+                <label class="form-label">Description</label>
                 <textarea
-                  class="textarea-shadcn"
+                  class="form-control form-control-sm"
                   name="description"
                   [(ngModel)]="form.description"
                   rows="2"
@@ -154,19 +146,19 @@
               </div>
             </div>
           </div>
-        </div>
-        <div class="modal-footer-shadcn">
-          <button type="button" class="btn-shadcn btn-shadcn-outline btn-shadcn-sm" (click)="showForm = false">
-            Cancel
-          </button>
-          <button type="submit" class="btn-shadcn btn-shadcn-primary btn-shadcn-sm" [disabled]="f.invalid || saving">
-            @if (saving) {
-              <span class="spinner-border spinner-border-sm me-1"></span>
-            }
-            {{ editingId ? 'Save' : 'Create' }}
-          </button>
-        </div>
-      </form>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary btn-sm" (click)="showForm = false">
+              Cancel
+            </button>
+            <button type="submit" class="btn btn-primary btn-sm" [disabled]="f.invalid || saving">
+              @if (saving) {
+                <span class="spinner-border spinner-border-sm me-1"></span>
+              }
+              {{ editingId ? 'Save' : 'Create' }}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
 }

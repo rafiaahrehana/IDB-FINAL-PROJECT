@@ -1,5 +1,5 @@
 import { ActivatedRoute } from '@angular/router';
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
@@ -20,6 +20,7 @@ import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/conf
 @Component({
   selector: 'app-companies',
   imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState, ConfirmDialog],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './companies.html',
 })
 export class Companies implements OnInit {
@@ -87,8 +88,8 @@ export class Companies implements OnInit {
   // LOAD COMPANIES (RESPECTS STATUS FILTER)
   load(): void {
     this.loading = true;
-    this.cdr.markForCheck();
     this.error = '';
+    this.cdr.markForCheck();
     this.companyService.list(this.page, 20, this.statusFilter || undefined, this.planFilter || undefined, this.keyword || undefined).subscribe({
       next: (res) => {
         this.companies = res.content;
@@ -105,9 +106,10 @@ export class Companies implements OnInit {
   // Uses a single unfiltered page-1 call for total, and per-status calls for the breakdown
   loadKpi(): void {
     this.loadingKpi = true;
+    this.cdr.markForCheck();
     this.companyService.list(0, 1).subscribe({
       next: (res) => { this.kpi.total = res.totalElements; this.tryFinishKpi(); },
-      error: () => this.loadingKpi = false
+      error: () => { this.loadingKpi = false; this.cdr.markForCheck(); }
     });
     this.companyService.list(0, 1, 'ACTIVE').subscribe({
       next: (res) => { this.kpi.active = res.totalElements; this.tryFinishKpi(); },
@@ -126,7 +128,7 @@ export class Companies implements OnInit {
   private kpiReady = 0;
   private tryFinishKpi(): void {
     this.kpiReady++;
-    if (this.kpiReady >= 4) this.loadingKpi = false;
+    if (this.kpiReady >= 4) { this.loadingKpi = false; this.cdr.markForCheck(); }
   }
 
   // OPEN REGISTER MODAL
@@ -138,8 +140,8 @@ export class Companies implements OnInit {
   // REGISTER COMPANY
   register(): void {
     this.companyService.register(this.form).subscribe({
-      next: () => { this.showRegister = false; this.success = 'Company registered'; this.load(); this.kpiReady = 0; this.loadKpi(); },
-      error: (err) => this.error = err?.error?.message || 'Failed to register company'
+      next: () => { this.showRegister = false; this.success = 'Company registered'; this.cdr.markForCheck(); this.load(); this.kpiReady = 0; this.loadKpi(); },
+      error: (err) => { this.error = err?.error?.message || 'Failed to register company'; this.cdr.markForCheck(); }
     });
   }
 
@@ -158,8 +160,8 @@ export class Companies implements OnInit {
       this.planAmountPaid ?? undefined,
       this.planTransactionRef || undefined
     ).subscribe({
-      next: () => { this.planTarget = null; this.success = 'Plan updated'; this.load(); },
-      error: (err) => { this.error = err?.error?.message || 'Failed to change plan'; this.planTarget = null; }
+      next: () => { this.planTarget = null; this.success = 'Plan updated'; this.cdr.markForCheck(); this.load(); },
+      error: (err) => { this.error = err?.error?.message || 'Failed to change plan'; this.planTarget = null; this.cdr.markForCheck(); }
     });
   }
 
@@ -172,8 +174,8 @@ export class Companies implements OnInit {
   doChangeStatus(): void {
     if (!this.statusTarget) return;
     this.companyService.changeStatus(this.statusTarget.id, this.newStatus).subscribe({
-      next: () => { this.statusTarget = null; this.success = 'Status updated'; this.load(); this.kpiReady = 0; this.loadKpi(); },
-      error: (err) => { this.error = err?.error?.message || 'Failed to change status'; this.statusTarget = null; }
+      next: () => { this.statusTarget = null; this.success = 'Status updated'; this.cdr.markForCheck(); this.load(); this.kpiReady = 0; this.loadKpi(); },
+      error: (err) => { this.error = err?.error?.message || 'Failed to change status'; this.statusTarget = null; this.cdr.markForCheck(); }
     });
   }
 
@@ -181,8 +183,8 @@ export class Companies implements OnInit {
   doDeactivate(): void {
     if (!this.deactivateTarget) return;
     this.companyService.deactivate(this.deactivateTarget.id).subscribe({
-      next: () => { this.deactivateTarget = null; this.success = 'Company deactivated'; this.load(); this.kpiReady = 0; this.loadKpi(); },
-      error: () => { this.deactivateTarget = null; this.error = 'Cannot deactivate company'; }
+      next: () => { this.deactivateTarget = null; this.success = 'Company deactivated'; this.cdr.markForCheck(); this.load(); this.kpiReady = 0; this.loadKpi(); },
+      error: () => { this.deactivateTarget = null; this.error = 'Cannot deactivate company'; this.cdr.markForCheck(); }
     });
   }
 
@@ -195,16 +197,19 @@ export class Companies implements OnInit {
   doImpersonate(): void {
     if (!this.impersonateTarget || !this.impersonateReason.trim()) return;
     this.impersonating = true;
+    this.cdr.markForCheck();
     this.companyService.impersonate(this.impersonateTarget.id, this.impersonateReason.trim()).subscribe({
       next: (res) => {
         this.impersonating = false;
         this.impersonateTarget = null;
         this.auth.startImpersonation(res);
+        this.cdr.markForCheck();
       },
       error: (err) => {
         this.impersonating = false;
         this.error = err?.error?.message || 'Failed to access company';
         this.impersonateTarget = null;
+        this.cdr.markForCheck();
       }
     });
   }

@@ -32,6 +32,11 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
     Page<Attendance> findByCompanyIdAndEmployeeId(Long companyId, Long employeeId, Pageable pageable);
 
     /**
+     * Admin: all attendance in the company (paginated).
+     */
+    Page<Attendance> findByCompanyIdAndDeletedFalse(Long companyId, Pageable pageable);
+
+    /**
      * Admin: all attendance in the company for a date range.
      */
     Page<Attendance> findByCompanyIdAndAttendanceDateBetween(

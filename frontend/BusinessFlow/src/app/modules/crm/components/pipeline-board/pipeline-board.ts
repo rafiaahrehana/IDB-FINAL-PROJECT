@@ -16,7 +16,7 @@ import { Loader } from '../../../../shared/components/loader/loader';
   selector: 'app-pipeline-board',
   imports: [CommonModule, FormsModule, Loader],
   templateUrl: './pipeline-board.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './pipeline-board.scss',
 })
 export class PipelineBoard implements OnInit {
@@ -45,7 +45,7 @@ export class PipelineBoard implements OnInit {
   ngOnInit(): void {
     this.load();
     // For the "Client" dropdown; a page of 100 covers typical client counts
-    this.clientService.list(0, 100).subscribe({ next: (res) => (this.clients = res.content) });
+    this.clientService.list(0, 100).subscribe({ next: (res) => { this.clients = res.content; this.cdr.markForCheck(); } });
   }
 
   private emptyForm(): any {
@@ -65,6 +65,7 @@ export class PipelineBoard implements OnInit {
     this.editing = null;
     this.form = this.emptyForm();
     this.showForm = true;
+    this.cdr.markForCheck();
   }
 
   openEdit(deal: Opportunity): void {
@@ -80,16 +81,18 @@ export class PipelineBoard implements OnInit {
       nextStep: deal.nextStep || '',
     };
     this.showForm = true;
+    this.cdr.markForCheck();
   }
 
   save(): void {
     if (!this.form.name?.trim() || !this.form.clientId) {
       this.error = 'Name and client are required';
+      this.cdr.markForCheck();
       return;
     }
     this.saving = true;
-    this.cdr.markForCheck();
     this.error = '';
+    this.cdr.markForCheck();
     const payload: any = {
       name: this.form.name.trim(),
       clientId: this.form.clientId,
@@ -123,8 +126,8 @@ export class PipelineBoard implements OnInit {
 
   load(): void {
     this.loading = true;
-    this.cdr.markForCheck();
     this.error = '';
+    this.cdr.markForCheck();
     this.opportunityService.list(0, 200).subscribe({
       next: (page) => {
         this.columns = {};
@@ -140,7 +143,7 @@ export class PipelineBoard implements OnInit {
       },
     });
     this.opportunityService.pipelineSummary().subscribe({
-      next: (s) => (this.summary = s),
+      next: (s) => { this.summary = s; this.cdr.markForCheck(); },
     });
   }
 
@@ -149,11 +152,12 @@ export class PipelineBoard implements OnInit {
     if (stage === 'CLOSED_LOST') {
       this.lostReasonFor = opportunity;
       this.lostReason = '';
+      this.cdr.markForCheck();
       return;
     }
     this.opportunityService.changeStage(opportunity.id, stage).subscribe({
       next: () => this.load(),
-      error: () => (this.error = 'Failed to change stage'),
+      error: () => { this.error = 'Failed to change stage'; this.cdr.markForCheck(); },
     });
   }
 
@@ -164,9 +168,10 @@ export class PipelineBoard implements OnInit {
       .subscribe({
         next: () => {
           this.lostReasonFor = null;
+          this.cdr.markForCheck();
           this.load();
         },
-        error: () => (this.error = 'Failed to close opportunity'),
+        error: () => { this.error = 'Failed to close opportunity'; this.cdr.markForCheck(); },
       });
   }
 

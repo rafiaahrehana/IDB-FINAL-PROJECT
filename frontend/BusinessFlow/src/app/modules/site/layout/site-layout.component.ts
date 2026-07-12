@@ -1,5 +1,5 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { ActivatedRoute, RouterOutlet } from '@angular/router';
+import { RouterOutlet } from '@angular/router';
 import { SiteService } from '../services/site.service';
 import { ThemeDirective } from '../theme/theme.directive';
 import { SiteNavbarComponent } from '../components/site-navbar/site-navbar.component';
@@ -35,16 +35,11 @@ import { DEFAULT_SITE } from '../services/default-site.config';
 })
 export class SiteLayoutComponent implements OnInit {
   private siteService = inject(SiteService);
-  private route = inject(ActivatedRoute);
 
   settings: SiteSettings = DEFAULT_SITE;
   nav: any[] = [];
 
   ngOnInit(): void {
-    const subdomain = this.route.snapshot.params['subdomain'];
-    if (subdomain) {
-      this.siteService.setSubdomain(subdomain);
-    }
     this.siteService.getSettings().subscribe(s => this.settings = s);
     this.siteService.getNav().subscribe(n => this.nav = n);
   }

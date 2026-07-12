@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CustomRole, CustomRoleRequest } from '../../models/platform-admin.model';
@@ -10,6 +10,7 @@ import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/conf
 @Component({
   selector: 'app-custom-roles',
   imports: [CommonModule, FormsModule, Loader, EmptyState, ConfirmDialog],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './custom-roles.html',
 })
 export class CustomRoles implements OnInit {
@@ -33,8 +34,8 @@ export class CustomRoles implements OnInit {
   // LOAD ROLES
   load(): void {
     this.loading = true;
-    this.cdr.markForCheck();
     this.error = '';
+    this.cdr.markForCheck();
     this.roleService.list().subscribe({
       next: (res) => { this.roles = res || []; this.loading = false; this.cdr.markForCheck(); },
       error: () => { this.error = 'Failed to load custom roles'; this.loading = false; this.cdr.markForCheck(); }
@@ -58,9 +59,11 @@ export class CustomRoles implements OnInit {
     op.subscribe({
       next: () => {
         this.success = this.editingId ? 'Role updated' : 'Role created';
-        this.showForm = false; this.editingId = null; this.load();
+        this.showForm = false; this.editingId = null;
+        this.cdr.markForCheck();
+        this.load();
       },
-      error: (err) => this.error = err?.error?.message || 'Failed to save role'
+      error: (err) => { this.error = err?.error?.message || 'Failed to save role'; this.cdr.markForCheck(); }
     });
   }
 
@@ -68,8 +71,8 @@ export class CustomRoles implements OnInit {
   doDelete(): void {
     if (!this.deleteTarget) return;
     this.roleService.delete(this.deleteTarget.id).subscribe({
-      next: () => { this.deleteTarget = null; this.success = 'Role deleted'; this.load(); },
-      error: () => { this.deleteTarget = null; this.error = 'Cannot delete role'; }
+      next: () => { this.deleteTarget = null; this.success = 'Role deleted'; this.cdr.markForCheck(); this.load(); },
+      error: () => { this.deleteTarget = null; this.error = 'Cannot delete role'; this.cdr.markForCheck(); }
     });
   }
 }

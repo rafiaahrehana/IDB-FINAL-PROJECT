@@ -11,7 +11,7 @@ import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/conf
 @Component({
   selector: 'app-offboarding',
   imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState, ConfirmDialog],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './offboarding.html',
 })
 export class Offboarding implements OnInit {
@@ -56,7 +56,7 @@ export class Offboarding implements OnInit {
   }
 
   loadPending(): void {
-    this.offboardingService.getPending().subscribe({ next: (res) => (this.pending = res) });
+    this.offboardingService.getPending().subscribe({ next: (res) => { this.pending = res; this.cdr.markForCheck(); } });
   }
 
   startOffboarding(): void {
@@ -67,10 +67,11 @@ export class Offboarding implements OnInit {
         this.newEmployeeId = undefined;
         this.newNotes = '';
         this.success = 'Offboarding checklist created';
+        this.cdr.markForCheck();
         this.load();
         this.loadPending();
       },
-      error: (err) => (this.error = err?.error?.message || 'Failed to start offboarding'),
+      error: (err) => { this.error = err?.error?.message || 'Failed to start offboarding'; this.cdr.markForCheck(); },
     });
   }
 
@@ -80,7 +81,7 @@ export class Offboarding implements OnInit {
 
   refreshSelected(): void {
     if (!this.selected) return;
-    this.offboardingService.getById(this.selected.id).subscribe({ next: (c) => (this.selected = c) });
+    this.offboardingService.getById(this.selected.id).subscribe({ next: (c) => { this.selected = c; this.cdr.markForCheck(); } });
   }
 
   markHardware(): void {
@@ -91,7 +92,7 @@ export class Offboarding implements OnInit {
         this.load();
         this.loadPending();
       },
-      error: (err) => (this.error = err?.error?.message || 'Failed'),
+      error: (err) => { this.error = err?.error?.message || 'Failed'; this.cdr.markForCheck(); },
     });
   }
 
@@ -103,7 +104,7 @@ export class Offboarding implements OnInit {
         this.load();
         this.loadPending();
       },
-      error: (err) => (this.error = err?.error?.message || 'Failed'),
+      error: (err) => { this.error = err?.error?.message || 'Failed'; this.cdr.markForCheck(); },
     });
   }
 
@@ -115,7 +116,7 @@ export class Offboarding implements OnInit {
         this.load();
         this.loadPending();
       },
-      error: (err) => (this.error = err?.error?.message || 'Failed'),
+      error: (err) => { this.error = err?.error?.message || 'Failed'; this.cdr.markForCheck(); },
     });
   }
 
@@ -127,7 +128,7 @@ export class Offboarding implements OnInit {
         this.load();
         this.loadPending();
       },
-      error: (err) => (this.error = err?.error?.message || 'Failed'),
+      error: (err) => { this.error = err?.error?.message || 'Failed'; this.cdr.markForCheck(); },
     });
   }
 
@@ -139,7 +140,7 @@ export class Offboarding implements OnInit {
         this.load();
         this.loadPending();
       },
-      error: (err) => (this.error = err?.error?.message || 'Failed'),
+      error: (err) => { this.error = err?.error?.message || 'Failed'; this.cdr.markForCheck(); },
     });
   }
 
@@ -150,12 +151,14 @@ export class Offboarding implements OnInit {
         if (this.selected?.id === this.deleteTarget?.id) this.selected = null;
         this.deleteTarget = null;
         this.success = 'Checklist deleted';
+        this.cdr.markForCheck();
         this.load();
         this.loadPending();
       },
       error: () => {
         this.deleteTarget = null;
         this.error = 'Cannot delete';
+        this.cdr.markForCheck();
       },
     });
   }

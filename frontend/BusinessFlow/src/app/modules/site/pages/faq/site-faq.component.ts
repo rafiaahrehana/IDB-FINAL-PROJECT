@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, inject } from '@angular/core';
 import { SiteService } from '../../services/site.service';
 import { Faq } from '../../models/site.model';
 import { BreadcrumbComponent } from '../../components/breadcrumb/breadcrumb.component';
@@ -7,6 +7,7 @@ import { FaqItemComponent } from '../../components/faq-item/faq-item.component';
 @Component({
   selector: 'app-site-faq',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [BreadcrumbComponent, FaqItemComponent],
   template: `
     <div class="pt-5" style="margin-top: 72px">
@@ -37,12 +38,14 @@ import { FaqItemComponent } from '../../components/faq-item/faq-item.component';
 })
 export class SiteFaqPage implements OnInit {
   private siteService = inject(SiteService);
+  constructor(private cdr: ChangeDetectorRef) {}
   faqs: Faq[] = [];
   loading = true;
-
-  constructor(private cdr: ChangeDetectorRef) {}
-
   ngOnInit(): void {
-    this.siteService.getFaqs().subscribe(f => { this.faqs = f; this.loading = false; this.cdr.markForCheck(); });
+    this.siteService.getFaqs().subscribe(f => {
+      this.faqs = f;
+      this.loading = false;
+      this.cdr.markForCheck();
+    });
   }
 }

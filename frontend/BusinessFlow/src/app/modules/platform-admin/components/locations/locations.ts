@@ -81,7 +81,7 @@ export class Locations implements OnInit {
     this.level2Nodes = [];
     this.level3Nodes = [];
     this.level4Nodes = [];
-    this.loadChildren(c.id, 1);
+    this.loadDivisions(c.id);
   }
 
   selectL1(node: GeoNodeDto): void {
@@ -115,13 +115,28 @@ export class Locations implements OnInit {
     this.selectedL4 = node;
   }
 
+  loadDivisions(countryId: number): void {
+    this.error = '';
+    this.cdr.markForCheck();
+    this.locationService.getDivisionsForCountry(countryId).subscribe({
+      next: (data) => {
+        this.level1Nodes = data;
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        this.error = 'Failed to load divisions';
+        this.cdr.markForCheck();
+        console.error(err);
+      }
+    });
+  }
+
   loadChildren(parentId: number, targetLevel: number): void {
     this.error = '';
     this.cdr.markForCheck();
     this.locationService.getChildrenMaster(parentId).subscribe({
       next: (data) => {
-        if (targetLevel === 1) this.level1Nodes = data;
-        else if (targetLevel === 2) this.level2Nodes = data;
+        if (targetLevel === 2) this.level2Nodes = data;
         else if (targetLevel === 3) this.level3Nodes = data;
         else if (targetLevel === 4) this.level4Nodes = data;
         this.cdr.markForCheck();
@@ -253,7 +268,7 @@ export class Locations implements OnInit {
         this.selectedCountry = node;
       }
     } else if (type === 'LEVEL1') {
-      if (this.selectedCountry) this.loadChildren(this.selectedCountry.id, 1);
+      if (this.selectedCountry) this.loadDivisions(this.selectedCountry.id);
       if (this.selectedL1 && this.selectedL1.id === node.id) this.selectedL1 = node;
     } else if (type === 'LEVEL2') {
       if (this.selectedL1) this.loadChildren(this.selectedL1.id, 2);
@@ -283,7 +298,7 @@ export class Locations implements OnInit {
         this.selectedL4 = null;
       }
     } else if (type === 'LEVEL1') {
-      if (this.selectedCountry) this.loadChildren(this.selectedCountry.id, 1);
+      if (this.selectedCountry) this.loadDivisions(this.selectedCountry.id);
       if (this.selectedL1 && this.selectedL1.id === node.id) {
         this.selectedL1 = null;
         this.level2Nodes = [];

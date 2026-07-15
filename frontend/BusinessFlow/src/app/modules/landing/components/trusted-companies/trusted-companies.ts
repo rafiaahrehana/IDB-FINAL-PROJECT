@@ -9,5 +9,14 @@ import { CommonModule } from '@angular/common';
   styleUrls: ['./trusted-companies.scss']
 })
 export class TrustedCompaniesComponent {
-  companies = signal(['Google', 'Microsoft', 'Oracle', 'Stripe', 'OpenAI', 'Amazon', 'IBM', 'SAP']);
+  companies = signal([
+    { name: 'Google', color: '#4285F4' },
+    { name: 'Microsoft', color: '#00a4ef' },
+    { name: 'Oracle', color: '#c74634' },
+    { name: 'Stripe', color: '#635BFF' },
+    { name: 'OpenAI', color: '#10a37f' },
+    { name: 'Amazon', color: '#FF9900' },
+    { name: 'IBM', color: '#0530ad' },
+    { name: 'SAP', color: '#008fd3' }
+  ]);
 }

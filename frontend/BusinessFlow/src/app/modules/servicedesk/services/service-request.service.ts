@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService, PagedResponse } from '../../../core/services/api.service';
-import { RequestComment, ServiceRequest } from '../models/servicedesk.model';
+import { CommentVisibility, RequestComment, RequestStatusHistoryResponse, ServiceRequest } from '../models/servicedesk.model';
 
 export interface CreateServiceRequestRequest {
   title: string;
@@ -41,6 +41,22 @@ export interface SubmitQuotationRequest {
   currency?: string;
   notes?: string;
   validUntil?: string;
+}
+
+export interface CreateDocumentRequest {
+  fileName: string;
+  fileUrl: string;
+  fileType?: string;
+  fileSizeBytes?: number;
+  label?: string;
+  notes?: string;
+}
+
+export interface RequestDocument extends CreateDocumentRequest {
+  id: number;
+  uploadedById?: number;
+  uploadedByName?: string;
+  createdAt: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -107,12 +123,20 @@ export class ServiceRequestService {
     return this.api.getPaged<RequestComment>(`${this.endpoint}/${id}/comments`, page, size);
   }
 
-  addComment(id: number, content: string): Observable<RequestComment> {
-    return this.api.post<RequestComment>(`${this.endpoint}/${id}/comments`, { content });
+  /**
+   * Add a comment to a service request.
+   * - visibility defaults to the backend's role-aware default (CLIENT -> PUBLIC, staff -> INTERNAL).
+   * - Pass 'PUBLIC' explicitly when a staff member wants the client to see the message.
+   * - Pass 'INTERNAL' explicitly when a client comment should be kept internal (edge-case).
+   */
+  addComment(id: number, content: string, visibility?: CommentVisibility): Observable<RequestComment> {
+    const body: any = { content };
+    if (visibility) body['visibility'] = visibility;
+    return this.api.post<RequestComment>(`${this.endpoint}/${id}/comments`, body);
   }
 
-  history(id: number): Observable<any[]> {
-    return this.api.get<any[]>(`${this.endpoint}/${id}/history`);
+  history(id: number): Observable<RequestStatusHistoryResponse[]> {
+    return this.api.get<RequestStatusHistoryResponse[]>(`${this.endpoint}/${id}/history`);
   }
 
   // QUOTATION - nested on the service request itself; there is no standalone quotation list/CRUD endpoint
@@ -126,5 +150,18 @@ export class ServiceRequestService {
 
   rejectQuotation(id: number, reason?: string): Observable<ServiceRequest> {
     return this.api.post<ServiceRequest>(`${this.endpoint}/${id}/quotation/reject`, { reason });
+  }
+
+  // DOCUMENTS
+  documents(id: number): Observable<RequestDocument[]> {
+    return this.api.get<RequestDocument[]>(`${this.endpoint}/${id}/documents`);
+  }
+
+  addDocument(id: number, payload: CreateDocumentRequest): Observable<RequestDocument> {
+    return this.api.post<RequestDocument>(`${this.endpoint}/${id}/documents`, payload);
+  }
+
+  deleteDocument(id: number, documentId: number): Observable<void> {
+    return this.api.delete<void>(`${this.endpoint}/${id}/documents/${documentId}`);
   }
 }

@@ -1,7 +1,7 @@
 package com.businessos.auth.user;
 
 import com.businessos.auth.role.enums.Role;
-import com.businessos.shared.address.LocationResponse;
+import com.businessos.shared.address.AddressResponse;
 import lombok.Builder;
 import lombok.Data;
 
@@ -16,5 +16,5 @@ public class UserProfileResponse {
     private String image;
     private Role role;
     private String languagePreference;
-    private LocationResponse location;
+    private AddressResponse location;
 }

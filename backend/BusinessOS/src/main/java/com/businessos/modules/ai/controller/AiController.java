@@ -20,6 +20,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -33,11 +34,13 @@ public class AiController {
     private final AuthorizationService authorizationService;
 
     @PostMapping("/generate")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER','SALES_MANAGER','EMPLOYEE')")
     public ResponseEntity<AiGenerateResponse> generate(@Valid @RequestBody AiGenerateRequest request) {
         return new ResponseEntity<>(aiService.generate(request), HttpStatus.CREATED);
     }
 
     @GetMapping("/conversations")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER','SALES_MANAGER','EMPLOYEE')")
     public ResponseEntity<Page<AiGenerateResponse>> conversations(
             @RequestParam(required = false) AiFeature feature,
             @RequestParam(defaultValue = "0")  int page,

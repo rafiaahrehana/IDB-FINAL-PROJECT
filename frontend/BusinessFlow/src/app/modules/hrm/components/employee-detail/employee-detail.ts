@@ -16,6 +16,8 @@ import { DepartmentService } from '../../services/department.service';
 import { DesignationService } from '../../services/designation.service';
 import { Loader } from '../../../../shared/components/loader/loader';
 import { LocationComponent } from '../../../../shared/components/location/location.component';
+import { CustomRoleService } from '../../../roles-permissions/services/custom-role.service';
+import { CustomRole } from '../../../roles-permissions/models/roles-permissions.model';
 
 @Component({
   selector: 'app-employee-detail',
@@ -39,11 +41,16 @@ export class EmployeeDetail implements OnInit {
   types = EMPLOYMENT_TYPES;
   genders = GENDERS;
 
+  customRoles: CustomRole[] = [];
+  selectedRoleId: number | null = null;
+  savingRole = false;
+
   constructor(
     private route: ActivatedRoute,
     private employeeService: EmployeeService,
     private departmentService: DepartmentService,
     private designationService: DesignationService,
+    private customRoleService: CustomRoleService,
     private cdr: ChangeDetectorRef,
   ) {}
 
@@ -52,6 +59,7 @@ export class EmployeeDetail implements OnInit {
     this.load(id);
     this.departmentService.listActive().subscribe({ next: (d) => { this.departments = d; this.cdr.markForCheck(); } });
     this.designationService.listActive().subscribe({ next: (d) => { this.designations = d; this.cdr.markForCheck(); } });
+    this.customRoleService.list().subscribe({ next: (r) => { this.customRoles = r; this.cdr.markForCheck(); } });
   }
 
   load(id: number): void {
@@ -59,6 +67,7 @@ export class EmployeeDetail implements OnInit {
     this.employeeService.getById(id).subscribe({
       next: (emp) => {
         this.employee = emp;
+        this.selectedRoleId = emp.customRoleId ?? null;
         this.loading = false;
         this.cdr.markForCheck();
       },
@@ -130,5 +139,44 @@ export class EmployeeDetail implements OnInit {
         this.cdr.markForCheck();
       },
     });
+  }
+
+  changeRole(): void {
+    if (!this.employee) return;
+    this.savingRole = true;
+    this.error = '';
+    this.success = '';
+    this.cdr.markForCheck();
+
+    const done = (roleId: number | null, message: string) => {
+      this.employee = {
+        ...this.employee!,
+        customRoleId: roleId ?? undefined,
+        customRoleName: roleId ? this.customRoles.find((r) => r.id === roleId)?.name : undefined,
+      };
+      this.savingRole = false;
+      this.success = message;
+      this.cdr.markForCheck();
+    };
+
+    if (this.selectedRoleId) {
+      this.customRoleService.assignEmployee(this.selectedRoleId, this.employee.id).subscribe({
+        next: () => done(this.selectedRoleId, 'Role updated'),
+        error: (err) => {
+          this.savingRole = false;
+          this.error = err?.error?.message || 'Failed to assign role';
+          this.cdr.markForCheck();
+        },
+      });
+    } else {
+      this.customRoleService.unassignEmployee(this.employee.id).subscribe({
+        next: () => done(null, 'Role removed'),
+        error: (err) => {
+          this.savingRole = false;
+          this.error = err?.error?.message || 'Failed to remove role';
+          this.cdr.markForCheck();
+        },
+      });
+    }
   }
 }

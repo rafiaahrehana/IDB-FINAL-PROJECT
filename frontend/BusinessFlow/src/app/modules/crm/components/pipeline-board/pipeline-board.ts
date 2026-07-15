@@ -157,8 +157,19 @@ export class PipelineBoard implements OnInit {
     }
     this.opportunityService.changeStage(opportunity.id, stage).subscribe({
       next: () => this.load(),
-      error: () => { this.error = 'Failed to change stage'; this.cdr.markForCheck(); },
+      error: () => {
+        this.error = 'Failed to change stage';
+        this.cdr.markForCheck();
+        this.load(); // Revert UI dropdown
+      },
     });
+  }
+
+  cancelLost(): void {
+    this.lostReasonFor = null;
+    this.lostReason = '';
+    this.cdr.markForCheck();
+    this.load(); // Revert UI dropdown
   }
 
   confirmLost(): void {
@@ -171,7 +182,12 @@ export class PipelineBoard implements OnInit {
           this.cdr.markForCheck();
           this.load();
         },
-        error: () => { this.error = 'Failed to close opportunity'; this.cdr.markForCheck(); },
+        error: () => {
+          this.error = 'Failed to close opportunity';
+          this.lostReasonFor = null;
+          this.cdr.markForCheck();
+          this.load(); // Revert UI dropdown
+        },
       });
   }
 

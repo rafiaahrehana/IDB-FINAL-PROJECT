@@ -4,6 +4,7 @@ import com.businessos.core.base.BaseEntity;
 import com.businessos.auth.user.User;
 import com.businessos.enums.CompanyStatus;
 import com.businessos.enums.SubscriptionPlan;
+import com.businessos.shared.address.Address;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -24,25 +25,15 @@ public class Company extends BaseEntity {
     @Column(unique = true)
     private String companyPhone;
 
-    private String logo;
     private String website;
-    private String location;
 
     @Column(nullable = false, unique = true)
     private String subdomain;
 
-    // Structured address (same GeoNode-backed system used by User.location);
-    // the plain `location` string above stays as the short display text.
-    @OneToOne(cascade = jakarta.persistence.CascadeType.ALL, fetch = FetchType.LAZY)
-    @JoinColumn(name = "location_detail_id")
-    private com.businessos.shared.address.Location locationDetail;
+    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JoinColumn(name = "address_detail_id")
+    private Address locationDetail;
 
-    // Branding
-    private String primaryColor;
-    private String secondaryColor;
-    private String tagline;
-
-    /** Rich "about us" body shown on the company's public portal page. */
     @Column(columnDefinition = "TEXT")
     private String portalAbout;
 

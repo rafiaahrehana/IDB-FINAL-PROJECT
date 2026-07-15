@@ -18,13 +18,21 @@ public class CreatePayrollRequest {
     @NotNull
     @Min(2020)
     private Integer payYear;
-    @NotNull
+
+    // basicSalary/houseRent/medicalAllowance/transportAllowance are optional - if
+    // omitted, PayrollServiceImpl pulls them from the employee's active
+    // SalaryStructure for this period instead of requiring HR to retype them
+    // every month. Only required if the employee has no salary structure set up.
     private BigDecimal basicSalary;
     private BigDecimal houseRent;
     private BigDecimal medicalAllowance;
     private BigDecimal transportAllowance;
+    private BigDecimal foodAllowance;
+    private BigDecimal specialAllowance;
     private BigDecimal bonus;
     private BigDecimal deductions;
     private BigDecimal taxDeduction;
+    private BigDecimal insuranceDeduction;
+    private BigDecimal providentFundDeduction;
     private String notes;
 }

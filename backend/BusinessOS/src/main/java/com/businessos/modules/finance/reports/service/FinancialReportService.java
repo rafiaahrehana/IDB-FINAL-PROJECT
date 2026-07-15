@@ -1,7 +1,9 @@
 package com.businessos.modules.finance.reports.service;
 
 import com.businessos.modules.finance.reports.dto.AccountLedger;
+import com.businessos.modules.finance.reports.dto.AgeingReport;
 import com.businessos.modules.finance.reports.dto.BalanceSheetReport;
+import com.businessos.modules.finance.reports.dto.CashFlowReport;
 import com.businessos.modules.finance.reports.dto.ProfitLossReport;
 import com.businessos.modules.finance.reports.dto.TrialBalanceReport;
 
@@ -12,4 +14,6 @@ public interface FinancialReportService {
     BalanceSheetReport generateBalanceSheetReport(LocalDate asOfDate);
     TrialBalanceReport generateTrialBalanceReport(LocalDate asOfDate);
     AccountLedger generateAccountLedger(Long accountId, LocalDate startDate, LocalDate endDate);
+    AgeingReport generateAgeingReport(LocalDate asOfDate);
+    CashFlowReport generateCashFlowReport(LocalDate startDate, LocalDate endDate);
 }

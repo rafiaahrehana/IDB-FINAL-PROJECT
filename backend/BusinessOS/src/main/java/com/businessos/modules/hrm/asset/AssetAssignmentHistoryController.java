@@ -8,8 +8,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.access.prepost.PreAuthorize;
 
-import java.awt.print.Pageable;
-
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/hr/asset-history")
@@ -18,13 +16,21 @@ public class AssetAssignmentHistoryController {
 
     private final AssetAssignmentHistoryService historyService;
 
+    @GetMapping
+    public ResponseEntity<Page<AssetAssignmentHistoryResponse>> listAll(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(historyService.listAll(
+                PageRequest.of(page, size, Sort.by("assignedAt").descending())));
+    }
+
     @GetMapping("/asset/{assetId}")
     public ResponseEntity<Page<AssetAssignmentHistoryResponse>> byAsset(
             @PathVariable Long assetId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         return ResponseEntity.ok(historyService.historyForAsset(assetId,
-                (Pageable) PageRequest.of(page, size, Sort.by("assignedAt").descending())));
+                PageRequest.of(page, size, Sort.by("assignedAt").descending())));
     }
 
     @GetMapping("/employee/{employeeId}")
@@ -33,7 +39,7 @@ public class AssetAssignmentHistoryController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         return ResponseEntity.ok(historyService.historyForEmployee(employeeId,
-                (Pageable) PageRequest.of(page, size, Sort.by("assignedAt").descending())));
+                PageRequest.of(page, size, Sort.by("assignedAt").descending())));
     }
 }
 

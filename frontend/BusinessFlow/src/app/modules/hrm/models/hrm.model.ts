@@ -3,6 +3,7 @@ export type EmploymentStatus =
   | 'SUSPENDED' | 'RESIGNED' | 'TERMINATED' | 'RETIRED';
 
 import { LocationRequest, LocationResponse } from '../../../shared/models/location.model';
+import { PaymentMethod } from '../../finance/models/finance.model';
 
 export type EmploymentType =
   | 'FULL_TIME' | 'PART_TIME' | 'CONTRACT' | 'INTERN' | 'CONSULTANT';
@@ -64,6 +65,8 @@ export interface Employee {
   emergencyContactRelation?: string;
   active: boolean;
   createdAt: string;
+  customRoleId?: number;
+  customRoleName?: string;
 }
 
 // CreateEmployeeRequest
@@ -73,7 +76,7 @@ export interface CreateEmployeeRequest {
   email: string;
   password: string;
   employmentType: EmploymentType;
-  employeeNumber?: string;
+  // employeeNumber is server-generated - not part of the create payload.
   officialEmail?: string;
   workPhone?: string;
   jobTitle?: string;
@@ -199,12 +202,17 @@ export interface Payroll {
   houseRent?: number;
   medicalAllowance?: number;
   transportAllowance?: number;
+  foodAllowance?: number;
+  specialAllowance?: number;
   bonus?: number;
   deductions?: number;
   taxDeduction?: number;
+  insuranceDeduction?: number;
+  providentFundDeduction?: number;
   netSalary: number;
   status: PayrollStatus;
   paymentReference?: string;
+  paymentMethod?: PaymentMethod;
   paidAt?: string;
   notes?: string;
   employeeId: number;
@@ -219,14 +227,26 @@ export interface CreatePayrollRequest {
   employeeId: number;
   payMonth: number;
   payYear: number;
-  basicSalary: number;
+  // Optional - if omitted, the backend pulls these from the employee's active SalaryStructure.
+  basicSalary?: number;
   houseRent?: number;
   medicalAllowance?: number;
   transportAllowance?: number;
+  foodAllowance?: number;
+  specialAllowance?: number;
   bonus?: number;
   deductions?: number;
   taxDeduction?: number;
+  insuranceDeduction?: number;
+  providentFundDeduction?: number;
   notes?: string;
+}
+
+// BulkPayrollResult
+export interface BulkPayrollResult {
+  created: string[];
+  skippedAlreadyExists: string[];
+  skippedNoSalaryStructure: string[];
 }
 
 // SalaryStructureResponse
@@ -414,6 +434,7 @@ export interface EmployeeShiftAssignment {
   reason?: string;
   assignedBy?: string;
   notes?: string;
+  companyId?: number;
 }
 
 export interface EmployeeShiftAssignmentRequest {
@@ -647,6 +668,22 @@ export interface HrAssetRequest {
   warrantyExpiry?: string;
 }
 
+export interface AssetAssignmentHistory {
+  id: number;
+  assetId: number;
+  assetName?: string;
+  employeeId: number;
+  employeeName?: string;
+  assignedAt?: string;
+  returnedAt?: string;
+  condition?: string;
+  conditionOnReturn?: string;
+  notes?: string;
+  assignedById?: number;
+  assignedByName?: string;
+  createdAt: string;
+}
+
 export type HrExpenseStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'REIMBURSED';
 export const HR_EXPENSE_STATUSES: HrExpenseStatus[] = ['PENDING', 'APPROVED', 'REJECTED', 'REIMBURSED'];
 
@@ -676,3 +713,8 @@ export interface HrExpenseRequest {
   description?: string;
   receiptUrl?: string;
 }
+
+// NOTE: Attendance/AttendanceRequest used to live here, wired to a frontend-only
+// '/hrm/attendance' endpoint that has no backend counterpart (the real one is
+// '/company/attendance'). Removed; attendance is owned by the `attendance` module
+// (modules/attendance/models/attendance.model.ts), which now also covers manual entry.

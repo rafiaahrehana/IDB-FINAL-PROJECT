@@ -3,12 +3,13 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { RequestComment, ServiceRequest, StageApproval } from '../../models/servicedesk.model';
-import { ServiceRequestService } from '../../services/service-request.service';
+import { ServiceRequestService, RequestDocument } from '../../services/service-request.service';
 import { ServiceFormFieldService } from '../../services/service-form-field.service';
 import { ApprovalService } from '../../services/approval.service';
 import { AuthService } from '../../../../core/services/auth.service';
 import { EmployeeService } from '../../../hrm/services/employee.service';
 import { Employee } from '../../../hrm/models/hrm.model';
+import { ApiService } from '../../../../core/services/api.service';
 
 // Mirror of backend ServiceRequestStatus / TaskStatus enums
 const REQUEST_STATUSES = ['PENDING', 'QUOTATION_PENDING', 'ASSIGNED', 'IN_PROGRESS',
@@ -58,6 +59,11 @@ export class RequestDetail implements OnInit {
   quotationForm = { amount: 0, currency: 'USD', notes: '', validUntil: '' };
   rejectReason = '';
 
+  // Documents (client or staff can attach files - budget docs, requirements, deliverables)
+  documents: RequestDocument[] = [];
+  uploading = false;
+  documentLabel = '';
+
   constructor(
     private route: ActivatedRoute,
     private requestService: ServiceRequestService,
@@ -65,6 +71,7 @@ export class RequestDetail implements OnInit {
     private formFieldService: ServiceFormFieldService,
     private auth: AuthService,
     private employeeService: EmployeeService,
+    private api: ApiService,
     private cdr: ChangeDetectorRef,
   ) {}
 
@@ -129,6 +136,7 @@ export class RequestDetail implements OnInit {
       this.comments = c.content;
       this.cdr.markForCheck();
     } });
+    this.loadDocuments();
     if (this.isStaff) {
       this.requestService.history(this.requestId).subscribe({ next: (h) => {
         this.history = h;
@@ -256,6 +264,64 @@ export class RequestDetail implements OnInit {
       this.request = r;
       this.cdr.markForCheck();
     } });
+  }
+
+  // ----- Documents (client or staff) -----
+
+  loadDocuments(): void {
+    this.requestService.documents(this.requestId).subscribe({
+      next: (docs) => { this.documents = docs; this.cdr.markForCheck(); },
+    });
+  }
+
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    this.uploading = true;
+    this.error = '';
+    this.cdr.markForCheck();
+
+    this.api.uploadFile(file).subscribe({
+      next: (uploaded) => {
+        this.requestService.addDocument(this.requestId, {
+          fileName: uploaded.fileName,
+          fileUrl: uploaded.fileUrl,
+          fileType: file.type,
+          fileSizeBytes: file.size,
+          label: this.documentLabel.trim() || undefined,
+        }).subscribe({
+          next: () => {
+            this.documentLabel = '';
+            this.uploading = false;
+            this.loadDocuments();
+            this.cdr.markForCheck();
+          },
+          error: (err) => {
+            this.error = err?.error?.message || 'Failed to attach document';
+            this.uploading = false;
+            this.cdr.markForCheck();
+          },
+        });
+      },
+      error: (err) => {
+        this.error = err?.error?.message || 'Failed to upload file';
+        this.uploading = false;
+        this.cdr.markForCheck();
+      },
+    });
+    input.value = '';
+  }
+
+  deleteDocument(doc: RequestDocument): void {
+    this.requestService.deleteDocument(this.requestId, doc.id).subscribe({
+      next: () => { this.loadDocuments(); },
+      error: (err) => {
+        this.error = err?.error?.message || 'Failed to delete document';
+        this.cdr.markForCheck();
+      },
+    });
   }
 
   addComment(): void {

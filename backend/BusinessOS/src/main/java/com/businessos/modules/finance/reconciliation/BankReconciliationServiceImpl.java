@@ -3,6 +3,8 @@ package com.businessos.modules.finance.reconciliation;
 import com.businessos.modules.finance.chartofaccounts.ChartOfAccount;
 import com.businessos.modules.finance.chartofaccounts.ChartOfAccountRepository;
 import com.businessos.modules.finance.generalledger.GeneralLedgerService;
+import com.businessos.auth.role.enums.PermissionCode;
+import com.businessos.auth.role.service.AuthorizationService;
 import com.businessos.security.SecurityUtil;
 import com.businessos.shared.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -22,13 +24,15 @@ public class BankReconciliationServiceImpl implements BankReconciliationService 
     private final ChartOfAccountRepository coaRepository;
     private final GeneralLedgerService glService;
     private final SecurityUtil securityUtil;
+    private final AuthorizationService authorizationService;
 
     @Override
     @Transactional
     public BankReconciliationResponse create(BankReconciliationRequest request) {
+        authorizationService.checkPermission(PermissionCode.BANK_RECONCILIATION_CREATE);
         Long companyId = securityUtil.getCurrentCompanyId();
 
-        ChartOfAccount account = coaRepository.findById(request.getBankAccountId())
+        ChartOfAccount account = coaRepository.findByIdAndCompanyId(request.getBankAccountId(), companyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Bank account not found"));
 
         BigDecimal glBalance = glService.getAccountBalance(account.getId());
@@ -41,8 +45,8 @@ public class BankReconciliationServiceImpl implements BankReconciliationService 
                 .glBalance(glBalance)
                 .bankStatementBalance(request.getBankStatementBalance())
                 .difference(difference)
-                .outstandingDeposits(request.getOutstandingDeposits() != null ? String.valueOf(request.getOutstandingDeposits()) : null)
-                .outstandingChecks(request.getOutstandingChecks() != null ? String.valueOf(request.getOutstandingChecks()) : null)
+                .outstandingDeposits(request.getOutstandingDeposits())
+                .outstandingChecks(request.getOutstandingChecks())
                 .reconciled(false)
                 .build();
 
@@ -53,14 +57,19 @@ public class BankReconciliationServiceImpl implements BankReconciliationService 
     @Override
     @Transactional(readOnly = true)
     public BankReconciliationResponse getById(Long id) {
-        BankReconciliation reconciliation = reconciliationRepository.findById(id)
+        authorizationService.checkPermission(PermissionCode.BANK_RECONCILIATION_VIEW);
+        return BankReconciliationMapper.toResponse(findInTenant(id));
+    }
+
+    private BankReconciliation findInTenant(Long id) {
+        return reconciliationRepository.findByIdAndCompanyId(id, securityUtil.getCurrentCompanyId())
                 .orElseThrow(() -> new ResourceNotFoundException("Reconciliation not found"));
-        return BankReconciliationMapper.toResponse(reconciliation);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<BankReconciliationResponse> getAll(Pageable pageable) {
+        authorizationService.checkPermission(PermissionCode.BANK_RECONCILIATION_VIEW);
         Long companyId = securityUtil.getCurrentCompanyId();
         return reconciliationRepository.findByCompanyId(companyId, pageable)
                 .map(BankReconciliationMapper::toResponse);
@@ -69,8 +78,8 @@ public class BankReconciliationServiceImpl implements BankReconciliationService 
     @Override
     @Transactional
     public void markAsReconciled(Long id, String notes) {
-        BankReconciliation reconciliation = reconciliationRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Reconciliation not found"));
+        authorizationService.checkPermission(PermissionCode.BANK_RECONCILIATION_RECONCILE);
+        BankReconciliation reconciliation = findInTenant(id);
 
         reconciliation.markAsReconciled(securityUtil.getCurrentUser().getUsername());
         reconciliation.setDiscrepancyNotes(notes);
@@ -80,6 +89,7 @@ public class BankReconciliationServiceImpl implements BankReconciliationService 
     @Override
     @Transactional(readOnly = true)
     public List<BankReconciliation> getPendingReconciliations() {
+        authorizationService.checkPermission(PermissionCode.BANK_RECONCILIATION_VIEW);
         Long companyId = securityUtil.getCurrentCompanyId();
         return reconciliationRepository.findByCompanyIdAndReconciledFalse(companyId);
     }

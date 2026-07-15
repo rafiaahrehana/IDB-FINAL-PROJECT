@@ -7,6 +7,9 @@ public interface PaymentReceiptService {
     PaymentReceiptResponse create(PaymentReceiptRequest request);
     PaymentReceiptResponse getById(Long id);
     Page<PaymentReceiptResponse> getAll(Pageable pageable);
+
+    /** The caller's own payment receipts - resolves their Client record from the security context. */
+    Page<PaymentReceiptResponse> getMyReceipts(Pageable pageable);
     void confirmPayment(Long id);
     void markAsDeposited(Long id, String bank);
     void delete(Long id);

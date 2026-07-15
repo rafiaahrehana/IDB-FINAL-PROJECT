@@ -1,7 +1,11 @@
 package com.businessos.modules.itam.offboarding;
 
+import com.businessos.modules.hrm.asset.AssetRepository;
 import com.businessos.modules.hrm.employee.Employee;
 import com.businessos.modules.hrm.employee.EmployeeRepository;
+import com.businessos.modules.itam.software.SoftwareLicenseSeatRepository;
+import com.businessos.auth.role.enums.PermissionCode;
+import com.businessos.auth.role.service.AuthorizationService;
 import com.businessos.security.SecurityUtil;
 import com.businessos.shared.exception.BadRequestException;
 import com.businessos.shared.exception.ResourceNotFoundException;
@@ -11,6 +15,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -20,11 +25,15 @@ public class OffboardingCheckListServiceImpl implements OffboardingChecklistServ
 
     private final OffboardingChecklistRepository checklistRepository;
     private final EmployeeRepository employeeRepository;
+    private final AssetRepository assetRepository;
+    private final SoftwareLicenseSeatRepository softwareLicenseSeatRepository;
     private final SecurityUtil securityUtil;
+    private final AuthorizationService authorizationService;
 
     @Override
     @Transactional
     public OffboardingChecklistResponse create(OffboardingChecklistRequest request) {
+        authorizationService.checkPermission(PermissionCode.OFFBOARDING_CREATE);
         Long companyId = requireCompanyId();
 
         // Tenant-scoped employee fetch
@@ -39,12 +48,13 @@ public class OffboardingCheckListServiceImpl implements OffboardingChecklistServ
         OffboardingChecklist checklist = OffboardingChecklist.builder()
                 .companyId(companyId)
                 .employee(employee)
+                .offboardingDate(LocalDate.now())
                 .hardwareCollected(false)
                 .licensesRevoked(false)
                 .accessRevoked(false)
                 .dataHandedOver(false)
                 .exitInterviewCompleted(false)
-                .overallNotes(request.getNotes()) // BUG FIX: builder previously called .notes() which does not exist
+                .overallNotes(request.getNotes())
                 .build();
 
         checklist = checklistRepository.save(checklist);
@@ -54,12 +64,14 @@ public class OffboardingCheckListServiceImpl implements OffboardingChecklistServ
     @Override
     @Transactional(readOnly = true)
     public OffboardingChecklistResponse getById(Long id) {
+        authorizationService.checkPermission(PermissionCode.OFFBOARDING_VIEW);
         return OffboardingChecklistMapper.toResponse(findInTenant(id));
     }
 
     @Override
     @Transactional(readOnly = true)
     public OffboardingChecklistResponse getByEmployee(Long employeeId) {
+        authorizationService.checkPermission(PermissionCode.OFFBOARDING_VIEW);
         Long companyId = requireCompanyId();
         OffboardingChecklist checklist = checklistRepository.findByEmployeeIdAndCompanyId(employeeId, companyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Offboarding checklist not found"));
@@ -69,6 +81,7 @@ public class OffboardingCheckListServiceImpl implements OffboardingChecklistServ
     @Override
     @Transactional(readOnly = true)
     public Page<OffboardingChecklistResponse> getAll(Pageable pageable) {
+        authorizationService.checkPermission(PermissionCode.OFFBOARDING_VIEW);
         Long companyId = requireCompanyId();
         return checklistRepository.findByCompanyId(companyId, pageable)
                 .map(OffboardingChecklistMapper::toResponse);
@@ -77,6 +90,7 @@ public class OffboardingCheckListServiceImpl implements OffboardingChecklistServ
     @Override
     @Transactional(readOnly = true)
     public List<OffboardingChecklistResponse> getPendingChecklists() {
+        authorizationService.checkPermission(PermissionCode.OFFBOARDING_VIEW);
         Long companyId = requireCompanyId();
         // BUG FIX: previously called checklistRepository.findByCompleted(false) which wasn't defined and lacked tenant isolation
         return checklistRepository.findByCompanyIdAndCompletedFalse(companyId)
@@ -87,45 +101,79 @@ public class OffboardingCheckListServiceImpl implements OffboardingChecklistServ
 
     @Override
     @Transactional
-    public void markHardwareCollected(Long id) {
+    public void markHardwareCollected(Long id, String notes) {
+        authorizationService.checkPermission(PermissionCode.OFFBOARDING_MANAGE);
         OffboardingChecklist checklist = findInTenant(id);
+
+        long stillAssigned = assetRepository
+                .findByCompanyIdAndAssignedToId(checklist.getCompanyId(), checklist.getEmployee().getId())
+                .size();
+        if (stillAssigned > 0) {
+            throw new BadRequestException(
+                    "Cannot mark hardware collected - " + stillAssigned + " asset(s) are still assigned to this employee. Unassign them first.");
+        }
+
         checklist.setHardwareCollected(true);
+        checklist.setHardwareCollectedDate(LocalDate.now());
+        checklist.setHardwareCollectedBy(currentUserName());
+        if (notes != null && !notes.isBlank()) checklist.setHardwareNotes(notes);
         checkCompletionStatus(checklist);
         checklistRepository.save(checklist);
     }
 
     @Override
     @Transactional
-    public void markLicensesRevoked(Long id) {
+    public void markLicensesRevoked(Long id, String notes) {
+        authorizationService.checkPermission(PermissionCode.OFFBOARDING_MANAGE);
         OffboardingChecklist checklist = findInTenant(id);
+
+        long stillHeld = softwareLicenseSeatRepository
+                .findByEmployeeIdAndCompanyIdAndReleasedAtIsNull(checklist.getEmployee().getId(), checklist.getCompanyId())
+                .size();
+        if (stillHeld > 0) {
+            throw new BadRequestException(
+                    "Cannot mark licenses revoked - " + stillHeld + " license seat(s) are still held by this employee. Release them first.");
+        }
+
         checklist.setLicensesRevoked(true);
+        checklist.setLicensesRevokedDate(LocalDate.now());
+        if (notes != null && !notes.isBlank()) checklist.setLicensesNotes(notes);
         checkCompletionStatus(checklist);
         checklistRepository.save(checklist);
     }
 
     @Override
     @Transactional
-    public void markAccessRevoked(Long id) {
+    public void markAccessRevoked(Long id, String notes) {
+        authorizationService.checkPermission(PermissionCode.OFFBOARDING_MANAGE);
         OffboardingChecklist checklist = findInTenant(id);
         checklist.setAccessRevoked(true);
+        checklist.setAccessRevokedDate(LocalDate.now());
+        if (notes != null && !notes.isBlank()) checklist.setAccessNotes(notes);
         checkCompletionStatus(checklist);
         checklistRepository.save(checklist);
     }
 
     @Override
     @Transactional
-    public void markDataHandedOver(Long id) {
+    public void markDataHandedOver(Long id, String notes) {
+        authorizationService.checkPermission(PermissionCode.OFFBOARDING_MANAGE);
         OffboardingChecklist checklist = findInTenant(id);
         checklist.setDataHandedOver(true);
+        checklist.setDataHandoverDate(LocalDate.now());
+        if (notes != null && !notes.isBlank()) checklist.setDataHandoverNotes(notes);
         checkCompletionStatus(checklist);
         checklistRepository.save(checklist);
     }
 
     @Override
     @Transactional
-    public void markExitInterviewCompleted(Long id) {
+    public void markExitInterviewCompleted(Long id, String notes) {
+        authorizationService.checkPermission(PermissionCode.OFFBOARDING_MANAGE);
         OffboardingChecklist checklist = findInTenant(id);
         checklist.setExitInterviewCompleted(true);
+        checklist.setExitInterviewDate(LocalDate.now());
+        if (notes != null && !notes.isBlank()) checklist.setExitInterviewNotes(notes);
         checkCompletionStatus(checklist);
         checklistRepository.save(checklist);
     }
@@ -133,6 +181,7 @@ public class OffboardingCheckListServiceImpl implements OffboardingChecklistServ
     @Override
     @Transactional
     public OffboardingChecklistResponse delete(Long id) {
+        authorizationService.checkPermission(PermissionCode.OFFBOARDING_DELETE);
         OffboardingChecklist checklist = findInTenant(id);
         checklist.softDelete();
         checklistRepository.save(checklist);
@@ -143,7 +192,13 @@ public class OffboardingCheckListServiceImpl implements OffboardingChecklistServ
         if (checklist.isAllTasksCompleted() && !checklist.isCompleted()) {
             checklist.setCompleted(true);
             checklist.setCompletionDate(java.time.LocalDate.now());
+            checklist.setCompletedBy(currentUserName());
         }
+    }
+
+    private String currentUserName() {
+        var user = securityUtil.getCurrentUser();
+        return user != null ? user.getFullName() : null;
     }
 
     private OffboardingChecklist findInTenant(Long id) {

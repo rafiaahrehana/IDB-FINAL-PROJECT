@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
  
 export interface PagedResponse<T> {
@@ -70,6 +70,17 @@ export class ApiService {
   }
 
   /**
+   * Uploads a file to the generic file storage endpoint (POST /api/upload,
+   * multipart/form-data). Returns { fileName, fileUrl, message }.
+   */
+  uploadFile(file: File): Observable<{ fileName: string; fileUrl: string; message: string }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<{ fileName: string; fileUrl: string; message: string }>(
+      `${this.baseUrl}/upload`, formData);
+  }
+
+  /**
    * Text-response variants. Several backend endpoints return a plain string body
    * (ResponseEntity<String>) with content-type text/plain - the default 'json'
    * responseType would fail to parse it and turn a successful 200 into an error.
@@ -95,6 +106,17 @@ export class ApiService {
       size,
       ...params
     };
-    return this.get<PagedResponse<T>>(endpoint, httpParams);
+    // Backend returns Spring Data's Page<T>, whose JSON uses `number`/`size`
+    // instead of `currentPage`/`pageSize` - normalize here so every list
+    // screen gets a consistent PagedResponse shape.
+    return this.get<any>(endpoint, httpParams).pipe(
+      map((res: any): PagedResponse<T> => ({
+        content: res?.content ?? [],
+        totalElements: res?.totalElements ?? res?.page?.totalElements ?? 0,
+        totalPages: res?.totalPages ?? res?.page?.totalPages ?? 0,
+        currentPage: res?.currentPage ?? res?.number ?? res?.page?.number ?? page,
+        pageSize: res?.pageSize ?? res?.size ?? res?.page?.size ?? size
+      }))
+    );
   }
 }

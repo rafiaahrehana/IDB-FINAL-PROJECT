@@ -66,13 +66,13 @@ public class ClientContactServiceImpl implements ClientContactService {
 
     @Override
     @Transactional(readOnly = true)
-    public ClientContactResponse getById(Long id) {
-        return ClientContactMapper.toResponse(findOwned(id));
+    public ClientContactResponse getById(Long clientId, Long id) {
+        return ClientContactMapper.toResponse(findOwned(clientId, id));
     }
 
     @Override
-    public ClientContactResponse update(Long id, ClientContactRequest request) {
-        ClientContact contact = findOwned(id);
+    public ClientContactResponse update(Long clientId, Long id, ClientContactRequest request) {
+        ClientContact contact = findOwned(clientId, id);
 
         if (request.getFullName() != null) contact.setFullName(request.getFullName());
         contact.setEmail(request.getEmail());
@@ -90,23 +90,27 @@ public class ClientContactServiceImpl implements ClientContactService {
     }
 
     @Override
-    public ClientContactResponse markPrimary(Long id) {
-        ClientContact contact = findOwned(id);
+    public ClientContactResponse markPrimary(Long clientId, Long id) {
+        ClientContact contact = findOwned(clientId, id);
         clientContactRepository.clearPrimaryContact(contact.getClient().getId(), requireCompanyId());
         contact.setPrimaryContact(true);
         return ClientContactMapper.toResponse(clientContactRepository.save(contact));
     }
 
     @Override
-    public void delete(Long id) {
-        ClientContact contact = findOwned(id);
+    public void delete(Long clientId, Long id) {
+        ClientContact contact = findOwned(clientId, id);
         contact.softDelete();
         clientContactRepository.save(contact);
     }
 
-    private ClientContact findOwned(Long id) {
-        return clientContactRepository.findByIdAndCompanyId(id, requireCompanyId())
+    private ClientContact findOwned(Long clientId, Long id) {
+        ClientContact contact = clientContactRepository.findByIdAndCompanyId(id, requireCompanyId())
             .orElseThrow(() -> new ResourceNotFoundException("Contact not found"));
+        if (!contact.getClient().getId().equals(clientId)) {
+            throw new ResourceNotFoundException("Contact not found");
+        }
+        return contact;
     }
 
     private Long requireCompanyId() {

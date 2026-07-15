@@ -1,3 +1,21 @@
+export type AttendanceStatus =
+  | 'PRESENT' | 'LATE' | 'ABSENT' | 'ON_LEAVE' | 'HALF_DAY'
+  | 'WORK_FROM_HOME' | 'WEEKEND' | 'HOLIDAY' | 'PARTIAL_DAY' | 'UNMARKED';
+
+export const ATTENDANCE_STATUSES: AttendanceStatus[] = [
+  'PRESENT', 'LATE', 'ABSENT', 'ON_LEAVE', 'HALF_DAY',
+  'WORK_FROM_HOME', 'WEEKEND', 'HOLIDAY', 'PARTIAL_DAY', 'UNMARKED',
+];
+
+export type AttendanceMethod =
+  | 'MANUAL' | 'FINGERPRINT' | 'FACIAL' | 'RFID' | 'IRIS'
+  | 'GPS' | 'NFC' | 'QR_CODE' | 'OTHER';
+
+export const ATTENDANCE_METHODS: AttendanceMethod[] = [
+  'MANUAL', 'FINGERPRINT', 'FACIAL', 'RFID', 'IRIS',
+  'GPS', 'NFC', 'QR_CODE', 'OTHER',
+];
+
 export interface AttendanceRecord {
   id: number;
   companyId: number;
@@ -9,16 +27,53 @@ export interface AttendanceRecord {
   checkOutTime?: string;
   checkInDateTime?: string;
   checkOutDateTime?: string;
+  checkInMethod?: string;
+  checkInLocation?: string;
+  checkInLatitude?: string;
+  checkInLongitude?: string;
+  checkInReason?: string;
+  checkOutMethod?: string;
+  checkOutLocation?: string;
+  shiftType?: string;
   status: string;
   isLate: boolean;
   lateMinutes: number;
+  lateReason?: string;
   isOvertime: boolean;
   overtimeHours?: number;
+  leftEarly?: boolean;
+  earlyMinutes?: number;
+  earlyDepartureReason?: string;
   totalWorkingHours?: number;
   approved: boolean;
   approvedBy?: string;
+  approvedDateTime?: string;
+  isVerified: boolean;
+  verificationScore?: number;
   notes?: string;
   createdAt: string;
+  updatedAt?: string;
+}
+
+// For HR manually recording/backdating an employee's attendance (POST /manual)
+export interface ManualAttendanceRequest {
+  employeeId: number;
+  attendanceDate: string;
+  checkInTime?: string;
+  checkOutTime?: string;
+  checkInMethod?: string;
+  checkOutMethod?: string;
+  shiftType?: string;
+  status: AttendanceStatus;
+  isLate?: boolean;
+  lateMinutes?: number;
+  lateReason?: string;
+  isOvertime?: boolean;
+  overtimeHours?: number;
+  leftEarly?: boolean;
+  earlyMinutes?: number;
+  earlyDepartureReason?: string;
+  adminNotes?: string;
 }
 
 export interface AttendanceLeave {
@@ -35,6 +90,8 @@ export interface AttendanceLeave {
   rejectionReason?: string;
   notes?: string;
   createdAt: string;
+  approvedDate?: string;
+  updatedAt?: string;
 }
 
 export interface Timesheet {
@@ -98,6 +155,7 @@ export interface BiometricDevice {
   totalEnrollments: number;
   maxEnrollments: number;
   notes?: string;
+  companyId?: number;
 }
 
 export interface BiometricDeviceRequest {

@@ -7,8 +7,8 @@ import {
   DashboardSummary,
   PlatformSummary,
   ClientSummary,
+  RecommendationResponse,
 } from '../../../core/services/dashboard.service';
-import { AiService } from '../../../core/services/ai.service';
 import { Loader } from '../../../shared/components/loader/loader';
 import { StatCard } from '../../../shared/components/stat-card/stat-card';
 
@@ -38,11 +38,12 @@ export class DashboardComponent implements OnInit {
   summary?: DashboardSummary;
   platformSummary?: PlatformSummary;
   clientSummary?: ClientSummary;
-  recommendations: any[] = [];
+  recommendations: RecommendationResponse[] = [];
   insights = '';
   insightsError = '';
   insightsLoading = false;
   loading = false;
+  error = '';
 
   // Role flags resolved once from the logged-in user
   isCompanyRole = false;
@@ -52,11 +53,11 @@ export class DashboardComponent implements OnInit {
 
   subtitle = '';
   quickLinks: QuickLink[] = [];
+  selectedRange: 'day' | 'week' | 'month' | 'year' = 'month';
 
   constructor(
     public auth: AuthService,
     private dashboardService: DashboardService,
-    private aiService: AiService,
     private cdr: ChangeDetectorRef,
   ) {}
 
@@ -86,23 +87,27 @@ export class DashboardComponent implements OnInit {
 
   private loadCompanyDashboard(): void {
     this.loading = true;
+    this.error = '';
     this.cdr.markForCheck();
-    this.dashboardService.getSummary().subscribe({
+    const range = this.getDateRange();
+    this.dashboardService.getSummary(range?.from, range?.to).subscribe({
       next: (s) => {
         this.summary = s;
         this.loading = false;
         this.cdr.markForCheck();
       },
-      error: () => {
+      error: (err) => {
+        this.error = err?.error?.message || 'Failed to load dashboard summary';
         this.loading = false;
         this.cdr.markForCheck();
       },
     });
-    this.aiService.recommendations().subscribe({
+    this.dashboardService.getRecommendations().subscribe({
       next: (recs) => {
         this.recommendations = recs;
         this.cdr.markForCheck();
       },
+      error: () => {},
     });
   }
 
@@ -110,7 +115,7 @@ export class DashboardComponent implements OnInit {
     this.insightsLoading = true;
     this.insightsError = '';
     this.cdr.markForCheck();
-    this.aiService.insights().subscribe({
+    this.dashboardService.getInsights().subscribe({
       next: (res) => {
         this.insights = res.insights;
         this.insightsLoading = false;
@@ -129,6 +134,7 @@ export class DashboardComponent implements OnInit {
 
   private loadPlatformDashboard(): void {
     this.loading = true;
+    this.error = '';
     this.cdr.markForCheck();
     this.dashboardService.getPlatformSummary().subscribe({
       next: (s) => {
@@ -136,7 +142,8 @@ export class DashboardComponent implements OnInit {
         this.loading = false;
         this.cdr.markForCheck();
       },
-      error: () => {
+      error: (err) => {
+        this.error = err?.error?.message || 'Failed to load platform summary';
         this.loading = false;
         this.cdr.markForCheck();
       },
@@ -170,6 +177,7 @@ export class DashboardComponent implements OnInit {
 
   private loadClientDashboard(): void {
     this.loading = true;
+    this.error = '';
     this.cdr.markForCheck();
     this.dashboardService.getClientSummary().subscribe({
       next: (s) => {
@@ -177,7 +185,8 @@ export class DashboardComponent implements OnInit {
         this.loading = false;
         this.cdr.markForCheck();
       },
-      error: () => {
+      error: (err) => {
+        this.error = err?.error?.message || 'Failed to load client summary';
         this.loading = false;
         this.cdr.markForCheck();
       },
@@ -202,5 +211,42 @@ export class DashboardComponent implements OnInit {
       currency: 'USD',
       maximumFractionDigits: 0,
     }).format(n);
+  }
+
+  setRange(range: 'day' | 'week' | 'month' | 'year'): void {
+    this.selectedRange = range;
+    if (this.isCompanyRole) {
+      this.loadCompanyDashboard();
+    }
+  }
+
+  private getDateRange(): { from: string; to: string } | undefined {
+    const now = new Date();
+    const to = now.toISOString().split('T')[0];
+    let from: string;
+    switch (this.selectedRange) {
+      case 'day':
+        from = to;
+        break;
+      case 'week': {
+        const d = new Date(now);
+        d.setDate(d.getDate() - 7);
+        from = d.toISOString().split('T')[0];
+        break;
+      }
+      case 'month': {
+        const d = new Date(now);
+        d.setMonth(d.getMonth() - 1);
+        from = d.toISOString().split('T')[0];
+        break;
+      }
+      case 'year': {
+        const d = new Date(now);
+        d.setFullYear(d.getFullYear() - 1);
+        from = d.toISOString().split('T')[0];
+        break;
+      }
+    }
+    return { from: from!, to };
   }
 }

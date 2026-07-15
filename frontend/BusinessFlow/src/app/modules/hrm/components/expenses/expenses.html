@@ -65,9 +65,6 @@
               <button class="btn btn-outline-success btn-sm me-1" (click)="approveTarget = e">Approve</button>
               <button class="btn btn-outline-danger btn-sm me-1" (click)="rejectTarget = e; rejectionReason = ''">Reject</button>
               }
-              @if (view === 'all' && e.status === 'APPROVED') {
-              <button class="btn btn-outline-primary btn-sm me-1" (click)="reimburseTarget = e">Reimburse</button>
-              }
               @if (view === 'my' && e.status === 'PENDING') {
               <button class="btn btn-outline-danger btn-sm" (click)="deleteTarget = e"><i class="bi bi-trash"></i></button>
               }
@@ -106,6 +103,5 @@
   }
 
   <app-confirm-dialog [visible]="!!approveTarget" title="Approve Expense" message="Approve this expense?" (confirmed)="doApprove()" (cancelled)="approveTarget = null" />
-  <app-confirm-dialog [visible]="!!reimburseTarget" title="Reimburse Expense" message="Mark this expense as reimbursed?" (confirmed)="doReimburse()" (cancelled)="reimburseTarget = null" />
   <app-confirm-dialog [visible]="!!deleteTarget" title="Delete Expense" message="Delete this expense?" (confirmed)="doDelete()" (cancelled)="deleteTarget = null" />
 </div>

@@ -39,7 +39,16 @@ export class Login {
     this.error = '';
     this.cdr.markForCheck();
     this.authService.login(this.form.getRawValue() as any).subscribe({
-      next: () => this.router.navigate(['/']),
+      next: () => {
+        const user = this.authService.getCurrentUser();
+        if (user?.roles.includes('CLIENT')) {
+          this.router.navigate(['/client/dashboard']);
+        } else if (user?.roles.includes('COMPANY_OWNER')) {
+          this.router.navigate(['/website-view']);
+        } else {
+          this.router.navigate(['/']);
+        }
+      },
       error: (err) => {
         if (err?.error?.message) {
           this.error = err.error.message;

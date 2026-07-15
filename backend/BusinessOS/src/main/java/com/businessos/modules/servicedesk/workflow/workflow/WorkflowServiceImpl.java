@@ -115,7 +115,8 @@ public class WorkflowServiceImpl implements WorkflowService {
             boolean hasActiveStages = template.getStages().stream()
                     .anyMatch(s -> !s.isDeleted());
             if (hasActiveStages) {
-                
+                throw new BadRequestException(
+                    "Cannot deactivate a workflow template that still has stages. Remove all stages first.");
             }
         }
 

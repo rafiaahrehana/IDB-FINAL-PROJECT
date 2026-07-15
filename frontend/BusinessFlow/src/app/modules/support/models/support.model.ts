@@ -20,6 +20,11 @@ export interface SupportTicket {
   escalationLevel: number;
   createdByName?: string;
   createdAt: string;
+  firstResponseTime?: string;
+  resolutionTime?: string;
+  satisfactionFeedback?: string;
+  escalatedDate?: string;
+  updatedAt?: string;
 }
 
 export interface SupportAgent {
@@ -37,6 +42,10 @@ export interface SupportAgent {
   maxConcurrentTickets: number;
   notes?: string;
   createdAt: string;
+  userName?: string;
+  avgResolutionTimeMinutes?: number;
+  lastActiveTime?: string;
+  updatedAt?: string;
 }
 
 export interface SLAPolicy {
@@ -120,8 +129,27 @@ export interface SupportMessage {
 export interface SupportMessageRequest {
   ticketId: number;
   message: string;
+  sentByUserId?: number;
+  messageType?: string;
   isInternal?: boolean;
   attachmentUrl?: string;
   attachmentFileName?: string;
   isResolution?: boolean;
+}
+
+export interface SupportCategory {
+  id: number;
+  categoryName: string;
+  description?: string;
+  active: boolean;
+  icon?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface SupportCategoryRequest {
+  categoryName: string;
+  description?: string;
+  active?: boolean;
+  icon?: string;
 }

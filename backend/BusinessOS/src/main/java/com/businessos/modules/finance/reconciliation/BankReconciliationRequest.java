@@ -20,7 +20,7 @@ public class BankReconciliationRequest {
     @NotNull
     private BigDecimal bankStatementBalance;
 
-    private BigDecimal outstandingDeposits;
-    
-    private BigDecimal outstandingChecks;
+    private String outstandingDeposits;
+
+    private String outstandingChecks;
 }

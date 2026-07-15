@@ -12,7 +12,7 @@ import java.util.List;
 
 public interface AiUsageLogRepository extends JpaRepository<AiUsageLog, Long> {
 
-    @Query("SELECT COUNT(l) FROM AiUsageLog l WHERE l.company.id = :companyId AND l.logDate = :date")
+    @Query("SELECT COUNT(l) FROM AiUsageLog l WHERE ((:companyId IS NULL AND l.company IS NULL) OR (l.company.id = :companyId)) AND l.logDate = :date")
     long countByCompanyAndDate(@Param("companyId") Long companyId, @Param("date") LocalDate date);
 
     @Query("SELECT COUNT(l) FROM AiUsageLog l WHERE l.user.id = :userId AND l.logDate = :date")
@@ -21,7 +21,7 @@ public interface AiUsageLogRepository extends JpaRepository<AiUsageLog, Long> {
     @Query("""
         SELECT l.aiFeature, COUNT(l), SUM(l.inputTokens + l.outputTokens)
         FROM AiUsageLog l
-        WHERE l.company.id = :companyId AND l.logDate BETWEEN :from AND :to
+        WHERE ((:companyId IS NULL AND l.company IS NULL) OR (l.company.id = :companyId)) AND l.logDate BETWEEN :from AND :to
         GROUP BY l.aiFeature
         ORDER BY COUNT(l) DESC
         """)
@@ -33,14 +33,14 @@ public interface AiUsageLogRepository extends JpaRepository<AiUsageLog, Long> {
     @Query("""
         SELECT COALESCE(SUM(l.inputTokens + l.outputTokens), 0)
         FROM AiUsageLog l
-        WHERE l.company.id = :companyId AND l.logDate BETWEEN :from AND :to
+        WHERE ((:companyId IS NULL AND l.company IS NULL) OR (l.company.id = :companyId)) AND l.logDate BETWEEN :from AND :to
         """)
     Long totalTokensForPeriod(
         @Param("companyId") Long companyId,
         @Param("from") LocalDate from,
         @Param("to") LocalDate to);
 
-    @Query("SELECT COALESCE(AVG(l.executionTimeMs), 0) FROM AiUsageLog l WHERE l.company.id = :companyId AND l.logDate = :date")
+    @Query("SELECT COALESCE(AVG(l.executionTimeMs), 0) FROM AiUsageLog l WHERE ((:companyId IS NULL AND l.company IS NULL) OR (l.company.id = :companyId)) AND l.logDate = :date")
     Double avgResponseTimeMs(@Param("companyId") Long companyId, @Param("date") LocalDate date);
 
     Page<AiUsageLog> findByCompanyIdOrderByCreatedAtDesc(Long companyId, Pageable pageable);

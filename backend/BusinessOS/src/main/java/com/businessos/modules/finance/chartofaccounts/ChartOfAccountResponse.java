@@ -1,5 +1,6 @@
 package com.businessos.modules.finance.chartofaccounts;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -18,6 +19,10 @@ public class ChartOfAccountResponse {
     private String accountName;
     private AccountType type;
     private BigDecimal balance;
+    // Jackson strips the "is" prefix from Lombok's isHeaderAccount() getter by default
+    // (JSON key would be "headerAccount"), which wouldn't match the frontend's
+    // isHeaderAccount field - force the full name explicitly.
+    @JsonProperty("isHeaderAccount")
     private boolean isHeaderAccount;
     private boolean allowDirectPosting;
     private boolean active;

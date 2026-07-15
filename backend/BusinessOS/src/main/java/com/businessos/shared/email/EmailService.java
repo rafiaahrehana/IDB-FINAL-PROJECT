@@ -16,6 +16,10 @@ public interface EmailService {
 
     void sendSubscriptionSuspendedEmail(String to, String name, String companyName);
 
+    void sendLicenseExpiryReminder(String to, String name, String softwareName, java.time.LocalDate expiryDate, long daysLeft);
+
+    void sendLicenseExpiredEmail(String to, String name, String softwareName, java.time.LocalDate expiryDate, int seatsUsed);
+
     void sendEmployeeWelcomeEmail(String to, String name, EmailBranding.Data branding);
 
     void sendOfferLetterEmail(String to, String name, EmailBranding.Data branding);

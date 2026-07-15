@@ -10,9 +10,11 @@
           <option value="PROFIT_LOSS">Profit &amp; Loss</option>
           <option value="BALANCE_SHEET">Balance Sheet</option>
           <option value="TRIAL_BALANCE">Trial Balance</option>
+          <option value="AGEING">AR Ageing</option>
+          <option value="CASH_FLOW">Cash Flow</option>
         </select>
       </div>
-      @if (reportType === 'PROFIT_LOSS') {
+      @if (usesDateRange()) {
       <div class="col-md-3">
         <label class="form-label small mb-0">Start Date</label>
         <input type="date" class="form-control form-control-sm" [(ngModel)]="startDate" />
@@ -22,7 +24,7 @@
         <input type="date" class="form-control form-control-sm" [(ngModel)]="endDate" />
       </div>
       }
-      @if (reportType !== 'PROFIT_LOSS') {
+      @if (!usesDateRange()) {
       <div class="col-md-3">
         <label class="form-label small mb-0">As Of Date</label>
         <input type="date" class="form-control form-control-sm" [(ngModel)]="asOfDate" />
@@ -37,12 +39,20 @@
   @if (loading) { <div class="text-center py-5"><div class="spinner-border text-primary"></div></div> }
 
   @if (profitLoss) {
-  <div class="row g-3">
+  <div class="row g-3 mb-3">
     <div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body py-2"><div class="text-muted small">Period</div><div class="fw-bold">{{ profitLoss.periodStart }} → {{ profitLoss.periodEnd }}</div></div></div></div>
     <div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body py-2"><div class="text-muted small">Total Revenue</div><div class="fw-bold">{{ profitLoss.totalRevenue | currency }}</div></div></div></div>
     <div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body py-2"><div class="text-muted small">Total Expense</div><div class="fw-bold">{{ profitLoss.totalExpense | currency }}</div></div></div></div>
-    <div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body py-2"><div class="text-muted small">Net Profit</div><div class="fw-bold">{{ profitLoss.netProfit | currency }}</div></div></div></div>
+    <div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body py-2"><div class="text-muted small">Net Profit</div><div class="fw-bold" [class]="netProfitClass">{{ profitLoss.netProfit | currency }}</div></div></div></div>
   </div>
+  @if (plChartData) {
+  <div class="card mb-3"><div class="card-body">
+    <div class="small text-muted fw-semibold mb-2">Revenue vs Expense</div>
+    <div style="height: 280px;">
+      <canvas baseChart [type]="'bar'" [data]="plChartData" [options]="plChartOptions"></canvas>
+    </div>
+  </div></div>
+  }
   }
 
   @if (balanceSheet) {
@@ -55,6 +65,14 @@
   }
 
   @if (trialBalance) {
+  @if (tbChartData) {
+  <div class="card mb-3"><div class="card-body">
+    <div class="small text-muted fw-semibold mb-2">Debit vs Credit by Account</div>
+    <div style="height: 300px;">
+      <canvas baseChart [type]="'bar'" [data]="tbChartData" [options]="tbChartOptions"></canvas>
+    </div>
+  </div></div>
+  }
   <div class="card">
     <div class="card-header py-2 fw-semibold">Trial Balance — {{ trialBalance.asOfDate }}</div>
     <div class="table-responsive">
@@ -78,5 +96,82 @@
   </div>
   }
 
-  @if (!loading && !profitLoss && !balanceSheet && !trialBalance) { <div class="text-muted">Select a report type and dates, then click Generate.</div> }
+  @if (ageing) {
+  <div class="row g-3 mb-3">
+    <div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body py-2"><div class="text-muted small">As Of</div><div class="fw-bold">{{ ageing.asOfDate }}</div></div></div></div>
+    <div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body py-2"><div class="text-muted small">Total Outstanding</div><div class="fw-bold">{{ ageing.totalOutstanding | currency }}</div></div></div></div>
+    <div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body py-2"><div class="text-muted small">Current</div><div class="fw-bold">{{ ageing.current | currency }}</div></div></div></div>
+    <div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body py-2"><div class="text-muted small">90+ Days Overdue</div><div class="fw-bold text-danger">{{ ageing.over90 | currency }}</div></div></div></div>
+  </div>
+  @if (ageingChartData) {
+  <div class="card mb-3"><div class="card-body">
+    <div class="small text-muted fw-semibold mb-2">Outstanding by Age</div>
+    <div style="height: 280px;">
+      <canvas baseChart [type]="'bar'" [data]="ageingChartData" [options]="ageingChartOptions"></canvas>
+    </div>
+  </div></div>
+  }
+  <div class="card">
+    <div class="card-header py-2 fw-semibold">Outstanding Invoices — {{ ageing.asOfDate }}</div>
+    @if (ageing.lines.length) {
+    <div class="table-responsive">
+      <table class="table table-hover table-sm align-middle mb-0">
+        <thead class="table-light"><tr><th>Invoice</th><th>Client</th><th>Due Date</th><th>Bucket</th><th class="text-end">Balance</th></tr></thead>
+        <tbody>
+          @for (l of ageing.lines; track l.invoiceId) {
+          <tr>
+            <td>{{ l.invoiceNumber }}</td>
+            <td>{{ l.clientName || '-' }}</td>
+            <td class="small">{{ l.dueDate | date:'mediumDate' }}</td>
+            <td><span class="badge" [class.text-bg-light]="l.bucket === 'CURRENT'" [class.text-bg-warning]="l.bucket === '1-30'" [class.text-bg-danger]="l.bucket !== 'CURRENT' && l.bucket !== '1-30'">{{ l.bucket }}</span></td>
+            <td class="text-end">{{ l.balanceAmount | currency }}</td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    } @else {
+    <div class="card-body text-muted small">No outstanding invoices.</div>
+    }
+  </div>
+  }
+
+  @if (cashFlow) {
+  <div class="row g-3 mb-3">
+    <div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body py-2"><div class="text-muted small">Period</div><div class="fw-bold">{{ cashFlow.periodStart }} → {{ cashFlow.periodEnd }}</div></div></div></div>
+    <div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body py-2"><div class="text-muted small">Opening Balance</div><div class="fw-bold">{{ cashFlow.openingBalance | currency }}</div></div></div></div>
+    <div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body py-2"><div class="text-muted small">Net Change</div><div class="fw-bold" [class]="netChangeClass">{{ cashFlow.netChange | currency }}</div></div></div></div>
+    <div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body py-2"><div class="text-muted small">Closing Balance</div><div class="fw-bold">{{ cashFlow.closingBalance | currency }}</div></div></div></div>
+  </div>
+  @if (cashFlowChartData) {
+  <div class="card mb-3"><div class="card-body">
+    <div class="small text-muted fw-semibold mb-2">Cash In vs Out by Source</div>
+    <div style="height: 280px;">
+      <canvas baseChart [type]="'bar'" [data]="cashFlowChartData" [options]="cashFlowChartOptions"></canvas>
+    </div>
+  </div></div>
+  }
+  <div class="card">
+    <div class="card-header py-2 fw-semibold">Cash Flow by Category</div>
+    <div class="table-responsive">
+      <table class="table table-hover table-sm align-middle mb-0">
+        <thead class="table-light"><tr><th>Category</th><th class="text-end">Inflow</th><th class="text-end">Outflow</th></tr></thead>
+        <tbody>
+          @for (l of cashFlow.lines; track l.category) {
+          <tr>
+            <td>{{ l.category }}</td>
+            <td class="text-end text-success">{{ l.inflow | currency }}</td>
+            <td class="text-end text-danger">{{ l.outflow | currency }}</td>
+          </tr>
+          }
+        </tbody>
+        <tfoot>
+          <tr class="fw-bold"><td>Total</td><td class="text-end">{{ cashFlow.totalInflows | currency }}</td><td class="text-end">{{ cashFlow.totalOutflows | currency }}</td></tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+  }
+
+  @if (!loading && !profitLoss && !balanceSheet && !trialBalance && !ageing && !cashFlow) { <div class="text-muted">Select a report type and dates, then click Generate.</div> }
 </div>

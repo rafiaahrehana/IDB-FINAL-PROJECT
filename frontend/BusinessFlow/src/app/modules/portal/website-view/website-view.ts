@@ -1,6 +1,7 @@
 import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { PortalService } from '../portal.service';
 import { Loader } from '../../../shared/components/loader/loader';
 
@@ -16,12 +17,13 @@ export class WebsiteView implements OnInit {
   loading = false;
   error = '';
 
-  get portalUrl(): string {
-    return `/portal/${this.subdomain}`;
+  get safePortalUrl(): SafeResourceUrl {
+    return this.sanitizer.bypassSecurityTrustResourceUrl(`/portal/${this.subdomain}`);
   }
 
   constructor(
     private portalService: PortalService,
+    private sanitizer: DomSanitizer,
     private cdr: ChangeDetectorRef,
   ) {}
 

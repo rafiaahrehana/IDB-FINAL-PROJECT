@@ -50,7 +50,7 @@ export class PlatformSidebar {
         { label: 'Platform Users', link: '/platform/platform-users', icon: 'bi-person-vcard' },
         { label: 'Custom Roles', link: '/platform/custom-roles', icon: 'bi-shield' },
         { label: 'Feature Flags', link: '/platform/feature-flags', icon: 'bi-flag' },
-        { label: 'Locations Master', link: '/platform/locations', icon: 'bi-geo-alt' },
+        { label: 'AI Settings', link: '/ai/settings', icon: 'bi-robot' },
       ]
     },
     {

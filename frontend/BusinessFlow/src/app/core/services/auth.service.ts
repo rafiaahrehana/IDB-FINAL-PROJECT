@@ -107,7 +107,7 @@ export class AuthService {
     localStorage.setItem(this.IMPERSONATION_KEY, JSON.stringify(session));
     this.impersonationSubject.next(session);
 
-    this.router.navigate(['/']);
+    this.router.navigate(['/website-view']);
   }
 
   /**
@@ -244,6 +244,21 @@ export class AuthService {
    */
   logout(): void {
     const refreshToken = this.getRefreshToken();
+    this.clearSession();
+    this.router.navigate(['/auth/login']);
+
+    if (refreshToken) {
+      // Best-effort server-side revoke; ignore errors since we've already logged out locally.
+      this.http.post(`${this.API_URL}/logout`, { refreshToken }, { responseType: 'text' }).subscribe({ error: () => {} });
+    }
+  }
+
+  /**
+   * Clear all local session state without navigating. Used by logout() and by callers
+   * (e.g. AuthGuard) that discover the refresh token was rejected by the server and need
+   * to purge it so it isn't retried on every subsequent navigation.
+   */
+  clearSession(): void {
     this.clearTokens();
     this.clearUserStorage();
     localStorage.removeItem(this.ADMIN_TOKEN_KEY);
@@ -252,18 +267,17 @@ export class AuthService {
     this.impersonationSubject.next(null);
     this.currentUserSubject.next(null);
     this.isAuthenticatedSubject.next(false);
-    this.router.navigate(['/auth/login']);
-
-    if (refreshToken) {
-      // Best-effort server-side revoke; ignore errors since we've already logged out locally.
-      this.http.post(`${this.API_URL}/logout`, { refreshToken }, { responseType: 'text' }).subscribe({ error: () => {} });
-    }
   }
  
   /**
    * Refresh access token.
    * IMPORTANT: /auth/refresh only returns { accessToken, refreshToken } - no user info -
    * so we must only update the stored tokens and keep the existing user object as-is.
+   *
+   * Deliberately does NOT log out here on failure - a failed refresh can mean the
+   * refresh token is genuinely invalid, but it can just as easily mean the backend
+   * was briefly unreachable (e.g. a dev restart). The caller (AuthInterceptor) decides
+   * whether the failure warrants a logout based on the error's status code.
    */
   refreshToken(): Observable<JwtResponse> {
     const refreshToken = this.getRefreshToken();
@@ -273,10 +287,6 @@ export class AuthService {
       tap(response => {
         this.setTokens(response.accessToken, response.refreshToken);
         this.isAuthenticatedSubject.next(true);
-      }),
-      catchError(error => {
-        this.logout();
-        return throwError(() => error);
       })
     );
   }

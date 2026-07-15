@@ -21,28 +21,28 @@ public class ChartOfAccountController {
     private final ChartOfAccountService service;
 
     @PostMapping
-    @PreAuthorize("hasRole('FINANCE_MANAGER') or hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     @Operation(summary = "Create Chart of Account")
     public ResponseEntity<ChartOfAccountResponse> create(@Valid @RequestBody ChartOfAccountRequest request) {
         return new ResponseEntity<>(service.create(request), HttpStatus.CREATED);
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('FINANCE_MANAGER') or hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     @Operation(summary = "Get Chart of Account by ID")
     public ResponseEntity<ChartOfAccountResponse> getById(@PathVariable Long id) {
         return ResponseEntity.ok(service.getById(id));
     }
 
     @GetMapping("/code/{code}")
-    @PreAuthorize("hasRole('FINANCE_MANAGER') or hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     @Operation(summary = "Get Chart of Account by Code")
     public ResponseEntity<ChartOfAccountResponse> getByCode(@PathVariable String code) {
         return ResponseEntity.ok(service.getByCode(code));
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('FINANCE_MANAGER') or hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     @Operation(summary = "Get all Chart of Accounts")
     public ResponseEntity<Page<ChartOfAccountResponse>> getAll(
             @RequestParam(defaultValue = "0") int page,
@@ -52,7 +52,7 @@ public class ChartOfAccountController {
     }
 
     @GetMapping("/type/{type}")
-    @PreAuthorize("hasRole('FINANCE_MANAGER') or hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     @Operation(summary = "Get Chart of Accounts by Type")
     public ResponseEntity<Page<ChartOfAccountResponse>> getByType(
             @PathVariable AccountType type,
@@ -62,7 +62,7 @@ public class ChartOfAccountController {
     }
 
     @PatchMapping("/{id}")
-    @PreAuthorize("hasRole('FINANCE_MANAGER') or hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     @Operation(summary = "Update Chart of Account")
     public ResponseEntity<ChartOfAccountResponse> update(
             @PathVariable Long id,
@@ -71,7 +71,7 @@ public class ChartOfAccountController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasRole('COMPANY_OWNER')")
     @Operation(summary = "Delete Chart of Account")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         service.delete(id);

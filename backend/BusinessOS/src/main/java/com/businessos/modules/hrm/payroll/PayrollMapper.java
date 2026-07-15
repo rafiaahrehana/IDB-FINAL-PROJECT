@@ -17,12 +17,17 @@ public class PayrollMapper {
         r.setHouseRent(p.getHouseRent());
         r.setMedicalAllowance(p.getMedicalAllowance());
         r.setTransportAllowance(p.getTransportAllowance());
+        r.setFoodAllowance(p.getFoodAllowance());
+        r.setSpecialAllowance(p.getSpecialAllowance());
         r.setBonus(p.getBonus());
         r.setDeductions(p.getDeductions());
         r.setTaxDeduction(p.getTaxDeduction());
+        r.setInsuranceDeduction(p.getInsuranceDeduction());
+        r.setProvidentFundDeduction(p.getProvidentFundDeduction());
         r.setNetSalary(p.getNetSalary());
         r.setStatus(p.getStatus());
         r.setPaymentReference(p.getPaymentReference());
+        r.setPaymentMethod(p.getPaymentMethod());
         r.setPaidAt(p.getPaidAt());
         r.setNotes(p.getNotes());
         r.setEmployeeId(emp != null ? emp.getId() : null);

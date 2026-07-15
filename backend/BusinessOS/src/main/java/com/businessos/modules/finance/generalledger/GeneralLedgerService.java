@@ -9,7 +9,7 @@ import java.util.List;
 public interface GeneralLedgerService {
 
     void recordTransaction(Long accountId, BigDecimal debitAmount, BigDecimal creditAmount,
-                           String description, String referenceType, Long referenceId,
+                           String description, GlReferenceType referenceType, Long referenceId,
                            String referenceNumber);
 
     GeneralLedgerResponse getById(Long id);
@@ -20,7 +20,7 @@ public interface GeneralLedgerService {
 
     Page<GeneralLedgerResponse> getByDateRange(LocalDate start, LocalDate end, Pageable pageable);
 
-    List<GeneralLedgerResponse> getByReference(String referenceType, Long referenceId);
+    List<GeneralLedgerResponse> getByReference(GlReferenceType referenceType, Long referenceId);
 
     void reconcile(Long id, String notes);
 

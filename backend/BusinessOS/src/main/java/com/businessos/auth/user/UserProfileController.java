@@ -1,8 +1,8 @@
 package com.businessos.auth.user;
 
-import com.businessos.shared.address.Location;
-import com.businessos.shared.address.LocationMapper;
-import com.businessos.shared.address.LocationRequest;
+import com.businessos.shared.address.Address;
+import com.businessos.shared.address.AddressMapper;
+import com.businessos.shared.address.AddressRequest;
 import com.businessos.security.SecurityUtil;
 import com.businessos.shared.exception.ResourceNotFoundException;
 import com.businessos.shared.exception.UnauthorizedException;
@@ -19,7 +19,7 @@ public class UserProfileController {
 
     private final SecurityUtil securityUtil;
     private final UserRepository userRepository;
-    private final LocationMapper locationMapper;
+    private final AddressMapper addressMapper;
 
     @GetMapping("/profile")
     @Transactional(readOnly = true)
@@ -62,14 +62,14 @@ public class UserProfileController {
             user.setLanguagePreference(request.getLanguagePreference().trim());
         }
 
-        // Handle Location update
+        // Handle Address update
         if (request.getLocation() != null) {
-            LocationRequest locReq = request.getLocation();
+            AddressRequest locReq = request.getLocation();
             if (user.getLocation() == null) {
-                Location newLoc = locationMapper.toEntity(locReq);
+                Address newLoc = addressMapper.toEntity(locReq);
                 user.setLocation(newLoc);
             } else {
-                locationMapper.updateEntityFromRequest(user.getLocation(), locReq);
+                addressMapper.updateEntityFromRequest(user.getLocation(), locReq);
             }
         }
 
@@ -87,7 +87,7 @@ public class UserProfileController {
                 .image(user.getImage())
                 .role(user.getRole())
                 .languagePreference(user.getLanguagePreference())
-                .location(locationMapper.toResponse(user.getLocation()))
+                .location(addressMapper.toResponse(user.getLocation()))
                 .build();
     }
 }

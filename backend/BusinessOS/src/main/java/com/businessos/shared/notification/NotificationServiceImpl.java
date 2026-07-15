@@ -7,6 +7,7 @@ import com.businessos.shared.exception.ResourceNotFoundException;
 import com.businessos.auth.user.UserRepository;
 import com.businessos.security.SecurityUtil;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -18,16 +19,16 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 
 /**
- * Notification dispatch servicereview.
+ * Notification dispatch service.
  *
  * Persistence-first model:
  *   1. Persist the Notification to the DB — guarantees delivery even
  *      if the WebSocket connection is not active.
- *   2. Push via WebSocket to /platformuser/{userId}/queue/notifications.
+ *   2. Push via WebSocket to /user/{userId}/queue/notifications.
  *   3. On WebSocket reconnect, Angular polls GET /api/notifications?unreadOnly=true
  *      to catch any notifications missed during disconnection.
  *
- * All send() calls are @Async — they never block the calling servicereview thread.
+ * All send() calls are @Async — they never block the calling thread.
  *
  * Deduplication: sendForServiceRequest() checks for an existing notification
  * of the same type + requestId + recipient before persisting, preventing
@@ -35,7 +36,7 @@ import java.time.LocalDateTime;
  */
 @Service
 @RequiredArgsConstructor
-
+@Slf4j
 public class NotificationServiceImpl implements NotificationService {
 
     private final NotificationRepository  notificationRepository;
@@ -63,10 +64,15 @@ public class NotificationServiceImpl implements NotificationService {
         if (request.getServiceRequestId() != null
                 && notificationRepository.existsByRecipientIdAndServiceRequestIdAndType(
                     request.getRecipientId(), request.getServiceRequestId(), request.getType())) {
-            
             return;
         }
-        send(request);
+        User recipient = userRepository.findById(request.getRecipientId())
+            .orElseThrow(() -> new ResourceNotFoundException(
+                "Recipient not found: " + request.getRecipientId()));
+
+        Notification notification = buildNotification(request, recipient);
+        notificationRepository.save(notification);
+        pushWebSocket(notification, recipient.getId());
     }
 
     @Override
@@ -106,8 +112,7 @@ public class NotificationServiceImpl implements NotificationService {
     @Transactional
     public void markAllAsRead() {
         Long userId = securityUtil.getCurrentUser().getId();
-        int count = notificationRepository.markAllReadForUser(userId, LocalDateTime.now());
-        
+        notificationRepository.markAllReadForUser(userId, LocalDateTime.now());
     }
 
     // ── Private helpers ───────────────────────────────────────────
@@ -138,7 +143,7 @@ public class NotificationServiceImpl implements NotificationService {
             );
         } catch (Exception e) {
             // WebSocket push failure is non-critical — client will poll on reconnect
-            
+            log.debug("WebSocket push failed for user {}: {}", userId, e.getMessage());
         }
     }
 }

@@ -206,6 +206,40 @@
       </div>
     </div>
 
+    <div class="col-lg-6">
+      <div class="card h-100">
+        <div class="card-header py-2 fw-semibold">Documents</div>
+        <div class="card-body">
+          <div class="input-group input-group-sm mb-3">
+            <input class="form-control" placeholder="Label (optional)" [(ngModel)]="documentLabel" />
+            <label class="btn btn-outline-primary mb-0" [class.disabled]="uploading">
+              @if (uploading) { <span class="spinner-border spinner-border-sm me-1"></span> }
+              Upload File
+              <input type="file" class="d-none" (change)="onFileSelected($event)" [disabled]="uploading" />
+            </label>
+          </div>
+          @for (doc of documents; track doc.id) {
+          <div class="d-flex justify-content-between align-items-center border-bottom py-2 small">
+            <div>
+              <a [href]="doc.fileUrl" target="_blank" rel="noopener" class="fw-semibold text-decoration-none">
+                <i class="bi bi-paperclip me-1"></i>{{ doc.fileName }}
+              </a>
+              @if (doc.label) { <span class="badge text-bg-light border ms-1">{{ doc.label }}</span> }
+              <div class="text-muted">
+                {{ doc.createdAt | date:'medium' }}
+                @if (doc.uploadedByName) { · {{ doc.uploadedByName }} }
+              </div>
+            </div>
+            <button class="btn btn-outline-danger btn-sm" (click)="deleteDocument(doc)" title="Delete">
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
+          }
+          @if (!documents.length) { <p class="text-muted small mb-0">No documents attached yet.</p> }
+        </div>
+      </div>
+    </div>
+
     @if (isStaff) {
     <div class="col-lg-6">
       <div class="card h-100">

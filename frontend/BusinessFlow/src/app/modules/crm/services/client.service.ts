@@ -17,6 +17,15 @@ export class ClientService {
     return this.api.get<Client>(`${this.endpoint}/${id}`);
   }
 
+  // Self-service (CLIENT role) - resolves the caller's own Client record server-side
+  getMyProfile(): Observable<Client> {
+    return this.api.get<Client>(`${this.endpoint}/me`);
+  }
+
+  updateMyProfile(payload: Partial<Client>): Observable<Client> {
+    return this.api.patch<Client>(`${this.endpoint}/me`, payload);
+  }
+
   // Backend CreateClientRequest also takes email + password to provision the portal user
   create(payload: any): Observable<Client> {
     return this.api.post<Client>(this.endpoint, payload);

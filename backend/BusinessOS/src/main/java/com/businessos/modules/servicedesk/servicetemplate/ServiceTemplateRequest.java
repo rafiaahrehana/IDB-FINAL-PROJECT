@@ -1,5 +1,7 @@
 package com.businessos.modules.servicedesk.servicetemplate;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -7,6 +9,7 @@ import java.util.List;
 
 @Data
 public class ServiceTemplateRequest {
+    @NotBlank(message = "Template name is required")
     private String name;
     private String description;
     private Long categoryId;

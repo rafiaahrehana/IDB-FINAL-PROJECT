@@ -1,27 +1,28 @@
-<section class="py-6 bg-white border-bottom">
-  <div class="container py-5">
+<section class="py-3 testimonials-section position-relative overflow-hidden">
+  
+  <div class="container py-5 position-relative z-1">
     <div class="text-center mb-5">
-      <h2 class="display-6 fw-bold text-dark slide-up">Loved by industry leaders</h2>
+      <h2 class="display-6 fw-bold section-title slide-up">Loved by industry leaders</h2>
     </div>
     
-    <div class="row g-4">
+    <div class="row g-4 justify-content-center">
       <div class="col-md-4 slide-up" *ngFor="let t of testimonials(); let i = index" [style.animation-delay]="(i * 0.1) + 's'">
-        <div class="card h-100 border-0 shadow-sm rounded-4 p-4 p-xl-5 bg-light-subtle hover-card-lift">
-          <div class="d-flex text-warning mb-3 fs-5">
+        <div class="card h-100 testi-card p-4 p-xl-4 bg-white hover-card-lift">
+          <div class="d-flex text-star mb-3 fs-5">
             <i class="bi bi-star-fill"></i>
             <i class="bi bi-star-fill"></i>
             <i class="bi bi-star-fill"></i>
             <i class="bi bi-star-fill"></i>
             <i class="bi bi-star-fill"></i>
           </div>
-          <p class="fs-5 text-dark fw-medium mb-4 flex-grow-1">"{{ t.quote }}"</p>
+          <p class="fs-6 text-dark mb-4 flex-grow-1 lh-base">"{{ t.quote }}"</p>
           <div class="d-flex align-items-center gap-3">
-            <div class="rounded-circle text-white d-flex align-items-center justify-content-center fw-bold" 
-                 [ngClass]="t.color" style="width: 48px; height: 48px;">
+            <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold fs-6" 
+                 [ngClass]="[t.bgColor, t.textColor]" style="width: 44px; height: 44px;">
               {{ t.initials }}
             </div>
             <div>
-              <h6 class="fw-bold mb-0 text-dark">{{ t.author }}</h6>
+              <h6 class="fw-bold mb-0 text-dark fs-6">{{ t.author }}</h6>
               <span class="small text-muted">{{ t.role }}</span>
             </div>
           </div>

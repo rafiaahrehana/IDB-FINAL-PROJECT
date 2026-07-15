@@ -22,6 +22,13 @@ export class LocationService {
     return this.http.get<GeoNodeDto[]>(`${this.apiUrl}/countries`);
   }
 
+  // Country.id and Location.id are independent sequences that can collide - always use
+  // this (not getChildrenMaster) to fetch a country's top-level divisions.
+  getDivisionsForCountry(countryId: number): Observable<GeoNodeDto[]> {
+    return this.http.get<GeoNodeDto[]>(`${this.apiUrl}/countries/${countryId}/divisions`);
+  }
+
+  // Location-to-Location only (division -> district -> ... ). Do not pass a Country.id here.
   getChildrenMaster(parentId: number): Observable<GeoNodeDto[]> {
     return this.http.get<GeoNodeDto[]>(`${this.apiUrl}/children/${parentId}`);
   }

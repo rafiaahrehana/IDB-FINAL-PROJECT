@@ -38,10 +38,12 @@ public class SoftwareLicenseResponse {
     private String licenseUrl;
     private String installationLocation;
     private int estimatedUserCount;
+    private String complianceNotes;
 
     private boolean active;
     private boolean autoRenew;
     private String notes;
+    private String renewalNotes;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

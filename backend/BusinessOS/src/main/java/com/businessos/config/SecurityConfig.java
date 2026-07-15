@@ -39,9 +39,14 @@ public class SecurityConfig {
     private static final String[] PUBLIC_ENDPOINTS = {
         "/api/auth/**",
         "/api/companies/public/**",
+        "/api/clients/public/**",
         "/uploads/**",
         "/api/payments/sslcommerz/callback/**",
-        "/api/payments/sslcommerz/ipn"
+        "/api/payments/sslcommerz/ipn",
+        // Public company portal content (anonymous visitors browsing /portal/:subdomain)
+        "/api/website/**",
+        // Landing-page live-traffic SSE stream (anonymous, unauthenticated /home)
+        "/api/v1/metrics/**"
     };
 
     private static final String[] PUBLIC_GET_ENDPOINTS = {
@@ -57,7 +62,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                     .requestMatchers("/swagger-ui/**",
                             "/v3/api-docs/**",
-                            "/swagger-ui.html", "/**").permitAll()
+                            "/swagger-ui.html").permitAll()
                     .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
                     .requestMatchers(HttpMethod.GET, PUBLIC_GET_ENDPOINTS).permitAll()
                     .anyRequest().authenticated()

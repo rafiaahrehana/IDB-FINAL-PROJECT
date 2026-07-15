@@ -73,7 +73,7 @@
         </div>
       </div>
       }
-      @if (!loading && !tickets.length) { <app-empty-state icon="bi-life-preserver" message="No tickets found." /> }
+      @if (!loading && !tickets.length && !error) { <app-empty-state icon="bi-life-preserver" message="No tickets found." /> }
     </div>
 
     @if (selected) {

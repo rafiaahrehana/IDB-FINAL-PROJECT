@@ -1,13 +1,13 @@
 <div class="container-fluid py-3">
   <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-    <h4 class="mb-0">Accounts</h4>
+    <h4 class="mb-0">Client Management</h4>
     <div class="d-flex gap-2">
       <select class="form-select form-select-sm" style="width: 160px" [(ngModel)]="statusFilter" (change)="page = 0; load()">
         <option value="">All statuses</option>
         @for (s of statuses; track s) { <option [value]="s">{{ s | titlecase }}</option> }
       </select>
       <button class="btn btn-primary btn-sm text-nowrap" (click)="openCreate()">
-        <i class="bi bi-person-plus me-1"></i>Add Account
+        <i class="bi bi-person-plus me-1"></i>Add Client
       </button>
     </div>
   </div>
@@ -58,15 +58,15 @@
   </div>
   }
 
-  @if (!loading && !clients.length) { <app-empty-state icon="bi-building" message="No accounts found." /> }
+  @if (!loading && !clients.length) { <app-empty-state icon="bi-building" message="No clients found." /> }
 
-  <!-- Add Account modal -->
+  <!-- Add Client modal -->
   @if (showCreate) {
   <div class="modal d-block" style="background: rgba(0,0,0,.4)">
     <div class="modal-dialog modal-lg modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header py-2">
-          <h5 class="modal-title fs-6 fw-semibold">Add Account</h5>
+          <h5 class="modal-title fs-6 fw-semibold">Add Client</h5>
           <button class="btn-close" (click)="showCreate = false"></button>
         </div>
         <div class="modal-body">
@@ -114,6 +114,26 @@
                 @for (e of employees; track e.id) { <option [ngValue]="e.id">{{ e.firstName }} {{ e.lastName }}</option> }
               </select>
             </div>
+            <div class="col-md-6">
+              <label class="form-label small text-secondary mb-1">Employee Count</label>
+              <input type="number" class="form-control form-control-sm" [(ngModel)]="createForm.employeeCount" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small text-secondary mb-1">Annual Revenue</label>
+              <input type="number" class="form-control form-control-sm" [(ngModel)]="createForm.annualRevenue" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small text-secondary mb-1">Billing Address</label>
+              <input class="form-control form-control-sm" [(ngModel)]="createForm.billingAddress" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small text-secondary mb-1">Shipping Address</label>
+              <input class="form-control form-control-sm" [(ngModel)]="createForm.shippingAddress" />
+            </div>
+            <div class="col-12">
+              <label class="form-label small text-secondary mb-1">Tags <span class="text-muted">(comma-separated)</span></label>
+              <input class="form-control form-control-sm" [(ngModel)]="createForm.tags" placeholder="vip, enterprise, renewal-risk" />
+            </div>
           </div>
           <div class="form-text small mt-2">The email and password create the client's portal login.</div>
         </div>
@@ -121,7 +141,7 @@
           <button class="btn btn-secondary btn-sm" (click)="showCreate = false">Cancel</button>
           <button class="btn btn-primary btn-sm" (click)="saveCreate()" [disabled]="saving">
             @if (saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
-            Create Account
+            Create Client
           </button>
         </div>
       </div>
@@ -129,13 +149,13 @@
   </div>
   }
 
-  <!-- Edit Account modal -->
+  <!-- Edit Client modal -->
   @if (editing) {
   <div class="modal d-block" style="background: rgba(0,0,0,.4)">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header py-2">
-          <h5 class="modal-title fs-6 fw-semibold">Edit Account</h5>
+          <h5 class="modal-title fs-6 fw-semibold">Edit Client</h5>
           <button class="btn-close" (click)="editing = null"></button>
         </div>
         <div class="modal-body">
@@ -153,6 +173,10 @@
               <input class="form-control form-control-sm" [(ngModel)]="editForm.website" />
             </div>
             <div class="col-md-6">
+              <label class="form-label small text-secondary mb-1">Tax ID</label>
+              <input class="form-control form-control-sm" [(ngModel)]="editForm.taxId" />
+            </div>
+            <div class="col-md-6">
               <label class="form-label small text-secondary mb-1">Status</label>
               <select class="form-select form-select-sm" [(ngModel)]="editForm.status">
                 @for (s of statuses; track s) { <option [value]="s">{{ s | titlecase }}</option> }
@@ -164,6 +188,26 @@
                 <option [ngValue]="null">— None —</option>
                 @for (e of employees; track e.id) { <option [ngValue]="e.id">{{ e.firstName }} {{ e.lastName }}</option> }
               </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small text-secondary mb-1">Employee Count</label>
+              <input type="number" class="form-control form-control-sm" [(ngModel)]="editForm.employeeCount" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small text-secondary mb-1">Annual Revenue</label>
+              <input type="number" class="form-control form-control-sm" [(ngModel)]="editForm.annualRevenue" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small text-secondary mb-1">Billing Address</label>
+              <input class="form-control form-control-sm" [(ngModel)]="editForm.billingAddress" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small text-secondary mb-1">Shipping Address</label>
+              <input class="form-control form-control-sm" [(ngModel)]="editForm.shippingAddress" />
+            </div>
+            <div class="col-12">
+              <label class="form-label small text-secondary mb-1">Tags <span class="text-muted">(comma-separated)</span></label>
+              <input class="form-control form-control-sm" [(ngModel)]="editForm.tags" placeholder="vip, enterprise, renewal-risk" />
             </div>
             <div class="col-12 form-check mt-2 ms-1">
               <input type="checkbox" class="form-check-input" id="portalAccess" [(ngModel)]="editForm.portalAccessEnabled" />
@@ -185,8 +229,8 @@
 
   <app-confirm-dialog
     [visible]="!!deleteTarget"
-    title="Delete Account"
-    [message]="'Delete account ' + (deleteTarget?.clientCompanyName || deleteTarget?.email || '') + '? This cannot be undone.'"
+    title="Delete Client"
+    [message]="'Delete client ' + (deleteTarget?.clientCompanyName || deleteTarget?.email || '') + '? This cannot be undone.'"
     confirmLabel="Delete"
     (confirmed)="confirmDelete()"
     (cancelled)="deleteTarget = null" />

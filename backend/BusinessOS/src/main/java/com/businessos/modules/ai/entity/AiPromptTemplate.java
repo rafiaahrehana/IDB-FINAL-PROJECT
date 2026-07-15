@@ -7,6 +7,8 @@ import com.businessos.core.base.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.Filter;
+import org.hibernate.annotations.FilterDef;
+import org.hibernate.annotations.ParamDef;
 
 @Entity
 @Table(
@@ -16,6 +18,7 @@ import org.hibernate.annotations.Filter;
         @Index(name = "idx_ai_tpl_feature", columnList = "feature, active")
     }
 )
+@FilterDef(name = "tenantFilter", parameters = @ParamDef(name = "companyId", type = Long.class))
 @Filter(name = "tenantFilter", condition = "company_id = :companyId")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class AiPromptTemplate extends BaseEntity {

@@ -5,6 +5,8 @@ import com.businessos.enums.ClientStatus;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
+import java.math.BigDecimal;
+
 @Data
 public class UpdateClientRequest {
 
@@ -23,4 +25,13 @@ public class UpdateClientRequest {
     private ClientStatus status;
     private Long accountManagerId;
     private Boolean portalAccessEnabled;
+
+    private String billingAddress;
+    private String shippingAddress;
+
+    @Size(max = 500, message = "Tags must not exceed 500 characters")
+    private String tags;
+
+    private Integer employeeCount;
+    private BigDecimal annualRevenue;
 }

@@ -33,7 +33,7 @@ export class Expenses implements OnInit {
   payMethod = '';
   payReference = '';
 
-  statuses = ['PENDING', 'APPROVED', 'REJECTED', 'PAID'];
+  statuses = ['PENDING', 'APPROVED', 'REJECTED', 'PAID', 'CANCELLED'];
 
   constructor(private expenseService: ExpenseService, private cdr: ChangeDetectorRef) {}
 

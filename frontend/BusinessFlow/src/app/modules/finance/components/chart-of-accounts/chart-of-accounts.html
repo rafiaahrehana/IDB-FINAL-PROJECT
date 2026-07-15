@@ -23,6 +23,7 @@
         <div class="col-md-4"><input class="form-control form-control-sm" placeholder="Description" [(ngModel)]="form.description" /></div>
         <div class="col-12 d-flex gap-2">
           <div class="form-check form-check-inline"><input class="form-check-input" type="checkbox" id="active" [(ngModel)]="form.active" /><label class="form-check-label small" for="active">Active</label></div>
+          <div class="form-check form-check-inline"><input class="form-check-input" type="checkbox" id="headerAccount" [(ngModel)]="form.isHeaderAccount" /><label class="form-check-label small" for="headerAccount">Header/Grouping account</label></div>
           <button class="btn btn-primary btn-sm" (click)="save()">Save</button>
           <button class="btn btn-secondary btn-sm" (click)="showForm = false">Cancel</button>
         </div>

@@ -59,6 +59,7 @@ export class Clients implements OnInit {
     return {
       firstName: '', lastName: '', email: '', password: '', phone: '',
       clientCompanyName: '', industry: '', website: '', taxId: '', accountManagerId: null,
+      billingAddress: '', shippingAddress: '', tags: '', employeeCount: null, annualRevenue: null,
     };
   }
 
@@ -101,14 +102,14 @@ export class Clients implements OnInit {
     Object.entries(f).forEach(([k, v]) => { if (v !== '' && v !== null) payload[k] = v; });
     this.clientService.create(payload).subscribe({
       next: () => {
-        this.success = 'Account created';
+        this.success = 'Client created';
         this.saving = false;
         this.showCreate = false;
         this.cdr.markForCheck();
         this.load();
       },
       error: (err) => {
-        this.error = err?.error?.message || 'Failed to create account';
+        this.error = err?.error?.message || 'Failed to create client';
         this.saving = false;
         this.cdr.markForCheck();
       },
@@ -121,9 +122,15 @@ export class Clients implements OnInit {
       clientCompanyName: client.clientCompanyName || '',
       industry: client.industry || '',
       website: client.website || '',
+      taxId: client.taxId || '',
       status: client.status,
       accountManagerId: client.accountManagerId ?? null,
       portalAccessEnabled: client.portalAccessEnabled ?? false,
+      billingAddress: client.billingAddress || '',
+      shippingAddress: client.shippingAddress || '',
+      tags: client.tags || '',
+      employeeCount: client.employeeCount ?? null,
+      annualRevenue: client.annualRevenue ?? null,
     };
     this.cdr.markForCheck();
   }
@@ -135,14 +142,14 @@ export class Clients implements OnInit {
     this.cdr.markForCheck();
     this.clientService.update(this.editing.id, this.editForm).subscribe({
       next: () => {
-        this.success = 'Account updated';
+        this.success = 'Client updated';
         this.saving = false;
         this.editing = null;
         this.cdr.markForCheck();
         this.load();
       },
       error: (err) => {
-        this.error = err?.error?.message || 'Failed to update account';
+        this.error = err?.error?.message || 'Failed to update client';
         this.saving = false;
         this.cdr.markForCheck();
       },
@@ -153,13 +160,13 @@ export class Clients implements OnInit {
     if (!this.deleteTarget) return;
     this.clientService.delete(this.deleteTarget.id).subscribe({
       next: () => {
-        this.success = 'Account deleted';
+        this.success = 'Client deleted';
         this.deleteTarget = null;
         this.cdr.markForCheck();
         this.load();
       },
       error: (err) => {
-        this.error = err?.error?.message || 'Failed to delete account';
+        this.error = err?.error?.message || 'Failed to delete client';
         this.deleteTarget = null;
         this.cdr.markForCheck();
       },

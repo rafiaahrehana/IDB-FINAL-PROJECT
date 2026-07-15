@@ -65,8 +65,8 @@ public class Employee extends BaseEntity {
     private String motherName;
     
     @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JoinColumn(name = "location_id")
-    private com.businessos.shared.address.Location location;
+    @JoinColumn(name = "address_id")
+    private com.businessos.shared.address.Address location;
     
     private LocalDate hireDate;
     private LocalDate confirmationDate;

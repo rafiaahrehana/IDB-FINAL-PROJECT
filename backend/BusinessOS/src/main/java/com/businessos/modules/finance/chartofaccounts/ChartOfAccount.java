@@ -54,18 +54,10 @@ public class ChartOfAccount extends BaseEntity {
     private String notes;
 
     public BigDecimal getDebitBalance() {
-        if (type == AccountType.ASSET || type == AccountType.CONTRA_LIABILITY ||
-                type == AccountType.EXPENSE || type == AccountType.CONTRA_REVENUE) {
-            return balance;
-        }
-        return BigDecimal.ZERO;
+        return type.isCreditNormal() ? BigDecimal.ZERO : balance;
     }
 
     public BigDecimal getCreditBalance() {
-        if (type == AccountType.LIABILITY || type == AccountType.CONTRA_ASSET ||
-                type == AccountType.EQUITY || type == AccountType.REVENUE) {
-            return balance;
-        }
-        return BigDecimal.ZERO;
+        return type.isCreditNormal() ? balance : BigDecimal.ZERO;
     }
 }

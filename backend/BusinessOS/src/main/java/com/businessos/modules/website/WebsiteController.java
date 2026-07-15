@@ -47,21 +47,21 @@ public class WebsiteController {
     }
 
     @GetMapping("/blog")
-    public List<BlogPost> blogs(HttpServletRequest request,
+    public List<WebsiteContent> blogs(HttpServletRequest request,
                                 @RequestParam(required = false) String subdomain,
                                 @RequestParam(required = false) String category) {
         return websiteService.getBlogs(companyId(request, subdomain), category);
     }
 
     @GetMapping("/blog/{slug}")
-    public BlogPost blog(HttpServletRequest request,
+    public WebsiteContent blog(HttpServletRequest request,
                         @RequestParam(required = false) String subdomain,
                         @PathVariable String slug) {
         return websiteService.getBlog(companyId(request, subdomain), slug);
     }
 
     @GetMapping("/testimonials")
-    public List<Testimonial> testimonials(HttpServletRequest request,
+    public List<WebsitePerson> testimonials(HttpServletRequest request,
                                          @RequestParam(required = false) String subdomain) {
         return websiteService.getTestimonials(companyId(request, subdomain));
     }
@@ -73,7 +73,7 @@ public class WebsiteController {
     }
 
     @GetMapping("/team")
-    public List<TeamMember> team(HttpServletRequest request,
+    public List<WebsitePerson> team(HttpServletRequest request,
                                  @RequestParam(required = false) String subdomain) {
         return websiteService.getTeam(companyId(request, subdomain));
     }
@@ -97,7 +97,7 @@ public class WebsiteController {
     }
 
     @GetMapping("/pages/{slug}")
-    public CmsPage page(HttpServletRequest request,
+    public WebsiteContent page(HttpServletRequest request,
                         @RequestParam(required = false) String subdomain,
                         @PathVariable String slug) {
         return websiteService.getPage(companyId(request, subdomain), slug);

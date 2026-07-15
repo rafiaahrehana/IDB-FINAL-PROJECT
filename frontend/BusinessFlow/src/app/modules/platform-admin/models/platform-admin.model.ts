@@ -25,7 +25,6 @@ export interface Company {
   companyEmail?: string;
   companyPhone?: string;
   website?: string;
-  address?: string;
   logo?: string;
   primaryColor?: string;
   secondaryColor?: string;
@@ -39,6 +38,9 @@ export interface Company {
   ownerName?: string;
   ownerEmail?: string;
   createdAt: string;
+  location?: string;
+  portalAbout?: string;
+  locationDetail?: import('../../../shared/models/location.model').LocationResponse;
 }
 
 export interface RegisterCompanyRequest {

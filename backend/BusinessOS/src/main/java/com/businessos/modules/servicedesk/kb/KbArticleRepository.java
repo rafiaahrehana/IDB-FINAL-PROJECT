@@ -14,8 +14,11 @@ public interface KbArticleRepository extends JpaRepository<KbArticle, Long> {
         SELECT a FROM KbArticle a
         WHERE (:keyword IS NULL OR LOWER(a.title) LIKE LOWER(CONCAT('%', :keyword, '%'))
                OR LOWER(a.keywords) LIKE LOWER(CONCAT('%', :keyword, '%')))
-        AND (:clientOnly = true AND a.status = com.businessos.modules.servicedesk.kb.KbArticleStatus.PUBLISHED AND a.clientVisible = true
-             OR :clientOnly = false AND (:status IS NULL OR a.status = :status))
+        AND (
+            (:clientOnly = true AND a.status = com.businessos.modules.servicedesk.kb.KbArticleStatus.PUBLISHED AND a.clientVisible = true)
+            OR
+            (:clientOnly = false AND (:status IS NULL OR a.status = :status))
+        )
         """)
     Page<KbArticle> search(
         @Param("keyword") String keyword,

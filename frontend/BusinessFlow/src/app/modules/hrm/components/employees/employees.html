@@ -172,18 +172,22 @@
                 <input type="password" class="form-control form-control-sm" name="password" [(ngModel)]="form.password" required minlength="8" placeholder="Min 8 chars"/>
               </div>
               <div class="col-md-6">
-                <label class="form-label">Profile Image URL</label>
-                <input class="form-control form-control-sm" name="profileImageUrl" [(ngModel)]="form.profileImageUrl" maxlength="500" placeholder="https://..."/>
+                <label class="form-label">Profile Picture</label>
+                <div class="d-flex align-items-center gap-2">
+                  @if (form.profileImageUrl) {
+                    <img [src]="form.profileImageUrl" alt="Profile picture" class="rounded-circle" style="width:36px;height:36px;object-fit:cover" />
+                  }
+                  <div class="flex-grow-1">
+                    <app-file-upload label="Upload from computer" accept="image/*" variant="avatar" [maxSizeMB]="5" (uploaded)="onAvatarUploaded($event)" />
+                  </div>
+                </div>
               </div>
             </div>
 
             <!-- ── Section: Job Info ──────────────────────────── -->
+            <!-- Employee No. is auto-generated server-side (EMP-0001, ...) - not entered here. -->
             <div class="section-label mt-4">Job Information</div>
             <div class="row g-3">
-              <div class="col-md-4">
-                <label class="form-label">Employee No.</label>
-                <input class="form-control form-control-sm" name="employeeNumber" [(ngModel)]="form.employeeNumber" maxlength="30" placeholder="EMP-001"/>
-              </div>
               <div class="col-md-4">
                 <label class="form-label">Job Title</label>
                 <input class="form-control form-control-sm" name="jobTitle" [(ngModel)]="form.jobTitle" maxlength="100" placeholder="Senior Engineer"/>
@@ -226,10 +230,24 @@
                 </select>
               </div>
               <div class="col-md-4">
+                <label class="form-label">Custom Role <span class="text-muted">(permissions)</span></label>
+                <select class="form-select form-select-sm" name="assignRoleId" [(ngModel)]="assignRoleId">
+                  <option [ngValue]="null">- None -</option>
+                  @for (r of customRoles; track r.id) { <option [ngValue]="r.id">{{ r.name }}</option> }
+                </select>
+              </div>
+              <div class="col-md-4">
                 <label class="form-label">Reporting Manager</label>
                 <select class="form-select form-select-sm" name="reportingManagerId" [(ngModel)]="form.reportingManagerId">
                   <option [ngValue]="undefined">- None -</option>
                   @for (e of employees; track e.id) { <option [ngValue]="e.id">{{ e.firstName }} {{ e.lastName }}</option> }
+                </select>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Shift</label>
+                <select class="form-select form-select-sm" name="shiftId" [(ngModel)]="form.shiftId">
+                  <option [ngValue]="undefined">- None -</option>
+                  @for (s of shifts; track s.id) { <option [ngValue]="s.id">{{ s.name }} ({{s.startTime}} - {{s.endTime}})</option> }
                 </select>
               </div>
             </div>

@@ -84,6 +84,11 @@ public class WebsiteSettings extends BaseEntity {
     @Builder.Default
     private List<SocialLink> socialLinks = new ArrayList<>();
 
+    @ElementCollection
+    @CollectionTable(name = "website_settings_stats", joinColumns = @JoinColumn(name = "settings_id"))
+    @Builder.Default
+    private List<Stat> stats = new ArrayList<>();
+
     private String copyright;
 
     // SEO

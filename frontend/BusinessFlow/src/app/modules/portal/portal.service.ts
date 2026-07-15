@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService } from '../../core/services/api.service';
 import { CompanyService as HubService } from '../servicedesk/models/servicedesk.model';
-import { LocationRequest, LocationResponse } from '../../shared/models/location.model';
+import { LocationResponse } from '../../shared/models/location.model';
 
 // Public portal data - mirror of backend CompanyPublicResponse
 export interface CompanyPublic {
@@ -27,20 +27,6 @@ export interface MyCompany extends CompanyPublic {
   locationDetail?: LocationResponse;
 }
 
-// Mirror of backend UpdateCompanyRequest
-export interface UpdateCompanyRequest {
-  companyName?: string;
-  companyPhone?: string;
-  website?: string;
-  location?: string;
-  logo?: string;
-  primaryColor?: string;
-  secondaryColor?: string;
-  tagline?: string;
-  portalAbout?: string;
-  locationDetail?: LocationRequest;
-}
-
 @Injectable({ providedIn: 'root' })
 export class PortalService {
   constructor(private api: ApiService) {}
@@ -54,12 +40,8 @@ export class PortalService {
     return this.api.get<HubService[]>(`/companies/public/${subdomain}/services`);
   }
 
-  // Owner (COMPANY_OWNER) - settings page
+  // Owner (COMPANY_OWNER) - website view / subdomain lookup
   getMyCompany(): Observable<MyCompany> {
     return this.api.get<MyCompany>('/companies/me');
-  }
-
-  updateMyCompany(payload: UpdateCompanyRequest): Observable<MyCompany> {
-    return this.api.patch<MyCompany>('/companies/me', payload);
   }
 }

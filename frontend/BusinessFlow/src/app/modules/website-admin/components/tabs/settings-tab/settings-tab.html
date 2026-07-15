@@ -1,0 +1,285 @@
+@if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
+@if (success) { <div class="alert alert-success py-2">{{ success }}</div> }
+@if (loading) { <app-loader /> }
+
+@if (!loading) {
+<div class="d-flex justify-content-end mb-2">
+  <button class="btn btn-primary btn-sm px-4" [disabled]="saving" (click)="save()">
+    @if (saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
+    Save All Settings
+  </button>
+</div>
+
+<div class="row g-3">
+  <!-- Branding & Theme -->
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header py-2 fw-semibold">Branding &amp; Theme</div>
+      <div class="card-body">
+        <div class="row g-2">
+          <div class="col-md-6">
+            <label class="form-label small text-secondary mb-1">Company Name</label>
+            <input class="form-control form-control-sm" [(ngModel)]="form.companyName" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small text-secondary mb-1">Tagline</label>
+            <input class="form-control form-control-sm" [(ngModel)]="form.tagline" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small text-secondary mb-1">Logo</label>
+            <div class="d-flex align-items-center gap-2">
+              @if (form.logoUrl) { <img [src]="form.logoUrl" class="rounded border" style="height:36px;width:36px;object-fit:cover" /> }
+              <app-file-upload label="Upload logo" accept="image/*,.svg" variant="file" [maxSizeMB]="10" (uploaded)="onLogoUploaded($event)" />
+            </div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small text-secondary mb-1">Favicon</label>
+            <div class="d-flex align-items-center gap-2">
+              @if (form.faviconUrl) { <img [src]="form.faviconUrl" class="rounded border" style="height:24px;width:24px;object-fit:cover" /> }
+              <app-file-upload label="Upload favicon" accept="image/*,.svg" variant="file" [maxSizeMB]="2" (uploaded)="onFaviconUploaded($event)" />
+            </div>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small text-secondary mb-1">Primary Color</label>
+            <input type="color" class="form-control form-control-color form-control-sm w-100" [(ngModel)]="form.primaryColor" />
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small text-secondary mb-1">Secondary Color</label>
+            <input type="color" class="form-control form-control-color form-control-sm w-100" [(ngModel)]="form.secondaryColor" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small text-secondary mb-1">Gradient (CSS)</label>
+            <input class="form-control form-control-sm" [(ngModel)]="form.gradient" placeholder="linear-gradient(135deg, ...)" />
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small text-secondary mb-1">Font</label>
+            <input class="form-control form-control-sm" [(ngModel)]="form.font" placeholder="'Inter', sans-serif" />
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small text-secondary mb-1">Border Radius (px)</label>
+            <input type="number" class="form-control form-control-sm" [(ngModel)]="form.radius" />
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small text-secondary mb-1">Spacing Scale</label>
+            <input type="number" class="form-control form-control-sm" [(ngModel)]="form.spacing" />
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small text-secondary mb-1">Button Style</label>
+            <select class="form-select form-select-sm" [(ngModel)]="form.buttonStyle">
+              <option value="rounded">Rounded</option>
+              <option value="pill">Pill</option>
+              <option value="square">Square</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small text-secondary mb-1">Navbar Style</label>
+            <select class="form-select form-select-sm" [(ngModel)]="form.navbarStyle">
+              <option value="solid">Solid</option>
+              <option value="transparent">Transparent</option>
+              <option value="glass">Glass</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small text-secondary mb-1">Footer Style</label>
+            <select class="form-select form-select-sm" [(ngModel)]="form.footerStyle">
+              <option value="dark">Dark</option>
+              <option value="light">Light</option>
+            </select>
+          </div>
+          <div class="col-md-3 form-check mt-2 ms-1">
+            <input type="checkbox" class="form-check-input" id="darkMode" [(ngModel)]="form.darkMode" />
+            <label class="form-check-label small" for="darkMode">Dark mode</label>
+          </div>
+          <div class="col-md-3 form-check mt-2 ms-1">
+            <input type="checkbox" class="form-check-input" id="animations" [(ngModel)]="form.animations" />
+            <label class="form-check-label small" for="animations">Animations</label>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hero -->
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header py-2 fw-semibold">Hero Section</div>
+      <div class="card-body">
+        <div class="row g-2">
+          <div class="col-md-6">
+            <label class="form-label small text-secondary mb-1">Heading</label>
+            <input class="form-control form-control-sm" [(ngModel)]="form.heroHeading" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small text-secondary mb-1">Subheading</label>
+            <input class="form-control form-control-sm" [(ngModel)]="form.heroSubheading" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small text-secondary mb-1">Main Hero Image</label>
+            <div class="d-flex align-items-center gap-2">
+              @if (form.heroImageUrl) { <img [src]="form.heroImageUrl" class="rounded border" style="height:36px;width:56px;object-fit:cover" /> }
+              <app-file-upload label="Upload image" accept="image/*" variant="avatar" [maxSizeMB]="5" (uploaded)="onHeroImageUploaded($event)" />
+            </div>
+          </div>
+          <div class="col-12">
+            <label class="form-label small text-secondary mb-1">Hero Image Gallery</label>
+            <div class="d-flex flex-wrap gap-2 mb-2">
+              @for (img of form.heroImages; track $index) {
+              <div class="position-relative">
+                <img [src]="img" class="rounded border" style="height:56px;width:80px;object-fit:cover" />
+                <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0 p-0" style="width:18px;height:18px;line-height:1" (click)="removeHeroImage($index)">
+                  <i class="bi bi-x small"></i>
+                </button>
+              </div>
+              }
+            </div>
+            <app-file-upload label="Add gallery image" accept="image/*" variant="avatar" [maxSizeMB]="5" (uploaded)="onHeroGalleryImageUploaded($event)" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header py-2 fw-semibold">About / Mission / Vision</div>
+      <div class="card-body">
+        <div class="row g-2">
+          <div class="col-12">
+            <label class="form-label small text-secondary mb-1">About Text</label>
+            <textarea class="form-control form-control-sm" rows="3" [(ngModel)]="form.aboutText"></textarea>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small text-secondary mb-1">Mission</label>
+            <textarea class="form-control form-control-sm" rows="2" [(ngModel)]="form.mission"></textarea>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small text-secondary mb-1">Vision</label>
+            <textarea class="form-control form-control-sm" rows="2" [(ngModel)]="form.vision"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Contact & Social -->
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header py-2 fw-semibold">Contact</div>
+      <div class="card-body">
+        <div class="row g-2">
+          <div class="col-md-6">
+            <label class="form-label small text-secondary mb-1">Email</label>
+            <input class="form-control form-control-sm" [(ngModel)]="form.email" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small text-secondary mb-1">Phone</label>
+            <input class="form-control form-control-sm" [(ngModel)]="form.phone" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small text-secondary mb-1">WhatsApp</label>
+            <input class="form-control form-control-sm" [(ngModel)]="form.whatsapp" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small text-secondary mb-1">Copyright Text</label>
+            <input class="form-control form-control-sm" [(ngModel)]="form.copyright" />
+          </div>
+          <div class="col-12">
+            <label class="form-label small text-secondary mb-1">Address</label>
+            <textarea class="form-control form-control-sm" rows="2" [(ngModel)]="form.address"></textarea>
+          </div>
+          <div class="col-12">
+            <label class="form-label small text-secondary mb-1">Map Embed URL</label>
+            <input class="form-control form-control-sm" [(ngModel)]="form.mapEmbedUrl" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header py-2 fw-semibold">Social Links</div>
+      <div class="card-body">
+        @for (link of form.socialLinks; track $index) {
+        <div class="d-flex justify-content-between align-items-center border-bottom py-1 small">
+          <span><i class="bi {{ link.icon || 'bi-link-45deg' }} me-1"></i><strong>{{ link.platform }}</strong> — {{ link.url }}</span>
+          <button class="btn btn-outline-danger btn-sm" (click)="removeSocialLink($index)"><i class="bi bi-trash"></i></button>
+        </div>
+        }
+        <div class="row g-1 mt-2">
+          <div class="col-4"><input class="form-control form-control-sm" placeholder="Platform" [(ngModel)]="newSocialLink.platform" /></div>
+          <div class="col-4"><input class="form-control form-control-sm" placeholder="URL" [(ngModel)]="newSocialLink.url" /></div>
+          <div class="col-3"><input class="form-control form-control-sm" placeholder="Icon class" [(ngModel)]="newSocialLink.icon" /></div>
+          <div class="col-1"><button class="btn btn-outline-primary btn-sm w-100" (click)="addSocialLink()"><i class="bi bi-plus"></i></button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header py-2 fw-semibold">Stats Blocks</div>
+      <div class="card-body">
+        <div class="row g-2 mb-2">
+          @for (stat of form.stats; track $index) {
+          <div class="col-md-3">
+            <div class="border rounded p-2 text-center position-relative">
+              <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0 p-0" style="width:18px;height:18px;line-height:1" (click)="removeStat($index)">
+                <i class="bi bi-x small"></i>
+              </button>
+              <div class="fw-bold">{{ stat.value }}</div>
+              <div class="small text-muted">{{ stat.label }}</div>
+            </div>
+          </div>
+          }
+        </div>
+        <div class="row g-1">
+          <div class="col-3"><input class="form-control form-control-sm" placeholder="Value (e.g. 500+)" [(ngModel)]="newStat.value" /></div>
+          <div class="col-4"><input class="form-control form-control-sm" placeholder="Label" [(ngModel)]="newStat.label" /></div>
+          <div class="col-4"><input class="form-control form-control-sm" placeholder="Icon class" [(ngModel)]="newStat.icon" /></div>
+          <div class="col-1"><button class="btn btn-outline-primary btn-sm w-100" (click)="addStat()"><i class="bi bi-plus"></i></button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SEO -->
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header py-2 fw-semibold">SEO</div>
+      <div class="card-body">
+        <div class="row g-2">
+          <div class="col-md-6">
+            <label class="form-label small text-secondary mb-1">SEO Title</label>
+            <input class="form-control form-control-sm" [(ngModel)]="form.seoTitle" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small text-secondary mb-1">SEO Keywords</label>
+            <input class="form-control form-control-sm" [(ngModel)]="form.seoKeywords" />
+          </div>
+          <div class="col-12">
+            <label class="form-label small text-secondary mb-1">SEO Description</label>
+            <textarea class="form-control form-control-sm" rows="2" [(ngModel)]="form.seoDescription"></textarea>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small text-secondary mb-1">Open Graph Image</label>
+            <div class="d-flex align-items-center gap-2">
+              @if (form.ogImage) { <img [src]="form.ogImage" class="rounded border" style="height:36px;width:56px;object-fit:cover" /> }
+              <app-file-upload label="Upload image" accept="image/*" variant="avatar" [maxSizeMB]="5" (uploaded)="onOgImageUploaded($event)" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="d-flex justify-content-end mt-3">
+  <button class="btn btn-primary btn-sm px-4" [disabled]="saving" (click)="save()">
+    @if (saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
+    Save All Settings
+  </button>
+</div>
+}

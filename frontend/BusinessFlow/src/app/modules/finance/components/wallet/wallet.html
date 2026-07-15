@@ -34,26 +34,14 @@
   <div class="card mb-3"><div class="card-body">
     <h6 class="fw-semibold mb-3">Top Up Wallet</h6>
     <div class="row g-2">
-      <div class="col-md-3">
+      <div class="col-md-4">
         <label class="form-label small text-muted mb-1">Amount *</label>
         <input type="number" class="form-control form-control-sm" [(ngModel)]="topUpForm.amount" />
       </div>
-      <div class="col-md-4">
-        <label class="form-label small text-muted mb-1">Reference</label>
-        <input class="form-control form-control-sm" placeholder="Bank tx id, etc." [(ngModel)]="topUpForm.reference" />
-      </div>
-      <div class="col-md-5">
-        <label class="form-label small text-muted mb-1">Notes</label>
-        <input class="form-control form-control-sm" [(ngModel)]="topUpForm.notes" />
-      </div>
       <div class="col-12 d-flex gap-2">
-        <button class="btn btn-primary btn-sm" [disabled]="saving || !topUpForm.amount || topUpForm.amount <= 0" (click)="doTopUp()">
-          @if (saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
-          Confirm Top Up
+        <button class="btn btn-success" [disabled]="!topUpForm.amount || topUpForm.amount <= 0" (click)="topUpOnline()">
+          <i class="bi bi-credit-card me-1"></i>Pay Online
         </button>
-            <button class="btn btn-success" [disabled]="!topUpForm.amount || topUpForm.amount <= 0" (click)="topUpOnline()">
-              <i class="bi bi-credit-card me-1"></i>Pay Online
-            </button>
         <button class="btn btn-secondary btn-sm" (click)="showTopUp = false">Cancel</button>
       </div>
     </div>
@@ -78,8 +66,8 @@
           <tr>
             <td class="small text-muted">{{ t.transactedAt | date:'medium' }}</td>
             <td><span class="badge {{ typeClass(t.type) }}">{{ typeLabel(t.type) }}</span></td>
-            <td class="text-end">{{ t.amount | currency }}</td>
-            <td class="text-end">{{ t.balanceAfter | currency }}</td>
+            <td class="text-end">{{ t.amount | currency:wallet?.currency }}</td>
+            <td class="text-end">{{ t.balanceAfter | currency:wallet?.currency }}</td>
             <td class="small">{{ t.reference || '-' }}</td>
             <td class="small">{{ t.notes || '-' }}</td>
           </tr>

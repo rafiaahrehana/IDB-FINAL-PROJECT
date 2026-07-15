@@ -19,6 +19,7 @@ public class BankReconciliationMapper {
                 .outstandingDeposits(entity.getOutstandingDeposits())
                 .outstandingChecks(entity.getOutstandingChecks())
                 .reconciled(entity.isReconciled())
+                .reconciledDate(entity.getReconciledDate())
                 .reconciledBy(entity.getReconciledBy())
                 .discrepancyNotes(entity.getDiscrepancyNotes())
                 .build();

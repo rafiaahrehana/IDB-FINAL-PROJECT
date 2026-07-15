@@ -1,12 +1,15 @@
 package com.businessos.modules.servicedesk.approval;
 
 import com.businessos.enums.ApprovalStatus;
+import com.businessos.enums.NotificationType;
 import com.businessos.modules.servicedesk.servicerequest.ServiceRequest;
 import com.businessos.modules.servicedesk.servicerequest.ServiceRequestRepository;
 import com.businessos.modules.servicedesk.servicerequest.ServiceRequestService;
 import com.businessos.security.SecurityUtil;
 import com.businessos.shared.exception.BadRequestException;
 import com.businessos.shared.exception.ResourceNotFoundException;
+import com.businessos.shared.notification.CreateNotificationRequest;
+import com.businessos.shared.notification.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -23,6 +26,7 @@ public class StageApprovalServiceImpl implements StageApprovalService {
     private final StageApprovalRepository approvalRepository;
     private final ServiceRequestRepository requestRepository;
     private final ServiceRequestService requestService;
+    private final NotificationService notificationService;
     private final SecurityUtil securityUtil;
 
     @Override
@@ -75,17 +79,24 @@ public class StageApprovalServiceImpl implements StageApprovalService {
 
         approvalRepository.save(approval);
 
+        if (approval.getRequestedBy() != null) {
+            ServiceRequest sr = approval.getServiceRequest();
+            notificationService.sendForServiceRequest(CreateNotificationRequest.forRequest(
+                NotificationType.REQUEST_UPDATED,
+                "Stage Approval Rejected",
+                "The approval for stage \"" + approval.getWorkflowStage().getName()
+                    + "\" on request \"" + sr.getTitle() + "\" was rejected.",
+                approval.getRequestedBy().getId(), approval.getCompany().getId(), sr.getId()
+            ));
+        }
+
         return StageApprovalMapper.toResponse(approval);
     }
 
     private StageApproval getPendingApprovalInTenant(Long id) {
         Long companyId = securityUtil.getCurrentCompanyId();
-        StageApproval approval = approvalRepository.findById(id)
+        StageApproval approval = approvalRepository.findByIdAndCompanyId(id, companyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Approval request not found"));
-
-        if (!approval.getCompany().getId().equals(companyId)) {
-            throw new BadRequestException("Unauthorized access to this approval");
-        }
 
         if (approval.getStatus() != ApprovalStatus.PENDING) {
             throw new BadRequestException("Approval request is already decided");

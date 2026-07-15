@@ -4,6 +4,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.math.BigDecimal;
+
 @Getter @Setter @Builder
 public class PlatformSummaryResponse {
 
@@ -27,6 +29,6 @@ public class PlatformSummaryResponse {
     long totalPlatformUsers;
 
     // Recorded subscription revenue (SUM of SubscriptionHistory.amountPaid)
-    double totalRevenue;
-    double revenueThisMonth;
+    BigDecimal totalRevenue;
+    BigDecimal revenueThisMonth;
 }

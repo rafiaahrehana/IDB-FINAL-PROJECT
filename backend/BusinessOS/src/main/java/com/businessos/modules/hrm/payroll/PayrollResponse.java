@@ -1,6 +1,7 @@
 package com.businessos.modules.hrm.payroll;
 
 import com.businessos.enums.PayrollStatus;
+import com.businessos.enums.PaymentMethod;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -18,12 +19,17 @@ public class PayrollResponse {
     private BigDecimal houseRent;
     private BigDecimal medicalAllowance;
     private BigDecimal transportAllowance;
+    private BigDecimal foodAllowance;
+    private BigDecimal specialAllowance;
     private BigDecimal bonus;
     private BigDecimal deductions;
     private BigDecimal taxDeduction;
+    private BigDecimal insuranceDeduction;
+    private BigDecimal providentFundDeduction;
     private BigDecimal netSalary;
     private PayrollStatus status;
     private String paymentReference;
+    private PaymentMethod paymentMethod;
     private LocalDate paidAt;
     private String notes;
     private Long employeeId;

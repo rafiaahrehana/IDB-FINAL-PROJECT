@@ -1,3 +1,145 @@
+.ai-features-section {
+  background-color: #fbfbfe;
+  color: #1a1a2e;
+}
+
+/* Wavy abstract background blobs */
+.bg-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  z-index: 0;
+  opacity: 0.6;
+}
+
+.blob-top-right {
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, #e2d3fc 0%, transparent 70%);
+  top: -150px;
+  right: -200px;
+}
+
+.blob-bottom-left {
+  width: 700px;
+  height: 700px;
+  background: radial-gradient(circle, #f0e6f9 0%, transparent 70%);
+  bottom: -300px;
+  left: -250px;
+}
+
+.status-circle {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 3px solid #d4c5f9;
+  background-color: transparent;
+}
+
+.tracking-wide {
+  letter-spacing: 0.05em;
+}
+
+.highlight-underline {
+  position: relative;
+  z-index: 1;
+}
+
+.highlight-underline::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0px;
+  width: 100%;
+  height: 10px;
+  background-color: #d8b4e2;
+  border-radius: 4px;
+  z-index: -1;
+  opacity: 0.7;
+}
+
+.icon-wrapper {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background-color: rgba(0, 0, 0, 0.05);
+  font-size: 1.25rem;
+  color: #4a4a4a;
+}
+.icon-white {
+  background-color: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.text-purple {
+  color: #5b3fa8;
+}
+.bg-light-purple {
+  background-color: #e5d9f7;
+}
+
+.chat-ui-mockup {
+  background-color: rgba(255, 255, 255, 0.4);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+}
+
+.chat-bubble {
+  padding: 0.5rem 0.75rem;
+  border-radius: 12px;
+  max-width: 85%;
+}
+.user-bubble {
+  background-color: #a49bc7;
+  color: white;
+  border-bottom-left-radius: 2px;
+}
+.ai-bubble {
+  background-color: #6a4cdd;
+  border-bottom-right-radius: 2px;
+}
+
+/* Card Themes */
+.bento-item {
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.hover-card-lift:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.08);
+}
+
+.card-chat {
+  background-color: #efeafa;
+  color: #2b2b2b;
+}
+
+.card-docs {
+  background-color: #b7a6f2;
+  color: #ffffff;
+}
+.card-docs .text-muted {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.card-reports {
+  background-color: #f7eefa;
+  color: #2b2b2b;
+}
+
+.card-smart {
+  background-color: #eff1fc;
+  color: #2b2b2b;
+}
+
+
+/* Grid layout */
 .bento-grid {
   display: grid;
   grid-template-columns: repeat(1, 1fr);

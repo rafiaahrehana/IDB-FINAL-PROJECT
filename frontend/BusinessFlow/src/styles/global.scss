@@ -588,8 +588,9 @@ a {
 // ── App Layout ─────────────────────────────────────────────────
 .app-main {
   background: var(--bos-bg-page);
-  min-height: 100vh;
+  height: 100%;
   flex: 1;
+  overflow-y: auto;
   overflow-x: hidden;
 }
 
@@ -857,6 +858,25 @@ a {
 }
 
 // ── Text helpers ───────────────────────────────────────────────
+// Custom padding for large sections
+.py-6 {
+  padding-top: 4rem !important;
+  padding-bottom: 4rem !important;
+}
+
+.py-7 {
+  padding-top: 5rem !important;
+  padding-bottom: 5rem !important;
+}
+
+// Section title gradient (dark purple to chocolate)
+.section-title {
+  background: linear-gradient(135deg, #1E1B4B, #D2691E);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
+}
+
 // These ensure text is always readable on various backgrounds
 .text-on-dark { color: #fff !important; }
 .text-lavender { color: var(--bos-lavender) !important; }

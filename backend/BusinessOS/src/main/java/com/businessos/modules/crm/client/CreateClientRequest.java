@@ -6,6 +6,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
+import java.math.BigDecimal;
+
 @Data
 public class CreateClientRequest {
 
@@ -41,4 +43,13 @@ public class CreateClientRequest {
     private String taxId;
 
     private Long accountManagerId;
+
+    private String billingAddress;
+    private String shippingAddress;
+
+    @Size(max = 500, message = "Tags must not exceed 500 characters")
+    private String tags;
+
+    private Integer employeeCount;
+    private BigDecimal annualRevenue;
 }

@@ -18,7 +18,7 @@ import java.util.List;
 @RequestMapping("/api/company/finance/general-ledger")
 @RequiredArgsConstructor
 @Tag(name = "General Ledger", description = "General Ledger Management")
-@PreAuthorize("hasRole('FINANCE_MANAGER') or hasRole('COMPANY_ADMIN')")
+@PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
 public class GeneralLedgerController {
 
     private final GeneralLedgerService service;
@@ -59,7 +59,7 @@ public class GeneralLedgerController {
     @GetMapping("/reference")
     @Operation(summary = "Get General Ledger Entries by Reference")
     public ResponseEntity<List<GeneralLedgerResponse>> getByReference(
-            @RequestParam String referenceType,
+            @RequestParam GlReferenceType referenceType,
             @RequestParam Long referenceId) {
         return ResponseEntity.ok(service.getByReference(referenceType, referenceId));
     }

@@ -2,6 +2,7 @@ package com.businessos.modules.crm.opportunity;
 
 import com.businessos.core.automation.AutomationEventPublisher;
 import com.businessos.enums.LeadSource;
+import com.businessos.enums.NotificationType;
 import com.businessos.modules.crm.activity.CrmActivityType;
 import com.businessos.modules.crm.activity.CrmActivityService;
 import com.businessos.modules.crm.client.Client;
@@ -15,6 +16,8 @@ import com.businessos.modules.hrm.employee.EmployeeRepository;
 import com.businessos.security.SecurityUtil;
 import com.businessos.shared.exception.BadRequestException;
 import com.businessos.shared.exception.ResourceNotFoundException;
+import com.businessos.shared.notification.CreateNotificationRequest;
+import com.businessos.shared.notification.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -39,6 +42,7 @@ public class OpportunityServiceImpl implements OpportunityService {
     private final EmployeeRepository employeeRepository;
     private final CrmActivityService crmActivityService;
     private final AutomationEventPublisher automationEventPublisher;
+    private final NotificationService notificationService;
     private final SecurityUtil securityUtil;
 
     @Override
@@ -183,6 +187,7 @@ public class OpportunityServiceImpl implements OpportunityService {
             opportunity.setActualCloseDate(LocalDate.now());
             if (to == OpportunityStage.CLOSED_LOST) {
                 opportunity.setLostReason(request.getLostReason());
+                notifyOwnerOpportunityLost(opportunity);
             } else {
                 opportunity.setLostReason(null);
                 creditClientLifetimeValue(opportunity);
@@ -194,6 +199,11 @@ public class OpportunityServiceImpl implements OpportunityService {
         } else {
             opportunity.setActualCloseDate(null);
             opportunity.setLostReason(null);
+            // Reopening a previously-won deal must reverse the credit applied when it
+            // closed, or a later reopen+reclose double-counts the client's lifetime value.
+            if (from == OpportunityStage.CLOSED_WON) {
+                debitClientLifetimeValue(opportunity);
+            }
         }
 
         opportunity = opportunityRepository.save(opportunity);
@@ -289,6 +299,29 @@ public class OpportunityServiceImpl implements OpportunityService {
         Client client = opportunity.getClient();
         BigDecimal current = client.getLifetimeValue() != null ? client.getLifetimeValue() : BigDecimal.ZERO;
         client.setLifetimeValue(current.add(opportunity.getAmount()));
+        clientRepository.save(client);
+    }
+
+    private void notifyOwnerOpportunityLost(Opportunity opportunity) {
+        Employee owner = opportunity.getOwner();
+        if (owner == null || owner.getUser() == null) return;
+        notificationService.send(CreateNotificationRequest.of(
+                NotificationType.GENERAL,
+                "Opportunity Lost",
+                "Opportunity \"" + opportunity.getName() + "\" was marked as lost.",
+                "/crm/pipeline",
+                owner.getUser().getId(),
+                opportunity.getCompany().getId()
+        ));
+    }
+
+    /** Reverses creditClientLifetimeValue() when a won opportunity is reopened. */
+    private void debitClientLifetimeValue(Opportunity opportunity) {
+        if (opportunity.getAmount() == null)
+            return;
+        Client client = opportunity.getClient();
+        BigDecimal current = client.getLifetimeValue() != null ? client.getLifetimeValue() : BigDecimal.ZERO;
+        client.setLifetimeValue(current.subtract(opportunity.getAmount()).max(BigDecimal.ZERO));
         clientRepository.save(client);
     }
 

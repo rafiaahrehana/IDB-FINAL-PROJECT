@@ -38,7 +38,7 @@ public class CompanyServiceServiceImpl implements CompanyServiceService {
 
         ServiceCategory category = null;
         if (request.getCategoryId() != null) {
-            category = categoryRepository.findById(request.getCategoryId())
+            category = categoryRepository.findByIdAndCompanyId(request.getCategoryId(), companyId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                     "Service category not found: " + request.getCategoryId()));
         }
@@ -142,7 +142,7 @@ public class CompanyServiceServiceImpl implements CompanyServiceService {
         if (request.getVisibility()      != null) service.setVisibility(request.getVisibility());
 
         if (request.getCategoryId() != null) {
-            service.setCategory(categoryRepository.findById(request.getCategoryId())
+            service.setCategory(categoryRepository.findByIdAndCompanyId(request.getCategoryId(), companyId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                     "Service category not found: " + request.getCategoryId())));
         }
@@ -169,7 +169,7 @@ public class CompanyServiceServiceImpl implements CompanyServiceService {
     public void delete(Long id) {
         CompanyService service = findInTenant(id);
         service.softDelete();
-        
+        companyServiceRepository.save(service);
     }
 
     private CompanyService findInTenant(Long id) {

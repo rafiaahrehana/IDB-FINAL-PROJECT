@@ -11,6 +11,7 @@ public class ServiceTemplateResponse {
     private String name;
     private String description;
     private Long categoryId;
+    private String categoryName;
     private BigDecimal defaultPrice;
     private Integer estimatedDays;
     private String iconUrl;

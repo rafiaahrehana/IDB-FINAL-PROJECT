@@ -29,6 +29,7 @@ public class BankReconciliationResponse {
     private String outstandingChecks;
     
     private boolean reconciled;
+    private LocalDate reconciledDate;
     private String reconciledBy;
     private String discrepancyNotes;
 }

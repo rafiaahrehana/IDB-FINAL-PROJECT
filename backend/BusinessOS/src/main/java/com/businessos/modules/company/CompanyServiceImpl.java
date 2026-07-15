@@ -1,3 +1,4 @@
+
 package com.businessos.modules.company;
 
 import com.businessos.auth.role.enums.Role;
@@ -7,8 +8,11 @@ import com.businessos.modules.crm.client.ClientRepository;
 import com.businessos.modules.hrm.employee.EmployeeRepository;
 import com.businessos.enums.CompanyStatus;
 import com.businessos.enums.SubscriptionPlan;
+import com.businessos.modules.servicedesk.companyservice.CompanyServiceRepository;
 import com.businessos.modules.servicedesk.servicerequest.ServiceRequestRepository;
 import com.businessos.enums.ServiceRequestStatus;
+import com.businessos.modules.website.WebsiteSettingsRepository;
+import com.businessos.shared.address.AddressMapper;
 import com.businessos.shared.subscription.SubscriptionHistory;
 import com.businessos.shared.subscription.SubscriptionHistoryRepository;
 import com.businessos.security.SecurityUtil;
@@ -22,6 +26,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -36,10 +41,11 @@ public class CompanyServiceImpl implements CompanyService {
     private final EmployeeRepository employeeRepository;
     private final ClientRepository clientRepository;
     private final ServiceRequestRepository serviceRequestRepository;
-    private final com.businessos.modules.servicedesk.companyservice.CompanyServiceRepository hubServiceRepository;
+    private final CompanyServiceRepository hubServiceRepository;
     private final SubscriptionHistoryRepository subscriptionHistoryRepository;
     private final SecurityUtil securityUtil;
-    private final com.businessos.shared.address.LocationMapper locationMapper;
+    private final WebsiteSettingsRepository websiteSettingsRepository;
+    private final AddressMapper addressMapper;
     private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -47,7 +53,19 @@ public class CompanyServiceImpl implements CompanyService {
     public CompanyPublicResponse getBySubdomain(String subdomain) {
         Company company = companyRepository.findBySubdomain(subdomain)
                 .orElseThrow(() -> new ResourceNotFoundException("Company not found with subdomain: " + subdomain));
-        return CompanyMapper.toPublicResponse(company);
+        CompanyPublicResponse publicResponse = CompanyMapper.toPublicResponse(company);
+        applyBranding(publicResponse, company.getId());
+        return publicResponse;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public java.util.List<CompanyPublicResponse> getPublicList() {
+        return companyRepository
+                .findByStatusInOrderByCompanyNameAsc(List.of(CompanyStatus.ACTIVE, CompanyStatus.TRIAL))
+                .stream()
+                .map(CompanyMapper::toPublicResponse)
+                .toList();
     }
 
     @Override
@@ -67,7 +85,8 @@ public class CompanyServiceImpl implements CompanyService {
         Company company = companyRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Company not found with id : " + id));
         CompanyResponse response = CompanyMapper.toResponse(company);
-        response.setLocationDetail(locationMapper.toResponse(company.getLocationDetail()));
+        response.setLocationDetail(addressMapper.toResponse(company.getLocationDetail()));
+        applyBranding(response, company.getId());
         return response;
     }
 
@@ -79,25 +98,36 @@ public class CompanyServiceImpl implements CompanyService {
         if (request.getCompanyName() != null) company.setCompanyName(request.getCompanyName());
         if (request.getCompanyPhone() != null) company.setCompanyPhone(request.getCompanyPhone());
         if (request.getWebsite() != null) company.setWebsite(request.getWebsite());
-        if (request.getLocation() != null) company.setLocation(request.getLocation());
-        if (request.getLogo() != null) company.setLogo(request.getLogo());
-        if (request.getPrimaryColor() != null) company.setPrimaryColor(request.getPrimaryColor());
-        if (request.getSecondaryColor() != null) company.setSecondaryColor(request.getSecondaryColor());
-        if (request.getTagline() != null) company.setTagline(request.getTagline());
         if (request.getPortalAbout() != null) company.setPortalAbout(request.getPortalAbout());
+
+        if (request.getLogo() != null || request.getPrimaryColor() != null
+                || request.getSecondaryColor() != null || request.getTagline() != null) {
+            com.businessos.modules.website.WebsiteSettings settings =
+                    websiteSettingsRepository.findByCompanyId(company.getId())
+                            .orElseGet(() -> com.businessos.modules.website.WebsiteSettings.builder()
+                                    .companyId(company.getId())
+                                    .companyName(company.getCompanyName())
+                                    .build());
+            if (request.getLogo() != null) settings.setLogoUrl(request.getLogo());
+            if (request.getPrimaryColor() != null) settings.setPrimaryColor(request.getPrimaryColor());
+            if (request.getSecondaryColor() != null) settings.setSecondaryColor(request.getSecondaryColor());
+            if (request.getTagline() != null) settings.setTagline(request.getTagline());
+            websiteSettingsRepository.save(settings);
+        }
 
         // Structured address - same create-or-update pattern as the user profile
         if (request.getLocationDetail() != null) {
             if (company.getLocationDetail() == null) {
-                company.setLocationDetail(locationMapper.toEntity(request.getLocationDetail()));
+                company.setLocationDetail(addressMapper.toEntity(request.getLocationDetail()));
             } else {
-                locationMapper.updateEntityFromRequest(company.getLocationDetail(), request.getLocationDetail());
+                addressMapper.updateEntityFromRequest(company.getLocationDetail(), request.getLocationDetail());
             }
         }
 
-        company = companyRepository.save(company);
-        CompanyResponse response = CompanyMapper.toResponse(company);
-        response.setLocationDetail(locationMapper.toResponse(company.getLocationDetail()));
+        Company savedCompany = companyRepository.save(company);
+        CompanyResponse response = CompanyMapper.toResponse(savedCompany);
+        response.setLocationDetail(addressMapper.toResponse(savedCompany.getLocationDetail()));
+        applyBranding(response, savedCompany.getId());
         return response;
     }
 
@@ -144,7 +174,7 @@ public class CompanyServiceImpl implements CompanyService {
     }
 
     @Override
-    public CompanyResponse changePlan(Long id, SubscriptionPlan plan, Double amountPaid, String transactionRef) {
+    public CompanyResponse changePlan(Long id, SubscriptionPlan plan, BigDecimal amountPaid, String transactionRef) {
         Company company = companyRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Company not found"));
 
@@ -152,9 +182,6 @@ public class CompanyServiceImpl implements CompanyService {
         company.setSubscriptionPlan(plan);
         Company saved = companyRepository.save(company);
 
-        // Record the change in subscription history (audit trail + platform revenue source).
-        // amountPaid / transactionRef are optional - there is no plan price list in the
-        // system, so the amount is whatever the admin performing the change records.
         subscriptionHistoryRepository.save(SubscriptionHistory.builder()
                 .company(saved)
                 .fromPlan(fromPlan)
@@ -214,15 +241,33 @@ public class CompanyServiceImpl implements CompanyService {
         }
 
         company.setActive(false);
-        company.setDeleted(true);
-        company.setDeletedAt(LocalDateTime.now());
+        company.softDelete();
         companyRepository.save(company);
         
         if (company.getOwner() != null) {
-            company.getOwner().setDeleted(true);
-            company.getOwner().setDeletedAt(LocalDateTime.now());
+            company.getOwner().softDelete();
             company.getOwner().setActive(false);
             userRepository.save(company.getOwner());
         }
+    }
+
+    // Overrides the legacy Company branding columns with the authoritative
+    // values from WebsiteSettings when a settings row exists.
+    private void applyBranding(CompanyResponse response, Long companyId) {
+        websiteSettingsRepository.findByCompanyId(companyId).ifPresent(settings -> {
+            if (settings.getLogoUrl() != null) response.setLogo(settings.getLogoUrl());
+            if (settings.getPrimaryColor() != null) response.setPrimaryColor(settings.getPrimaryColor());
+            if (settings.getSecondaryColor() != null) response.setSecondaryColor(settings.getSecondaryColor());
+            if (settings.getTagline() != null) response.setTagline(settings.getTagline());
+        });
+    }
+
+    private void applyBranding(CompanyPublicResponse response, Long companyId) {
+        websiteSettingsRepository.findByCompanyId(companyId).ifPresent(settings -> {
+            if (settings.getLogoUrl() != null) response.setLogo(settings.getLogoUrl());
+            if (settings.getPrimaryColor() != null) response.setPrimaryColor(settings.getPrimaryColor());
+            if (settings.getSecondaryColor() != null) response.setSecondaryColor(settings.getSecondaryColor());
+            if (settings.getTagline() != null) response.setTagline(settings.getTagline());
+        });
     }
 }

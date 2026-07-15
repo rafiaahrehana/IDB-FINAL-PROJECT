@@ -1,4 +1,4 @@
-<section class="trusted-section py-5 bg-white border-bottom position-relative overflow-hidden">
+<section class="trusted-section py-3 bg-white border-bottom position-relative overflow-hidden">
   <div class="container text-center mb-4">
     <span class="text-uppercase tracking-widest text-muted small fw-bold">Trusted by forward-thinking teams globally</span>
   </div>
@@ -6,14 +6,14 @@
   <div class="marquee-container d-flex">
     <!-- First set -->
     <div class="marquee-content d-flex align-items-center gap-5 px-4">
-      <div *ngFor="let company of companies()" class="company-logo text-muted fw-bold fs-3 px-3">
-        {{ company }}
+      <div *ngFor="let company of companies()" class="company-logo fw-bold fs-3 px-3" [style.color]="company.color">
+        {{ company.name }}
       </div>
     </div>
     <!-- Duplicated set for seamless scrolling -->
     <div class="marquee-content d-flex align-items-center gap-5 px-4" aria-hidden="true">
-      <div *ngFor="let company of companies()" class="company-logo text-muted fw-bold fs-3 px-3">
-        {{ company }}
+      <div *ngFor="let company of companies()" class="company-logo fw-bold fs-3 px-3" [style.color]="company.color">
+        {{ company.name }}
       </div>
     </div>
   </div>

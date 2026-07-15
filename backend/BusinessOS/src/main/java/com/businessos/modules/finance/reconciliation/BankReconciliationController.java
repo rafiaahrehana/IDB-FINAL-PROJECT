@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/company/finance/reconciliation")
 @RequiredArgsConstructor
 @Tag(name = "Bank Reconciliation", description = "Bank Reconciliation Management")
-@PreAuthorize("hasRole('FINANCE_MANAGER') or hasRole('COMPANY_ADMIN')")
+@PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
 public class BankReconciliationController {
 
     private final BankReconciliationService service;

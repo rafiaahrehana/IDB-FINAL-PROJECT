@@ -1,7 +1,8 @@
 import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Payroll, CreatePayrollRequest, Employee } from '../../models/hrm.model';
+import { Payroll, CreatePayrollRequest, Employee, BulkPayrollResult } from '../../models/hrm.model';
+import { PaymentMethod, PAYMENT_METHODS } from '../../../finance/models/finance.model';
 import { PayrollService } from '../../services/payroll.service';
 import { EmployeeService } from '../../services/employee.service';
 import { Pagination } from '../../../../shared/components/pagination/pagination';
@@ -36,7 +37,13 @@ export class PayrollPage implements OnInit {
 
   payTarget: Payroll | null = null;
   paymentReference = '';
+  paymentMethod: PaymentMethod | '' = '';
+  paymentMethods = PAYMENT_METHODS;
   deleteTarget: Payroll | null = null;
+
+  generating = false;
+  generateResult: BulkPayrollResult | null = null;
+  confirmGenerate = false;
 
   constructor(
     private payrollService: PayrollService,
@@ -106,6 +113,31 @@ export class PayrollPage implements OnInit {
     });
   }
 
+  openGenerate(): void {
+    this.generateResult = null;
+    this.confirmGenerate = true;
+  }
+
+  runGenerate(): void {
+    this.confirmGenerate = false;
+    this.generating = true;
+    this.error = '';
+    this.payrollService.generateForAll(this.month, this.year).subscribe({
+      next: (result) => {
+        this.generating = false;
+        this.generateResult = result;
+        this.success = `Generated ${result.created.length} payroll draft(s)`;
+        this.cdr.markForCheck();
+        this.load();
+      },
+      error: (err) => {
+        this.generating = false;
+        this.error = err?.error?.message || 'Failed to generate payroll';
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
   approve(p: Payroll): void {
     this.payrollService.approve(p.id).subscribe({
       next: () => {
@@ -120,12 +152,13 @@ export class PayrollPage implements OnInit {
   openPay(p: Payroll): void {
     this.payTarget = p;
     this.paymentReference = '';
+    this.paymentMethod = '';
   }
 
   confirmPay(): void {
     if (!this.payTarget) return;
     this.payrollService
-      .markPaid(this.payTarget.id, this.paymentReference.trim() || undefined)
+      .markPaid(this.payTarget.id, this.paymentReference.trim() || undefined, this.paymentMethod || undefined)
       .subscribe({
         next: () => {
           this.payTarget = null;

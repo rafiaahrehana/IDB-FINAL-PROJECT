@@ -1,4 +1,5 @@
 import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -81,19 +82,20 @@ export class Tickets implements OnInit {
 
   load(): void {
     this.loading = true;
+    this.error = '';
     this.cdr.markForCheck();
     if (this.showCriticalOnly && this.isManager) {
       // Bare list, not a page
       this.ticketService.criticalOpen().subscribe({
         next: (res) => { this.tickets = res; this.totalPages = 1; this.loading = false; this.cdr.markForCheck(); },
-        error: () => { this.error = 'Failed to load tickets'; this.loading = false; this.cdr.markForCheck(); },
+        error: (err) => this.onLoadError(err),
       });
       return;
     }
     if (this.isEmployee) {
       this.ticketService.myTickets(undefined, this.page).subscribe({
         next: (res) => { this.tickets = res.content; this.totalPages = res.totalPages; this.loading = false; this.cdr.markForCheck(); },
-        error: () => { this.error = 'Failed to load tickets'; this.loading = false; this.cdr.markForCheck(); },
+        error: (err) => this.onLoadError(err),
       });
       return;
     }
@@ -101,7 +103,7 @@ export class Tickets implements OnInit {
       if (this.myAgentId == null) { this.loading = false; this.cdr.markForCheck(); return; }
       this.ticketService.assignedToMe(this.myAgentId, this.page).subscribe({
         next: (res) => { this.tickets = res.content; this.totalPages = res.totalPages; this.loading = false; this.cdr.markForCheck(); },
-        error: () => { this.error = 'Failed to load tickets'; this.loading = false; this.cdr.markForCheck(); },
+        error: (err) => this.onLoadError(err),
       });
       return;
     }
@@ -114,11 +116,7 @@ export class Tickets implements OnInit {
           this.loading = false;
           this.cdr.markForCheck();
         },
-        error: () => {
-          this.error = 'Failed to load tickets';
-          this.loading = false;
-          this.cdr.markForCheck();
-        },
+        error: (err) => this.onLoadError(err),
       });
       return;
     }
@@ -132,12 +130,21 @@ export class Tickets implements OnInit {
         this.loading = false;
         this.cdr.markForCheck();
       },
-      error: () => {
-        this.error = 'Failed to load tickets';
-        this.loading = false;
-        this.cdr.markForCheck();
-      },
+      error: (err) => this.onLoadError(err),
     });
+  }
+
+  private onLoadError(err: HttpErrorResponse): void {
+    this.tickets = [];
+    this.totalPages = 0;
+    this.loading = false;
+    this.error =
+      err.status === 403
+        ? "You don't have permission to view these tickets."
+        : err.status === 0
+          ? 'Could not reach the server. Check your connection and try again.'
+          : err.error?.message || 'Failed to load tickets.';
+    this.cdr.markForCheck();
   }
 
   view(t: SupportTicket): void {

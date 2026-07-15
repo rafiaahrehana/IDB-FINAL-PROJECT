@@ -8,6 +8,7 @@ import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
 import org.hibernate.annotations.Filter;
 import org.hibernate.annotations.FilterDef;
 import org.hibernate.annotations.ParamDef;
@@ -37,7 +38,7 @@ public class SubscriptionHistory {
 
     private LocalDate subscriptionStart;
     private LocalDate subscriptionEnd;
-    private Double amountPaid;
+    private BigDecimal amountPaid;
     private String transactionRef;
     private String notes;
 

@@ -15,6 +15,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -51,7 +52,7 @@ public class ServicePackageServiceImpl implements ServicePackageService {
             .iconUrl(request.getIconUrl())
             .packagePrice(request.getPackagePrice())
             .discountPercent(request.getDiscountPercent() != null
-                ? request.getDiscountPercent() : 0.0)
+                ? request.getDiscountPercent() : BigDecimal.ZERO)
             .billingCycle(request.getBillingCycle())
             .requestQuota(request.getRequestQuota())
             .autoRenew(request.getAutoRenew() != null ? request.getAutoRenew() : true)
@@ -151,15 +152,8 @@ public class ServicePackageServiceImpl implements ServicePackageService {
     public void delete(Long id) {
         ServicePackage pkg = findPackageInTenant(id);
 
-        // Guard: cannot delete a package with active subscriptions
-        long activeCount = subscriptionRepository
-            .countByCompanyIdAndStatus(requireCompanyId(), SubscriptionStatus.ACTIVE);
-        // narrow check to this specific package
         boolean hasActiveSubs = subscriptionRepository
-            .findByCompanyIdAndStatus(requireCompanyId(), SubscriptionStatus.ACTIVE,
-                Pageable.unpaged())
-            .stream()
-            .anyMatch(s -> s.getServicePackage().getId().equals(id));
+            .existsByServicePackageIdAndStatus(id, SubscriptionStatus.ACTIVE);
 
         if (hasActiveSubs) {
             throw new BadRequestException(
@@ -169,7 +163,6 @@ public class ServicePackageServiceImpl implements ServicePackageService {
 
         pkg.softDelete();
         packageRepository.save(pkg);
-        
     }
 
     // ── Subscriptions ─────────────────────────────────────────────
@@ -341,26 +334,50 @@ public class ServicePackageServiceImpl implements ServicePackageService {
     @Override
     @Transactional
     public PackageSubscription consumeQuota(Long subscriptionId) {
-        PackageSubscription sub = findSubscriptionInTenant(subscriptionId);
+        try {
+            PackageSubscription sub = subscriptionRepository.findByIdAndCompanyIdForUpdate(subscriptionId, requireCompanyId())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                    "Subscription not found: " + subscriptionId));
 
-        if (!sub.isUsable()) {
-            throw new BadRequestException(
-                "Subscription is not active or has expired");
-        }
-        if (!sub.hasRemainingQuota()) {
-            // If the package defines an overage rate, allow the request
-            // through — UsageBillingService will invoice the extra unit
-            // when the request is completed.
-            if (sub.getServicePackage().getOverageRate() == null) {
+            if (!sub.isUsable()) {
                 throw new BadRequestException(
-                    "Request quota exhausted for this subscription. " +
-                    "Remaining: 0 of " + sub.getRequestQuota());
+                    "Subscription is not active or has expired");
             }
-        }
+            if (!sub.hasRemainingQuota()) {
+                // If the package defines an overage rate, allow the request
+                // through — UsageBillingService will invoice the extra unit
+                // when the request is completed.
+                if (sub.getServicePackage().getOverageRate() == null) {
+                    throw new BadRequestException(
+                        "Request quota exhausted for this subscription. " +
+                        "Remaining: 0 of " + sub.getRequestQuota());
+                }
+            }
 
-        sub.setRequestsUsed(sub.getRequestsUsed() + 1);
-        subscriptionRepository.save(sub);
-        return sub;
+            sub.setRequestsUsed(sub.getRequestsUsed() + 1);
+            subscriptionRepository.save(sub);
+            return sub;
+        } catch (org.springframework.dao.PessimisticLockingFailureException ex) {
+            throw new BadRequestException("The subscription is currently being updated by another request. Please try again.", ex);
+        }
+    }
+
+    @Override
+    @Transactional
+    public PackageSubscription releaseQuota(Long subscriptionId) {
+        try {
+            PackageSubscription sub = subscriptionRepository.findByIdAndCompanyIdForUpdate(subscriptionId, requireCompanyId())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                    "Subscription not found: " + subscriptionId));
+
+            if (sub.getRequestsUsed() > 0) {
+                sub.setRequestsUsed(sub.getRequestsUsed() - 1);
+                subscriptionRepository.save(sub);
+            }
+            return sub;
+        } catch (org.springframework.dao.PessimisticLockingFailureException ex) {
+            throw new BadRequestException("The subscription is currently being updated by another request. Please try again.", ex);
+        }
     }
 
 

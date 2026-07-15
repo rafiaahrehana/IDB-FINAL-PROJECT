@@ -6,6 +6,7 @@ import com.businessos.modules.company.Company;
 import com.businessos.modules.hrm.employee.Employee;
 import com.businessos.auth.user.User;
 import com.businessos.enums.ClientStatus;
+import com.businessos.enums.CompanyStatus;
 import com.businessos.shared.exception.BadRequestException;
 import com.businessos.shared.exception.ResourceNotFoundException;
 import com.businessos.modules.hrm.employee.EmployeeRepository;
@@ -68,6 +69,11 @@ public class ClientServiceImpl implements ClientService {
                 .industry(request.getIndustry())
                 .website(request.getWebsite())
                 .taxId(request.getTaxId())
+                .billingAddress(request.getBillingAddress())
+                .shippingAddress(request.getShippingAddress())
+                .tags(request.getTags())
+                .employeeCount(request.getEmployeeCount())
+                .annualRevenue(request.getAnnualRevenue())
                 .status(ClientStatus.ACTIVE)
                 .build();
 
@@ -96,6 +102,53 @@ public class ClientServiceImpl implements ClientService {
     }
 
     @Override
+    @Transactional
+    public ClientResponse registerPublic(PublicClientRegisterRequest request) {
+        Company company = companyRepository.findById(request.getCompanyId())
+                .orElseThrow(() -> new ResourceNotFoundException("Company not found: " + request.getCompanyId()));
+        if (company.getStatus() != CompanyStatus.ACTIVE && company.getStatus() != CompanyStatus.TRIAL) {
+            throw new BadRequestException("This company is not currently accepting client registrations");
+        }
+
+        String normalizedEmail = request.getEmail().toLowerCase().trim();
+        if (userRepository.existsByEmail(normalizedEmail)) {
+            throw new BadRequestException("An account with this email already exists");
+        }
+
+        User user = User.builder()
+                .firstName(request.getFirstName())
+                .lastName(request.getLastName())
+                .email(normalizedEmail)
+                .password(passwordEncoder.encode(request.getPassword()))
+                .phone(request.getPhone())
+                .role(Role.CLIENT)
+                .active(true)
+                .emailVerified(true)
+                .build();
+        userRepository.save(user);
+
+        Client client = Client.builder()
+                .user(user)
+                .company(companyRef(company.getId()))
+                .clientCompanyName(request.getClientCompanyName())
+                .industry(request.getIndustry())
+                .website(request.getWebsite())
+                .status(ClientStatus.ACTIVE)
+                .build();
+        clientRepository.save(client);
+        notificationPreferenceService.createDefaultsForUser(user.getId());
+
+        try {
+            EmailBranding.Data branding = emailBranding.from(company);
+            emailService.sendClientWelcomeEmail(user.getEmail(), user.getFirstName(), branding);
+        } catch (Exception ex) {
+            log.warn("Welcome email failed for client {}: {}", user.getEmail(), ex.getMessage());
+        }
+
+        return ClientMapper.toResponse(client);
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public ClientResponse getById(Long id) {
         return ClientMapper.toResponse(findInTenant(id));
@@ -107,6 +160,23 @@ public class ClientServiceImpl implements ClientService {
         User user = securityUtil.getCurrentUser();
         Client client = clientRepository.findByUserId(user.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Client profile not found"));
+        return ClientMapper.toResponse(client);
+    }
+
+    @Override
+    @Transactional
+    public ClientResponse updateMyProfile(UpdateMyClientProfileRequest request) {
+        User user = securityUtil.getCurrentUser();
+        Client client = clientRepository.findByUserId(user.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Client profile not found"));
+
+        if (request.getClientCompanyName() != null) client.setClientCompanyName(request.getClientCompanyName());
+        if (request.getIndustry() != null) client.setIndustry(request.getIndustry());
+        if (request.getWebsite() != null) client.setWebsite(request.getWebsite());
+        if (request.getBillingAddress() != null) client.setBillingAddress(request.getBillingAddress());
+        if (request.getShippingAddress() != null) client.setShippingAddress(request.getShippingAddress());
+
+        clientRepository.save(client);
         return ClientMapper.toResponse(client);
     }
 
@@ -132,6 +202,11 @@ public class ClientServiceImpl implements ClientService {
         if (request.getTaxId()!= null) client.setTaxId(request.getTaxId());
         if (request.getStatus()!= null) client.setStatus(request.getStatus());
         if (request.getPortalAccessEnabled()!= null) client.setPortalAccessEnabled(request.getPortalAccessEnabled());
+        if (request.getBillingAddress() != null) client.setBillingAddress(request.getBillingAddress());
+        if (request.getShippingAddress() != null) client.setShippingAddress(request.getShippingAddress());
+        if (request.getTags() != null) client.setTags(request.getTags());
+        if (request.getEmployeeCount() != null) client.setEmployeeCount(request.getEmployeeCount());
+        if (request.getAnnualRevenue() != null) client.setAnnualRevenue(request.getAnnualRevenue());
 
         if (request.getAccountManagerId() != null) {
             Employee am = employeeRepository

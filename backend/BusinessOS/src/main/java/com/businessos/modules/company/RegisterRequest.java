@@ -34,5 +34,5 @@ public class RegisterRequest {
     private String companyEmail;
     @Size(max = 30)
     private String companyPhone;
-    private com.businessos.shared.address.Location location;
+    private com.businessos.shared.address.Address location;
 }

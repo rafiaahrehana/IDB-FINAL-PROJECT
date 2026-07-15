@@ -18,12 +18,20 @@ public class ClientMapper {
         response.setClientCompanyName(client.getClientCompanyName());
         response.setIndustry(client.getIndustry());
         response.setWebsite(client.getWebsite());
+        response.setTaxId(client.getTaxId());
         response.setStatus(client.getStatus());
         response.setPortalAccessEnabled(client.isPortalAccessEnabled());
         response.setAccountManagerId(employee != null ? employee.getId() : null);
         response.setAccountManagerName(employee != null && employee.getUser() != null ? employee.getUser().getFullName() : null);
         response.setOnboardedAt(client.getOnboardedAt());
         response.setCreatedAt(client.getCreatedAt());
+        response.setBillingAddress(client.getBillingAddress());
+        response.setShippingAddress(client.getShippingAddress());
+        response.setTags(client.getTags());
+        response.setEmployeeCount(client.getEmployeeCount());
+        response.setAnnualRevenue(client.getAnnualRevenue());
+        response.setLifetimeValue(client.getLifetimeValue());
+        response.setTotalRequests(client.getTotalRequests());
         return response;
     }
 }

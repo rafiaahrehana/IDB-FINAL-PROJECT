@@ -39,7 +39,7 @@ public class SupportAgentController {
     }
 
     @GetMapping("/user/{userId}")
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPPORT_AGENT') or hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<SupportAgentResponse> getByUserId(@PathVariable Long userId) {
         return ResponseEntity.ok(agentService.getByUserId(userId));
     }

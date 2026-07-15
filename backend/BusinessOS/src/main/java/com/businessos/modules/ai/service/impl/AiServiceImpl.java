@@ -23,6 +23,8 @@ import com.businessos.modules.ai.repository.AiUsageLogRepository;
 import com.businessos.modules.ai.resolver.AiProviderResolver;
 import com.businessos.modules.ai.service.AiService;
 import com.businessos.modules.ai.util.AiKeyDecryptor;
+import com.businessos.auth.role.enums.PermissionCode;
+import com.businessos.auth.role.service.AuthorizationService;
 import com.businessos.auth.user.User;
 import com.businessos.modules.company.Company;
 import com.businessos.security.SecurityUtil;
@@ -52,12 +54,14 @@ public class AiServiceImpl implements AiService {
     private final AiConversationRepository   conversationRepository; // FIX: was missing
     private final AiKeyDecryptor             keyDecryptor;
     private final SecurityUtil               securityUtil;
+    private final AuthorizationService       authorizationService;
 
     @Override
     @Transactional
     public AiGenerateResponse generate(AiGenerateRequest request) {
+        authorizationService.checkPermission(PermissionCode.AI_CHAT);
         User user      = securityUtil.getCurrentUser();
-        Long companyId = requireCompanyId();
+        Long companyId = securityUtil.getCurrentCompanyId();
         Company company = companyRef(companyId);
 
         enforceRateLimits(companyId, user.getId());
@@ -97,10 +101,14 @@ public class AiServiceImpl implements AiService {
     @Override
     @Transactional
     public AiProviderConfigResponse saveProviderConfig(AiProviderConfigRequest request) {
-        Long companyId = requireCompanyId();
+        Long companyId = securityUtil.getCurrentCompanyId();
 
         AiProviderConfig config = configRepository.findByCompanyIdAndActiveTrue(companyId)
-            .orElseGet(() -> { AiProviderConfig c = new AiProviderConfig(); c.setCompany(companyRef(companyId)); return c; });
+            .orElseGet(() -> { 
+                AiProviderConfig c = new AiProviderConfig(); 
+                c.setCompany(companyRef(companyId)); 
+                return c; 
+            });
 
         config.setAiProviderType(request.getAiProviderType());
         config.setAiModel(request.getModel());
@@ -121,16 +129,17 @@ public class AiServiceImpl implements AiService {
     @Override
     @Transactional(readOnly = true)
     public AiProviderConfigResponse getProviderConfig() {
-        return configRepository.findByCompanyIdAndActiveTrue(requireCompanyId())
+        return configRepository.findByCompanyIdAndActiveTrue(securityUtil.getCurrentCompanyId())
             .map(AiMapper::toConfigResponse)
             .orElseThrow(() -> new ResourceNotFoundException(
-                "No AI provider config found for this company"));
+                "No AI provider config found"));
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<AiGenerateResponse> listConversations(AiFeature feature, Pageable pageable) {
-        Long companyId = requireCompanyId();
+        authorizationService.checkPermission(PermissionCode.AI_CHAT);
+        Long companyId = securityUtil.getCurrentCompanyId();
 
         /*
          * FIX: original code queried templateRepository (prompt templates) instead of
@@ -161,7 +170,7 @@ public class AiServiceImpl implements AiService {
     @Override
     @Transactional(readOnly = true)
     public AiUsageSummaryResponse getUsageSummary(LocalDate date) {
-        Long companyId   = requireCompanyId();
+        Long companyId   = securityUtil.getCurrentCompanyId();
         LocalDate target = date != null ? date : LocalDate.now();
 
         long totalRequests = usageLogRepository.countByCompanyAndDate(companyId, target);
@@ -192,14 +201,18 @@ public class AiServiceImpl implements AiService {
     @Override
     @Transactional
     public AiPromptTemplateResponse savePromptTemplate(AiPromptTemplateRequest request) {
-        Long companyId   = requireCompanyId();
+        Long companyId   = securityUtil.getCurrentCompanyId();
         User currentUser = securityUtil.getCurrentUser();
 
-        List<AiPromptTemplate> existing = templateRepository
-            .findByCompanyIdOrderByFeatureAscVersionDesc(companyId, Pageable.unpaged())
-            .stream()
-            .filter(t -> t.getFeature() == request.getFeature() && t.isActive())
-            .collect(Collectors.toList());
+        List<AiPromptTemplate> existing = (companyId != null)
+            ? templateRepository.findByCompanyIdOrderByFeatureAscVersionDesc(companyId, Pageable.unpaged())
+                .stream()
+                .filter(t -> t.getFeature() == request.getFeature() && t.isActive())
+                .collect(Collectors.toList())
+            : templateRepository.findByCompanyIsNullOrderByFeatureAscVersionDesc(Pageable.unpaged())
+                .stream()
+                .filter(t -> t.getFeature() == request.getFeature() && t.isActive())
+                .collect(Collectors.toList());
 
         int nextVersion = existing.isEmpty() ? 1 : existing.get(0).getVersion() + 1;
         existing.forEach(t -> t.setActive(false));
@@ -223,9 +236,11 @@ public class AiServiceImpl implements AiService {
     @Override
     @Transactional(readOnly = true)
     public Page<AiPromptTemplateResponse> listPromptTemplates(Pageable pageable) {
-        return templateRepository
-            .findByCompanyIdOrderByFeatureAscVersionDesc(requireCompanyId(), pageable)
-            .map(AiMapper::toTemplateResponse);
+        Long companyId = securityUtil.getCurrentCompanyId();
+        Page<AiPromptTemplate> page = (companyId != null)
+            ? templateRepository.findByCompanyIdOrderByFeatureAscVersionDesc(companyId, pageable)
+            : templateRepository.findByCompanyIsNullOrderByFeatureAscVersionDesc(pageable);
+        return page.map(AiMapper::toTemplateResponse);
     }
 
     // ── Private helpers ───────────────────────────────────────────
@@ -287,14 +302,8 @@ public class AiServiceImpl implements AiService {
         return callerPrompt;
     }
 
-    private Long requireCompanyId() {
-        Long companyId = securityUtil.getCurrentCompanyId();
-        if (companyId == null)
-            throw new ResourceNotFoundException("No company context in security context");
-        return companyId;
-    }
-
     private Company companyRef(Long companyId) {
+        if (companyId == null) return null;
         Company c = new Company();
         c.setId(companyId);
         return c;

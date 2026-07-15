@@ -22,7 +22,7 @@ public class CrossModuleAutomationHandler {
     @EventListener
     public void onServiceRequestCompleted(ServiceRequestCompletedEvent event) {
         try {
-            usageBillingService.handleCompletion(event.getServiceRequestId());
+            usageBillingService.handleCompletion(event.getServiceRequestId(), event.getCompanyId());
         } catch (Exception ex) {
             log.error("UsageBilling failed for request {}: {}",
                 event.getServiceRequestId(), ex.getMessage(), ex);
@@ -35,10 +35,15 @@ public class CrossModuleAutomationHandler {
     @Async
     @EventListener
     public void onOpportunityWon(OpportunityWonEvent event) {
-        log.info("[Automation] Opportunity WON: id={} client={} company={} name='{}'",
-            event.getOpportunityId(), event.getClientId(),
-            event.getCompanyId(), event.getOpportunityName());
-        // Extension point: add ServiceRequestService.createIntake(event) here
-        // when a Welcome Intake workflow template is implemented.
+        try {
+            log.info("[Automation] Opportunity WON: id={} client={} company={} name='{}'",
+                event.getOpportunityId(), event.getClientId(),
+                event.getCompanyId(), event.getOpportunityName());
+            // Extension point: add ServiceRequestService.createIntake(event) here
+            // when a Welcome Intake workflow template is implemented.
+        } catch (Exception ex) {
+            log.error("[Automation] Opportunity WON handler failed for opportunity {}: {}",
+                event.getOpportunityId(), ex.getMessage(), ex);
+        }
     }
 }

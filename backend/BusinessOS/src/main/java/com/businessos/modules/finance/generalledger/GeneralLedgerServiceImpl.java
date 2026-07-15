@@ -2,6 +2,8 @@ package com.businessos.modules.finance.generalledger;
 
 import com.businessos.modules.finance.chartofaccounts.ChartOfAccount;
 import com.businessos.modules.finance.chartofaccounts.ChartOfAccountRepository;
+import com.businessos.auth.role.enums.PermissionCode;
+import com.businessos.auth.role.service.AuthorizationService;
 import com.businessos.security.SecurityUtil;
 import com.businessos.shared.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -21,15 +23,16 @@ public class GeneralLedgerServiceImpl implements GeneralLedgerService {
     private final GeneralLedgerRepository glRepository;
     private final ChartOfAccountRepository coaRepository;
     private final SecurityUtil securityUtil;
+    private final AuthorizationService authorizationService;
 
     @Override
     @Transactional
     public void recordTransaction(Long accountId, BigDecimal debitAmount, BigDecimal creditAmount,
-                                  String description, String referenceType, Long referenceId,
+                                  String description, GlReferenceType referenceType, Long referenceId,
                                   String referenceNumber) {
         Long companyId = securityUtil.getCurrentCompanyId();
 
-        ChartOfAccount account = coaRepository.findById(accountId)
+        ChartOfAccount account = coaRepository.findByIdAndCompanyId(accountId, companyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Chart of Account not found"));
 
         GeneralLedger entry = GeneralLedger.builder()
@@ -39,7 +42,7 @@ public class GeneralLedgerServiceImpl implements GeneralLedgerService {
                 .debitAmount(debitAmount != null ? debitAmount : BigDecimal.ZERO)
                 .creditAmount(creditAmount != null ? creditAmount : BigDecimal.ZERO)
                 .description(description)
-                .referenceType(referenceType)
+                .referenceType(referenceType.name())
                 .referenceId(referenceId)
                 .referenceNumber(referenceNumber)
                 .posted(true)
@@ -56,7 +59,8 @@ public class GeneralLedgerServiceImpl implements GeneralLedgerService {
     @Override
     @Transactional(readOnly = true)
     public GeneralLedgerResponse getById(Long id) {
-        GeneralLedger entry = glRepository.findById(id)
+        authorizationService.checkPermission(PermissionCode.GENERAL_LEDGER_VIEW);
+        GeneralLedger entry = glRepository.findByIdAndCompanyId(id, securityUtil.getCurrentCompanyId())
                 .orElseThrow(() -> new ResourceNotFoundException("GL entry not found"));
         return GeneralLedgerMapper.toResponse(entry);
     }
@@ -64,6 +68,7 @@ public class GeneralLedgerServiceImpl implements GeneralLedgerService {
     @Override
     @Transactional(readOnly = true)
     public Page<GeneralLedgerResponse> getAll(Pageable pageable) {
+        authorizationService.checkPermission(PermissionCode.GENERAL_LEDGER_VIEW);
         Long companyId = securityUtil.getCurrentCompanyId();
         return glRepository.findByCompanyId(companyId, pageable)
                 .map(GeneralLedgerMapper::toResponse);
@@ -72,6 +77,7 @@ public class GeneralLedgerServiceImpl implements GeneralLedgerService {
     @Override
     @Transactional(readOnly = true)
     public Page<GeneralLedgerResponse> getByAccount(Long accountId, Pageable pageable) {
+        authorizationService.checkPermission(PermissionCode.GENERAL_LEDGER_VIEW);
         Long companyId = securityUtil.getCurrentCompanyId();
         return glRepository.findByCompanyIdAndAccountId(companyId, accountId, pageable)
                 .map(GeneralLedgerMapper::toResponse);
@@ -80,6 +86,7 @@ public class GeneralLedgerServiceImpl implements GeneralLedgerService {
     @Override
     @Transactional(readOnly = true)
     public Page<GeneralLedgerResponse> getByDateRange(LocalDate start, LocalDate end, Pageable pageable) {
+        authorizationService.checkPermission(PermissionCode.GENERAL_LEDGER_VIEW);
         Long companyId = securityUtil.getCurrentCompanyId();
         return glRepository.findByCompanyIdAndTransactionDateBetween(companyId, start, end, pageable)
                 .map(GeneralLedgerMapper::toResponse);
@@ -87,9 +94,10 @@ public class GeneralLedgerServiceImpl implements GeneralLedgerService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<GeneralLedgerResponse> getByReference(String referenceType, Long referenceId) {
+    public List<GeneralLedgerResponse> getByReference(GlReferenceType referenceType, Long referenceId) {
+        authorizationService.checkPermission(PermissionCode.GENERAL_LEDGER_VIEW);
         Long companyId = securityUtil.getCurrentCompanyId();
-        return glRepository.findByCompanyIdAndReferenceTypeAndReferenceId(companyId, referenceType, referenceId)
+        return glRepository.findByCompanyIdAndReferenceTypeAndReferenceId(companyId, referenceType.name(), referenceId)
                 .stream()
                 .map(GeneralLedgerMapper::toResponse)
                 .collect(Collectors.toList());
@@ -98,7 +106,8 @@ public class GeneralLedgerServiceImpl implements GeneralLedgerService {
     @Override
     @Transactional
     public void reconcile(Long id, String notes) {
-        GeneralLedger entry = glRepository.findById(id)
+        authorizationService.checkPermission(PermissionCode.GENERAL_LEDGER_RECONCILE);
+        GeneralLedger entry = glRepository.findByIdAndCompanyId(id, securityUtil.getCurrentCompanyId())
                 .orElseThrow(() -> new ResourceNotFoundException("GL entry not found"));
         entry.setReconciled(true);
         entry.setReconciliationNotes(notes);
@@ -108,19 +117,28 @@ public class GeneralLedgerServiceImpl implements GeneralLedgerService {
     @Override
     @Transactional(readOnly = true)
     public BigDecimal getAccountBalance(Long accountId) {
-        ChartOfAccount account = coaRepository.findById(accountId)
+        ChartOfAccount account = coaRepository.findByIdAndCompanyId(accountId, securityUtil.getCurrentCompanyId())
                 .orElseThrow(() -> new ResourceNotFoundException("Account not found"));
         return account.getBalance();
     }
 
+    /**
+     * Debit-normal accounts (ASSET, CONTRA_LIABILITY, EXPENSE, CONTRA_REVENUE) increase
+     * with a debit and decrease with a credit. Credit-normal accounts (LIABILITY,
+     * CONTRA_ASSET, EQUITY, REVENUE) are the opposite - a credit increases them.
+     * Classification lives on AccountType.isCreditNormal() - the single source of truth.
+     */
     private void updateAccountBalance(ChartOfAccount account, BigDecimal debitAmount, BigDecimal creditAmount) {
         BigDecimal currentBalance = account.getBalance();
+        boolean isCreditNormalType = account.getType().isCreditNormal();
 
-        if (debitAmount != null && debitAmount.compareTo(BigDecimal.ZERO) > 0) {
-            currentBalance = currentBalance.add(debitAmount);
-        }
-        if (creditAmount != null && creditAmount.compareTo(BigDecimal.ZERO) > 0) {
-            currentBalance = currentBalance.subtract(creditAmount);
+        BigDecimal debit = debitAmount != null ? debitAmount : BigDecimal.ZERO;
+        BigDecimal credit = creditAmount != null ? creditAmount : BigDecimal.ZERO;
+
+        if (isCreditNormalType) {
+            currentBalance = currentBalance.add(credit).subtract(debit);
+        } else {
+            currentBalance = currentBalance.add(debit).subtract(credit);
         }
 
         account.setBalance(currentBalance);

@@ -1,5 +1,6 @@
 package com.businessos.modules.servicedesk.servicecategory;
 
+import com.businessos.security.SecurityUtil;
 import com.businessos.shared.exception.BadRequestException;
 import com.businessos.shared.exception.ResourceNotFoundException;
 import jakarta.validation.Valid;
@@ -18,8 +19,10 @@ import java.util.stream.Collectors;
  * 1. ServiceCategory.builder() now works — @Builder added to base.
  * 2. .sortOrder() / setSortOrder() now work — field added to base.
  * 3. Added @Valid on @RequestBody parameters.
- * 4. Added @PreAuthorize — only ADMIN manages categories.
+ * 4. Added @PreAuthorize — company owner/employee manage their own company's categories.
  * 5. Removed direct import of old ServiceCategoryMapper from wrong package.
+ * 6. Tenant-scoped by companyId — categories are each company's own service catalog,
+ *    not a shared platform-wide taxonomy (name uniqueness is now per-company).
  */
 @RestController
 @RequiredArgsConstructor
@@ -27,47 +30,60 @@ import java.util.stream.Collectors;
 public class ServiceCategoryController {
 
     private final ServiceCategoryRepository categoryRepository;
+    private final SecurityUtil securityUtil;
 
+    private Long requireCompanyId() {
+        Long companyId = securityUtil.getCurrentCompanyId();
+        if (companyId == null) {
+            throw new BadRequestException("No company context for current user");
+        }
+        return companyId;
+    }
+
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     @GetMapping
     public ResponseEntity<List<ServiceCategoryResponse>> getAll() {
         return ResponseEntity.ok(
-            categoryRepository.findByActiveTrueOrderBySortOrderAsc()
+            categoryRepository.findByCompanyIdAndActiveTrueOrderBySortOrderAsc(requireCompanyId())
                 .stream()
                 .map(ServiceCategoryMapper::toResponse)
                 .collect(Collectors.toList()));
     }
 
     /**
-     * Management listing including inactive categories - the public GET only returns
-     * active ones, which would make a disabled category impossible to re-enable.
+     * Management listing including inactive categories - the active-only GET would make
+     * a disabled category impossible to re-enable.
      */
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'SYSTEM_ADMIN', 'SUPPORT_MANAGER')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     @GetMapping("/all")
     public ResponseEntity<List<ServiceCategoryResponse>> getAllIncludingInactive() {
         return ResponseEntity.ok(
-            categoryRepository.findAllByOrderBySortOrderAsc()
+            categoryRepository.findByCompanyIdOrderBySortOrderAsc(requireCompanyId())
                 .stream()
                 .map(ServiceCategoryMapper::toResponse)
                 .collect(Collectors.toList()));
     }
 
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     @GetMapping("/{id}")
     public ResponseEntity<ServiceCategoryResponse> getById(@PathVariable Long id) {
-        ServiceCategory category = categoryRepository.findById(id)
+        ServiceCategory category = categoryRepository.findByIdAndCompanyId(id, requireCompanyId())
             .orElseThrow(() -> new ResourceNotFoundException(
                 "Service category not found: " + id));
         return ResponseEntity.ok(ServiceCategoryMapper.toResponse(category));
     }
 
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'SYSTEM_ADMIN', 'SUPPORT_MANAGER')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     @PostMapping
     @Transactional
     public ResponseEntity<ServiceCategoryResponse> create(
             @Valid @RequestBody ServiceCategoryRequest request) {
-        if (categoryRepository.existsByName(request.getName()))
+        Long companyId = requireCompanyId();
+        if (categoryRepository.existsByCompanyIdAndName(companyId, request.getName()))
             throw new BadRequestException(
                 "A service category with this name already exists");
         ServiceCategory category = ServiceCategory.builder()
+            .companyId(companyId)
             .name(request.getName())
             .nameBn(request.getNameBn())
             .description(request.getDescription())
@@ -80,15 +96,21 @@ public class ServiceCategoryController {
             ServiceCategoryMapper.toResponse(category), HttpStatus.CREATED);
     }
 
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'SYSTEM_ADMIN', 'SUPPORT_MANAGER')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     @PutMapping("/{id}")
     @Transactional
     public ResponseEntity<ServiceCategoryResponse> update(
             @PathVariable Long id,
             @Valid @RequestBody ServiceCategoryRequest request) {
-        ServiceCategory category = categoryRepository.findById(id)
+        Long companyId = requireCompanyId();
+        ServiceCategory category = categoryRepository.findByIdAndCompanyId(id, companyId)
             .orElseThrow(() -> new ResourceNotFoundException(
                 "Service category not found: " + id));
+        // Prevent duplicate names on update (excluding the same record)
+        if (!category.getName().equalsIgnoreCase(request.getName())
+                && categoryRepository.existsByCompanyIdAndName(companyId, request.getName())) {
+            throw new BadRequestException("A service category with this name already exists");
+        }
         category.setName(request.getName());
         category.setNameBn(request.getNameBn());
         category.setDescription(request.getDescription());
@@ -97,11 +119,11 @@ public class ServiceCategoryController {
         return ResponseEntity.ok(ServiceCategoryMapper.toResponse(category));
     }
 
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'SYSTEM_ADMIN', 'SUPPORT_MANAGER')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     @PatchMapping("/{id}/toggle")
     @Transactional
     public ResponseEntity<ServiceCategoryResponse> toggle(@PathVariable Long id) {
-        ServiceCategory category = categoryRepository.findById(id)
+        ServiceCategory category = categoryRepository.findByIdAndCompanyId(id, requireCompanyId())
             .orElseThrow(() -> new ResourceNotFoundException(
                 "Service category not found: " + id));
         category.setActive(!category.isActive());

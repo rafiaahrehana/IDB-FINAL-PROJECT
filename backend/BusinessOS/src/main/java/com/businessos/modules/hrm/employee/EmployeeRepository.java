@@ -15,9 +15,13 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
 
     Optional<Employee> findByIdAndCompanyId(Long id, Long companyId);
 
+    Optional<Employee> findByCompanyIdAndEmployeeNumber(Long companyId, String employeeNumber);
+
     boolean existsByUserIdAndCompanyId(Long userId, Long companyId);
 
     Page<Employee> findByCompanyId(Long companyId, Pageable pageable);
+
+    List<Employee> findByCompanyIdAndActiveTrue(Long companyId);
 
     Page<Employee> findByCompanyIdAndDepartmentId(Long companyId, Long departmentId, Pageable pageable);
 
@@ -33,4 +37,18 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
     @Query("SELECT e.company.id FROM Employee e WHERE e.user.id = :userId AND e.active = true AND e.deleted = false")
     Optional<Long> findCompanyIdByUserId(Long userId);
     boolean existsByCompanyId(Long companyId);
+
+    /**
+     * Used by EmployeeNumberGenerator - MAX-based (not COUNT) to be safe against
+     * concurrent inserts and deleted records skewing the sequence.
+     */
+    @Query("SELECT MAX(e.employeeNumber) FROM Employee e WHERE e.company.id = :companyId AND e.employeeNumber LIKE CONCAT(:prefix, '%')")
+    Optional<String> findMaxEmployeeNumberByCompanyAndPrefix(@Param("companyId") Long companyId, @Param("prefix") String prefix);
+
+    /**
+     * Used by EmployeeNumberBackfillInitializer to find pre-existing employees
+     * that predate auto-generation and never had a number set.
+     */
+    @Query("SELECT e FROM Employee e WHERE e.company.id = :companyId AND (e.employeeNumber IS NULL OR e.employeeNumber = '') ORDER BY e.id ASC")
+    List<Employee> findByCompanyIdWithBlankEmployeeNumber(@Param("companyId") Long companyId);
 }

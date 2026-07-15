@@ -15,21 +15,24 @@ export class TestimonialsComponent {
       author: "Sarah Jenkins",
       role: "COO, TechFlow Inc.",
       initials: "SJ",
-      color: "bg-primary-bos"
+      bgColor: "bg-avatar-light",
+      textColor: "text-purple"
     },
     {
       quote: "The AI suggestions saved our support team hundreds of hours in the first month alone. Highly recommended.",
       author: "David Chen",
       role: "Head of Support, CloudScale",
       initials: "DC",
-      color: "bg-accent"
+      bgColor: "bg-avatar-light",
+      textColor: "text-purple"
     },
     {
       quote: "Security and compliance were our top priorities. BusinessOS exceeded our expectations on both fronts.",
       author: "Emily Rodriguez",
       role: "CTO, FinServ Global",
       initials: "ER",
-      color: "bg-warning"
+      bgColor: "bg-avatar-dark",
+      textColor: "text-white"
     }
   ]);
 }

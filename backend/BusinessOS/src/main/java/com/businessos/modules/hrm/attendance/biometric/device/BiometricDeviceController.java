@@ -14,7 +14,7 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/company/biometric/devices")
-@PreAuthorize("hasRole('HR_MANAGER') OR hasRole('IT_MANAGER') OR hasRole('COMPANY_ADMIN')")
+@PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
 public class BiometricDeviceController {
 
     private final BiometricDeviceService deviceService;

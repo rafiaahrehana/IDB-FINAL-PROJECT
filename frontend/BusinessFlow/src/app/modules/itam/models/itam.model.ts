@@ -9,16 +9,23 @@ export interface OffboardingChecklist {
   targetCompletionDate?: string;
   hardwareCollected: boolean;
   hardwareCollectedDate?: string;
+  hardwareCollectedBy?: string;
+  hardwareNotes?: string;
   licensesRevoked: boolean;
   licensesRevokedDate?: string;
+  licensesNotes?: string;
   accessRevoked: boolean;
   accessRevokedDate?: string;
+  accessNotes?: string;
   dataHandedOver: boolean;
   dataHandoverDate?: string;
+  dataHandoverNotes?: string;
   exitInterviewCompleted: boolean;
   exitInterviewDate?: string;
+  exitInterviewNotes?: string;
   completed: boolean;
   completionDate?: string;
+  completedBy?: string;
   completionPercentage: number;
   overallNotes?: string;
   createdAt: string;
@@ -64,10 +71,26 @@ export interface SoftwareLicense {
   nextRenewalDate?: string;
   renewalCost?: number;
   vendor?: string;
+  complianceNotes?: string;
   notes?: string;
+  renewalNotes?: string;
   active: boolean;
   autoRenew: boolean;
   createdAt: string;
+  accountEmail?: string;
+  licenseUrl?: string;
+  installationLocation?: string;
+  estimatedUserCount?: number;
+  updatedAt?: string;
+}
+
+export interface SoftwareLicenseSeat {
+  id: number;
+  licenseId: number;
+  softwareName: string;
+  employeeId: number;
+  employeeName: string;
+  assignedAt: string;
 }
 
 export interface AssetAssignment {

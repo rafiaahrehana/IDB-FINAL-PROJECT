@@ -9,8 +9,10 @@ import java.util.Optional;
 import com.businessos.modules.itam.shared.AssetHistory;
 
 public interface AssetAssignmentHistoryRepository extends JpaRepository<AssetHistory, Long> {
-    Page<AssetHistory> findByAssetIdOrderByAssignedAtDesc(Long assetId, Pageable pageable);
+    Page<AssetHistory> findByCompanyIdAndAssetIdOrderByAssignedAtDesc(
+            Long companyId, Long assetId, Pageable pageable);
     Page<AssetHistory> findByCompanyIdAndEmployeeIdOrderByAssignedAtDesc(
             Long companyId, Long employeeId, Pageable pageable);
+    Page<AssetHistory> findByCompanyIdOrderByAssignedAtDesc(Long companyId, Pageable pageable);
     Optional<AssetHistory> findTopByAssetIdAndReturnedAtIsNullOrderByAssignedAtDesc(Long assetId);
 }

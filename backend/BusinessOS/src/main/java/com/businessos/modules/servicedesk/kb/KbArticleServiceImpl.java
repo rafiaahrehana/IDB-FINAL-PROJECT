@@ -7,6 +7,7 @@ import com.businessos.modules.servicedesk.servicecategory.ServiceCategoryReposit
 import com.businessos.modules.servicedesk.servicetemplate.ServiceTemplate;
 import com.businessos.modules.servicedesk.servicetemplate.ServiceTemplateRepository;
 import com.businessos.security.SecurityUtil;
+import com.businessos.shared.exception.BadRequestException;
 import com.businessos.shared.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -67,13 +68,17 @@ public class KbArticleServiceImpl implements KbArticleService {
             throw new ResourceNotFoundException("Article not found");
         }
 
-        article.setViewCount(article.getViewCount() + 1);
-        return KbArticleMapper.toResponse(articleRepository.save(article));
+        return KbArticleMapper.toResponse(article);
     }
 
     @Override
     public Page<KbArticleResponse> list(String keyword, String status, Pageable pageable) {
-        KbArticleStatus statusFilter = (status == null || status.isBlank()) ? null : KbArticleStatus.valueOf(status);
+        KbArticleStatus statusFilter;
+        try {
+            statusFilter = (status == null || status.isBlank()) ? null : KbArticleStatus.valueOf(status.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new BadRequestException("Invalid article status: '" + status + "'. Valid values: DRAFT, PUBLISHED, ARCHIVED");
+        }
         String keywordFilter = (keyword == null || keyword.isBlank()) ? null : keyword.trim();
 
         return articleRepository.search(keywordFilter, statusFilter, isClient(), pageable)

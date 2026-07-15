@@ -17,15 +17,15 @@ public interface OffboardingChecklistService {
 
     List<OffboardingChecklistResponse> getPendingChecklists();
 
-    void markHardwareCollected(Long id);
+    void markHardwareCollected(Long id, String notes);
 
-    void markLicensesRevoked(Long id);
+    void markLicensesRevoked(Long id, String notes);
 
-    void markAccessRevoked(Long id);
+    void markAccessRevoked(Long id, String notes);
 
-    void markDataHandedOver(Long id);
+    void markDataHandedOver(Long id, String notes);
 
-    void markExitInterviewCompleted(Long id);
+    void markExitInterviewCompleted(Long id, String notes);
 
     OffboardingChecklistResponse delete(Long id);
 }

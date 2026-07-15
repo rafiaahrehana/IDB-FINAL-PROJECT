@@ -36,7 +36,6 @@ export class Expenses implements OnInit {
   rejectTarget: HrExpense | null = null;
   rejectionReason = '';
   approveTarget: HrExpense | null = null;
-  reimburseTarget: HrExpense | null = null;
   deleteTarget: HrExpense | null = null;
 
   statuses = HR_EXPENSE_STATUSES;
@@ -96,15 +95,6 @@ export class Expenses implements OnInit {
     this.expenseService.reject(this.rejectTarget.id, this.rejectionReason).subscribe({
       next: () => { this.rejectTarget = null; this.rejectionReason = ''; this.success = 'Expense rejected'; this.cdr.markForCheck(); this.load(); },
       error: (err) => { this.error = err?.error?.message || 'Failed to reject'; this.rejectTarget = null; this.cdr.markForCheck(); }
-    });
-  }
-
-  // REIMBURSE EXPENSE
-  doReimburse(): void {
-    if (!this.reimburseTarget) return;
-    this.expenseService.reimburse(this.reimburseTarget.id).subscribe({
-      next: () => { this.reimburseTarget = null; this.success = 'Expense reimbursed'; this.cdr.markForCheck(); this.load(); },
-      error: (err) => { this.error = err?.error?.message || 'Failed to reimburse'; this.reimburseTarget = null; this.cdr.markForCheck(); }
     });
   }
 

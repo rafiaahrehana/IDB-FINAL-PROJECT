@@ -9,16 +9,26 @@
   <div class="row g-3">
     <div class="col-lg-4">
       <div class="card h-100">
-        <div class="card-header py-2 fw-semibold">Account Info</div>
+        <div class="card-header py-2 fw-semibold">Client Info</div>
         <div class="card-body p-0">
           <table class="table table-sm mb-0">
             <tbody>
+              <tr><td class="text-muted">Email</td><td>{{ client.email || '-' }}</td></tr>
+              <tr><td class="text-muted">Phone</td><td>{{ client.phone || '-' }}</td></tr>
               <tr><td class="text-muted">Industry</td><td>{{ client.industry || '-' }}</td></tr>
               <tr><td class="text-muted">Website</td><td>{{ client.website || '-' }}</td></tr>
-              <tr><td class="text-muted">Email</td><td>{{ client.email || '-' }}</td></tr>
-<tr><td class="text-muted">Status</td><td>{{ client.status }}</td></tr>
+              <tr><td class="text-muted">Tax ID</td><td>{{ client.taxId || '-' }}</td></tr>
+              <tr><td class="text-muted">Status</td><td>{{ client.status }}</td></tr>
+              <tr><td class="text-muted">Portal Access</td><td>{{ client.portalAccessEnabled ? 'Enabled' : 'Disabled' }}</td></tr>
               <tr><td class="text-muted">Onboarded</td><td>{{ client.onboardedAt | date }}</td></tr>
               <tr><td class="text-muted">Account Manager</td><td>{{ client.accountManagerName || '-' }}</td></tr>
+              <tr><td class="text-muted">Employee Count</td><td>{{ client.employeeCount ?? '-' }}</td></tr>
+              <tr><td class="text-muted">Annual Revenue</td><td>{{ client.annualRevenue != null ? (client.annualRevenue | currency) : '-' }}</td></tr>
+              <tr><td class="text-muted">Lifetime Value</td><td>{{ client.lifetimeValue != null ? (client.lifetimeValue | currency) : '-' }}</td></tr>
+              <tr><td class="text-muted">Total Requests</td><td>{{ client.totalRequests ?? '-' }}</td></tr>
+              <tr><td class="text-muted">Billing Address</td><td>{{ client.billingAddress || '-' }}</td></tr>
+              <tr><td class="text-muted">Shipping Address</td><td>{{ client.shippingAddress || '-' }}</td></tr>
+              <tr><td class="text-muted">Tags</td><td>{{ client.tags || '-' }}</td></tr>
             </tbody>
           </table>
         </div>

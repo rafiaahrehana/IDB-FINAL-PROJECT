@@ -10,10 +10,10 @@ import org.springframework.stereotype.Component;
 @Component
 public class EmployeeMapper {
 
-    private final com.businessos.shared.address.LocationMapper locationMapper;
+    private final com.businessos.shared.address.AddressMapper addressMapper;
 
-    public EmployeeMapper(com.businessos.shared.address.LocationMapper locationMapper) {
-        this.locationMapper = locationMapper;
+    public EmployeeMapper(com.businessos.shared.address.AddressMapper addressMapper) {
+        this.addressMapper = addressMapper;
     }
 
     public EmployeeResponse toDTO(Employee e) {
@@ -46,7 +46,7 @@ public class EmployeeMapper {
         r.setDateOfBirth(e.getDateOfBirth());
         r.setFatherName(e.getFatherName());
         r.setMotherName(e.getMotherName());
-        r.setLocation(locationMapper.toResponse(e.getLocation()));
+        r.setLocation(addressMapper.toResponse(e.getLocation()));
         r.setHireDate(e.getHireDate());
         r.setConfirmationDate(e.getConfirmationDate());
         r.setProbationEndDate(e.getProbationEndDate());
@@ -69,6 +69,9 @@ public class EmployeeMapper {
         r.setEmergencyContactRelation(e.getEmergencyContactRelation());
         r.setActive(e.isActive());
         r.setCreatedAt(e.getCreatedAt());
+        com.businessos.auth.role.entity.CustomRole customRole = u != null ? u.getCustomRole() : null;
+        r.setCustomRoleId(customRole != null ? customRole.getId() : null);
+        r.setCustomRoleName(customRole != null ? customRole.getName() : null);
         return r;
     }
 }

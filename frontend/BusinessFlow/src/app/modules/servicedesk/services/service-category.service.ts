@@ -14,7 +14,7 @@ export class ServiceCategoryService {
     return this.api.get<ServiceCategory[]>(this.endpoint);
   }
 
-  // Management listing including inactive categories (admin roles only)
+  // Management listing including inactive categories (company owner/employee)
   listAll(): Observable<ServiceCategory[]> {
     return this.api.get<ServiceCategory[]>(`${this.endpoint}/all`);
   }

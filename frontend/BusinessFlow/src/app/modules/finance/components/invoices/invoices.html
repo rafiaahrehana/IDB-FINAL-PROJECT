@@ -1,10 +1,13 @@
 <div class="container-fluid py-3">
   <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
     <h4 class="mb-0">Invoices</h4>
-    <select class="form-select form-select-sm" style="width:180px" [(ngModel)]="statusFilter" (change)="page=0;load()">
-      <option value="">All statuses</option>
-      @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
-    </select>
+    <div class="d-flex gap-2">
+      <select class="form-select form-select-sm" style="width:180px" [(ngModel)]="statusFilter" (change)="page=0;load()">
+        <option value="">All statuses</option>
+        @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
+      </select>
+      <button class="btn btn-primary btn-sm" (click)="openCreate()"><i class="bi bi-plus-lg me-1"></i>New Invoice</button>
+    </div>
   </div>
   @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
   @if (success) { <div class="alert alert-success py-2">{{ success }}</div> }
@@ -17,7 +20,7 @@
         <div class="table-responsive">
           <table class="table table-hover table-sm align-middle mb-0">
             <thead class="table-light">
-              <tr><th>Invoice #</th><th>Client</th><th class="text-end">Total</th><th class="text-end">Outstanding</th><th>Due</th><th>Status</th><th></th></tr>
+              <tr><th>Invoice #</th><th>Client</th><th class="text-end">Total</th><th class="text-end">Balance</th><th>Due</th><th>Status</th><th></th></tr>
             </thead>
             <tbody>
               @for (inv of invoices; track inv.id) {
@@ -25,12 +28,19 @@
                 <td class="small">{{ inv.invoiceNumber }}</td>
                 <td>{{ inv.clientName }}</td>
                 <td class="text-end">{{ inv.totalAmount | currency }}</td>
-                <td class="text-end">{{ inv.outstandingAmount | currency }}</td>
+                <td class="text-end">{{ inv.balanceAmount | currency }}</td>
                 <td class="small">{{ inv.dueDate | date:'mediumDate' }}</td>
                 <td><span class="badge {{ statusClass(inv.status) }}">{{ inv.status }}</span></td>
                 <td class="text-end text-nowrap" (click)="$event.stopPropagation()">
-                  @if (inv.status === 'DRAFT') { <button class="btn btn-outline-primary btn-sm" (click)="send(inv)">Send</button> }
+                  @if (inv.status === 'DRAFT') {
+                    <button class="btn btn-outline-secondary btn-sm" (click)="openEdit(inv)" title="Edit"><i class="bi bi-pencil"></i></button>
+                    <button class="btn btn-outline-primary btn-sm" (click)="send(inv)">Send</button>
+                    <button class="btn btn-outline-danger btn-sm" (click)="deleteTarget = inv" title="Delete"><i class="bi bi-trash"></i></button>
+                  }
                   @if (inv.status === 'ISSUED' || inv.status === 'OVERDUE') { <button class="btn btn-outline-success btn-sm" (click)="markPaid(inv)">Mark Paid</button> }
+                  @if (inv.status === 'ISSUED' || inv.status === 'PARTIALLY_PAID' || inv.status === 'OVERDUE') {
+                    <button class="btn btn-outline-danger btn-sm" (click)="cancelTarget = inv" title="Cancel invoice (reverses ledger entries)"><i class="bi bi-x-circle"></i></button>
+                  }
                 </td>
               </tr>
               }
@@ -52,16 +62,32 @@
           <span class="fw-semibold">{{ selected.invoiceNumber }}</span>
           <span class="badge {{ statusClass(selected.status) }}">{{ selected.status }}</span>
         </div>
+        @if (selected.items?.length) {
+        <div class="table-responsive">
+          <table class="table table-sm mb-0">
+            <thead class="table-light"><tr><th>Item</th><th class="text-end">Qty</th><th class="text-end">Price</th><th class="text-end">Total</th></tr></thead>
+            <tbody>
+              @for (item of selected.items; track $index) {
+              <tr>
+                <td class="small">{{ item.description }}</td>
+                <td class="text-end">{{ item.quantity }}</td>
+                <td class="text-end">{{ item.unitPrice | currency }}</td>
+                <td class="text-end">{{ item.lineTotal | currency }}</td>
+              </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        }
         <div class="card-body p-0">
           <table class="table table-sm mb-0">
             <tbody>
               <tr><td class="text-muted">Client</td><td>{{ selected.clientName }}</td></tr>
               <tr><td class="text-muted">Subtotal</td><td>{{ selected.subtotal | currency }}</td></tr>
               <tr><td class="text-muted">Tax</td><td>{{ selected.taxAmount | currency }}</td></tr>
-              <tr><td class="text-muted">Discount</td><td>{{ selected.discountAmount | currency }}</td></tr>
               <tr><td class="text-muted">Total</td><td class="fw-bold">{{ selected.totalAmount | currency }}</td></tr>
               <tr><td class="text-muted">Paid</td><td class="text-success">{{ selected.paidAmount | currency }}</td></tr>
-              <tr><td class="text-muted">Outstanding</td><td class="fw-bold">{{ selected.outstandingAmount | currency }}</td></tr>
+              <tr><td class="text-muted">Balance</td><td class="fw-bold">{{ selected.balanceAmount | currency }}</td></tr>
               <tr><td class="text-muted">Due Date</td><td>{{ selected.dueDate | date:'mediumDate' }}</td></tr>
             </tbody>
           </table>
@@ -83,19 +109,118 @@
           </div>
         </div>
         }
-        @if (selected.payments?.length) {
-        <div class="card-footer small">
-          <strong>Payments</strong>
-          @for (p of selected.payments; track p.id) {
-          <div class="d-flex justify-content-between text-muted">
-            <span>{{ p.paidAt | date:'short' }} · {{ p.method }}</span>
-            <span>{{ p.amount | currency }}</span>
-          </div>
-          }
-        </div>
-        }
       </div>
     </div>
     }
   </div>
 </div>
+
+@if (showForm) {
+<div class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,.5)">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">{{ editing ? 'Edit Invoice' : 'New Invoice' }}</h5>
+        <button type="button" class="btn-close" (click)="showForm = false"></button>
+      </div>
+      <form #f="ngForm" (ngSubmit)="save()">
+        <div class="modal-body">
+          @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Client</label>
+              <select class="form-select form-select-sm" name="clientId" [(ngModel)]="form.clientId" required [disabled]="editing">
+                <option [ngValue]="0" disabled>Select a client</option>
+                @for (c of clients; track c.id) { <option [ngValue]="c.id">{{ c.clientCompanyName || (c.firstName + ' ' + c.lastName) }}</option> }
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Invoice Date</label>
+              <input type="date" class="form-control form-control-sm" name="invoiceDate" [(ngModel)]="form.invoiceDate" (change)="onPaymentTermsOrDateChange()" required>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Due Date</label>
+              <input type="date" class="form-control form-control-sm" name="dueDate" [(ngModel)]="form.dueDate" required>
+              <div class="form-text">Auto-filled from payment terms; edit freely if needed.</div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Payment Terms</label>
+              <select class="form-select form-select-sm" name="paymentTerms" [(ngModel)]="form.paymentTerms" (change)="onPaymentTermsOrDateChange()">
+                @for (t of paymentTerms; track t) { <option [value]="t">{{ t }}</option> }
+              </select>
+            </div>
+            <div class="col-md-8">
+              <label class="form-label">Description</label>
+              <input class="form-control form-control-sm" name="description" [(ngModel)]="form.description" maxlength="255">
+            </div>
+
+            <div class="col-12">
+              <label class="form-label fw-bold">Line Items</label>
+              <div class="table-responsive">
+                <table class="table table-sm align-middle mb-1">
+                  <thead class="table-light"><tr><th>Description</th><th style="width:100px">Qty</th><th style="width:130px">Unit Price</th><th style="width:110px" class="text-end">Total</th><th style="width:40px"></th></tr></thead>
+                  <tbody>
+                    @for (item of form.items; track $index; let i = $index) {
+                    <tr>
+                      <td><input class="form-control form-control-sm" name="itemDesc{{i}}" [(ngModel)]="item.description" required placeholder="Item description"></td>
+                      <td><input type="number" min="0.01" step="0.01" class="form-control form-control-sm" name="itemQty{{i}}" [(ngModel)]="item.quantity" required></td>
+                      <td><input type="number" min="0" step="0.01" class="form-control form-control-sm" name="itemPrice{{i}}" [(ngModel)]="item.unitPrice" required></td>
+                      <td class="text-end small">{{ (item.quantity || 0) * (item.unitPrice || 0) | currency }}</td>
+                      <td>
+                        @if (form.items.length > 1) {
+                        <button type="button" class="btn btn-sm btn-outline-danger" (click)="removeItem(i)"><i class="bi bi-x"></i></button>
+                        }
+                      </td>
+                    </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+              <button type="button" class="btn btn-sm btn-outline-secondary" (click)="addItem()"><i class="bi bi-plus-lg me-1"></i>Add Item</button>
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label">Tax Amount</label>
+              <input type="number" min="0" step="0.01" class="form-control form-control-sm" name="taxAmount" [(ngModel)]="form.taxAmount">
+            </div>
+            <div class="col-md-8">
+              <label class="form-label">Notes</label>
+              <input class="form-control form-control-sm" name="notes" [(ngModel)]="form.notes" maxlength="500">
+            </div>
+
+            <div class="col-12 text-end">
+              <div class="small text-muted">Subtotal: {{ itemsSubtotal() | currency }} &nbsp;+&nbsp; Tax: {{ (form.taxAmount || 0) | currency }}</div>
+              <div class="fw-bold">Total: {{ formTotal() | currency }}</div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" (click)="showForm = false">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm" [disabled]="f.invalid || saving || !form.clientId">
+            @if (saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
+            {{ editing ? 'Save Changes' : 'Create Invoice' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+}
+
+<app-confirm-dialog
+  [visible]="!!deleteTarget"
+  title="Delete Invoice"
+  [message]="'Delete invoice ' + (deleteTarget?.invoiceNumber || '') + '? This cannot be undone.'"
+  confirmLabel="Delete"
+  (confirmed)="confirmDelete()"
+  (cancelled)="deleteTarget = null"
+/>
+
+<app-confirm-dialog
+  [visible]="!!cancelTarget"
+  title="Cancel Invoice"
+  [message]="'Cancel invoice ' + (cancelTarget?.invoiceNumber || '') + '? This reverses any accounting entries already posted for it.'"
+  confirmLabel="Cancel Invoice"
+  (confirmed)="confirmCancel()"
+  (cancelled)="cancelTarget = null"
+/>

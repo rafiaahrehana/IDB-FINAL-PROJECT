@@ -13,6 +13,7 @@ public class ServiceTemplateMapper {
         response.setDescription(template.getDescription());
         if (template.getCategory() != null) {
             response.setCategoryId(template.getCategory().getId());
+            response.setCategoryName(template.getCategory().getName());
         }
         response.setDefaultPrice(template.getDefaultPrice());
         response.setEstimatedDays(template.getEstimatedDays());

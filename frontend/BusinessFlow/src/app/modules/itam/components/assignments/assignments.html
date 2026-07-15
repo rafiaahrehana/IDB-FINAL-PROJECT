@@ -9,9 +9,9 @@
       <tbody>
         @for (a of assignments; track a.id) {
         <tr>
-          <td>{{ a.assetName || a.assetTag }}</td>
+          <td>{{ a.assetName }}</td>
           <td>{{ a.employeeName }}</td>
-          <td>{{ a.assignedDate | date:'mediumDate' }}</td>
+          <td>{{ a.assignedAt | date:'mediumDate' }}</td>
           <td>{{ a.returnedAt ? (a.returnedAt | date:'mediumDate') : '-' }}</td>
           <td class="text-muted small">{{ a.notes || '-' }}</td>
         </tr>

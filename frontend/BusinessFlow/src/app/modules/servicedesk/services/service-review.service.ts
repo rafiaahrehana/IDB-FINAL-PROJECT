@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { ApiService, PagedResponse } from '../../../core/services/api.service';
 import { AverageRating, ServiceReview, ServiceReviewRequest } from '../models/servicedesk.model';
 
@@ -26,11 +26,15 @@ export class ServiceReviewService {
   }
 
   averageRating(): Observable<AverageRating> {
-    return this.api.get<AverageRating>(`${this.endpoint}/average-rating`);
+    return this.api.get<number>(`${this.endpoint}/average-rating`).pipe(
+      map(val => ({ average: val || 0 }))
+    );
   }
 
   averageRatingForService(hubServiceId: number): Observable<AverageRating> {
-    return this.api.get<AverageRating>(`${this.endpoint}/service/${hubServiceId}/average-rating`);
+    return this.api.get<number>(`${this.endpoint}/service/${hubServiceId}/average-rating`).pipe(
+      map(val => ({ average: val || 0 }))
+    );
   }
 
   delete(id: number): Observable<void> {

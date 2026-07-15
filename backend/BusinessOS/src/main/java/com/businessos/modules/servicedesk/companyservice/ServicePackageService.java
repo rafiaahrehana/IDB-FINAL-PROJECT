@@ -60,4 +60,7 @@ public interface ServicePackageService {
      * Returns the updated subscription.
      */
     PackageSubscription consumeQuota(Long subscriptionId);
+
+    /** Called by ServiceRequestServiceImpl.cancel() to give back a quota unit consumed by a request that was never fulfilled. */
+    PackageSubscription releaseQuota(Long subscriptionId);
 }

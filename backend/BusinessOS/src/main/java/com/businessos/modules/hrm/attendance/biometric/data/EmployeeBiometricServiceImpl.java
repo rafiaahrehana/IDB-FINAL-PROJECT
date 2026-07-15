@@ -3,6 +3,11 @@ import com.businessos.modules.hrm.attendance.biometric.device.BiometricDevice;
 import com.businessos.modules.hrm.attendance.biometric.device.BiometricDeviceRepository;
 import com.businessos.modules.hrm.employee.Employee;
 import com.businessos.modules.hrm.employee.EmployeeRepository;
+import com.businessos.auth.role.enums.PermissionCode;
+import com.businessos.auth.role.service.AuthorizationService;
+import com.businessos.auth.user.User;
+import com.businessos.security.SecurityUtil;
+import com.businessos.shared.exception.ForbiddenException;
 import com.businessos.shared.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -18,10 +23,26 @@ public class EmployeeBiometricServiceImpl implements EmployeeBiometricService {
     private final EmployeeBiometricDataRepository biometricDataRepository;
     private final EmployeeRepository employeeRepository;
     private final BiometricDeviceRepository deviceRepository;
+    private final AuthorizationService authorizationService;
+    private final SecurityUtil securityUtil;
+
+    private void requireViewOrOwn(Long employeeId) {
+        if (authorizationService.hasPermission(PermissionCode.BIOMETRIC_VIEW)) {
+            return;
+        }
+        User currentUser = securityUtil.getCurrentUser();
+        Employee currentEmployee = currentUser != null
+                ? employeeRepository.findByUserId(currentUser.getId()).orElse(null)
+                : null;
+        if (currentEmployee == null || employeeId == null || !currentEmployee.getId().equals(employeeId)) {
+            throw new ForbiddenException("Access denied: you can only access your own biometric enrollment");
+        }
+    }
 
     @Override
     @Transactional
     public BiometricDataResponse enrollEmployee(BiometricEnrollmentRequest request) {
+        authorizationService.checkPermission(PermissionCode.BIOMETRIC_MANAGE);
         Employee employee = employeeRepository.findById(request.getEmployeeId())
                 .orElseThrow(() -> new ResourceNotFoundException("Employee not found"));
 
@@ -68,12 +89,14 @@ public class EmployeeBiometricServiceImpl implements EmployeeBiometricService {
     public BiometricDataResponse getById(Long id) {
         EmployeeBiometricData data = biometricDataRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Enrollment not found"));
+        requireViewOrOwn(data.getEmployee() != null ? data.getEmployee().getId() : null);
         return BiometricDataMapper.toResponse(data);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<BiometricDataResponse> getByEmployee(Long employeeId) {
+        requireViewOrOwn(employeeId);
         return biometricDataRepository.findByEmployeeId(employeeId)
                 .stream()
                 .map(BiometricDataMapper::toResponse)
@@ -154,6 +177,7 @@ public class EmployeeBiometricServiceImpl implements EmployeeBiometricService {
     @Override
     @Transactional
     public BiometricDataResponse delete(Long id) {
+        authorizationService.checkPermission(PermissionCode.BIOMETRIC_MANAGE);
         EmployeeBiometricData data = biometricDataRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Enrollment not found"));
         data.softDelete();

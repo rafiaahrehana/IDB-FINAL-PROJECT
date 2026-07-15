@@ -24,7 +24,7 @@ public class AttendanceController {
     private final SecurityUtil securityUtil;
 
     @GetMapping
-    @PreAuthorize("hasRole('HR_MANAGER') or hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     public ResponseEntity<Page<AttendanceResponse>> listAll(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
@@ -33,14 +33,14 @@ public class AttendanceController {
     }
 
     @PostMapping("/check-in")
-    @PreAuthorize("hasRole('EMPLOYEE') or hasRole('MANAGER')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     public ResponseEntity<AttendanceResponse> checkIn(
             @Valid @RequestBody AttendanceCheckInRequest request) {
         return new ResponseEntity<>(attendanceService.checkIn(request), HttpStatus.CREATED);
     }
 
     @PostMapping("/{id}/check-out")
-    @PreAuthorize("hasRole('EMPLOYEE') or hasRole('MANAGER')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     public ResponseEntity<AttendanceResponse> checkOut(
             @PathVariable Long id,
             @Valid @RequestBody AttendanceCheckOutRequest request) {
@@ -55,7 +55,7 @@ public class AttendanceController {
      * date.
      */
     @PostMapping("/manual")
-    @PreAuthorize("hasRole('HR_MANAGER') or hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     public ResponseEntity<AttendanceResponse> createManual(
             @Valid @RequestBody AttendanceRequest request) {
         return new ResponseEntity<>(attendanceService.createManual(request), HttpStatus.CREATED);
@@ -67,7 +67,7 @@ public class AttendanceController {
      * GET /api/v1/company/attendance/{id}
      */
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('EMPLOYEE') or hasRole('MANAGER') or hasRole('HR_MANAGER')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     public ResponseEntity<AttendanceResponse> getById(@PathVariable Long id) {
         return ResponseEntity.ok(attendanceService.getById(id));
     }
@@ -76,7 +76,7 @@ public class AttendanceController {
      * GET /api/v1/company/attendance/employee/{employeeId}?date=2026-07-03
      */
     @GetMapping("/employee/{employeeId}")
-    @PreAuthorize("hasRole('EMPLOYEE') or hasRole('MANAGER') or hasRole('HR_MANAGER')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     public ResponseEntity<Page<AttendanceResponse>> getByEmployee(
             @PathVariable Long employeeId,
             @RequestParam(defaultValue = "0") int page,
@@ -91,7 +91,7 @@ public class AttendanceController {
      * Returns a single attendance record for an employee on a specific date.
      */
     @GetMapping("/employee/{employeeId}/date")
-    @PreAuthorize("hasRole('EMPLOYEE') or hasRole('MANAGER') or hasRole('HR_MANAGER')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     public ResponseEntity<AttendanceResponse> getByEmployeeAndDate(
             @PathVariable Long employeeId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
@@ -103,7 +103,7 @@ public class AttendanceController {
      * /api/v1/company/attendance/date-range?startDate=2026-07-01&endDate=2026-07-31
      */
     @GetMapping("/date-range")
-    @PreAuthorize("hasRole('HR_MANAGER') or hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     public ResponseEntity<Page<AttendanceResponse>> getByDateRange(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
@@ -117,7 +117,7 @@ public class AttendanceController {
      * GET /api/v1/company/attendance/status/{status}
      */
     @GetMapping("/status/{status}")
-    @PreAuthorize("hasRole('HR_MANAGER') or hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     public ResponseEntity<Page<AttendanceResponse>> getByStatus(
             @PathVariable AttendanceStatus status,
             @RequestParam(defaultValue = "0") int page,
@@ -127,13 +127,13 @@ public class AttendanceController {
     }
 
     @GetMapping("/late")
-    @PreAuthorize("hasRole('HR_MANAGER') OR hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     public ResponseEntity<List<AttendanceResponse>> getLateAttendances(@RequestParam LocalDate date) {
         return ResponseEntity.ok(attendanceService.getLateAttendances(date));
     }
 
     @GetMapping("/absent")
-    @PreAuthorize("hasRole('HR_MANAGER') OR hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     public ResponseEntity<List<AttendanceResponse>> getAbsentees(@RequestParam LocalDate date) {
         return ResponseEntity.ok(attendanceService.getAbsentees(date));
     }
@@ -145,7 +145,7 @@ public class AttendanceController {
      * Body: { "status": "PRESENT" }
      */
     @PatchMapping("/{id}/status")
-    @PreAuthorize("hasRole('HR_MANAGER') or hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     public ResponseEntity<Void> updateStatus(
             @PathVariable Long id,
             @RequestParam AttendanceStatus status) {
@@ -159,7 +159,7 @@ public class AttendanceController {
      * authenticated principal via SecurityUtil.
      */
     @PatchMapping("/{id}/approve")
-    @PreAuthorize("hasRole('HR_MANAGER') or hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     public ResponseEntity<Void> approveAttendance(@PathVariable Long id) {
         String approverName = securityUtil.getCurrentUser().getFullName();
         attendanceService.approveAttendance(id, approverName);

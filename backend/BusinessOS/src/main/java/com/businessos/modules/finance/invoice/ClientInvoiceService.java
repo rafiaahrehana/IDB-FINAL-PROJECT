@@ -13,6 +13,9 @@ public interface ClientInvoiceService {
     Page<ClientInvoiceResponse> getAll(Pageable pageable);
     Page<ClientInvoiceResponse> getByStatus(InvoiceStatus status, Pageable pageable);
     Page<ClientInvoiceResponse> getByClient(Long clientId, Pageable pageable);
+
+    /** The caller's own invoices - resolves their Client record from the security context. */
+    Page<ClientInvoiceResponse> getMyInvoices(Pageable pageable);
     ClientInvoiceResponse update(Long id, ClientInvoiceRequest request);
     void sendInvoice(Long id);
     void recordPayment(Long id, java.math.BigDecimal amount);
@@ -21,5 +24,10 @@ public interface ClientInvoiceService {
     void recordPaymentForCompany(Long companyId, Long id, java.math.BigDecimal amount);
     void markAsOverdue(Long id);
     List<ClientInvoiceResponse> getOverdueInvoices();
+
+    /** Reverses any GL posting the invoice already made, then marks it CANCELLED. */
+    void cancelInvoice(Long id);
+
+    /** DRAFT only - anything already sent/posted must go through cancelInvoice(). */
     void delete(Long id);
 }

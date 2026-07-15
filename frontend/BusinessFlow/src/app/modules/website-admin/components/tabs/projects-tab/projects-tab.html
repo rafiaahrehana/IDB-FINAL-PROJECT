@@ -1,0 +1,111 @@
+<div class="d-flex justify-content-between align-items-center mb-2">
+  <div class="text-muted small">Portfolio / case studies shown on your portal</div>
+  <button class="btn btn-primary btn-sm" (click)="openCreate()"><i class="bi bi-plus-lg me-1"></i>New Project</button>
+</div>
+
+@if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
+@if (success) { <div class="alert alert-success py-2">{{ success }}</div> }
+@if (loading) { <app-loader /> }
+
+@if (!loading && projects.length) {
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover table-sm align-middle mb-0">
+      <thead class="table-light"><tr><th>Title</th><th>Client</th><th>Category</th><th>Year</th><th>Tags</th><th></th></tr></thead>
+      <tbody>
+        @for (p of projects; track p.id) {
+        <tr>
+          <td>{{ p.title }}</td>
+          <td>{{ p.client || '-' }}</td>
+          <td>{{ p.category || '-' }}</td>
+          <td>{{ p.year || '-' }}</td>
+          <td>
+            @for (t of p.tags; track t) { <span class="badge text-bg-light border me-1">{{ t }}</span> }
+          </td>
+          <td class="text-end text-nowrap">
+            <button class="btn btn-outline-secondary btn-sm me-1" (click)="openEdit(p)"><i class="bi bi-pencil"></i></button>
+            <button class="btn btn-outline-danger btn-sm" (click)="deleteTarget = p"><i class="bi bi-trash"></i></button>
+          </td>
+        </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
+}
+@if (!loading && !projects.length) { <app-empty-state icon="bi-kanban" message="No projects yet." /> }
+
+@if (showForm) {
+<div class="modal d-block" style="background: rgba(0,0,0,.4)">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header py-2">
+        <h5 class="modal-title fs-6 fw-semibold">{{ editing ? 'Edit Project' : 'New Project' }}</h5>
+        <button class="btn-close" (click)="showForm = false"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-2">
+          <div class="col-md-6">
+            <label class="form-label small text-secondary mb-1">Title *</label>
+            <input class="form-control form-control-sm" [(ngModel)]="form.title" />
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small text-secondary mb-1">Client</label>
+            <input class="form-control form-control-sm" [(ngModel)]="form.client" />
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small text-secondary mb-1">Year</label>
+            <input type="number" class="form-control form-control-sm" [(ngModel)]="form.year" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small text-secondary mb-1">Category</label>
+            <input class="form-control form-control-sm" [(ngModel)]="form.category" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small text-secondary mb-1">Cover Image</label>
+            <div class="d-flex align-items-center gap-2">
+              @if (form.coverImageUrl) { <img [src]="form.coverImageUrl" class="rounded border" style="height:36px;width:56px;object-fit:cover" /> }
+              <app-file-upload label="Upload image" accept="image/*" variant="avatar" [maxSizeMB]="5" (uploaded)="onCoverUploaded($event)" />
+            </div>
+          </div>
+          <div class="col-12">
+            <label class="form-label small text-secondary mb-1">Summary</label>
+            <input class="form-control form-control-sm" [(ngModel)]="form.summary" />
+          </div>
+          <div class="col-12">
+            <label class="form-label small text-secondary mb-1">Description</label>
+            <textarea class="form-control form-control-sm" rows="4" [(ngModel)]="form.description"></textarea>
+          </div>
+          <div class="col-12">
+            <label class="form-label small text-secondary mb-1">Tags</label>
+            <div class="mb-1">
+              @for (t of form.tags; track $index) {
+              <span class="badge text-bg-light border me-1">{{ t }} <a role="button" (click)="removeTag($index)">&times;</a></span>
+              }
+            </div>
+            <div class="input-group input-group-sm">
+              <input class="form-control" placeholder="Add a tag" [(ngModel)]="newTag" (keyup.enter)="addTag()" />
+              <button class="btn btn-outline-primary" (click)="addTag()">Add</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer py-2">
+        <button class="btn btn-secondary btn-sm" (click)="showForm = false">Cancel</button>
+        <button class="btn btn-primary btn-sm" (click)="save()" [disabled]="saving">
+          @if (saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
+          {{ editing ? 'Save Changes' : 'Create' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+}
+
+<app-confirm-dialog
+  [visible]="!!deleteTarget"
+  title="Delete Project"
+  [message]="'Delete ' + (deleteTarget?.title || '') + '? This cannot be undone.'"
+  confirmLabel="Delete"
+  (confirmed)="confirmDelete()"
+  (cancelled)="deleteTarget = null" />

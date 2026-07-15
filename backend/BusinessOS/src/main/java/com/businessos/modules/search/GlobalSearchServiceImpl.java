@@ -3,11 +3,17 @@ package com.businessos.modules.search;
 import com.businessos.modules.ai.enums.AiFeature;
 import com.businessos.modules.ai.prompt.SearchAnswerPromptBuilder;
 import com.businessos.modules.ai.service.AiService;
+import com.businessos.modules.crm.client.Client;
 import com.businessos.modules.crm.client.ClientRepository;
+import com.businessos.modules.crm.lead.Lead;
 import com.businessos.modules.crm.lead.LeadRepository;
+import com.businessos.modules.crm.opportunity.Opportunity;
 import com.businessos.modules.crm.opportunity.OpportunityRepository;
+import com.businessos.modules.servicedesk.servicerequest.ServiceRequest;
 import com.businessos.modules.servicedesk.servicerequest.ServiceRequestRepository;
+import com.businessos.modules.support.ticket.SupportTicket;
 import com.businessos.modules.support.ticket.SupportTicketRepository;
+import com.businessos.modules.finance.invoice.ClientInvoice;
 import com.businessos.modules.finance.invoice.ClientInvoiceRepository;
 import com.businessos.security.SecurityUtil;
 import com.businessos.shared.exception.BadRequestException;
@@ -17,6 +23,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.springframework.data.domain.Page;
+
 import java.util.List;
 
 @Service
@@ -24,7 +32,7 @@ import java.util.List;
 @Transactional(readOnly = true)
 public class GlobalSearchServiceImpl implements GlobalSearchService {
 
-    private static final int PER_TYPE_LIMIT = 5;
+    private static final int PER_TYPE_LIMIT = 10;
 
     private final LeadRepository leadRepository;
     private final ClientRepository clientRepository;
@@ -41,56 +49,72 @@ public class GlobalSearchServiceImpl implements GlobalSearchService {
         if (query == null || query.trim().length() < 2) {
             throw new BadRequestException("Search query must be at least 2 characters");
         }
-        String keyword = query.trim();
+        String keyword = escapeLikeKeyword(query.trim());
         Pageable top = PageRequest.of(0, PER_TYPE_LIMIT);
 
         GlobalSearchResponse response = new GlobalSearchResponse();
         response.setQuery(keyword);
         List<SearchResultItem> results = response.getResults();
+        long totalMatches = 0;
 
-        leadRepository.searchLeads(companyId, keyword, top)
-                .forEach(lead -> results.add(new SearchResultItem("LEAD", lead.getId(),
-                        lead.getContactName(),
-                        (lead.getCompanyName() != null ? lead.getCompanyName() + " · " : "") + lead.getStatus(),
-                        "/crm/leads")));
+        Page<Lead> leadPage = leadRepository.searchLeads(companyId, keyword, top);
+        totalMatches += leadPage.getTotalElements();
+        leadPage.forEach(lead -> results.add(new SearchResultItem("LEAD", lead.getId(),
+                lead.getContactName(),
+                (lead.getCompanyName() != null ? lead.getCompanyName() + " · " : "") + lead.getStatus(),
+                "/crm/leads")));
 
-        clientRepository.searchClients(companyId, keyword, top)
-                .forEach(client -> results.add(new SearchResultItem("CLIENT", client.getId(),
-                        client.getClientCompanyName() != null ? client.getClientCompanyName()
-                                : client.getUser().getFirstName() + " " + client.getUser().getLastName(),
-                        client.getIndustry() != null ? client.getIndustry() : "Account",
-                        "/crm/clients/" + client.getId())));
+        Page<Client> clientPage = clientRepository.searchClients(companyId, keyword, top);
+        totalMatches += clientPage.getTotalElements();
+        clientPage.forEach(client -> results.add(new SearchResultItem("CLIENT", client.getId(),
+                client.getClientCompanyName() != null ? client.getClientCompanyName()
+                        : client.getUser().getFirstName() + " " + client.getUser().getLastName(),
+                client.getIndustry() != null ? client.getIndustry() : "Account",
+                "/crm/clients/" + client.getId())));
 
-        opportunityRepository.searchOpportunities(companyId, keyword, top)
-                .forEach(opp -> results.add(new SearchResultItem("OPPORTUNITY", opp.getId(),
-                        opp.getName(),
-                        opp.getStage() + (opp.getAmount() != null ? " · " + opp.getAmount() : ""),
-                        "/crm/pipeline")));
+        Page<Opportunity> oppPage = opportunityRepository.searchOpportunities(companyId, keyword, top);
+        totalMatches += oppPage.getTotalElements();
+        oppPage.forEach(opp -> results.add(new SearchResultItem("OPPORTUNITY", opp.getId(),
+                opp.getName(),
+                opp.getStage() + (opp.getAmount() != null ? " · " + opp.getAmount() : ""),
+                "/crm/pipeline")));
 
-        serviceRequestRepository.findByCompanyIdAndTitleContainingIgnoreCaseAndDeletedFalse(companyId, keyword, top)
-                .forEach(sr -> results.add(new SearchResultItem("SERVICE_REQUEST", sr.getId(),
-                        sr.getTitle(), String.valueOf(sr.getStatus()),
-                        "/servicedesk/requests/" + sr.getId())));
+        Page<ServiceRequest> srPage = serviceRequestRepository.findByCompanyIdAndTitleContainingIgnoreCaseAndDeletedFalse(companyId, keyword, top);
+        totalMatches += srPage.getTotalElements();
+        srPage.forEach(sr -> results.add(new SearchResultItem("SERVICE_REQUEST", sr.getId(),
+                sr.getTitle(), String.valueOf(sr.getStatus()),
+                "/servicedesk/requests/" + sr.getId())));
 
-        supportTicketRepository.findByCompanyIdAndTitleContainingIgnoreCase(companyId, keyword, top)
-                .forEach(ticket -> results.add(new SearchResultItem("TICKET", ticket.getId(),
-                        ticket.getTitle(),
-                        ticket.getTicketNumber() + " · " + ticket.getStatus(),
-                        "/support/tickets")));
+        Page<SupportTicket> ticketPage = supportTicketRepository.findByCompanyIdAndTitleContainingIgnoreCase(companyId, keyword, top);
+        totalMatches += ticketPage.getTotalElements();
+        ticketPage.forEach(ticket -> results.add(new SearchResultItem("TICKET", ticket.getId(),
+                ticket.getTitle(),
+                ticket.getTicketNumber() + " · " + ticket.getStatus(),
+                "/support/tickets")));
 
-        invoiceRepository.findByCompanyIdAndInvoiceNumberContainingIgnoreCase(companyId, keyword, top)
-                .forEach(invoice -> results.add(new SearchResultItem("INVOICE", invoice.getId(),
-                        invoice.getInvoiceNumber(),
-                        invoice.getStatus() + " · " + invoice.getTotalAmount(),
-                        "/finance/invoices")));
+        Page<ClientInvoice> invoicePage = invoiceRepository.findByCompanyIdAndInvoiceNumberContainingIgnoreCase(companyId, keyword, top);
+        totalMatches += invoicePage.getTotalElements();
+        invoicePage.forEach(invoice -> results.add(new SearchResultItem("INVOICE", invoice.getId(),
+                invoice.getInvoiceNumber(),
+                invoice.getStatus() + " · " + invoice.getTotalAmount(),
+                "/finance/invoices")));
 
-        response.setTotalMatches(results.size());
+        response.setTotalMatches(totalMatches);
         return response;
     }
 
     @Override
+    @Transactional(timeout = 30)
     public AskResponse ask(AskRequest request) {
         GlobalSearchResponse searchResults = search(request.getQuestion());
+
+        if (searchResults.getResults().isEmpty()) {
+            AskResponse response = new AskResponse();
+            response.setQuestion(request.getQuestion());
+            response.setAnswer("No matching records found. Try a different search term.");
+            response.setSources(List.of());
+            return response;
+        }
 
         StringBuilder context = new StringBuilder();
         for (SearchResultItem item : searchResults.getResults()) {
@@ -118,5 +142,9 @@ public class GlobalSearchServiceImpl implements GlobalSearchService {
             throw new BadRequestException("No company context for current platformuser");
         }
         return companyId;
+    }
+
+    private String escapeLikeKeyword(String keyword) {
+        return keyword.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
     }
 }

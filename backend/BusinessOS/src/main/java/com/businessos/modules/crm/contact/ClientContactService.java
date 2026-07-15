@@ -8,11 +8,11 @@ public interface ClientContactService {
 
     List<ClientContactResponse> listByClient(Long clientId);
 
-    ClientContactResponse getById(Long id);
+    ClientContactResponse getById(Long clientId, Long id);
 
-    ClientContactResponse update(Long id, ClientContactRequest request);
+    ClientContactResponse update(Long clientId, Long id, ClientContactRequest request);
 
-    ClientContactResponse markPrimary(Long id);
+    ClientContactResponse markPrimary(Long clientId, Long id);
 
-    void delete(Long id);
+    void delete(Long clientId, Long id);
 }

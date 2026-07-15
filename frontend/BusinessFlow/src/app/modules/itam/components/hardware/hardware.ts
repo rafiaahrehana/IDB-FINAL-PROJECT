@@ -1,21 +1,20 @@
 import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { HrAsset, HrAssetRequest } from '../../../hrm/models/hrm.model';
+import { Employee, HrAsset, HrAssetRequest } from '../../../hrm/models/hrm.model';
 import { HrAssetService } from '../../../hrm/services/hr-asset.service';
+import { EmployeeService } from '../../../hrm/services/employee.service';
 import { Pagination } from '../../../../shared/components/pagination/pagination';
 import { Loader } from '../../../../shared/components/loader/loader';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
 import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/confirm-dialog';
 
-// NOTE: Hardware now reuses the shared hrm/asset backend (AssetController, "/api/hr/assets")
-// rather than a dedicated ITAM hardware controller (none exists). The Asset entity has
-// IT-hardware-specific columns (ipAddress, macAddress, processorModel, ramSize,
-// storageSize, operatingSystem, assetTag, brand, model, warrantyExpiry) but
-// AssetResponse/AssetRequest currently do NOT expose them - only the generic fields
-// below are reachable through the API today. "Category" is used as a free-text way to
-// mark hardware type (Laptop, Monitor, etc.) since there is no dedicated hardware-type
-// enum on the backend.
+// Hardware reuses the shared hrm/asset backend (AssetController, "/api/hr/assets") rather
+// than a dedicated ITAM hardware controller (none exists). AssetResponse/AssetRequest do
+// expose the IT-hardware-specific columns (ipAddress, macAddress, processorModel, ramSize,
+// storageSize, operatingSystem, assetTag, brand, model, warrantyExpiry). "Category" is used
+// as a free-text way to mark hardware type (Laptop, Monitor, etc.) since there is no
+// dedicated hardware-type enum on the backend.
 @Component({
   selector: 'app-hardware',
   imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState, ConfirmDialog],
@@ -24,6 +23,7 @@ import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/conf
 })
 export class Hardware implements OnInit {
   assets: HrAsset[] = [];
+  employees: Employee[] = [];
   totalPages = 0;
   page = 0;
   loading = false;
@@ -39,10 +39,15 @@ export class Hardware implements OnInit {
   categories = ['Laptop', 'Desktop', 'Monitor', 'Printer', 'Phone', 'Tablet', 'Server', 'Networking', 'Other'];
   today = new Date().toISOString().slice(0, 10);
 
-  constructor(private assetService: HrAssetService, private cdr: ChangeDetectorRef) {}
+  constructor(
+    private assetService: HrAssetService,
+    private employeeService: EmployeeService,
+    private cdr: ChangeDetectorRef,
+  ) {}
 
   ngOnInit(): void {
     this.load();
+    this.employeeService.list(0, 500).subscribe({ next: (res) => { this.employees = res.content; this.cdr.markForCheck(); } });
   }
 
   load(): void {

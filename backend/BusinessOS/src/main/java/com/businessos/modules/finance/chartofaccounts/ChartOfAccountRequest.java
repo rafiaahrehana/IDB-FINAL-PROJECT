@@ -1,5 +1,6 @@
 package com.businessos.modules.finance.chartofaccounts;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.*;
 import lombok.*;
 
@@ -17,8 +18,12 @@ public class ChartOfAccountRequest {
     private AccountType type;
 
     private String description;
-    private boolean headerAccount;
+    // Matches ChartOfAccountResponse.isHeaderAccount naming/JSON key - see the comment there.
+    @JsonProperty("isHeaderAccount")
+    private boolean isHeaderAccount;
     @Builder.Default
     private boolean allowDirectPosting = true;
+    @Builder.Default
+    private boolean active = true;
     private String notes;
 }

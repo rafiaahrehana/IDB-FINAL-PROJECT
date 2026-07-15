@@ -44,7 +44,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     private final EmailBranding emailBranding;
     private final NotificationPreferenceService notificationPreferenceService;
     private final EmployeeMapper employeeMapper;
-    private final com.businessos.shared.address.LocationMapper locationMapper;
+    private final com.businessos.shared.address.AddressMapper addressMapper;
     private final SecurityUtil securityUtil;
 
     private Long requireCompanyId() {
@@ -101,7 +101,7 @@ public class EmployeeServiceImpl implements EmployeeService {
         return Employee.builder()
                 .user(user)
                 .company(company)
-                .employeeNumber(request.getEmployeeNumber())
+                .employeeNumber(EmployeeNumberGenerator.next(employeeRepository, company.getId()))
                 .officialEmail(request.getOfficialEmail())
                 .workPhone(request.getWorkPhone())
                 .profileImageUrl(request.getProfileImageUrl())
@@ -118,7 +118,7 @@ public class EmployeeServiceImpl implements EmployeeService {
                 .dateOfBirth(request.getDateOfBirth())
                 .fatherName(request.getFatherName())
                 .motherName(request.getMotherName())
-                .location(locationMapper.toEntity(request.getLocation()))
+                .location(addressMapper.toEntity(request.getLocation()))
                 .hireDate(request.getHireDate())
                 .confirmationDate(request.getConfirmationDate())
                 .probationEndDate(request.getProbationEndDate())
@@ -174,9 +174,9 @@ public class EmployeeServiceImpl implements EmployeeService {
             emp.setMotherName(request.getMotherName());
         if (request.getLocation() != null) {
             if (emp.getLocation() == null) {
-                emp.setLocation(locationMapper.toEntity(request.getLocation()));
+                emp.setLocation(addressMapper.toEntity(request.getLocation()));
             } else {
-                locationMapper.updateEntityFromRequest(emp.getLocation(), request.getLocation());
+                addressMapper.updateEntityFromRequest(emp.getLocation(), request.getLocation());
             }
         }
         if (request.getHireDate() != null)

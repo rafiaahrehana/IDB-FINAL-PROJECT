@@ -10,6 +10,7 @@ import { DashboardPreviewComponent } from './components/dashboard-preview/dashbo
 import { AiFeaturesComponent } from './components/ai-features/ai-features';
 import { WorkflowAutomationComponent } from './components/workflow-automation/workflow-automation';
 import { SecurityComponent } from './components/security/security';
+import { IntegrationsComponent } from './components/integrations/integrations';
 import { PricingComponent } from './components/pricing/pricing';
 import { TestimonialsComponent } from './components/testimonials/testimonials';
 import { FaqComponent } from './components/faq/faq';
@@ -30,6 +31,7 @@ import { FooterComponent } from './components/footer/footer';
     AiFeaturesComponent,
     WorkflowAutomationComponent,
     SecurityComponent,
+    IntegrationsComponent,
     PricingComponent,
     TestimonialsComponent,
     FaqComponent,
@@ -49,6 +51,7 @@ import { FooterComponent } from './components/footer/footer';
         <app-ai-features></app-ai-features>
         <app-workflow-automation></app-workflow-automation>
         <app-security></app-security>
+        <app-integrations></app-integrations>
         <app-pricing></app-pricing>
         <app-testimonials></app-testimonials>
         <app-faq></app-faq>

@@ -57,7 +57,10 @@ public class ServiceReviewServiceImpl implements ServiceReviewService {
                 .orElse(null);
 
         if (review != null) {
-            if (review.getCreatedAt().isBefore(LocalDateTime.now().minusDays(7)))
+            // Use updatedAt if set, otherwise fall back to createdAt, for the edit window
+            LocalDateTime editBase = review.getUpdatedAt() != null
+                    ? review.getUpdatedAt() : review.getCreatedAt();
+            if (editBase.isBefore(LocalDateTime.now().minusDays(7)))
                 throw new BadRequestException("Reviews can no longer be edited after 7 days");
 
             review.setRating(request.getRating());
@@ -142,7 +145,7 @@ public class ServiceReviewServiceImpl implements ServiceReviewService {
         ServiceReview review = reviewRepository.findByIdAndCompanyId(id, companyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Service review not found: " + id));
         review.softDelete();
-        
+        reviewRepository.save(review);
     }
 
     private Long requireCompanyId() {

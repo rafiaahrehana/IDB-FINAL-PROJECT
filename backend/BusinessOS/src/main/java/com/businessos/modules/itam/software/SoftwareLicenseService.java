@@ -15,6 +15,8 @@ public interface SoftwareLicenseService {
     void delete(Long id);
     List<SoftwareLicenseResponse> getExpiringLicenses();
     List<SoftwareLicenseResponse> getExpiredLicenses();
-    void assignSeat(Long licenseId);
-    void releaseSeat(Long licenseId);
+    void assignSeat(Long licenseId, Long employeeId);
+    void releaseSeat(Long licenseId, Long employeeId);
+    List<SoftwareLicenseSeatResponse> getSeatHolders(Long licenseId);
+    List<SoftwareLicenseSeatResponse> getLicensesForEmployee(Long employeeId);
 }

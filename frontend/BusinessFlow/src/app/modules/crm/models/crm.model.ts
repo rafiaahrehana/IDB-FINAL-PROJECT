@@ -28,6 +28,18 @@ export interface Lead {
   assignedToId?: number;
   assignedToName?: string;
   createdAt: string;
+  lastContactDate?: string;
+  lastActivityAt?: string;
+  companyServiceId?: number;
+  companyServiceName?: string;
+  assignedToEmail?: string;
+  convertedClientId?: number;
+  convertedClientName?: string;
+  convertedAt?: string;
+  activitiesCount?: number;
+  updatedAt?: string;
+  createdByName?: string;
+  updatedByName?: string;
 }
 
 export interface Client {
@@ -41,12 +53,20 @@ export interface Client {
   clientCompanyName?: string;
   industry?: string;
   website?: string;
+  taxId?: string;
   status: string;
   portalAccessEnabled?: boolean;
   accountManagerId?: number;
   accountManagerName?: string;
   onboardedAt?: string;
   createdAt: string;
+  billingAddress?: string;
+  shippingAddress?: string;
+  tags?: string;
+  employeeCount?: number;
+  annualRevenue?: number;
+  lifetimeValue?: number;
+  totalRequests?: number;
 }
 
 export interface ClientContact {
@@ -60,6 +80,7 @@ export interface ClientContact {
   primaryContact: boolean;
   notes?: string;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface Opportunity {
@@ -84,6 +105,8 @@ export interface Opportunity {
   lastActivityAt?: string;
   stageChangedAt?: string;
   createdAt: string;
+  sourceLeadId?: number;
+  updatedAt?: string;
 }
 
 export interface PipelineStageSummary {
@@ -115,4 +138,5 @@ export interface CrmActivity {
   opportunityName?: string;
   performedByName?: string;
   createdAt: string;
+  performedById?: number;
 }

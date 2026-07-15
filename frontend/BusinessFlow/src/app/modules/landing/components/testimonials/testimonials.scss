@@ -1,0 +1,108 @@
+.testimonials-section {
+  background-color: #ffffff;
+}
+
+/* Background elements */
+.testi-blob {
+  position: absolute;
+  filter: blur(40px);
+  z-index: 0;
+  border-radius: 50%;
+  opacity: 0.6;
+}
+
+.blob-t-left {
+  width: 400px;
+  height: 200px;
+  background: #dac1fa;
+  top: 0;
+  left: 0;
+  transform: translate(-30%, -30%) rotate(-15deg);
+  border-radius: 100px;
+}
+
+.blob-t-right {
+  width: 500px;
+  height: 300px;
+  background: #efe4fd;
+  top: 0;
+  right: 0;
+  transform: translate(30%, -40%) rotate(20deg);
+  border-radius: 200px;
+}
+
+.blob-b-left {
+  width: 500px;
+  height: 250px;
+  background: #e2d1fc;
+  bottom: 0;
+  left: 0;
+  transform: translate(-10%, 40%) rotate(15deg);
+  border-radius: 300px;
+}
+
+.blob-b-right {
+  width: 450px;
+  height: 250px;
+  background: #cfb1fa;
+  bottom: 0;
+  right: 0;
+  transform: translate(20%, 30%) rotate(-10deg);
+  border-radius: 200px;
+}
+
+.testi-dots {
+  position: absolute;
+  width: 100px;
+  height: 100px;
+  background-image: radial-gradient(#d3c1eb 2px, transparent 2px);
+  background-size: 15px 15px;
+  z-index: 0;
+  opacity: 0.8;
+}
+
+.dots-right {
+  top: 60px;
+  right: 5%;
+  height: 150px;
+}
+
+.dots-left {
+  bottom: 40px;
+  left: 5%;
+  height: 120px;
+}
+
+/* Card Styling */
+.testi-card {
+  border: 1px solid #e2d6fb;
+  border-radius: 12px !important;
+  box-shadow: 0 8px 24px rgba(210, 190, 240, 0.2);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  z-index: 2;
+}
+
+.hover-card-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px rgba(180, 150, 230, 0.3);
+}
+
+.text-star {
+  color: #d37c1d;
+}
+
+.bg-avatar-light {
+  background-color: #efe8fd;
+}
+
+.bg-avatar-dark {
+  background-color: #3d2678;
+}
+
+.text-purple {
+  color: #3d2678 !important;
+}
+
+h2 {
+  color: #120b29 !important;
+}

@@ -24,6 +24,12 @@ public class ClientController {
         return new ResponseEntity<>(clientService.create(request), HttpStatus.CREATED);
     }
 
+    /** Public, unauthenticated self-registration - see SecurityConfig for the permitAll rule. */
+    @PostMapping("/public/register")
+    public ResponseEntity<ClientResponse> registerPublic(@Valid @RequestBody PublicClientRegisterRequest request) {
+        return new ResponseEntity<>(clientService.registerPublic(request), HttpStatus.CREATED);
+    }
+
     @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     @GetMapping
     public ResponseEntity<Page<ClientResponse>> listAll(
@@ -37,6 +43,12 @@ public class ClientController {
     @GetMapping("/me")
     public ResponseEntity<ClientResponse> getMyProfile() {
         return ResponseEntity.ok(clientService.getMyProfile());
+    }
+
+    @PreAuthorize("hasRole('CLIENT')")
+    @PatchMapping("/me")
+    public ResponseEntity<ClientResponse> updateMyProfile(@Valid @RequestBody UpdateMyClientProfileRequest request) {
+        return ResponseEntity.ok(clientService.updateMyProfile(request));
     }
 
     @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")

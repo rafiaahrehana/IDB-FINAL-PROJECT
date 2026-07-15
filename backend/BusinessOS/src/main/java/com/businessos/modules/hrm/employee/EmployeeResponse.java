@@ -35,7 +35,7 @@ public class EmployeeResponse {
     private LocalDate dateOfBirth;
     private String fatherName;
     private String motherName;
-    private com.businessos.shared.address.LocationResponse location;
+    private com.businessos.shared.address.AddressResponse location;
     private LocalDate hireDate;
     private LocalDate confirmationDate;
     private LocalDate probationEndDate;
@@ -58,4 +58,6 @@ public class EmployeeResponse {
     private String emergencyContactRelation;
     private boolean active;
     private LocalDateTime createdAt;
+    private Long customRoleId;
+    private String customRoleName;
 }

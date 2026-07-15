@@ -23,4 +23,13 @@ public enum AccountType {
     public String getLabel() { return label; }
     public String getCodeRange() { return codeRange; }
     public String getDescription() { return description; }
+
+    /**
+     * Single source of truth for debit/credit-normal classification - previously
+     * duplicated independently in ChartOfAccount, GeneralLedgerServiceImpl, and
+     * FinancialReportServiceImpl, risking silent drift between them.
+     */
+    public boolean isCreditNormal() {
+        return this == LIABILITY || this == CONTRA_ASSET || this == EQUITY || this == REVENUE;
+    }
 }

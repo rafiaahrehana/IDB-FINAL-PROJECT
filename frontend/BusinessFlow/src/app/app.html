@@ -1,9 +1,11 @@
 @if (auth.isAuthenticated$ | async) {
   <app-impersonation-banner />
   <app-navbar />
-  <div class="d-flex" style="min-height: calc(100vh - 60px)">
+  <div class="d-flex" style="height: calc(100vh - 60px); overflow: hidden">
     @if (auth.isPlatformUser()) {
       <app-platform-sidebar />
+    } @else if (auth.hasRole('CLIENT')) {
+      <app-client-sidebar />
     } @else {
       <app-sidebar />
     }

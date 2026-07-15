@@ -16,6 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
@@ -26,11 +27,16 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AssetImportServiceImpl implements AssetImportService {
 
+    private static final long MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+    private static final int MAX_ROWS = 1000;
+
     // Column order matches AssetRequest (create/update via the regular Asset UI),
     // plus the IT-hardware fields already exposed on AssetResponse/AssetRequest.
+    // "employeeNumber" (not a raw DB id) - whoever fills this CSV in has the
+    // human-readable EMP-0001 style number on hand, not an internal primary key.
     private static final String[] HEADERS = {
         "name", "category", "serialNumber", "description", "purchaseDate", "purchaseCost",
-        "assignedToEmployeeId", "assetTag", "brand", "model", "ipAddress", "macAddress",
+        "employeeNumber", "assetTag", "brand", "model", "ipAddress", "macAddress",
         "processorModel", "ramSize", "storageSize", "operatingSystem", "warrantyExpiry"
     };
 
@@ -49,6 +55,9 @@ public class AssetImportServiceImpl implements AssetImportService {
         if (file == null || file.isEmpty()) {
             throw new BadRequestException("CSV file is required");
         }
+        if (file.getSize() > MAX_FILE_SIZE) {
+            throw new BadRequestException("File size must be less than 5 MB");
+        }
 
         Long companyId = securityUtil.getCurrentCompanyId();
         if (companyId == null) {
@@ -56,10 +65,17 @@ public class AssetImportServiceImpl implements AssetImportService {
         }
 
         List<String[]> rows;
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
-            rows = reader.lines().skip(1).map(this::parseCsvLine).toList();
+        try {
+            String content = new String(file.getBytes(), StandardCharsets.UTF_8);
+            rows = parseCsv(content);
+            if (!rows.isEmpty()) {
+                rows = rows.subList(1, rows.size()); // skip header
+            }
         } catch (IOException e) {
-            throw new BadRequestException("Could not read CSV file: " + e.getMessage());
+            throw new BadRequestException("Could not read CSV file");
+        }
+        if (rows.size() > MAX_ROWS) {
+            throw new BadRequestException("CSV file must not contain more than " + MAX_ROWS + " rows");
         }
 
         int succeeded = 0;
@@ -76,7 +92,14 @@ public class AssetImportServiceImpl implements AssetImportService {
                 transactionTemplate.executeWithoutResult(status -> importRow(cols, companyId, rowNumber));
                 succeeded++;
             } catch (Exception e) {
-                errors.add(new AssetImportRowError(rowNumber, e.getMessage()));
+                String msg = e.getMessage();
+                if (msg == null || msg.isBlank()) {
+                    msg = "Row import failed";
+                } else if (msg.contains("Exception") || msg.contains("stack") || msg.contains("\\")
+                           || msg.contains("/") || msg.contains(":")) {
+                    msg = "Row validation failed: " + e.getClass().getSimpleName();
+                }
+                errors.add(new AssetImportRowError(rowNumber, msg));
             }
         }
 
@@ -89,24 +112,32 @@ public class AssetImportServiceImpl implements AssetImportService {
             throw new IllegalArgumentException("name is required");
         }
 
+        String serialNumber = col(cols, 2);
+        if (serialNumber != null && assetRepository.existsByCompanyIdAndSerialNumber(companyId, serialNumber)) {
+            throw new IllegalArgumentException("serialNumber " + serialNumber + " already exists");
+        }
+        String assetTag = col(cols, 7);
+        if (assetTag != null && assetRepository.existsByCompanyIdAndAssetTag(companyId, assetTag)) {
+            throw new IllegalArgumentException("assetTag " + assetTag + " already exists");
+        }
+
         Asset asset = new Asset();
         asset.setName(name);
         asset.setCategory(col(cols, 1));
         asset.setSerialNumber(col(cols, 2));
         asset.setNotes(col(cols, 3));
         asset.setPurchaseDate(parseDate(col(cols, 4), "purchaseDate"));
-        asset.setPurchasePrice(parseDouble(col(cols, 5), "purchaseCost"));
+        asset.setPurchasePrice(parseBigDecimal(col(cols, 5), "purchaseCost"));
 
         Company company = new Company();
         company.setId(companyId);
         asset.setCompany(company);
         asset.setStatus(AssetStatus.AVAILABLE);
 
-        String employeeIdStr = col(cols, 6);
-        if (employeeIdStr != null && !employeeIdStr.isBlank()) {
-            Long employeeId = parseLong(employeeIdStr, "assignedToEmployeeId");
-            Employee employee = employeeRepository.findByIdAndCompanyId(employeeId, companyId)
-                .orElseThrow(() -> new IllegalArgumentException("assignedToEmployeeId " + employeeId + " not found"));
+        String employeeNumber = col(cols, 6);
+        if (employeeNumber != null && !employeeNumber.isBlank()) {
+            Employee employee = employeeRepository.findByCompanyIdAndEmployeeNumber(companyId, employeeNumber)
+                .orElseThrow(() -> new IllegalArgumentException("employeeNumber " + employeeNumber + " not found"));
             asset.setAssignedTo(employee);
             asset.setStatus(AssetStatus.ASSIGNED);
             asset.setAssignedAt(LocalDate.now());
@@ -141,35 +172,26 @@ public class AssetImportServiceImpl implements AssetImportService {
         }
     }
 
-    private Double parseDouble(String value, String fieldName) {
+    private BigDecimal parseBigDecimal(String value, String fieldName) {
         if (value == null) return null;
         try {
-            return Double.parseDouble(value);
+            return new BigDecimal(value);
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException(fieldName + " must be a number: " + value);
         }
     }
 
-    private Long parseLong(String value, String fieldName) {
-        try {
-            return Long.parseLong(value);
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException(fieldName + " must be a whole number: " + value);
-        }
-    }
-
-    // Minimal RFC4180-style CSV line parser (handles quoted fields containing commas).
-    // Not using a library here to avoid adding a new dependency for a single-file need.
-    private String[] parseCsvLine(String line) {
-        List<String> fields = new ArrayList<>();
+    private List<String[]> parseCsv(String content) {
+        List<String[]> rows = new ArrayList<>();
+        List<String> currentRow = new ArrayList<>();
         StringBuilder current = new StringBuilder();
         boolean inQuotes = false;
 
-        for (int i = 0; i < line.length(); i++) {
-            char c = line.charAt(i);
+        for (int i = 0; i < content.length(); i++) {
+            char c = content.charAt(i);
             if (inQuotes) {
                 if (c == '"') {
-                    if (i + 1 < line.length() && line.charAt(i + 1) == '"') {
+                    if (i + 1 < content.length() && content.charAt(i + 1) == '"') {
                         current.append('"');
                         i++;
                     } else {
@@ -182,14 +204,27 @@ public class AssetImportServiceImpl implements AssetImportService {
                 if (c == '"') {
                     inQuotes = true;
                 } else if (c == ',') {
-                    fields.add(current.toString());
+                    currentRow.add(current.toString());
                     current.setLength(0);
+                } else if (c == '\n') {
+                    currentRow.add(current.toString());
+                    current.setLength(0);
+                    if (!currentRow.isEmpty() && !(currentRow.size() == 1 && currentRow.get(0).isBlank())) {
+                        rows.add(currentRow.toArray(new String[0]));
+                    }
+                    currentRow = new ArrayList<>();
+                } else if (c == '\r') {
+                    // ignore carriage return
                 } else {
                     current.append(c);
                 }
             }
         }
-        fields.add(current.toString());
-        return fields.toArray(new String[0]);
+        // last field
+        currentRow.add(current.toString());
+        if (!currentRow.isEmpty() && !(currentRow.size() == 1 && currentRow.get(0).isBlank())) {
+            rows.add(currentRow.toArray(new String[0]));
+        }
+        return rows;
     }
 }

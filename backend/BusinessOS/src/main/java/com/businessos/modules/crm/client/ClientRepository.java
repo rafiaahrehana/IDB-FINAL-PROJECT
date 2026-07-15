@@ -24,10 +24,10 @@ public interface ClientRepository extends JpaRepository<Client, Long> {
     long countByCompanyId(Long companyId);
 
     @Query("SELECT c FROM Client c WHERE c.company.id = :companyId AND " +
-           "(LOWER(c.clientCompanyName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-           "LOWER(c.user.firstName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-           "LOWER(c.user.lastName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-           "LOWER(c.user.email) LIKE LOWER(CONCAT('%', :keyword, '%'))) AND " +
+           "(LOWER(c.clientCompanyName) LIKE LOWER(CONCAT('%', :keyword, '%')) ESCAPE '\\' OR " +
+           "LOWER(c.user.firstName) LIKE LOWER(CONCAT('%', :keyword, '%')) ESCAPE '\\' OR " +
+           "LOWER(c.user.lastName) LIKE LOWER(CONCAT('%', :keyword, '%')) ESCAPE '\\' OR " +
+           "LOWER(c.user.email) LIKE LOWER(CONCAT('%', :keyword, '%')) ESCAPE '\\') AND " +
            "c.deleted = false")
     Page<Client> searchClients(@Param("companyId") Long companyId, @Param("keyword") String keyword, Pageable pageable);
 

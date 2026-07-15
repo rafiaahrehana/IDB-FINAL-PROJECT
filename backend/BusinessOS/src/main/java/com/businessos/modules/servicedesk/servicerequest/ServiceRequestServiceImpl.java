@@ -17,7 +17,7 @@ import com.businessos.modules.crm.client.Client;
 import com.businessos.modules.company.Company;
 import com.businessos.modules.hrm.employee.Employee;
 import com.businessos.modules.servicedesk.requestcomment.RequestComment;
-import com.businessos.modules.servicedesk.requestcomment.RequestStatusHistory;
+import com.businessos.modules.servicedesk.requeststatus.RequestStatusHistory;
 import com.businessos.auth.user.User;
 import com.businessos.shared.exception.BadRequestException;
 import com.businessos.shared.exception.ResourceNotFoundException;
@@ -62,6 +62,8 @@ import tools.jackson.databind.ObjectMapper;
 public class ServiceRequestServiceImpl implements ServiceRequestService {
 
     private final ServiceRequestRepository serviceRequestRepository;
+    private final com.businessos.modules.servicedesk.document.RequiredDocumentRepository requiredDocumentRepository;
+    private final com.businessos.modules.servicedesk.document.DocumentRepository documentRepository;
     private final TaskRepository taskRepository;
     private final RequestCommentRepository commentRepository;
     private final RequestStatusHistoryRepository historyRepository;
@@ -274,9 +276,29 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
         ServiceRequestStatus newStatus = request.getStatus();
         User currentUser = securityUtil.getCurrentUser();
 
+        if ((oldStatus == ServiceRequestStatus.PENDING || oldStatus == ServiceRequestStatus.QUOTATION_PENDING)
+                && (newStatus == ServiceRequestStatus.ASSIGNED || newStatus == ServiceRequestStatus.IN_PROGRESS)) {
+            validateRequiredDocuments(sr);
+        }
+
         sr.setStatus(newStatus);
         if (newStatus == ServiceRequestStatus.COMPLETED) {
+            // 1. Check for incomplete tasks
+            boolean hasIncompleteTasks = sr.getTasks().stream()
+                .anyMatch(task -> task.getStatus() != TaskStatus.COMPLETED && task.getStatus() != TaskStatus.CANCELLED);
+            if (hasIncompleteTasks) {
+                throw new BadRequestException("Cannot complete service request with active, incomplete tasks");
+            }
+
+            // 2. Check for pending stage approvals
+            boolean hasPendingApprovals = stageApprovalRepository.findByServiceRequestId(sr.getId()).stream()
+                .anyMatch(approval -> approval.getStatus() == ApprovalStatus.PENDING);
+            if (hasPendingApprovals) {
+                throw new BadRequestException("Cannot complete service request with pending workflow stage approvals");
+            }
+
             sr.setCompletedAt(LocalDateTime.now());
+            sr.setPermanentlyClosed(true);
             automationEventPublisher.publishServiceRequestCompleted(
                 this, requireCompanyId(), sr.getId(),
                 sr.getClient() != null ? sr.getClient().getId() : null);
@@ -300,6 +322,10 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
         Employee emp = employeeRepository.findByIdAndCompanyId(employeeId, companyId)
             .orElseThrow(() -> new ResourceNotFoundException(
                 "Employee not found: " + employeeId));
+
+        if (sr.getStatus() == ServiceRequestStatus.PENDING) {
+            validateRequiredDocuments(sr);
+        }
 
         ServiceRequestStatus old = sr.getStatus();
         sr.setAssignedEmployee(emp);
@@ -334,14 +360,17 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
     @Transactional
     public void cancel(Long id) {
         ServiceRequest sr = findInTenant(id);
-        if (sr.getStatus() == ServiceRequestStatus.COMPLETED)
-            throw new BadRequestException("Cannot cancel a completed request");
+        guardNotClosed(sr);
 
         ServiceRequestStatus oldStatus = sr.getStatus();
         sr.setStatus(ServiceRequestStatus.CANCELLED);
         sr.setPermanentlyClosed(true);
         recordStatusChange(sr, oldStatus, ServiceRequestStatus.CANCELLED,
             "Cancelled by platformuser", securityUtil.getCurrentUser(), requireCompanyId());
+
+        if (sr.getSubscription() != null) {
+            packageService.releaseQuota(sr.getSubscription().getId());
+        }
     }
 
     // ── Comments ──────────────────────────────────────────────────
@@ -353,10 +382,15 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
         ServiceRequest sr = findInTenant(requestId);
         User currentUser = securityUtil.getCurrentUser();
 
+        // Default visibility is role-aware: clients post PUBLIC comments (visible to staff),
+        // employees/admins default to INTERNAL (not visible to client by default).
+        CommentVisibility defaultVisibility = isClientRole(currentUser)
+                ? CommentVisibility.CLIENT : CommentVisibility.INTERNAL;
+
         RequestComment comment = RequestComment.builder()
             .content(request.getContent())
             .visibility(request.getVisibility() != null
-                ? request.getVisibility() : CommentVisibility.INTERNAL)
+                ? request.getVisibility() : defaultVisibility)
             .attachmentUrl(request.getAttachmentUrl())
             .serviceRequest(sr)
             .company(companyRef(companyId))
@@ -527,22 +561,25 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
             throw new BadRequestException("This request is permanently closed");
     }
 
+    /**
+     * Staff (COMPANY_OWNER/SYSTEM_ADMIN/EMPLOYEE) can access any request in their
+     * company - listAll() already exposes the full company queue to EMPLOYEE, so
+     * restricting individual-request access to "already assigned" would contradict
+     * that and block staff from triaging unassigned requests. Only CLIENT is
+     * restricted to requests they own.
+     */
     private void guardAccess(ServiceRequest sr) {
         User user = securityUtil.getCurrentUser();
         if (user == null || user.getRole() == null) return;
-        
+
         String role = user.getRole().name();
-        if (role.equals("COMPANY_OWNER") || role.equals("SYSTEM_ADMIN")) return;
-        
-        boolean isOwner = sr.getClient() != null 
-                && sr.getClient().getUser() != null 
+        if (!role.equals("CLIENT")) return;
+
+        boolean isOwner = sr.getClient() != null
+                && sr.getClient().getUser() != null
                 && sr.getClient().getUser().getId().equals(user.getId());
-                
-        boolean isAssigned = sr.getAssignedEmployee() != null 
-                && sr.getAssignedEmployee().getUser() != null 
-                && sr.getAssignedEmployee().getUser().getId().equals(user.getId());
-                
-        if (!isOwner && !isAssigned) {
+
+        if (!isOwner) {
             throw new ForbiddenException("You do not have permission to access this service request");
         }
     }
@@ -617,12 +654,46 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
     private String validateAndSerializeFormData(
             Long companyId, Long serviceId, Map<String, String> formData) {
         List<ServiceFormField> fields = serviceFormFieldRepository
-            .findByCompanyIdAndServiceIdOrderBySortOrderAsc(companyId, serviceId);
+            .findByCompanyIdAndServiceIdOrderBySortOrderAsc(companyId, serviceId)
+            .stream()
+            .filter(f -> !f.isDeleted())
+            .toList();
         for (ServiceFormField field : fields) {
-            if (!field.isRequired()) continue;
             String value = formData == null ? null : formData.get(String.valueOf(field.getId()));
-            if (value == null || value.isBlank()) {
+            
+            // 1. Required Check
+            if (field.isRequired() && (value == null || value.isBlank())) {
                 throw new BadRequestException("'" + field.getLabel() + "' is required");
+            }
+            
+            // 2. Format Checks (if value is provided)
+            if (value != null && !value.isBlank()) {
+                FormFieldType type = field.getFieldType();
+                if (type == FormFieldType.NUMBER) {
+                    try {
+                        new BigDecimal(value);
+                    } catch (NumberFormatException e) {
+                        throw new BadRequestException("'" + field.getLabel() + "' must be a valid number");
+                    }
+                } else if (type == FormFieldType.DATE) {
+                    try {
+                        java.time.LocalDate.parse(value);
+                    } catch (java.time.format.DateTimeParseException e) {
+                        throw new BadRequestException("'" + field.getLabel() + "' must be a valid date (YYYY-MM-DD)");
+                    }
+                } else if (type == FormFieldType.EMAIL) {
+                    if (!value.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
+                        throw new BadRequestException("'" + field.getLabel() + "' must be a valid email address");
+                    }
+                } else if (type == FormFieldType.PHONE) {
+                    if (!value.matches("^\\+?[0-9\\s-]{7,15}$")) {
+                        throw new BadRequestException("'" + field.getLabel() + "' must be a valid phone number");
+                    }
+                } else if (type == FormFieldType.FILE_UPLOAD) {
+                    if (!value.matches("^https?://.*$")) {
+                        throw new BadRequestException("'" + field.getLabel() + "' must be a valid file URL (http:// or https://)");
+                    }
+                }
             }
         }
         if (formData == null || formData.isEmpty()) return null;
@@ -636,41 +707,130 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
     @Override
     @Transactional
     public ServiceRequestResponse submitQuotation(Long id, SubmitQuotationRequest request) {
-        ServiceRequest sr = serviceRequestRepository.findByIdAndCompanyId(id, securityUtil.getCurrentCompanyId())
-                .orElseThrow(() -> new ResourceNotFoundException("Service request not found"));
-        
+        Long companyId = requireCompanyId();
+        ServiceRequest sr = findInTenant(id);
+
         sr.submitQuotation(request.getAmount(), request.getCurrency(), request.getNotes(), request.getValidUntil());
         sr = serviceRequestRepository.save(sr);
+
+        if (sr.getClient() != null && sr.getClient().getUser() != null) {
+            notificationService.sendForServiceRequest(CreateNotificationRequest.forRequest(
+                NotificationType.REQUEST_UPDATED,
+                "Quotation Ready",
+                "A quotation of " + sr.getQuotationAmount() + " " + sr.getQuotationCurrency()
+                    + " is ready for your review on \"" + sr.getTitle() + "\".",
+                sr.getClient().getUser().getId(), companyId, id
+            ));
+        }
+
         return toResponse(sr);
     }
 
     @Override
     @Transactional
     public ServiceRequestResponse acceptQuotation(Long id) {
-        ServiceRequest sr = serviceRequestRepository.findByIdAndCompanyId(id, securityUtil.getCurrentCompanyId())
-                .orElseThrow(() -> new ResourceNotFoundException("Service request not found"));
-        
+        Long companyId = requireCompanyId();
+        ServiceRequest sr = findInTenant(id);
+
         if (sr.getQuotationStatus() != com.businessos.enums.QuotationStatus.PENDING) {
             throw new BadRequestException("Only pending quotations can be accepted.");
         }
-        
+        if (sr.getQuotationValidUntil() != null && LocalDateTime.now().isAfter(sr.getQuotationValidUntil())) {
+            sr.setQuotationStatus(com.businessos.enums.QuotationStatus.EXPIRED);
+            serviceRequestRepository.save(sr);
+            throw new BadRequestException("This quotation expired on " + sr.getQuotationValidUntil()
+                + " and can no longer be accepted");
+        }
+
         sr.acceptQuotation();
         sr = serviceRequestRepository.save(sr);
-        return toResponse(sr);
+
+        notifyEmployeeOnQuotationDecision(sr, companyId, "accepted");
+
+        ServiceRequestResponse response = toResponse(sr);
+
+        if (sr.getAgreedPrice() != null && sr.getAgreedPrice().compareTo(BigDecimal.ZERO) > 0) {
+            ClientInvoiceItemRequest item = ClientInvoiceItemRequest.builder()
+                .description("Service Request (Quotation Accepted): " + sr.getTitle())
+                .quantity(new BigDecimal("1"))
+                .unitPrice(sr.getAgreedPrice())
+                .build();
+
+            ClientInvoiceRequest invoiceRequest = ClientInvoiceRequest.builder()
+                .clientId(sr.getClient().getId())
+                .invoiceDate(java.time.LocalDate.now())
+                .dueDate(java.time.LocalDate.now().plusDays(3))
+                .notes("Invoice for Service Request: " + sr.getTitle())
+                .items(List.of(item))
+                .build();
+
+            ClientInvoiceResponse invoiceResponse = invoiceService.create(invoiceRequest);
+            sr.setInvoiceId(invoiceResponse.getId());
+            serviceRequestRepository.save(sr);
+            response.setInvoiceId(invoiceResponse.getId());
+            
+            invoiceService.sendInvoice(invoiceResponse.getId());
+        }
+        
+        return response;
     }
 
     @Override
     @Transactional
     public ServiceRequestResponse rejectQuotation(Long id, RejectQuotationRequest request) {
-        ServiceRequest sr = serviceRequestRepository.findByIdAndCompanyId(id, securityUtil.getCurrentCompanyId())
-                .orElseThrow(() -> new ResourceNotFoundException("Service request not found"));
-        
+        Long companyId = requireCompanyId();
+        ServiceRequest sr = findInTenant(id);
+
         if (sr.getQuotationStatus() != com.businessos.enums.QuotationStatus.PENDING) {
             throw new BadRequestException("Only pending quotations can be rejected.");
         }
-        
+
         sr.rejectQuotation(request.getReason());
         sr = serviceRequestRepository.save(sr);
+
+        notifyEmployeeOnQuotationDecision(sr, companyId, "rejected");
+
         return toResponse(sr);
+    }
+
+    private void notifyEmployeeOnQuotationDecision(ServiceRequest sr, Long companyId, String decision) {
+        if (sr.getAssignedEmployee() == null || sr.getAssignedEmployee().getUser() == null) return;
+        notificationService.sendForServiceRequest(CreateNotificationRequest.forRequest(
+            NotificationType.REQUEST_UPDATED,
+            "Quotation " + decision.substring(0, 1).toUpperCase() + decision.substring(1),
+            "The client " + decision + " the quotation for \"" + sr.getTitle() + "\".",
+            sr.getAssignedEmployee().getUser().getId(), companyId, sr.getId()
+        ));
+    }
+
+    private void validateRequiredDocuments(ServiceRequest sr) {
+        CompanyService service = sr.getCompanyService();
+        if (service == null) return;
+        
+        Long companyId = sr.getCompany().getId();
+        
+        List<com.businessos.modules.servicedesk.document.RequiredDocument> mandatoryDocs = requiredDocumentRepository
+            .findByCompanyIdAndServiceIdOrderBySortOrderAsc(companyId, service.getId())
+            .stream()
+            .filter(com.businessos.modules.servicedesk.document.RequiredDocument::isMandatory)
+            .toList();
+            
+        if (mandatoryDocs.isEmpty()) return;
+        
+        List<com.businessos.modules.servicedesk.document.Document> uploadedDocs = documentRepository
+            .findByServiceRequestIdOrderByCreatedAtDesc(sr.getId());
+        
+        for (com.businessos.modules.servicedesk.document.RequiredDocument reqDoc : mandatoryDocs) {
+            boolean uploaded = uploadedDocs.stream()
+                .anyMatch(doc -> doc.getLabel() != null && doc.getLabel().equalsIgnoreCase(reqDoc.getDocName().trim()));
+            if (!uploaded) {
+                throw new BadRequestException("Mandatory document '" + reqDoc.getDocName() + "' is missing");
+            }
+        }
+    }
+
+    private boolean isClientRole(User user) {
+        return user != null && user.getRole() != null
+                && user.getRole().name().equals("CLIENT");
     }
 }

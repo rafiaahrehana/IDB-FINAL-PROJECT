@@ -50,4 +50,21 @@ public interface LeaveRequestRepository extends JpaRepository<LeaveRequest, Long
         @Param("startDate") LocalDate startDate,
         @Param("endDate") LocalDate endDate,
         @Param("excludedStatuses") java.util.List<LeaveRequestStatus> excludedStatuses);
+
+    /**
+     * Used by DailyAbsenteeScheduler to skip employees who are on approved leave
+     * for the day, rather than marking them ABSENT.
+     */
+    @Query("""
+        SELECT COUNT(lr) > 0 FROM LeaveRequest lr
+        WHERE lr.employee.id = :employeeId
+          AND lr.status = :status
+          AND lr.startDate <= :date
+          AND lr.endDate >= :date
+          AND lr.deleted = false
+        """)
+    boolean existsApprovedForEmployeeAndDate(
+        @Param("employeeId") Long employeeId,
+        @Param("date") LocalDate date,
+        @Param("status") LeaveRequestStatus status);
 }

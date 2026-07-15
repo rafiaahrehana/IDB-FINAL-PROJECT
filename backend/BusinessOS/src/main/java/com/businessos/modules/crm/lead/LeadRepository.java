@@ -26,10 +26,10 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
 
 
     @Query("SELECT l FROM Lead l WHERE l.company.id = :companyId AND " +
-           "(LOWER(l.contactName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-           "LOWER(l.email) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-           "LOWER(l.phone) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-           "LOWER(l.companyName) LIKE LOWER(CONCAT('%', :keyword, '%'))) AND " +
+           "(LOWER(l.contactName) LIKE LOWER(CONCAT('%', :keyword, '%')) ESCAPE '\\' OR " +
+           "LOWER(l.email) LIKE LOWER(CONCAT('%', :keyword, '%')) ESCAPE '\\' OR " +
+           "LOWER(l.phone) LIKE LOWER(CONCAT('%', :keyword, '%')) ESCAPE '\\' OR " +
+           "LOWER(l.companyName) LIKE LOWER(CONCAT('%', :keyword, '%')) ESCAPE '\\') AND " +
            "l.deleted = false")
     Page<Lead> searchLeads(@Param("companyId") Long companyId, @Param("keyword") String keyword, Pageable pageable);
 
@@ -53,6 +53,9 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                            Pageable pageable);
 
     long countByCompanyIdAndStatus(Long companyId, LeadStatus status);
+
+    long countByCompanyIdAndStatusAndCreatedAtBetween(
+            Long companyId, LeadStatus status, LocalDateTime from, LocalDateTime to);
 
     @Query("SELECT COUNT(l) FROM Lead l WHERE l.company.id = :companyId AND " +
            "l.status NOT IN :closedStatuses AND l.deleted = false")

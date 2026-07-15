@@ -28,11 +28,11 @@
       </div>
       <div class="col-md-2">
         <label class="form-label small text-muted mb-1">Outstanding Deposits</label>
-        <input type="number" class="form-control form-control-sm" [(ngModel)]="form.outstandingDeposits" />
+        <input type="text" class="form-control form-control-sm" [(ngModel)]="form.outstandingDeposits" placeholder='JSON e.g. ["1000","2500"]' />
       </div>
       <div class="col-md-3">
         <label class="form-label small text-muted mb-1">Outstanding Checks</label>
-        <input type="number" class="form-control form-control-sm" [(ngModel)]="form.outstandingChecks" />
+        <input type="text" class="form-control form-control-sm" [(ngModel)]="form.outstandingChecks" placeholder='JSON e.g. ["500","1200"]' />
       </div>
       <div class="col-12 d-flex gap-2">
         <button class="btn btn-primary btn-sm" [disabled]="!form.bankAccountId || !form.bankStatementBalance" (click)="save()">Save</button>
@@ -56,7 +56,10 @@
           <td class="text-end">{{ item.bankStatementBalance | currency }}</td>
           <td class="text-end fw-semibold">{{ item.difference | currency }}</td>
           <td>
-            @if (item.reconciled) { <span class="badge text-bg-success">Reconciled</span> }
+            @if (item.reconciled) {
+              <span class="badge text-bg-success">Reconciled</span>
+              <div class="small text-muted">{{ item.reconciledDate | date:'mediumDate' }} @if (item.reconciledBy) { by {{ item.reconciledBy }} }</div>
+            }
             @if (!item.reconciled) { <span class="badge text-bg-warning">Pending</span> }
           </td>
           <td class="text-end">

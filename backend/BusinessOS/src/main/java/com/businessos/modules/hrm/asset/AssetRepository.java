@@ -17,4 +17,8 @@ public interface AssetRepository extends JpaRepository<Asset, Long> {
     Page<Asset> findByCompanyIdAndStatus(Long companyId, AssetStatus status, Pageable pageable);
 
     List<Asset> findByCompanyIdAndAssignedToId(Long companyId, Long employeeId);
+
+    boolean existsByCompanyIdAndSerialNumber(Long companyId, String serialNumber);
+
+    boolean existsByCompanyIdAndAssetTag(Long companyId, String assetTag);
 }

@@ -20,21 +20,21 @@ public class JournalEntryController {
     private final JournalEntryService service;
 
     @PostMapping
-    @PreAuthorize("hasRole('FINANCE_MANAGER') or hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     @Operation(summary = "Create Journal Entry")
     public ResponseEntity<JournalEntryResponse> create(@Valid @RequestBody JournalEntryRequest request) {
         return new ResponseEntity<>(service.create(request), HttpStatus.CREATED);
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('FINANCE_MANAGER') or hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     @Operation(summary = "Get Journal Entry by ID")
     public ResponseEntity<JournalEntryResponse> getById(@PathVariable Long id) {
         return ResponseEntity.ok(service.getById(id));
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('FINANCE_MANAGER') or hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     @Operation(summary = "Get all Journal Entries")
     public ResponseEntity<Page<JournalEntryResponse>> getAll(
             @RequestParam(defaultValue = "0") int page,
@@ -43,7 +43,7 @@ public class JournalEntryController {
     }
 
     @PostMapping("/{id}/approve")
-    @PreAuthorize("hasRole('FINANCE_MANAGER') or hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     @Operation(summary = "Approve Journal Entry")
     public ResponseEntity<Void> approve(@PathVariable Long id) {
         service.approve(id);
@@ -51,7 +51,7 @@ public class JournalEntryController {
     }
 
     @PostMapping("/{id}/post")
-    @PreAuthorize("hasRole('FINANCE_MANAGER') or hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     @Operation(summary = "Post Journal Entry")
     public ResponseEntity<Void> post(@PathVariable Long id) {
         service.post(id);
@@ -59,7 +59,7 @@ public class JournalEntryController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasRole('COMPANY_OWNER')")
     @Operation(summary = "Delete Journal Entry")
     public ResponseEntity<JournalEntryResponse> delete(@PathVariable Long id) {
         return ResponseEntity.ok(service.delete(id));

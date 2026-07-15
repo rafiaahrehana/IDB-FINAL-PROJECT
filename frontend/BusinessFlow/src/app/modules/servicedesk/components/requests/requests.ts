@@ -11,6 +11,8 @@ import { AuthService } from '../../../../core/services/auth.service';
 import { Pagination } from '../../../../shared/components/pagination/pagination';
 import { Loader } from '../../../../shared/components/loader/loader';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
+import { FileUpload } from '../../../../shared/components/file-upload/file-upload';
+import { FileUploadResult } from '../../../../shared/services/file-upload.service';
 
 type Tab = 'all' | 'my' | 'assigned';
 
@@ -20,7 +22,7 @@ const PAYMENT_METHODS = ['BKASH', 'NAGAD', 'ROCKET', 'SSLCOMMERZ', 'BANK_TRANSFE
 
 @Component({
   selector: 'app-requests',
-  imports: [CommonModule, FormsModule, RouterLink, Pagination, Loader, EmptyState],
+  imports: [CommonModule, FormsModule, RouterLink, Pagination, Loader, EmptyState, FileUpload],
   templateUrl: './requests.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './requests.scss',
@@ -161,6 +163,12 @@ export class Requests implements OnInit {
       .split(',')
       .map((o) => o.trim())
       .filter((o) => o.length > 0);
+  }
+
+  // FILE_UPLOAD fields store the uploaded file's URL as their string answer,
+  // same as every other field type.
+  onFieldFileUploaded(fieldId: number, result: FileUploadResult): void {
+    this.fieldAnswers[String(fieldId)] = result.fileUrl;
   }
 
   save(): void {

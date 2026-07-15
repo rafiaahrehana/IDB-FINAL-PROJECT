@@ -5,6 +5,7 @@ import com.businessos.core.base.BaseEntity;
 
 import com.businessos.modules.company.Company;
 import com.businessos.enums.PayrollStatus;
+import com.businessos.enums.PaymentMethod;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.Filter;
@@ -61,6 +62,14 @@ public class Payroll extends BaseEntity {
     private BigDecimal transportAllowance = BigDecimal.ZERO;
 
     @Builder.Default
+    @Column(precision = 12, scale = 2)
+    private BigDecimal foodAllowance = BigDecimal.ZERO;
+
+    @Builder.Default
+    @Column(precision = 12, scale = 2)
+    private BigDecimal specialAllowance = BigDecimal.ZERO;
+
+    @Builder.Default
 
 
     @Column(precision = 12, scale = 2)
@@ -86,15 +95,13 @@ public class Payroll extends BaseEntity {
     @Column(precision = 12, scale = 2)
     private BigDecimal providentFundDeduction = BigDecimal.ZERO;
 
-    @Builder.Default
-    @Column(precision = 12, scale = 2)
-    private BigDecimal otherDeductions = BigDecimal.ZERO;
-
     // GL / Finance integration fields
-    private String glJournalEntryId;
     private String glDebitAccount;
     private String glCreditAccount;
-    private String paymentMethod;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private PaymentMethod paymentMethod;
 
     // Net
     @Builder.Default
@@ -106,8 +113,6 @@ public class Payroll extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private PayrollStatus status = PayrollStatus.DRAFT;
-
-    private LocalDate paymentDate;
 
     @Column(columnDefinition = "TEXT")
     private String notes;

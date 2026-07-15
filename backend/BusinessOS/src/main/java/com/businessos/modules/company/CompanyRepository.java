@@ -22,6 +22,9 @@ public interface CompanyRepository extends JpaRepository<Company, Long> {
 
     Page<Company> findByStatus(CompanyStatus status, Pageable pageable);
 
+    /** Companies a prospective client can register under (public registration picker). */
+    List<Company> findByStatusInOrderByCompanyNameAsc(List<CompanyStatus> statuses);
+
     Page<Company> findBySubscriptionPlan(SubscriptionPlan plan, Pageable pageable);
 
     /**

@@ -17,4 +17,11 @@ export class FileUploadService {
     formData.append('file', file);
     return this.api.post<FileUploadResult>('/upload', formData);
   }
+
+  // Images only, validated server-side against real image content, 5MB cap.
+  uploadAvatar(file: File): Observable<FileUploadResult> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.api.post<FileUploadResult>('/upload/avatar', formData);
+  }
 }

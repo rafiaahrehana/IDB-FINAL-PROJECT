@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import com.businessos.enums.InvoiceStatus;
 @Data
 @Builder
@@ -16,9 +17,11 @@ public class ClientInvoiceResponse {
     private Long id;
     private Long companyId;
     private String invoiceNumber;
+    private Long clientId;
     private String clientName;
     private LocalDate invoiceDate;
     private LocalDate dueDate;
+    private List<ClientInvoiceItemResponse> items;
     private BigDecimal subtotal;
     private BigDecimal taxAmount;
     private BigDecimal totalAmount;

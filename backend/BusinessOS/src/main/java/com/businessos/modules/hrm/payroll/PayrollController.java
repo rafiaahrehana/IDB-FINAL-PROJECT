@@ -16,6 +16,7 @@ import com.businessos.security.SecurityUtil;
 import com.businessos.modules.hrm.employee.EmployeeRepository;
 import com.businessos.modules.hrm.employee.Employee;
 import com.businessos.shared.exception.ForbiddenException;
+import com.businessos.enums.PaymentMethod;
 
 @RestController
 @RequiredArgsConstructor
@@ -32,6 +33,19 @@ public class PayrollController {
     public ResponseEntity<PayrollResponse> create(@Valid @RequestBody CreatePayrollRequest request) {
         authorizationService.checkPermission(PermissionCode.PAYROLL_PROCESS);
         return new ResponseEntity<>(payrollService.create(request), HttpStatus.CREATED);
+    }
+
+    /**
+     * Generates a DRAFT payroll for every active employee who has a salary
+     * structure and doesn't already have one for this period - the batch
+     * "run payroll" action every real company needs monthly.
+     */
+    @PostMapping("/generate")
+    public ResponseEntity<BulkPayrollResult> generateForAllEmployees(
+            @RequestParam int month,
+            @RequestParam int year) {
+        authorizationService.checkPermission(PermissionCode.PAYROLL_PROCESS);
+        return ResponseEntity.ok(payrollService.generateForAllEmployees(month, year));
     }
 
     @GetMapping
@@ -97,9 +111,10 @@ public class PayrollController {
     @PatchMapping("/{id}/pay")
     public ResponseEntity<PayrollResponse> markPaid(
             @PathVariable Long id,
-            @RequestParam(required = false) String paymentReference) {
+            @RequestParam(required = false) String paymentReference,
+            @RequestParam(required = false) PaymentMethod paymentMethod) {
         authorizationService.checkPermission(PermissionCode.PAYROLL_APPROVE);
-        return ResponseEntity.ok(payrollService.markPaid(id, paymentReference));
+        return ResponseEntity.ok(payrollService.markPaid(id, paymentReference, paymentMethod));
     }
 
     @DeleteMapping("/{id}")

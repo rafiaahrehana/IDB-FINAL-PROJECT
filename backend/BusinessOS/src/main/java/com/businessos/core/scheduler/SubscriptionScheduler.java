@@ -28,7 +28,7 @@ public class SubscriptionScheduler {
     private int trialReminderDays;
 
     @Scheduled(cron = "0 5 0 * * *")
-    @Transactional
+    @Transactional(noRollbackFor = BadRequestException.class)
     public void suspendExpiredCompanies() {
         List<Company> expired = companyRepository.findExpiredSubscriptions(
             LocalDate.now(),
@@ -36,6 +36,7 @@ public class SubscriptionScheduler {
         );
         if (expired.isEmpty()) return;
 
+        java.util.List<String> failedCompanies = new java.util.ArrayList<>();
         for (Company company : expired) {
             company.setStatus(CompanyStatus.SUSPENDED);
             if (company.getOwner() != null) {
@@ -45,15 +46,18 @@ public class SubscriptionScheduler {
                         company.getOwner().getFirstName(),
                         company.getCompanyName());
                 } catch (Exception e) {
-                    throw new BadRequestException("Suspension email failed for company: " +
-                            company.getId() + " - " + e.getMessage());
+                    failedCompanies.add("Company ID " + company.getId() + " (" + company.getCompanyName() + "): " + e.getMessage());
                 }
             }
+        }
+
+        if (!failedCompanies.isEmpty()) {
+            throw new BadRequestException("Subscription suspension batch completed with errors: " + failedCompanies);
         }
     }
 
     @Scheduled(cron = "0 0 9 * * *")
-    @Transactional
+    @Transactional(noRollbackFor = BadRequestException.class)
     public void sendSubscriptionExpiryReminders() {
         LocalDate today = LocalDate.now();
         LocalDate cutoff = today.plusDays(trialReminderDays);
@@ -63,11 +67,16 @@ public class SubscriptionScheduler {
         List<Company> approachingActive = companyRepository.findTrialExpiringBetween(today, cutoff,
                 CompanyStatus.ACTIVE);
 
-        processReminders(approachingTrials, today);
-        processReminders(approachingActive, today);
+        java.util.List<String> failedReminders = new java.util.ArrayList<>();
+        processReminders(approachingTrials, today, failedReminders);
+        processReminders(approachingActive, today, failedReminders);
+
+        if (!failedReminders.isEmpty()) {
+            throw new BadRequestException("Subscription expiry reminders completed with errors: " + failedReminders);
+        }
     }
 
-    private void processReminders(List<Company> approaching, LocalDate today) {
+    private void processReminders(List<Company> approaching, LocalDate today, java.util.List<String> failedReminders) {
         if (approaching.isEmpty())
             return;
 
@@ -83,8 +92,7 @@ public class SubscriptionScheduler {
                         (int) daysLeft);
                 company.setTrialReminderSentAt(LocalDateTime.now());
             } catch (Exception e) {
-                throw new BadRequestException("Expiry reminder failed for company: " +
-                        company.getId() + " - " + e.getMessage());
+                failedReminders.add("Company ID " + company.getId() + " (" + company.getCompanyName() + "): " + e.getMessage());
             }
         }
     }

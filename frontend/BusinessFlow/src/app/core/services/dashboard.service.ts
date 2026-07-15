@@ -47,12 +47,26 @@ export interface ClientSummary {
   outstandingInvoiceAmount: number;
 }
 
+// Mirrors backend RecommendationResponse
+export interface RecommendationResponse {
+  type: string;
+  severity: string;
+  message: string;
+  link: string;
+}
+
+// Mirrors backend InsightsResponse
+export interface InsightsResponse {
+  insights: string;
+  generatedInMs: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class DashboardService {
   constructor(private api: ApiService) {}
 
-  getSummary(): Observable<DashboardSummary> {
-    return this.api.get<DashboardSummary>('/dashboard/summary');
+  getSummary(from?: string, to?: string): Observable<DashboardSummary> {
+    return this.api.get<DashboardSummary>('/dashboard/summary', { from, to });
   }
 
   getPlatformSummary(): Observable<PlatformSummary> {
@@ -61,5 +75,13 @@ export class DashboardService {
 
   getClientSummary(): Observable<ClientSummary> {
     return this.api.get<ClientSummary>('/dashboard/client-summary');
+  }
+
+  getRecommendations(): Observable<RecommendationResponse[]> {
+    return this.api.get<RecommendationResponse[]>('/dashboard/recommendations');
+  }
+
+  getInsights(): Observable<InsightsResponse> {
+    return this.api.get<InsightsResponse>('/dashboard/insights');
   }
 }

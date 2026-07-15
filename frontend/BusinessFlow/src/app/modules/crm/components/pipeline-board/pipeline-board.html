@@ -61,13 +61,13 @@
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">Close "{{ lostReasonFor.name }}" as Lost</h5>
-          <button type="button" class="btn-close" (click)="lostReasonFor = null"></button>
+          <button type="button" class="btn-close" (click)="cancelLost()"></button>
         </div>
         <div class="modal-body">
           <textarea class="form-control" rows="3" placeholder="Why was this deal lost?" [(ngModel)]="lostReason"></textarea>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-secondary btn-sm" (click)="lostReasonFor = null">Cancel</button>
+          <button class="btn btn-secondary btn-sm" (click)="cancelLost()">Cancel</button>
           <button class="btn btn-danger btn-sm" [disabled]="!lostReason.trim()" (click)="confirmLost()">Close as Lost</button>
         </div>
       </div>

@@ -54,6 +54,9 @@ public class CrmActivityServiceImpl implements CrmActivityService {
         if (request.getClientId() != null) {
             client = clientRepository.findByIdAndCompanyId(request.getClientId(), companyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Client not found"));
+            if (opportunity != null && !client.getId().equals(opportunity.getClient().getId())) {
+                throw new BadRequestException("Client does not belong to the referenced opportunity");
+            }
         }
 
         CrmActivity activity = builder

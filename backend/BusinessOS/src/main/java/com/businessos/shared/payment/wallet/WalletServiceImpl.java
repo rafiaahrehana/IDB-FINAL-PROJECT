@@ -33,23 +33,6 @@ public class WalletServiceImpl implements WalletService {
     }
 
     @Override
-    @Transactional
-    public WalletResponse topUp(WalletTopUpRequest request) {
-        Long companyId = requireCompanyId();
-        Wallet wallet = walletRepository.findByContextTypeAndContextId("COMPANY", companyId)
-            .orElseGet(() -> createWallet("COMPANY", companyId));
-
-        wallet.setBalance(wallet.getBalance().add(request.getAmount()));
-        walletRepository.save(wallet);
-
-        recordTransaction(wallet, WalletTransactionType.CREDIT, request.getAmount(),
-            wallet.getTotalAvailable(), request.getReference(), request.getNotes());
-
-        
-        return WalletMapper.toResponse(wallet);
-    }
-
-    @Override
     @Transactional(readOnly = true)
     public Page<WalletTransactionResponse> getTransactions(WalletTransactionType type, Pageable pageable) {
         Long companyId = requireCompanyId();
@@ -62,7 +45,7 @@ public class WalletServiceImpl implements WalletService {
     @Override
     @Transactional
     public Wallet debit(String contextType, Long contextId, BigDecimal amount, String reference, String notes) {
-        Wallet wallet = walletRepository.findByContextTypeAndContextId(contextType, contextId)
+        Wallet wallet = walletRepository.findByContextTypeAndContextIdForUpdate(contextType, contextId)
             .orElseThrow(() -> new BadRequestException("Wallet not found for " + contextType + ": " + contextId));
 
         if (wallet.getTotalAvailable().compareTo(amount) < 0) {
@@ -87,7 +70,7 @@ public class WalletServiceImpl implements WalletService {
     @Transactional
     public Wallet credit(String contextType, Long contextId, BigDecimal amount, WalletTransactionType type,
                           String reference, String notes) {
-        Wallet wallet = walletRepository.findByContextTypeAndContextId(contextType, contextId)
+        Wallet wallet = walletRepository.findByContextTypeAndContextIdForUpdate(contextType, contextId)
             .orElseGet(() -> createWallet(contextType, contextId));
 
         if (type == WalletTransactionType.CREDIT_APPLIED

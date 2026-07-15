@@ -11,6 +11,7 @@ export interface ChartOfAccount {
   description?: string;
   notes?: string;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface Expense {
@@ -30,40 +31,68 @@ export interface Expense {
   submittedAt?: string;
   notes?: string;
   createdAt: string;
+  title?: string;
+  currency?: string;
+  employeeId?: number;
+  reimbursedDate?: string;
+  reimbursementMethod?: string;
+  referenceNumber?: string;
+  updatedAt?: string;
+}
+
+// Matches the backend's actual ClientInvoiceResponse (not a generic "Invoice" -
+// this platform only has client invoices). Field names below were previously out
+// of sync with the server (claimed outstandingAmount/discountAmount, which don't
+// exist; the real remaining-balance field is balanceAmount).
+export interface InvoiceItem {
+  id?: number;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  lineTotal?: number;
+  notes?: string;
 }
 
 export interface Invoice {
   id: number;
+  companyId?: number;
   invoiceNumber: string;
-  status: string;
-  type: string;
+  clientId?: number;
+  clientName?: string;
+  invoiceDate?: string;
+  dueDate?: string;
+  items?: InvoiceItem[];
   subtotal: number;
-  taxRate: number;
   taxAmount: number;
-  discountAmount: number;
   totalAmount: number;
   paidAmount: number;
-  outstandingAmount: number;
-  dueDate?: string;
-  issuedAt?: string;
-  paidAt?: string;
+  balanceAmount: number;
+  status: string;
+  paymentTerms?: string;
+  description?: string;
   notes?: string;
-  clientId: number;
-  clientName?: string;
-  serviceRequestId?: number;
-  serviceRequestTitle?: string;
-  createdByName?: string;
-  payments?: Payment[];
-  createdAt: string;
+  sentDate?: string;
+  paidDate?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
-export interface Payment {
-  id: number;
-  amount: number;
-  method: string;
-  status: string;
-  reference?: string;
-  paidAt: string;
+export interface InvoiceItemRequest {
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  notes?: string;
+}
+
+export interface InvoiceRequest {
+  clientId: number;
+  invoiceDate: string;
+  dueDate: string;
+  items: InvoiceItemRequest[];
+  taxAmount?: number;
+  paymentTerms?: string;
+  description?: string;
+  notes?: string;
 }
 
 // NOTE: Vendor and VendorPayment were removed - there is no separate Vendor entity in the
@@ -112,6 +141,8 @@ export interface PaymentReceipt {
   depositedToBank?: string;
   notes?: string;
   createdAt: string;
+  companyId?: number;
+  updatedAt?: string;
 }
 
 export interface PaymentReceiptRequest {
@@ -130,6 +161,7 @@ export interface GeneralLedgerEntry {
   accountId: number;
   accountName: string;
   accountCode: string;
+  accountType?: string;
   debitAmount: number;
   creditAmount: number;
   description?: string;
@@ -154,15 +186,17 @@ export interface BankReconciliation {
   outstandingDeposits?: string;
   outstandingChecks?: string;
   reconciled: boolean;
+  reconciledDate?: string;
   reconciledBy?: string;
   discrepancyNotes?: string;
+  companyId?: number;
 }
 
 export interface BankReconciliationRequest {
   bankAccountId: number;
   bankStatementBalance: number;
-  outstandingDeposits?: number;
-  outstandingChecks?: number;
+  outstandingDeposits?: string;
+  outstandingChecks?: string;
 }
 
 export type WalletTransactionType = 'CREDIT' | 'DEBIT' | 'CREDIT_APPLIED' | 'REFUND_CREDIT' | 'REFERRAL_REWARD';
@@ -174,12 +208,6 @@ export interface Wallet {
   creditBalance: number;
   totalAvailable: number;
   currency: string;
-}
-
-export interface WalletTopUpRequest {
-  amount: number;
-  reference?: string;
-  notes?: string;
 }
 
 export interface WalletTransaction {
@@ -223,4 +251,43 @@ export interface TrialBalanceReport {
   totalDebit: number;
   totalCredit: number;
   generatedDate: string;
+}
+
+export interface AgeingLine {
+  invoiceId: number;
+  invoiceNumber: string;
+  clientId?: number;
+  clientName?: string;
+  dueDate: string;
+  balanceAmount: number;
+  daysOverdue: number;
+  bucket: string;
+}
+
+export interface AgeingReport {
+  asOfDate: string;
+  current: number;
+  days1to30: number;
+  days31to60: number;
+  days61to90: number;
+  over90: number;
+  totalOutstanding: number;
+  lines: AgeingLine[];
+}
+
+export interface CashFlowLine {
+  category: string;
+  inflow: number;
+  outflow: number;
+}
+
+export interface CashFlowReport {
+  periodStart: string;
+  periodEnd: string;
+  openingBalance: number;
+  closingBalance: number;
+  totalInflows: number;
+  totalOutflows: number;
+  netChange: number;
+  lines: CashFlowLine[];
 }

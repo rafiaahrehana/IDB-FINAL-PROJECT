@@ -10,8 +10,6 @@ public interface WalletService {
 
     WalletResponse getOrCreateWallet();
 
-    WalletResponse topUp(WalletTopUpRequest request);
-
     Page<WalletTransactionResponse> getTransactions(WalletTransactionType type, Pageable pageable);
 
     /**

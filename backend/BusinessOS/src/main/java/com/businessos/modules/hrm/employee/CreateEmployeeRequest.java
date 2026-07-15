@@ -26,8 +26,7 @@ public class CreateEmployeeRequest {
     @NotBlank(message = "Password is required")
     @Size(min = 8)
     private String password;
-    @Size(max = 30)
-    private String employeeNumber;
+    // employeeNumber is server-generated (EmployeeNumberGenerator) - not client-settable.
     @Email
     @Size(max = 255)
     private String officialEmail;
@@ -58,7 +57,7 @@ public class CreateEmployeeRequest {
     private String fatherName;
     @Size(max = 100)
     private String motherName;
-    private com.businessos.shared.address.LocationRequest location;
+    private com.businessos.shared.address.AddressRequest location;
     private LocalDate hireDate;
     private LocalDate confirmationDate;
     private LocalDate probationEndDate;

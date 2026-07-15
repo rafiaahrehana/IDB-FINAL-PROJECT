@@ -1,0 +1,94 @@
+<div class="d-flex justify-content-between align-items-center mb-2">
+  <div class="text-muted small">Menu items shown in your portal's navbar</div>
+  <button class="btn btn-primary btn-sm" (click)="openCreate()"><i class="bi bi-plus-lg me-1"></i>New Nav Item</button>
+</div>
+
+@if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
+@if (success) { <div class="alert alert-success py-2">{{ success }}</div> }
+@if (loading) { <app-loader /> }
+
+@if (!loading && items.length) {
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover table-sm align-middle mb-0">
+      <thead class="table-light"><tr><th>Order</th><th>Label</th><th>URL</th><th>Parent</th><th>External</th><th>Mega</th><th></th></tr></thead>
+      <tbody>
+        @for (i of items; track i.id) {
+        <tr>
+          <td>{{ i.sortOrder }}</td>
+          <td>{{ i.label }}</td>
+          <td class="text-muted small">{{ i.url }}</td>
+          <td>{{ parentName(i.parentId) }}</td>
+          <td>@if (i.external) { <i class="bi bi-check-lg text-success"></i> }</td>
+          <td>@if (i.mega) { <i class="bi bi-check-lg text-success"></i> }</td>
+          <td class="text-end text-nowrap">
+            <button class="btn btn-outline-secondary btn-sm me-1" (click)="openEdit(i)"><i class="bi bi-pencil"></i></button>
+            <button class="btn btn-outline-danger btn-sm" (click)="deleteTarget = i"><i class="bi bi-trash"></i></button>
+          </td>
+        </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
+}
+@if (!loading && !items.length) { <app-empty-state icon="bi-list" message="No navigation items yet." /> }
+
+@if (showForm) {
+<div class="modal d-block" style="background: rgba(0,0,0,.4)">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header py-2">
+        <h5 class="modal-title fs-6 fw-semibold">{{ editing ? 'Edit Nav Item' : 'New Nav Item' }}</h5>
+        <button class="btn-close" (click)="showForm = false"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-2">
+          <div class="col-md-6">
+            <label class="form-label small text-secondary mb-1">Label *</label>
+            <input class="form-control form-control-sm" [(ngModel)]="form.label" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small text-secondary mb-1">URL *</label>
+            <input class="form-control form-control-sm" [(ngModel)]="form.url" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small text-secondary mb-1">Parent</label>
+            <select class="form-select form-select-sm" [(ngModel)]="form.parentId">
+              <option [ngValue]="null">— Top level —</option>
+              @for (p of possibleParents(); track p.id) { <option [ngValue]="p.id">{{ p.label }}</option> }
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small text-secondary mb-1">Sort Order</label>
+            <input type="number" class="form-control form-control-sm" [(ngModel)]="form.sortOrder" />
+          </div>
+          <div class="col-md-6 form-check mt-2 ms-1">
+            <input type="checkbox" class="form-check-input" id="external" [(ngModel)]="form.external" />
+            <label class="form-check-label small" for="external">Opens in new tab (external)</label>
+          </div>
+          <div class="col-md-6 form-check mt-2 ms-1">
+            <input type="checkbox" class="form-check-input" id="mega" [(ngModel)]="form.mega" />
+            <label class="form-check-label small" for="mega">Mega menu</label>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer py-2">
+        <button class="btn btn-secondary btn-sm" (click)="showForm = false">Cancel</button>
+        <button class="btn btn-primary btn-sm" (click)="save()" [disabled]="saving">
+          @if (saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
+          {{ editing ? 'Save Changes' : 'Create' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+}
+
+<app-confirm-dialog
+  [visible]="!!deleteTarget"
+  title="Delete Nav Item"
+  [message]="'Delete ' + (deleteTarget?.label || '') + '? This cannot be undone.'"
+  confirmLabel="Delete"
+  (confirmed)="confirmDelete()"
+  (cancelled)="deleteTarget = null" />

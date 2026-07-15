@@ -13,14 +13,23 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 
 @Service
-@RequiredArgsConstructor
-
 public class EmailServiceImpl implements EmailService {
 
     private final JavaMailSender mailSender;
     private final EmailTemplate template;
     private final EmailBranding brandingHelper;
     private final EmailLogRepository emailLogRepository;
+
+    public EmailServiceImpl(
+            JavaMailSender mailSender,
+            EmailTemplate template,
+            EmailBranding brandingHelper,
+            EmailLogRepository emailLogRepository) {
+        this.mailSender = mailSender;
+        this.template = template;
+        this.brandingHelper = brandingHelper;
+        this.emailLogRepository = emailLogRepository;
+    }
 
     @Value("${spring.mail.username}")
     private String from;
@@ -71,7 +80,7 @@ public class EmailServiceImpl implements EmailService {
             emailLog.setStatus("FAILED");
             emailLog.setFailureReason(e.getMessage());
             emailLogRepository.save(emailLog);
-            throw new BadRequestException("Internal error during operation: " + e.getMessage());
+            throw new com.businessos.shared.exception.InternalServerException("Email delivery failed");
         }
     }
 
@@ -118,6 +127,24 @@ public class EmailServiceImpl implements EmailService {
     public void sendSubscriptionSuspendedEmail(String to, String name, String companyName) {
         String html = template.build(brandingHelper.getPlatformBranding(), "", "Hi " + name + ", your account for " + companyName + " has been suspended.", "Reactivate Now", frontendUrl + "/settings/billing");
         sendInternal(to, "Your businessos account is suspended", html, "SubscriptionSuspended");
+    }
+
+    @Async
+    @Override
+    public void sendLicenseExpiryReminder(String to, String name, String softwareName, java.time.LocalDate expiryDate, long daysLeft) {
+        String message = "Hi " + name + ", your " + softwareName + " license expires on " + expiryDate
+                + " (" + daysLeft + " day" + (daysLeft == 1 ? "" : "s") + " left). Renew or cancel before it lapses.";
+        String html = template.build(brandingHelper.getPlatformBranding(), "", message, "Review License", frontendUrl + "/itam/software");
+        sendInternal(to, softwareName + " license expires soon", html, "LicenseExpiryReminder");
+    }
+
+    @Async
+    @Override
+    public void sendLicenseExpiredEmail(String to, String name, String softwareName, java.time.LocalDate expiryDate, int seatsUsed) {
+        String message = "Hi " + name + ", your " + softwareName + " license expired on " + expiryDate
+                + ". " + seatsUsed + " assigned seat(s) may lose access until it's renewed.";
+        String html = template.build(brandingHelper.getPlatformBranding(), "", message, "Renew Now", frontendUrl + "/itam/software");
+        sendInternal(to, softwareName + " license has expired", html, "LicenseExpired");
     }
 
     @Async

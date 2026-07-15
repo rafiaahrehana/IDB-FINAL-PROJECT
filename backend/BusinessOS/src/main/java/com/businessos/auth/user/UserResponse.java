@@ -19,7 +19,6 @@ public class UserResponse {
     private Role role;
     private boolean active;
     private boolean emailVerified;
-    private boolean twoFactorEnabled;
     private String languagePreference;
     private LocalDateTime createdAt;
 }

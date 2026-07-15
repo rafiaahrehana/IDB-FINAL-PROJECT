@@ -20,6 +20,11 @@ export class PaymentReceiptService {
     return this.api.getPaged<PaymentReceipt>(this.endpoint, page, size);
   }
 
+  // Self-service (CLIENT role) - the caller's own payment receipts
+  my(page = 0, size = 20): Observable<PagedResponse<PaymentReceipt>> {
+    return this.api.getPaged<PaymentReceipt>(`${this.endpoint}/me`, page, size);
+  }
+
   confirm(id: number): Observable<void> {
     return this.api.post<void>(`${this.endpoint}/${id}/confirm`, {});
   }

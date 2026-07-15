@@ -1,6 +1,7 @@
 import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { ChartOfAccount, GeneralLedgerEntry } from '../../models/finance.model';
 import { GeneralLedgerService } from '../../services/general-ledger.service';
 import { CoaService } from '../../services/coa.service';
@@ -10,7 +11,7 @@ import { EmptyState } from '../../../../shared/components/empty-state/empty-stat
 
 @Component({
   selector: 'app-general-ledger',
-  imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState],
+  imports: [CommonModule, FormsModule, RouterLink, Pagination, Loader, EmptyState],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './general-ledger.html',
 })
@@ -104,5 +105,28 @@ export class GeneralLedger implements OnInit {
   goToPage(p: number): void {
     this.page = p;
     this.load();
+  }
+
+  // Exports only the currently-loaded page of entries (client-side, no backend
+  // export endpoint exists for General Ledger).
+  exportCsv(): void {
+    const headers = ['Date', 'Account', 'Type', 'Description', 'Debit', 'Credit', 'Reconciled'];
+    const rows = this.entries.map((e) => [
+      e.transactionDate,
+      e.accountName,
+      e.accountType || '',
+      (e.description || '').replace(/"/g, '""'),
+      e.debitAmount ?? 0,
+      e.creditAmount ?? 0,
+      e.isReconciled ? 'Yes' : 'No',
+    ]);
+    const csv = [headers, ...rows].map((r) => r.map((v) => `"${v}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'general-ledger.csv';
+    a.click();
+    URL.revokeObjectURL(url);
   }
 }

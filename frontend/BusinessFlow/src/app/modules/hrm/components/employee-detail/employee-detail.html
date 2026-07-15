@@ -79,6 +79,28 @@
         </div>
       </div>
     </div>
+    <div class="col-lg-6">
+      <div class="card">
+        <div class="card-header py-2 fw-semibold small text-uppercase">Custom Role &amp; Permissions</div>
+        <div class="card-body py-2">
+          <p class="small text-muted mb-2">
+            Current role: <strong>{{ employee.customRoleName || 'None' }}</strong>.
+            Assign a role to control exactly what this employee can access.
+          </p>
+          <div class="input-group input-group-sm">
+            <select class="form-select" [(ngModel)]="selectedRoleId" name="selectedRoleId">
+              <option [ngValue]="null">— No role —</option>
+              @for (r of customRoles; track r.id) { <option [ngValue]="r.id">{{ r.name }}</option> }
+            </select>
+            <button class="btn btn-primary" [disabled]="savingRole || selectedRoleId === (employee.customRoleId ?? null)" (click)="changeRole()">
+              @if (savingRole) { <span class="spinner-border spinner-border-sm me-1"></span> }
+              Save
+            </button>
+          </div>
+          <a routerLink="/roles-permissions" class="small d-inline-block mt-2">Manage roles &amp; permissions <i class="bi bi-box-arrow-up-right"></i></a>
+        </div>
+      </div>
+    </div>
   </div>
   }
 

@@ -9,6 +9,7 @@ export interface ServiceRequest {
   slaBreach: boolean;
   assignedAt?: string;
   completedAt?: string;
+  companyId?: number;
   clientId?: number;
   clientName?: string;
   hubServiceId?: number;
@@ -19,7 +20,13 @@ export interface ServiceRequest {
   completedTaskCount: number;
   subscriptionId?: number;
   packageName?: string;
+  resubmitCount: number;
+  permanentlyClosed: boolean;
+  paymentRedirectUrl?: string;
   createdAt: string;
+  updatedAt?: string;
+  // Invoice generated when a quotation is accepted
+  invoiceId?: number;
   // Quotation fields embedded directly on the service request (there is no
   // standalone Quotation entity/endpoint - QuotationController was removed
   // and this data now lives on ServiceRequestResponse)
@@ -70,10 +77,21 @@ export interface KbArticle {
 export interface RequestComment {
   id: number;
   content: string;
-  visibility: string;
+  visibility: CommentVisibility;
   attachmentUrl?: string;
   authorName?: string;
   createdAt: string;
+  authorId?: number;
+}
+
+export interface RequestStatusHistoryResponse {
+  id: number;
+  oldStatus?: string;
+  newStatus: string;
+  reason?: string;
+  changedById?: number;
+  changedByName?: string;
+  changedAt: string;
 }
 
 // Shared enums used by the service-desk configuration surface
@@ -94,6 +112,14 @@ export const SERVICE_VISIBILITIES: ServiceVisibility[] = ['PUBLIC', 'PRIVATE', '
 
 export type SubscriptionStatus = 'ACTIVE' | 'PENDING_PAYMENT' | 'EXPIRED' | 'SUSPENDED' | 'CANCELLED';
 export const SUBSCRIPTION_STATUSES: SubscriptionStatus[] = ['ACTIVE', 'PENDING_PAYMENT', 'EXPIRED', 'SUSPENDED', 'CANCELLED'];
+
+// Comment visibility: PUBLIC is visible to the client, INTERNAL is staff-only
+export type CommentVisibility = 'PUBLIC' | 'INTERNAL' | 'CLIENT';
+export const COMMENT_VISIBILITIES: CommentVisibility[] = ['PUBLIC', 'INTERNAL', 'CLIENT'];
+
+// Task status lifecycle
+export type TaskStatus = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+export const TASK_STATUSES: TaskStatus[] = ['PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'];
 
 export interface ServiceCategory {
   id: number;
@@ -139,6 +165,10 @@ export interface CompanyService {
   autoApproval: boolean;
   requiresQuotation?: boolean;
   createdAt: string;
+  requiresDocuments?: boolean;
+  supportsCustomWorkflow?: boolean;
+  aiAssisted?: boolean;
+  visibility?: string;
 }
 
 export interface CompanyServiceRequest {
@@ -386,4 +416,41 @@ export interface ServiceReviewRequest {
 export interface AverageRating {
   average: number;
   count?: number;
+}
+
+export interface TaskResponse {
+  id: number;
+  title: string;
+  description?: string;
+  status: TaskStatus;
+  priority: ServiceRequestPriority;
+  dueDate?: string;
+  slaDeadline?: string;
+  completedAt?: string;
+  serviceRequestId: number;
+  assignedEmployeeId?: number;
+  assignedEmployeeName?: string;
+  createdById?: number;
+  createdByName?: string;
+  workflowStageId?: number;
+  workflowStageName?: string;
+  createdAt: string;
+}
+
+export interface StageItem {
+  stageId: number;
+  name: string;
+  stageOrder: number;
+  slaHours?: number;
+  requiresApproval: boolean;
+  completed: boolean;
+  current: boolean;
+  approvalStatus?: string;
+}
+
+export interface StageProgressResponse {
+  serviceRequestId: number;
+  currentStage: string;
+  totalStages: number;
+  stages: StageItem[];
 }

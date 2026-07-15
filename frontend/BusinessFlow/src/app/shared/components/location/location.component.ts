@@ -68,7 +68,7 @@ export class LocationComponent implements OnInit {
       this.locationForm.patchValue({ level1: null, level2: null, level3: null, level4: null }, { emitEvent: false });
       
       if (countryNode && countryNode.id) {
-        this.fetchChildren(countryNode.id, 1);
+        this.fetchDivisions(countryNode.id);
       }
     });
 
@@ -133,11 +133,17 @@ export class LocationComponent implements OnInit {
     });
   }
 
+  fetchDivisions(countryId: number): void {
+    this.locationService.getDivisionsForCountry(countryId).subscribe({
+      next: (data) => this.level1Nodes.set(data),
+      error: (err) => console.error('Failed to load divisions', err)
+    });
+  }
+
   fetchChildren(parentId: number, level: number): void {
     this.locationService.getChildrenMaster(parentId).subscribe({
       next: (data) => {
-        if (level === 1) this.level1Nodes.set(data);
-        else if (level === 2) this.level2Nodes.set(data);
+        if (level === 2) this.level2Nodes.set(data);
         else if (level === 3) this.level3Nodes.set(data);
         else if (level === 4) this.level4Nodes.set(data);
       },
@@ -165,7 +171,7 @@ export class LocationComponent implements OnInit {
           const countryNode = countries.find(c => c.code === data.country || c.name === data.country);
           if (countryNode && countryNode.id) {
             // Load Level 1
-            this.locationService.getChildrenMaster(countryNode.id).subscribe({
+            this.locationService.getDivisionsForCountry(countryNode.id).subscribe({
               next: (l1Nodes) => {
                 this.level1Nodes.set(l1Nodes);
                 const l1Node = l1Nodes.find(n => n.name === data.level1);

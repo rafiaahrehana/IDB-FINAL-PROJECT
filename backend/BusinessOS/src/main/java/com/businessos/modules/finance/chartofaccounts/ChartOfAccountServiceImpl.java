@@ -1,5 +1,7 @@
 package com.businessos.modules.finance.chartofaccounts;
 
+import com.businessos.auth.role.enums.PermissionCode;
+import com.businessos.auth.role.service.AuthorizationService;
 import com.businessos.security.SecurityUtil;
 import com.businessos.shared.exception.ResourceNotFoundException;
 import com.businessos.shared.exception.BadRequestException;
@@ -16,11 +18,14 @@ import java.util.stream.Collectors;
 public class ChartOfAccountServiceImpl implements ChartOfAccountService {
 
     private final ChartOfAccountRepository coaRepository;
+    private final com.businessos.modules.finance.generalledger.GeneralLedgerRepository glRepository;
     private final SecurityUtil securityUtil;
+    private final AuthorizationService authorizationService;
 
     @Override
     @Transactional
     public ChartOfAccountResponse create(ChartOfAccountRequest request) {
+        authorizationService.checkPermission(PermissionCode.CHART_OF_ACCOUNT_CREATE);
         Long companyId = securityUtil.getCurrentCompanyId();
 
         // Check if account code already exists
@@ -39,7 +44,8 @@ public class ChartOfAccountServiceImpl implements ChartOfAccountService {
     @Override
     @Transactional(readOnly = true)
     public ChartOfAccountResponse getById(Long id) {
-        ChartOfAccount account = coaRepository.findById(id)
+        authorizationService.checkPermission(PermissionCode.CHART_OF_ACCOUNT_VIEW);
+        ChartOfAccount account = coaRepository.findByIdAndCompanyId(id, securityUtil.getCurrentCompanyId())
                 .orElseThrow(() -> new ResourceNotFoundException("Chart of Account not found"));
         return ChartOfAccountMapper.toResponse(account);
     }
@@ -47,6 +53,7 @@ public class ChartOfAccountServiceImpl implements ChartOfAccountService {
     @Override
     @Transactional(readOnly = true)
     public ChartOfAccountResponse getByCode(String code) {
+        authorizationService.checkPermission(PermissionCode.CHART_OF_ACCOUNT_VIEW);
         Long companyId = securityUtil.getCurrentCompanyId();
         ChartOfAccount account = coaRepository.findByCompanyIdAndAccountCode(companyId, code)
                 .orElseThrow(() -> new ResourceNotFoundException("Account code not found: " + code));
@@ -56,6 +63,7 @@ public class ChartOfAccountServiceImpl implements ChartOfAccountService {
     @Override
     @Transactional(readOnly = true)
     public Page<ChartOfAccountResponse> getAll(Pageable pageable) {
+        authorizationService.checkPermission(PermissionCode.CHART_OF_ACCOUNT_VIEW);
         Long companyId = securityUtil.getCurrentCompanyId();
         return coaRepository.findByCompanyId(companyId, pageable)
                 .map(ChartOfAccountMapper::toResponse);
@@ -64,6 +72,7 @@ public class ChartOfAccountServiceImpl implements ChartOfAccountService {
     @Override
     @Transactional(readOnly = true)
     public Page<ChartOfAccountResponse> getByType(AccountType type, Pageable pageable) {
+        authorizationService.checkPermission(PermissionCode.CHART_OF_ACCOUNT_VIEW);
         Long companyId = securityUtil.getCurrentCompanyId();
         return coaRepository.findByCompanyIdAndTypeAndActiveTrue(companyId, type, pageable)
                 .map(ChartOfAccountMapper::toResponse);
@@ -82,7 +91,8 @@ public class ChartOfAccountServiceImpl implements ChartOfAccountService {
     @Override
     @Transactional
     public ChartOfAccountResponse update(Long id, ChartOfAccountRequest request) {
-        ChartOfAccount account = coaRepository.findById(id)
+        authorizationService.checkPermission(PermissionCode.CHART_OF_ACCOUNT_UPDATE);
+        ChartOfAccount account = coaRepository.findByIdAndCompanyId(id, securityUtil.getCurrentCompanyId())
                 .orElseThrow(() -> new ResourceNotFoundException("Chart of Account not found"));
 
         // Validate code uniqueness if changed
@@ -97,6 +107,8 @@ public class ChartOfAccountServiceImpl implements ChartOfAccountService {
         account.setType(request.getType());
         account.setDescription(request.getDescription());
         account.setAllowDirectPosting(request.isAllowDirectPosting());
+        account.setHeaderAccount(request.isHeaderAccount());
+        account.setActive(request.isActive());
         account.setNotes(request.getNotes());
 
         account = coaRepository.save(account);
@@ -106,8 +118,12 @@ public class ChartOfAccountServiceImpl implements ChartOfAccountService {
     @Override
     @Transactional
     public void delete(Long id) {
-        ChartOfAccount account = coaRepository.findById(id)
+        Long companyId = securityUtil.getCurrentCompanyId();
+        ChartOfAccount account = coaRepository.findByIdAndCompanyId(id, companyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Chart of Account not found"));
+        if (glRepository.existsByAccountIdAndCompanyId(id, companyId)) {
+            throw new BadRequestException("Cannot delete account with existing ledger entries");
+        }
         account.softDelete();
         coaRepository.save(account);
     }

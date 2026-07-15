@@ -117,8 +117,8 @@ export class Leads implements OnInit {
         this.loading = false;
         this.cdr.markForCheck();
       },
-      error: () => {
-        this.error = 'Failed to load leads';
+      error: (err) => {
+        this.error = err?.error?.message || 'Failed to load leads';
         this.loading = false;
         this.cdr.markForCheck();
       },
@@ -273,8 +273,8 @@ export class Leads implements OnInit {
         this.activitiesLoading = false;
         this.cdr.markForCheck();
       },
-      error: () => {
-        this.error = 'Failed to load activities';
+      error: (err) => {
+        this.error = err?.error?.message || 'Failed to load activities';
         this.activitiesLoading = false;
         this.cdr.markForCheck();
       },

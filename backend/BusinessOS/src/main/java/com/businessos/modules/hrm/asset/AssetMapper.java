@@ -15,7 +15,7 @@ public class AssetMapper {
         r.setSerialNumber(a.getSerialNumber());
         r.setDescription(a.getNotes());
         r.setPurchaseDate(a.getPurchaseDate());
-        r.setPurchaseCost(a.getPurchasePrice() != null ? java.math.BigDecimal.valueOf(a.getPurchasePrice()) : null);
+        r.setPurchaseCost(a.getPurchasePrice());
         r.setStatus(a.getStatus());
         r.setAssignedAt(a.getAssignedAt());
         r.setReturnDate(a.getReturnedAt());

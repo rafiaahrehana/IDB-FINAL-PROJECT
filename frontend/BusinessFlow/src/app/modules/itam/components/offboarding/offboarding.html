@@ -13,7 +13,12 @@
   @if (showForm) {
   <div class="card mb-3"><div class="card-body">
     <div class="row g-2">
-      <div class="col-md-3"><input type="number" class="form-control form-control-sm" placeholder="Employee ID *" [(ngModel)]="newEmployeeId" /></div>
+      <div class="col-md-3">
+        <select class="form-select form-select-sm" [(ngModel)]="newEmployeeId">
+          <option [ngValue]="undefined" disabled>Select an employee</option>
+          @for (e of employees; track e.id) { <option [ngValue]="e.id">{{ e.firstName }} {{ e.lastName }} ({{ e.employeeNumber }})</option> }
+        </select>
+      </div>
       <div class="col-md-6"><input class="form-control form-control-sm" placeholder="Notes" [(ngModel)]="newNotes" /></div>
       <div class="col-md-3 d-flex gap-2">
         <button class="btn btn-primary btn-sm" [disabled]="!newEmployeeId" (click)="startOffboarding()">Start</button>
@@ -70,15 +75,42 @@
           </div>
 
           <div class="list-group list-group-flush">
-            <div class="list-group-item d-flex justify-content-between align-items-center px-0">
-              <span><i class="bi bi-laptop me-2"></i>Hardware Collected</span>
-              @if (selected.hardwareCollected) { <span class="badge text-bg-success">Done</span> }
-              @if (!selected.hardwareCollected) { <button class="btn btn-outline-primary btn-sm" (click)="markHardware()">Mark Done</button> }
+            <div class="list-group-item px-0">
+              <div class="d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-laptop me-2"></i>Hardware Collected</span>
+                @if (selected.hardwareCollected) { <span class="badge text-bg-success">Done</span> }
+                @if (!selected.hardwareCollected) { <button class="btn btn-outline-primary btn-sm" (click)="markHardware()">Mark Done</button> }
+              </div>
+              @if (assignedLoading) { <div class="small text-muted mt-1">Loading...</div> }
+              @if (!assignedLoading && assignedAssets.length) {
+              <ul class="list-unstyled small mt-2 mb-0">
+                @for (a of assignedAssets; track a.id) {
+                <li class="d-flex justify-content-between align-items-center py-1">
+                  <span>{{ a.name }} <span class="text-muted">({{ a.assetTag || a.serialNumber || 'no tag' }})</span></span>
+                  <button class="btn btn-outline-secondary btn-sm py-0" (click)="returnAsset(a)">Return</button>
+                </li>
+                }
+              </ul>
+              }
+              @if (!assignedLoading && !assignedAssets.length) { <div class="small text-muted mt-1">No hardware currently assigned.</div> }
             </div>
-            <div class="list-group-item d-flex justify-content-between align-items-center px-0">
-              <span><i class="bi bi-key me-2"></i>Licenses Revoked</span>
-              @if (selected.licensesRevoked) { <span class="badge text-bg-success">Done</span> }
-              @if (!selected.licensesRevoked) { <button class="btn btn-outline-primary btn-sm" (click)="markLicenses()">Mark Done</button> }
+            <div class="list-group-item px-0">
+              <div class="d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-key me-2"></i>Licenses Revoked</span>
+                @if (selected.licensesRevoked) { <span class="badge text-bg-success">Done</span> }
+                @if (!selected.licensesRevoked) { <button class="btn btn-outline-primary btn-sm" (click)="markLicenses()">Mark Done</button> }
+              </div>
+              @if (!assignedLoading && assignedLicenses.length) {
+              <ul class="list-unstyled small mt-2 mb-0">
+                @for (s of assignedLicenses; track s.id) {
+                <li class="d-flex justify-content-between align-items-center py-1">
+                  <span>{{ s.softwareName }}</span>
+                  <button class="btn btn-outline-secondary btn-sm py-0" (click)="revokeLicenseSeat(s)">Revoke</button>
+                </li>
+                }
+              </ul>
+              }
+              @if (!assignedLoading && !assignedLicenses.length) { <div class="small text-muted mt-1">No license seats currently assigned.</div> }
             </div>
             <div class="list-group-item d-flex justify-content-between align-items-center px-0">
               <span><i class="bi bi-shield-lock me-2"></i>Access Revoked</span>

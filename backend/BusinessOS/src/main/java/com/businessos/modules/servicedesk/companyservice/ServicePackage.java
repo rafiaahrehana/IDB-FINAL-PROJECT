@@ -39,7 +39,7 @@ public class ServicePackage extends BaseEntity {
 
     @Builder.Default
     @Column(nullable = false)
-    private Double discountPercent = 0.0;
+    private BigDecimal discountPercent = BigDecimal.ZERO;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -94,9 +94,8 @@ public class ServicePackage extends BaseEntity {
     public BigDecimal getEffectivePrice() {
         if (packagePrice != null) return packagePrice;
         BigDecimal total = getTotalServicePrice();
-        if (discountPercent == null || discountPercent == 0.0) return total;
-        BigDecimal discount = total.multiply(
-            BigDecimal.valueOf(discountPercent / 100.0));
+        if (discountPercent == null || discountPercent.compareTo(BigDecimal.ZERO) == 0) return total;
+        BigDecimal discount = total.multiply(discountPercent.divide(BigDecimal.valueOf(100)));
         return total.subtract(discount).max(BigDecimal.ZERO);
     }
 

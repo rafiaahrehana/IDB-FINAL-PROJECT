@@ -3,7 +3,7 @@ package com.businessos.auth.user;
 import com.businessos.auth.role.entity.CustomRole;
 import com.businessos.auth.role.enums.Role;
 import com.businessos.core.base.BaseEntity;
-import com.businessos.shared.address.Location;
+import com.businessos.shared.address.Address;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
@@ -39,8 +39,8 @@ public class User extends BaseEntity implements UserDetails {
     private Role role;
 
     @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JoinColumn(name = "location_id")
-    private Location location;
+    @JoinColumn(name = "address_id")
+    private Address location;
 
     public boolean isPlatformUser() {
         return role == Role.SUPER_ADMIN || role == Role.SYSTEM_ADMIN || 

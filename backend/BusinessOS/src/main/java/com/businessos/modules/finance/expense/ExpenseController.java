@@ -20,21 +20,21 @@ public class ExpenseController {
     private final ExpenseService service;
 
     @PostMapping
-    @PreAuthorize("hasRole('EMPLOYEE')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     @Operation(summary = "Create Expense")
     public ResponseEntity<ExpenseResponse> create(@Valid @RequestBody ExpenseRequest request) {
         return new ResponseEntity<>(service.create(request), HttpStatus.CREATED);
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('EMPLOYEE') or hasRole('FINANCE_MANAGER')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     @Operation(summary = "Get Expense by ID")
     public ResponseEntity<ExpenseResponse> getById(@PathVariable Long id) {
         return ResponseEntity.ok(service.getById(id));
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('FINANCE_MANAGER') or hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     @Operation(summary = "Get all Expenses")
     public ResponseEntity<Page<ExpenseResponse>> getAll(
             @RequestParam(defaultValue = "0") int page,
@@ -43,7 +43,7 @@ public class ExpenseController {
     }
 
     @GetMapping("/status/{status}")
-    @PreAuthorize("hasRole('FINANCE_MANAGER') or hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     @Operation(summary = "Get Expenses by Status")
     public ResponseEntity<Page<ExpenseResponse>> getByStatus(
             @PathVariable ExpenseStatus status,
@@ -53,7 +53,7 @@ public class ExpenseController {
     }
 
     @GetMapping("/vendor/{vendorName}")
-    @PreAuthorize("hasRole('FINANCE_MANAGER') or hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     @Operation(summary = "Get Expenses by Vendor")
     public ResponseEntity<Page<ExpenseResponse>> getByVendor(
             @PathVariable String vendorName,
@@ -63,7 +63,7 @@ public class ExpenseController {
     }
 
     @GetMapping("/my-expenses")
-    @PreAuthorize("hasRole('EMPLOYEE')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     @Operation(summary = "Get My Expenses")
     public ResponseEntity<Page<ExpenseResponse>> getMyExpenses(
             @RequestParam(required = false) Long employeeId,
@@ -73,7 +73,7 @@ public class ExpenseController {
     }
 
     @PatchMapping("/{id}")
-    @PreAuthorize("hasRole('EMPLOYEE')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     @Operation(summary = "Update Expense")
     public ResponseEntity<ExpenseResponse> update(
             @PathVariable Long id,
@@ -82,7 +82,7 @@ public class ExpenseController {
     }
 
     @PostMapping("/{id}/approve")
-    @PreAuthorize("hasRole('FINANCE_MANAGER') or hasRole('HR_MANAGER')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     @Operation(summary = "Approve Expense")
     public ResponseEntity<Void> approve(
             @PathVariable Long id,
@@ -92,7 +92,7 @@ public class ExpenseController {
     }
 
     @PostMapping("/{id}/reject")
-    @PreAuthorize("hasRole('FINANCE_MANAGER') or hasRole('HR_MANAGER')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     @Operation(summary = "Reject Expense")
     public ResponseEntity<Void> reject(
             @PathVariable Long id,
@@ -102,7 +102,7 @@ public class ExpenseController {
     }
 
     @PostMapping("/{id}/mark-as-paid")
-    @PreAuthorize("hasRole('FINANCE_MANAGER')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     @Operation(summary = "Mark Expense as Paid")
     public ResponseEntity<Void> markAsPaid(
             @PathVariable Long id,
@@ -113,7 +113,7 @@ public class ExpenseController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasRole('COMPANY_OWNER')")
     @Operation(summary = "Delete Expense")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         service.delete(id);

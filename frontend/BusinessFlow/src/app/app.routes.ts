@@ -1,9 +1,11 @@
 import { Routes } from '@angular/router';
 import { AuthGuard } from './core/guards/auth.guard';
 import { RoleGuard } from './core/guards/role.guard';
+import { ClientHomeRedirectGuard } from './core/guards/client-home-redirect.guard';
 import { DashboardComponent } from './modules/dashboard/components/dashboard.component';
 import { Login } from './modules/auth/login/login';
 import { Register } from './modules/auth/register/register';
+import { ClientRegister } from './modules/auth/client-register/client-register';
 import { ForgotPassword } from './modules/auth/forgot-password/forgot-password';
 import { ResetPassword } from './modules/auth/reset-password/reset-password';
 import { VerifyEmail } from './modules/auth/verify-email/verify-email';
@@ -17,8 +19,7 @@ import { Preferences as NotificationPreferences } from './modules/preferences/pr
 
 // Portal (public landing + per-company public portal + owner settings)
 import { Landing } from './modules/landing/landing';
-import { PlatformPortal } from './modules/portal/platform-portal/platform-portal';
-import { CompanySettings } from './modules/portal/company-settings/company-settings';
+import { ContactSales } from './modules/landing/components/contact-sales/contact-sales';
 import { WebsiteView } from './modules/portal/website-view/website-view';
 import { PaymentResult } from './modules/portal/payment-result/payment-result';
 
@@ -59,10 +60,11 @@ import { ShiftAssignments } from './modules/attendance/components/shift-assignme
 import { Timesheets } from './modules/attendance/components/timesheets/timesheets';
 
 export const routes: Routes = [
-  { path: '', component: DashboardComponent, canActivate: [AuthGuard] },
+  { path: '', component: DashboardComponent, canActivate: [AuthGuard, ClientHomeRedirectGuard] },
   { path: 'dashboard', redirectTo: '', pathMatch: 'full' },
   // Public pages - no auth
   { path: 'home', component: Landing },
+  { path: 'contact', component: ContactSales },
   { path: 'portal/:subdomain', loadChildren: () => import('./modules/site/site.routes').then(m => m.SITE_ROUTES) },
   { path: 'payment-result', component: PaymentResult },
   // Owner-editable portal settings
@@ -73,13 +75,20 @@ export const routes: Routes = [
     data: { roles: ['COMPANY_OWNER'] },
   },
   {
-    path: 'portal-settings',
-    component: CompanySettings,
+    path: 'website-management',
+    loadComponent: () => import('./modules/website-admin/components/website-management/website-management').then(m => m.WebsiteManagement),
+    canActivate: [AuthGuard, RoleGuard],
+    data: { roles: ['COMPANY_OWNER', 'EMPLOYEE'] },
+  },
+  {
+    path: 'roles-permissions',
+    loadComponent: () => import('./modules/roles-permissions/components/roles-permissions/roles-permissions').then(m => m.RolesPermissions),
     canActivate: [AuthGuard, RoleGuard],
     data: { roles: ['COMPANY_OWNER'] },
   },
   { path: 'auth/login', component: Login },
   { path: 'auth/register', component: Register },
+  { path: 'auth/register-client', component: ClientRegister },
   { path: 'auth/forgot-password', component: ForgotPassword },
   { path: 'auth/reset-password', component: ResetPassword },
   { path: 'auth/verify-email', component: VerifyEmail },
@@ -93,6 +102,12 @@ export const routes: Routes = [
     path: 'crm',
     canActivate: [AuthGuard],
     loadChildren: () => import('./modules/crm/crm.routes').then(m => m.CRM_ROUTES)
+  },
+  {
+    path: 'client',
+    canActivate: [AuthGuard, RoleGuard],
+    data: { roles: ['CLIENT'] },
+    loadChildren: () => import('./modules/client-portal/client-portal.routes').then(m => m.CLIENT_PORTAL_ROUTES)
   },
   {
     path: 'servicedesk',

@@ -102,4 +102,11 @@ export class GlobalSearch implements OnInit {
   byType(type: string): SearchResultItem[] {
     return this.results.filter((r) => r.type === type);
   }
+
+  highlight(text: string): string {
+    if (!this.query.trim() || !text) return text;
+    const escaped = this.query.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`(${escaped})`, 'gi');
+    return text.replace(regex, '<mark>$1</mark>');
+  }
 }

@@ -9,9 +9,12 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface GeneralLedgerRepository extends JpaRepository<GeneralLedger, Long> {
+
+    Optional<GeneralLedger> findByIdAndCompanyId(Long id, Long companyId);
 
     Page<GeneralLedger> findByCompanyIdAndAccountId(Long companyId, Long accountId, Pageable pageable);
 
@@ -21,6 +24,24 @@ public interface GeneralLedgerRepository extends JpaRepository<GeneralLedger, Lo
 
     List<GeneralLedger> findByCompanyIdAndReferenceTypeAndReferenceId(Long companyId, String type, Long id);
 
+    boolean existsByAccountIdAndCompanyId(Long accountId, Long companyId);
+
     @Query("SELECT gl FROM GeneralLedger gl WHERE gl.companyId = :companyId AND gl.transactionDate BETWEEN :start AND :end")
     List<GeneralLedger> findTransactionsBetweenDates(@Param("companyId") Long companyId, @Param("start") LocalDate start, @Param("end") LocalDate end);
+
+    /**
+     * Used by FinancialReportServiceImpl.generateBalanceSheetReport to compute each
+     * account type's balance as of a given date (not just its current live balance).
+     */
+    @Query("SELECT gl FROM GeneralLedger gl WHERE gl.companyId = :companyId AND gl.account.id IN :accountIds AND gl.transactionDate <= :date")
+    List<GeneralLedger> findByCompanyIdAndAccountIdsUpToDate(
+        @Param("companyId") Long companyId, @Param("accountIds") List<Long> accountIds, @Param("date") LocalDate date);
+
+    /**
+     * Used by FinancialReportServiceImpl.generateAccountLedger to compute the account's
+     * opening balance as of the ledger's start date (transactions strictly before it).
+     */
+    @Query("SELECT gl FROM GeneralLedger gl WHERE gl.companyId = :companyId AND gl.account.id = :accountId AND gl.transactionDate < :date")
+    List<GeneralLedger> findByCompanyIdAndAccountIdBeforeDate(
+        @Param("companyId") Long companyId, @Param("accountId") Long accountId, @Param("date") LocalDate date);
 }

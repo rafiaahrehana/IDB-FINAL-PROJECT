@@ -1,0 +1,72 @@
+.integrations-section {
+  position: relative;
+}
+
+.text-purple {
+  color: #61399e;
+}
+
+.bg-light-purple {
+  background-color: #f0e6f9;
+}
+
+.bg-purple-light {
+  background-color: #f5f0fc;
+}
+
+.border-purple-light {
+  border: 1px solid #e0d0f5 !important;
+}
+
+.icon-box-small {
+  width: 40px;
+  height: 40px;
+}
+
+.integration-card {
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.app-card {
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  transition: transform 0.2s ease;
+}
+.app-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05) !important;
+}
+
+.superpowers-card {
+  background-color: #f7f5fd;
+}
+
+.feature-box {
+  transition: transform 0.2s ease;
+}
+.feature-box:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.04) !important;
+}
+
+/* Decorators - using basic radial gradients to fake the shapes in the mockup */
+.bg-waves {
+  background: radial-gradient(circle at bottom left, #e0d4f5 0%, transparent 60%);
+  border-bottom-left-radius: 1rem;
+}
+
+.bg-geo {
+  background: 
+    linear-gradient(45deg, transparent 49%, #e0d4f5 49%, #e0d4f5 51%, transparent 51%),
+    linear-gradient(-45deg, transparent 49%, #e0d4f5 49%, #e0d4f5 51%, transparent 51%);
+  background-size: 20px 20px;
+  border-top-right-radius: 1rem;
+}
+
+.bg-geo-bottom {
+  background: radial-gradient(circle at bottom left, #d8b4e2 0%, transparent 70%);
+  border-bottom-left-radius: 1rem;
+}
+
+.bg-wave-small {
+  background: radial-gradient(ellipse at top right, rgba(0,0,0,0.02) 0%, transparent 70%);
+}

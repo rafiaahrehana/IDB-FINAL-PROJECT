@@ -1,0 +1,43 @@
+<div class="container-fluid py-3">
+  <h4 class="mb-3">My Packages</h4>
+
+  @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
+  @if (loading) { <app-loader /> }
+
+  @if (!loading && subscriptions.length) {
+  <div class="row g-3">
+    @for (sub of subscriptions; track sub.id) {
+    <div class="col-md-6 col-lg-4">
+      <div class="card h-100">
+        <div class="card-header py-2 d-flex justify-content-between align-items-center">
+          <span class="fw-semibold">{{ sub.packageName || 'Package #' + sub.packageId }}</span>
+          <span class="badge {{ statusClass(sub.status) }}">{{ sub.status }}</span>
+        </div>
+        <div class="card-body">
+          <dl class="row small mb-2">
+            <dt class="col-6 text-muted">Billing Cycle</dt><dd class="col-6">{{ sub.billingCycle || '-' }}</dd>
+            <dt class="col-6 text-muted">Price Paid</dt><dd class="col-6">{{ sub.pricePaid != null ? (sub.pricePaid | currency) : '-' }}</dd>
+            <dt class="col-6 text-muted">Start</dt><dd class="col-6">{{ sub.startDate ? (sub.startDate | date) : '-' }}</dd>
+            <dt class="col-6 text-muted">Next Billing</dt><dd class="col-6">{{ sub.nextBillingDate ? (sub.nextBillingDate | date) : '-' }}</dd>
+          </dl>
+          @if (sub.requestQuota) {
+          <div class="small text-muted mb-1 d-flex justify-content-between">
+            <span>Requests used</span>
+            <span>{{ sub.requestsUsed }} / {{ sub.requestQuota }}</span>
+          </div>
+          <div class="progress" style="height: 6px">
+            <div class="progress-bar" [style.width.%]="usagePercent(sub)"></div>
+          </div>
+          }
+        </div>
+      </div>
+    </div>
+    }
+  </div>
+  <div class="d-flex justify-content-end mt-3">
+    <app-pagination [page]="page" [totalPages]="totalPages" (pageChange)="goToPage($event)" />
+  </div>
+  }
+
+  @if (!loading && !subscriptions.length) { <app-empty-state icon="bi-box-seam" message="You don't have any packages yet." /> }
+</div>

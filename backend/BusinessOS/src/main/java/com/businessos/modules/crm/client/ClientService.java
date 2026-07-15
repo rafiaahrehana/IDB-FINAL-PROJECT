@@ -8,9 +8,14 @@ public interface ClientService {
 
     ClientResponse create(CreateClientRequest request);
 
+    /** Public, unauthenticated self-registration - the client picks their own company. */
+    ClientResponse registerPublic(PublicClientRegisterRequest request);
+
     ClientResponse getById(Long id);
 
     ClientResponse getMyProfile();
+
+    ClientResponse updateMyProfile(UpdateMyClientProfileRequest request);
 
     Page<ClientResponse> listAll(ClientStatus status, Pageable pageable);
 

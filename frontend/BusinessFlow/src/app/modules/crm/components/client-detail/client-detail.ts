@@ -52,7 +52,7 @@ export class ClientDetail implements OnInit {
         this.cdr.markForCheck();
       },
       error: () => {
-        this.error = 'Failed to load account';
+        this.error = 'Failed to load client';
         this.cdr.markForCheck();
       },
     });

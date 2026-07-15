@@ -1,0 +1,88 @@
+<div class="container-fluid py-3">
+  <h4 class="mb-1">Welcome{{ firstName ? ', ' + firstName : '' }}</h4>
+  <p class="text-muted mb-4">
+    Here's an overview of your account
+    @if (profile?.accountManagerName) { — your account manager is <strong>{{ profile?.accountManagerName }}</strong>. }
+  </p>
+
+  @if (loading) { <app-loader /> }
+
+  @if (!loading && summary) {
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="card h-100">
+        <div class="card-body">
+          <div class="text-muted small">Pending Requests</div>
+          <div class="fs-3 fw-bold">{{ fmt(summary.pendingRequests) }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card h-100">
+        <div class="card-body">
+          <div class="text-muted small">In Progress</div>
+          <div class="fs-3 fw-bold">{{ fmt(summary.inProgressRequests) }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card h-100">
+        <div class="card-body">
+          <div class="text-muted small">Completed</div>
+          <div class="fs-3 fw-bold">{{ fmt(summary.completedRequests) }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card h-100">
+        <div class="card-body">
+          <div class="text-muted small">Unpaid Invoices</div>
+          <div class="fs-3 fw-bold">{{ fmt(summary.unpaidInvoices) }}</div>
+          @if (summary.outstandingInvoiceAmount) {
+            <div class="text-danger small">{{ summary.outstandingInvoiceAmount | currency }} due</div>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+  }
+
+  <div class="row g-3">
+    <div class="col-md-6 col-lg-3">
+      <a routerLink="/client/requests" class="text-decoration-none">
+        <div class="card h-100 text-center py-4">
+          <i class="bi bi-clipboard-check fs-2 text-primary mb-2"></i>
+          <div class="fw-semibold">My Requests</div>
+          <div class="text-muted small">Track &amp; raise service requests</div>
+        </div>
+      </a>
+    </div>
+    <div class="col-md-6 col-lg-3">
+      <a routerLink="/client/packages" class="text-decoration-none">
+        <div class="card h-100 text-center py-4">
+          <i class="bi bi-box-seam fs-2 text-primary mb-2"></i>
+          <div class="fw-semibold">My Packages</div>
+          <div class="text-muted small">View your active subscriptions</div>
+        </div>
+      </a>
+    </div>
+    <div class="col-md-6 col-lg-3">
+      <a routerLink="/client/payments" class="text-decoration-none">
+        <div class="card h-100 text-center py-4">
+          <i class="bi bi-credit-card fs-2 text-primary mb-2"></i>
+          <div class="fw-semibold">Payment</div>
+          <div class="text-muted small">Invoices &amp; payment history</div>
+        </div>
+      </a>
+    </div>
+    <div class="col-md-6 col-lg-3">
+      <a routerLink="/client/profile" class="text-decoration-none">
+        <div class="card h-100 text-center py-4">
+          <i class="bi bi-person-gear fs-2 text-primary mb-2"></i>
+          <div class="fw-semibold">Profile Settings</div>
+          <div class="text-muted small">Update your details</div>
+        </div>
+      </a>
+    </div>
+  </div>
+</div>

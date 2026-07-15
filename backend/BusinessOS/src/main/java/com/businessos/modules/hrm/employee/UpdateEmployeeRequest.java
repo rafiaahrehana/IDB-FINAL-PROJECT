@@ -23,7 +23,7 @@ public class UpdateEmployeeRequest {
     private String fatherName;
     @Size(max = 100)
     private String motherName;
-    private com.businessos.shared.address.LocationRequest location;
+    private com.businessos.shared.address.AddressRequest location;
     private LocalDate hireDate;
     private LocalDate confirmationDate;
     private LocalDate probationEndDate;

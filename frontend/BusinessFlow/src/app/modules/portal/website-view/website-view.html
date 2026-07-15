@@ -6,8 +6,8 @@
       <h5 class="mb-0 fw-bold">Website View</h5>
       <small class="text-muted">Preview of your public portal</small>
     </div>
-    <a routerLink="/portal-settings" class="btn btn-primary btn-sm">
-      <i class="bi bi-gear me-1"></i>Portal Settings
+    <a routerLink="/website-management" class="btn btn-primary btn-sm">
+      <i class="bi bi-layout-text-window-reverse me-1"></i>Manage Website
     </a>
   </div>
 
@@ -25,7 +25,7 @@
   } @else if (subdomain) {
     <!-- Full-page iframe preview -->
     <div class="iframe-wrapper">
-      <iframe [src]="portalUrl" class="portal-iframe" frameborder="0" title="Portal Preview"></iframe>
+      <iframe [src]="safePortalUrl" class="portal-iframe" frameborder="0" title="Portal Preview"></iframe>
     </div>
   }
 

@@ -7,15 +7,19 @@
     </div>
     
     <div class="btn-group bg-white rounded-3 shadow-sm border p-1">
-      <button class="btn btn-sm btn-primary-bos rounded-3 px-3 fw-semibold">Day</button>
-      <button class="btn btn-sm btn-light border-0 rounded-3 px-3 text-muted bg-transparent">Week</button>
-      <button class="btn btn-sm btn-light border-0 rounded-3 px-3 text-muted bg-transparent">Month</button>
-      <button class="btn btn-sm btn-light border-0 rounded-3 px-3 text-muted bg-transparent">Year</button>
+      <button class="btn btn-sm rounded-3 px-3 fw-semibold" [class]="selectedRange === 'day' ? 'btn-primary-bos' : 'btn-light border-0 text-muted bg-transparent'" (click)="setRange('day')">Day</button>
+      <button class="btn btn-sm rounded-3 px-3 fw-semibold" [class]="selectedRange === 'week' ? 'btn-primary-bos' : 'btn-light border-0 text-muted bg-transparent'" (click)="setRange('week')">Week</button>
+      <button class="btn btn-sm rounded-3 px-3 fw-semibold" [class]="selectedRange === 'month' ? 'btn-primary-bos' : 'btn-light border-0 text-muted bg-transparent'" (click)="setRange('month')">Month</button>
+      <button class="btn btn-sm rounded-3 px-3 fw-semibold" [class]="selectedRange === 'year' ? 'btn-primary-bos' : 'btn-light border-0 text-muted bg-transparent'" (click)="setRange('year')">Year</button>
     </div>
   </div>
 
   @if (loading) {
     <app-loader />
+  }
+
+  @if (error) {
+    <div class="alert alert-danger py-2">{{ error }}</div>
   }
 
   <!-- ============ COMPANY VIEW (COMPANY_OWNER / EMPLOYEE) ============ -->

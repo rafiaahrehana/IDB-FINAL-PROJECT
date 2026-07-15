@@ -26,8 +26,8 @@ public class UsageBillingService {
     private final ClientInvoiceService       invoiceService;
 
     @Transactional
-    public void handleCompletion(Long serviceRequestId) {
-        ServiceRequest request = serviceRequestRepository.findById(serviceRequestId)
+    public void handleCompletion(Long serviceRequestId, Long companyId) {
+        ServiceRequest request = serviceRequestRepository.findByIdAndCompanyId(serviceRequestId, companyId)
             .orElseThrow(() -> new ResourceNotFoundException("Service request not found: " + serviceRequestId));
 
         PackageSubscription sub = request.getSubscription();

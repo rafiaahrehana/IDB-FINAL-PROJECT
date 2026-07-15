@@ -1,0 +1,69 @@
+<section id="resources" class="py-3 integrations-section overflow-hidden position-relative bg-white">
+  <div class="container py-5">
+    
+    <div class="row mb-5 text-center slide-up">
+      <div class="col-12">
+        <h2 class="display-5 fw-bold section-title mb-4 slide-up" style="animation-delay: 0.1s;">Integrations & Key Features</h2>
+      </div>
+    </div>
+    
+    <div class="row g-5 align-items-stretch">
+      <!-- Seamless Integrations (Left) -->
+      <div class="col-lg-6 d-flex slide-up" style="animation-delay: 0.1s;">
+        <div class="integration-card w-100 p-5 rounded-4 position-relative bg-white border border-light shadow-sm d-flex flex-column">
+          <!-- Decorator -->
+          <div class="bg-waves position-absolute bottom-0 start-0 w-50 h-50" style="opacity: 0.4;"></div>
+          
+          <h3 class="fw-bold mb-4 position-relative z-1 text-dark">Seamless Integrations</h3>
+          
+          <div class="row g-3 position-relative z-1 mt-auto">
+            <div class="col-sm-6" *ngFor="let item of integrations()">
+              <div class="app-card p-3 rounded-4 bg-white d-flex flex-column align-items-center justify-content-center text-center shadow-sm">
+                <i class="bi fs-3 mb-2" [ngClass]="[item.icon, item.color]"></i>
+                <span class="fw-bold text-dark small">{{ item.name }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Platform Superpowers (Right) -->
+      <div class="col-lg-6 d-flex slide-up" style="animation-delay: 0.2s;">
+        <div class="superpowers-card w-100 p-5 rounded-4 position-relative d-flex flex-column">
+          <!-- Decorator -->
+          <div class="bg-geo position-absolute top-0 end-0 w-25 h-25" style="opacity: 0.8;"></div>
+          <div class="bg-geo-bottom position-absolute bottom-0 start-0 w-25 h-25" style="opacity: 0.3;"></div>
+
+          <h3 class="fw-bold mb-4 position-relative z-1 text-dark">Platform Superpowers</h3>
+          
+          <div class="row g-4 position-relative z-1 mt-auto">
+            <!-- AI Insights -->
+            <div class="col-sm-6 d-flex">
+              <div class="feature-box p-4 rounded-4 bg-purple-light shadow-sm w-100 position-relative overflow-hidden border border-purple-light">
+                <div class="bg-wave-small position-absolute top-0 end-0 w-50 h-100"></div>
+                <div class="icon-box-small bg-light-purple text-purple rounded-3 d-flex align-items-center justify-content-center mb-3 position-relative z-1">
+                  <i class="bi bi-brain fs-5"></i>
+                </div>
+                <h5 class="fw-bold text-dark mb-2 position-relative z-1">AI Insights</h5>
+                <p class="small text-muted mb-0 position-relative z-1">Leverage predictive AI for faster approvals and workflow optimizations.</p>
+              </div>
+            </div>
+            
+            <!-- Mobile App -->
+            <div class="col-sm-6 d-flex">
+              <div class="feature-box p-4 rounded-4 bg-white shadow-sm w-100 position-relative overflow-hidden border border-light">
+                <div class="bg-wave-small position-absolute top-0 end-0 w-50 h-100"></div>
+                <div class="icon-box-small bg-light-purple text-purple rounded-3 d-flex align-items-center justify-content-center mb-3 position-relative z-1">
+                  <i class="bi bi-phone fs-5"></i>
+                </div>
+                <h5 class="fw-bold text-dark mb-2 position-relative z-1">Mobile App Support</h5>
+                <p class="small text-muted mb-0 position-relative z-1">Manage and approve tasks from anywhere with our native mobile app.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+  </div>
+</section>

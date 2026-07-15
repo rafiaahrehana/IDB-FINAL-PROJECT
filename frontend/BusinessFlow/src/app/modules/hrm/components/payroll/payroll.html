@@ -22,6 +22,18 @@
           <option [ngValue]="y">{{ y }}</option>
         }
       </select>
+      <button
+        class="btn btn-outline-primary btn-sm text-nowrap"
+        [disabled]="generating"
+        (click)="openGenerate()"
+      >
+        @if (generating) {
+          <span class="spinner-border spinner-border-sm me-1"></span>
+        } @else {
+          <i class="bi bi-lightning-charge me-1"></i>
+        }
+        Generate for All Employees
+      </button>
       <button class="btn btn-primary btn-sm text-nowrap" (click)="showForm = true">
         <i class="bi bi-plus-lg me-1"></i>Add Payroll
       </button>
@@ -33,6 +45,28 @@
   }
   @if (success) {
     <div class="alert alert-success py-2">{{ success }}</div>
+  }
+  @if (generateResult) {
+    <div class="alert alert-info py-2">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <strong>{{ generateResult.created.length }}</strong> payroll draft(s) created.
+          @if (generateResult.skippedAlreadyExists.length) {
+            <div class="small mt-1">
+              Already existed ({{ generateResult.skippedAlreadyExists.length }}):
+              {{ generateResult.skippedAlreadyExists.join(', ') }}
+            </div>
+          }
+          @if (generateResult.skippedNoSalaryStructure.length) {
+            <div class="small mt-1">
+              No salary structure ({{ generateResult.skippedNoSalaryStructure.length }}):
+              {{ generateResult.skippedNoSalaryStructure.join(', ') }}
+            </div>
+          }
+        </div>
+        <button type="button" class="btn-close" (click)="generateResult = null"></button>
+      </div>
+    </div>
   }
   @if (loading) {
     <app-loader />
@@ -63,7 +97,10 @@
                 <td class="text-end">{{ p.basicSalary | number: '1.2-2' }}</td>
                 <td class="text-end">{{ p.bonus ?? 0 | number: '1.2-2' }}</td>
                 <td class="text-end">
-                  {{ (p.deductions ?? 0) + (p.taxDeduction ?? 0) | number: '1.2-2' }}
+                  {{
+                    (p.deductions ?? 0) + (p.taxDeduction ?? 0) + (p.insuranceDeduction ?? 0) + (p.providentFundDeduction ?? 0)
+                      | number: '1.2-2'
+                  }}
                 </td>
                 <td class="text-end fw-semibold">{{ p.netSalary | number: '1.2-2' }}</td>
                 <td>
@@ -79,6 +116,9 @@
                 </td>
                 <td class="small">
                   {{ p.paidAt ? (p.paidAt | date: 'mediumDate') : '-' }}
+                  @if (p.paymentMethod) {
+                    <div class="text-muted">{{ p.paymentMethod }}</div>
+                  }
                   @if (p.paymentReference) {
                     <div class="text-muted">{{ p.paymentReference }}</div>
                   }
@@ -180,14 +220,14 @@
                 </select>
               </div>
               <div class="col-md-3">
-                <label class="form-label">Basic Salary *</label>
+                <label class="form-label">Basic Salary</label>
                 <input
                   type="number"
                   class="form-control form-control-sm"
                   name="basicSalary"
                   [(ngModel)]="form.basicSalary"
-                  required
                   min="0"
+                  placeholder="From salary structure"
                 />
               </div>
               <div class="col-md-3">
@@ -220,6 +260,26 @@
                   min="0"
                 />
               </div>
+              <div class="col-md-3">
+                <label class="form-label">Food</label>
+                <input
+                  type="number"
+                  class="form-control form-control-sm"
+                  name="foodAllowance"
+                  [(ngModel)]="form.foodAllowance"
+                  min="0"
+                />
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Special Allowance</label>
+                <input
+                  type="number"
+                  class="form-control form-control-sm"
+                  name="specialAllowance"
+                  [(ngModel)]="form.specialAllowance"
+                  min="0"
+                />
+              </div>
               <div class="col-md-4">
                 <label class="form-label">Bonus</label>
                 <input
@@ -247,6 +307,26 @@
                   class="form-control form-control-sm"
                   name="taxDeduction"
                   [(ngModel)]="form.taxDeduction"
+                  min="0"
+                />
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Insurance Deduction</label>
+                <input
+                  type="number"
+                  class="form-control form-control-sm"
+                  name="insuranceDeduction"
+                  [(ngModel)]="form.insuranceDeduction"
+                  min="0"
+                />
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Provident Fund</label>
+                <input
+                  type="number"
+                  class="form-control form-control-sm"
+                  name="providentFundDeduction"
+                  [(ngModel)]="form.providentFundDeduction"
                   min="0"
                 />
               </div>
@@ -293,6 +373,13 @@
               payTarget.payYear
             }}, net <strong>{{ payTarget.netSalary | number: '1.2-2' }}</strong>
           </p>
+          <label class="form-label">Payment Method (optional)</label>
+          <select class="form-select form-select-sm mb-2" [(ngModel)]="paymentMethod">
+            <option value="">Select method</option>
+            @for (m of paymentMethods; track m) {
+              <option [value]="m">{{ m }}</option>
+            }
+          </select>
           <label class="form-label">Payment Reference (optional)</label>
           <input
             class="form-control form-control-sm"
@@ -308,6 +395,21 @@
     </div>
   </div>
 }
+
+<app-confirm-dialog
+  [visible]="confirmGenerate"
+  title="Generate Payroll for All Employees"
+  [message]="
+    'Create a DRAFT payroll for every active employee with a salary structure for ' +
+    month +
+    '/' +
+    year +
+    ' who does not already have one. Continue?'
+  "
+  confirmLabel="Generate"
+  (confirmed)="runGenerate()"
+  (cancelled)="confirmGenerate = false"
+/>
 
 <app-confirm-dialog
   [visible]="!!deleteTarget"

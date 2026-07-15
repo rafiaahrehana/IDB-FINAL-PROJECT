@@ -82,7 +82,12 @@
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header"><h5 class="modal-title">Assign {{ assignTarget.name }}</h5><button class="btn-close" (click)="assignTarget = null"></button></div>
-        <div class="modal-body"><input class="form-control" type="number" placeholder="Employee ID *" [(ngModel)]="assignEmployeeId" /></div>
+        <div class="modal-body">
+          <select class="form-select" [(ngModel)]="assignEmployeeId">
+            <option [ngValue]="undefined" disabled>Select an employee</option>
+            @for (e of employees; track e.id) { <option [ngValue]="e.id">{{ e.firstName }} {{ e.lastName }} ({{ e.employeeNumber }})</option> }
+          </select>
+        </div>
         <div class="modal-footer">
           <button class="btn btn-secondary btn-sm" (click)="assignTarget = null">Cancel</button>
           <button class="btn btn-primary btn-sm" [disabled]="!assignEmployeeId" (click)="doAssign()">Assign</button>

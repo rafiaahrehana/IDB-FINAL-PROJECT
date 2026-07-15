@@ -16,8 +16,12 @@ import com.businessos.shared.exception.BadRequestException;
 import com.businessos.shared.exception.ResourceNotFoundException;
 import com.businessos.modules.crm.client.ClientRepository;
 import com.businessos.security.SecurityUtil;
+import com.businessos.shared.notification.CreateNotificationRequest;
+import com.businessos.shared.notification.NotificationService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+import java.time.LocalDate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -34,6 +38,7 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class LeadServiceImpl implements LeadService {
 
     private final EmployeeRepository employeeRepository;
@@ -46,6 +51,7 @@ public class LeadServiceImpl implements LeadService {
     private final LeadRepository leadRepository;
     private final com.businessos.modules.crm.activity.CrmActivityRepository leadActivityRepository;
     private final LeadMapper leadMapper;
+    private final NotificationService notificationService;
 
     @Override
     @Transactional
@@ -90,6 +96,7 @@ public class LeadServiceImpl implements LeadService {
         }
 
         Lead saved = leadRepository.save(lead);
+        notifyAssignee(saved);
         return leadMapper.toLeadResponse(saved);
     }
 
@@ -126,6 +133,12 @@ public class LeadServiceImpl implements LeadService {
         Long companyId = requireCompanyId();
         Lead lead = findLeadInTenant(id);
 
+        if (request.getEmail() != null && !request.getEmail().equalsIgnoreCase(lead.getEmail())) {
+            if (leadRepository.existsByEmailAndCompanyIdAndDeletedFalse(request.getEmail(), companyId)) {
+                throw new BadRequestException("A lead with this email already exists in your company");
+            }
+        }
+
         // Prevent editing closed leads
         if (lead.getStatus() == LeadStatus.WON || lead.getStatus() == LeadStatus.LOST) {
             throw new BadRequestException("Cannot edit a closed lead");
@@ -159,12 +172,16 @@ public class LeadServiceImpl implements LeadService {
         if (request.getExpectedCloseDate() != null)
             lead.setExpectedCloseDate(request.getExpectedCloseDate());
 
+        boolean reassigned = false;
         if (request.getAssignedToId() != null) {
             Employee assignee = findEmployee(request.getAssignedToId(), companyId);
+            reassigned = lead.getAssignedTo() == null || !lead.getAssignedTo().getId().equals(assignee.getId());
             lead.setAssignedTo(assignee);
         }
 
-        return leadMapper.toLeadResponse(leadRepository.save(lead));
+        Lead saved = leadRepository.save(lead);
+        if (reassigned) notifyAssignee(saved);
+        return leadMapper.toLeadResponse(saved);
     }
 
     @Override
@@ -312,6 +329,7 @@ public class LeadServiceImpl implements LeadService {
                         ? lead.getContactName().substring(lead.getContactName().indexOf(' ') + 1)
                         : "")
                 .email(normalizedEmail)
+                .phone(lead.getPhone())
                 .password(passwordEncoder.encode(UUID.randomUUID().toString()))
                 .role(Role.CLIENT)
                 .active(true)
@@ -325,6 +343,8 @@ public class LeadServiceImpl implements LeadService {
                 .user(user)
                 .company(companyRef(companyId))
                 .status(ClientStatus.ACTIVE)
+                .industry(lead.getIndustry())
+                .onboardedAt(LocalDate.now())
                 .build();
         clientRepository.save(client);
 
@@ -435,10 +455,23 @@ public class LeadServiceImpl implements LeadService {
             String summary = aiService.generateFromPrompt(AiFeature.CRM_LEAD_SUMMARY, prompt);
             // Store summary (optional: add to lead description)
         } catch (Exception e) {
-            // Log or handle exception if AI generation fails
+            log.error("Failed to generate AI summary for lead with ID {}: {}", id, e.getMessage(), e);
         }
 
         return leadMapper.toLeadResponse(lead);
+    }
+
+    private void notifyAssignee(Lead lead) {
+        Employee assignee = lead.getAssignedTo();
+        if (assignee == null || assignee.getUser() == null) return;
+        notificationService.send(CreateNotificationRequest.of(
+                NotificationType.GENERAL,
+                "Lead Assigned",
+                "Lead \"" + lead.getContactName() + "\" has been assigned to you.",
+                "/crm/leads",
+                assignee.getUser().getId(),
+                lead.getCompany().getId()
+        ));
     }
 
     private Lead findLeadInTenant(Long id) {

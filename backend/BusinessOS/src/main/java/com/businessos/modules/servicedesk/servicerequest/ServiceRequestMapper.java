@@ -6,7 +6,7 @@ import com.businessos.auth.user.User;
 import com.businessos.modules.servicedesk.companyservice.PackageSubscription;
 import com.businessos.modules.servicedesk.requestcomment.RequestComment;
 import com.businessos.modules.servicedesk.requestcomment.RequestCommentResponse;
-import com.businessos.modules.servicedesk.requestcomment.RequestStatusHistory;
+import com.businessos.modules.servicedesk.requeststatus.RequestStatusHistory;
 import com.businessos.modules.servicedesk.requeststatus.RequestStatusHistoryResponse;
 
 public final class ServiceRequestMapper {

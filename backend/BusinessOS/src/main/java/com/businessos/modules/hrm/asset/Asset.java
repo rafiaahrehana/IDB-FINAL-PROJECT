@@ -6,6 +6,7 @@ import com.businessos.modules.company.Company;
 import com.businessos.enums.AssetStatus;
 import jakarta.persistence.*;
 import lombok.*;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import org.hibernate.annotations.Filter;
 import org.hibernate.annotations.FilterDef;
@@ -24,7 +25,7 @@ public class Asset extends BaseEntity {
     private String model;
     private String serialNumber;
     private String category; // Laptop, Monitor, Phone, Furniture
-    private Double purchasePrice;
+    private BigDecimal purchasePrice;
     private LocalDate purchaseDate;
     private LocalDate warrantyExpiry;
 

@@ -22,28 +22,37 @@ public class ClientInvoiceController {
     private final ClientInvoiceService service;
 
     @PostMapping
-    @PreAuthorize("hasRole('FINANCE_MANAGER') or hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     @Operation(summary = "Create Invoice")
     public ResponseEntity<ClientInvoiceResponse> create(@Valid @RequestBody ClientInvoiceRequest request) {
         return new ResponseEntity<>(service.create(request), HttpStatus.CREATED);
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('FINANCE_MANAGER') or hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     @Operation(summary = "Get Invoice by ID")
     public ResponseEntity<ClientInvoiceResponse> getById(@PathVariable Long id) {
         return ResponseEntity.ok(service.getById(id));
     }
 
+    @GetMapping("/me")
+    @PreAuthorize("hasRole('CLIENT')")
+    @Operation(summary = "Get the caller's own invoices")
+    public ResponseEntity<Page<ClientInvoiceResponse>> getMyInvoices(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(service.getMyInvoices(PageRequest.of(page, size)));
+    }
+
     @GetMapping("/number/{number}")
-    @PreAuthorize("hasRole('FINANCE_MANAGER') or hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     @Operation(summary = "Get Invoice by Number")
     public ResponseEntity<ClientInvoiceResponse> getByNumber(@PathVariable String number) {
         return ResponseEntity.ok(service.getByInvoiceNumber(number));
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('FINANCE_MANAGER') or hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     @Operation(summary = "Get all Invoices")
     public ResponseEntity<Page<ClientInvoiceResponse>> getAll(
             @RequestParam(defaultValue = "0") int page,
@@ -52,7 +61,7 @@ public class ClientInvoiceController {
     }
 
     @GetMapping("/status/{status}")
-    @PreAuthorize("hasRole('FINANCE_MANAGER') or hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     @Operation(summary = "Get Invoices by Status")
     public ResponseEntity<Page<ClientInvoiceResponse>> getByStatus(
             @PathVariable InvoiceStatus status,
@@ -62,7 +71,7 @@ public class ClientInvoiceController {
     }
 
     @GetMapping("/client/{clientId}")
-    @PreAuthorize("hasRole('FINANCE_MANAGER') or hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     @Operation(summary = "Get Invoices by Client")
     public ResponseEntity<Page<ClientInvoiceResponse>> getByClient(
             @PathVariable Long clientId,
@@ -72,14 +81,14 @@ public class ClientInvoiceController {
     }
 
     @GetMapping("/overdue")
-    @PreAuthorize("hasRole('FINANCE_MANAGER') or hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     @Operation(summary = "Get Overdue Invoices")
     public ResponseEntity<?> getOverdue() {
         return ResponseEntity.ok(service.getOverdueInvoices());
     }
 
     @PatchMapping("/{id}")
-    @PreAuthorize("hasRole('FINANCE_MANAGER') or hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     @Operation(summary = "Update Invoice")
     public ResponseEntity<ClientInvoiceResponse> update(
             @PathVariable Long id,
@@ -88,7 +97,7 @@ public class ClientInvoiceController {
     }
 
     @PostMapping("/{id}/send")
-    @PreAuthorize("hasRole('FINANCE_MANAGER') or hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     @Operation(summary = "Send Invoice")
     public ResponseEntity<Void> send(@PathVariable Long id) {
         service.sendInvoice(id);
@@ -96,7 +105,7 @@ public class ClientInvoiceController {
     }
 
     @PostMapping("/{id}/record-payment")
-    @PreAuthorize("hasRole('FINANCE_MANAGER') or hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     @Operation(summary = "Record Payment")
     public ResponseEntity<Void> recordPayment(
             @PathVariable Long id,
@@ -105,8 +114,16 @@ public class ClientInvoiceController {
         return ResponseEntity.ok().build();
     }
 
+    @PostMapping("/{id}/cancel")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
+    @Operation(summary = "Cancel Invoice (reverses any GL posting already made)")
+    public ResponseEntity<Void> cancel(@PathVariable Long id) {
+        service.cancelInvoice(id);
+        return ResponseEntity.ok().build();
+    }
+
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasRole('COMPANY_OWNER')")
     @Operation(summary = "Delete Invoice")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         service.delete(id);

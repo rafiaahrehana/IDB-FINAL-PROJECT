@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService, PagedResponse } from '../../../core/services/api.service';
-import { Invoice } from '../models/finance.model';
+import { Invoice, InvoiceRequest } from '../models/finance.model';
 
 @Injectable({ providedIn: 'root' })
 export class InvoiceService {
@@ -19,16 +19,36 @@ export class InvoiceService {
   getById(id: number): Observable<Invoice> {
     return this.api.get<Invoice>(`${this.endpoint}/${id}`);
   }
-  create(payload: any): Observable<Invoice> {
+  // Self-service (CLIENT role) - the caller's own invoices
+  my(page = 0, size = 20): Observable<PagedResponse<Invoice>> {
+    return this.api.getPaged<Invoice>(`${this.endpoint}/me`, page, size);
+  }
+  create(payload: InvoiceRequest): Observable<Invoice> {
     return this.api.post<Invoice>(this.endpoint, payload);
   }
-  send(id: number): Observable<Invoice> {
-    return this.api.post<Invoice>(`${this.endpoint}/${id}/send`, {});
+  update(id: number, payload: InvoiceRequest): Observable<Invoice> {
+    return this.api.patch<Invoice>(`${this.endpoint}/${id}`, payload);
   }
-  markPaid(id: number): Observable<Invoice> {
-    return this.api.post<Invoice>(`${this.endpoint}/${id}/mark-as-paid`, {});
+  // Only DRAFT invoices can be deleted - anything already sent must be cancelled
+  // instead (reverses the ledger postings it made).
+  delete(id: number): Observable<void> {
+    return this.api.delete<void>(`${this.endpoint}/${id}`);
   }
-  recordPayment(id: number, amount: number, method: string): Observable<any> {
-    return this.api.post<any>(`${this.endpoint}/${id}/record-payment`, { amount, method });
+  cancel(id: number): Observable<void> {
+    return this.api.post<void>(`${this.endpoint}/${id}/cancel`, {});
+  }
+  send(id: number): Observable<void> {
+    return this.api.post<void>(`${this.endpoint}/${id}/send`, {});
+  }
+  // Backend exposes POST /{id}/record-payment with `amount` as a request
+  // param (there is no /mark-as-paid endpoint for invoices). Marking paid
+  // records the full outstanding amount as a payment.
+  markPaid(id: number, amount: number): Observable<void> {
+    return this.api.post<void>(
+      `${this.endpoint}/${id}/record-payment?amount=${encodeURIComponent(amount)}`, {});
+  }
+  recordPayment(id: number, amount: number): Observable<void> {
+    return this.api.post<void>(
+      `${this.endpoint}/${id}/record-payment?amount=${encodeURIComponent(amount)}`, {});
   }
 }

@@ -6,7 +6,11 @@ import com.businessos.modules.hrm.attendance.shift.EmployeeShiftAssignment;
 import com.businessos.modules.hrm.attendance.shift.EmployeeShiftAssignmentRepository;
 import com.businessos.modules.hrm.employee.Employee;
 import com.businessos.modules.hrm.employee.EmployeeRepository;
+import com.businessos.auth.role.enums.PermissionCode;
+import com.businessos.auth.role.service.AuthorizationService;
+import com.businessos.auth.user.User;
 import com.businessos.security.SecurityUtil;
+import com.businessos.shared.exception.ForbiddenException;
 import com.businessos.shared.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -29,6 +33,20 @@ public class AttendanceServiceImpl implements AttendanceService {
     private final BiometricDeviceRepository deviceRepository;
     private final EmployeeShiftAssignmentRepository shiftAssignmentRepository;
     private final SecurityUtil securityUtil;
+    private final AuthorizationService authorizationService;
+
+    private void requireViewOrOwn(Long employeeId) {
+        if (authorizationService.hasPermission(PermissionCode.ATTENDANCE_VIEW)) {
+            return;
+        }
+        User currentUser = securityUtil.getCurrentUser();
+        Employee currentEmployee = currentUser != null
+                ? employeeRepository.findByUserId(currentUser.getId()).orElse(null)
+                : null;
+        if (currentEmployee == null || employeeId == null || !currentEmployee.getId().equals(employeeId)) {
+            throw new ForbiddenException("Access denied: you can only access your own attendance records");
+        }
+    }
 
     @Override
     @Transactional
@@ -71,24 +89,38 @@ public class AttendanceServiceImpl implements AttendanceService {
         attendance.setVerified(request.isVerified());
         attendance.setVerificationScore(request.getVerificationScore());
 
-        // Check if late
-        EmployeeShiftAssignment shiftAssignment = shiftAssignmentRepository
-                .findByCompanyIdAndEmployeeIdAndActive(companyId, request.getEmployeeId())
-                .orElse(null);
-
-        if (shiftAssignment != null) {
-            long lateMinutes = java.time.temporal.ChronoUnit.MINUTES
-                    .between(shiftAssignment.getShift().getStartTime(), request.getCheckInTime());
-
-            if (lateMinutes > shiftAssignment.getShift().getGracePeriodMinutes()) {
-                attendance.setLate(true);
-                attendance.setLateMinutes(lateMinutes);
-                attendance.setStatus(AttendanceStatus.LATE);
-            }
-        }
+        applyLateDetection(attendance, companyId, request.getEmployeeId(), request.getCheckInTime());
 
         attendance = attendanceRepository.save(attendance);
         return AttendanceMapper.toResponse(attendance);
+    }
+
+    /**
+     * Compares check-in time against the employee's assigned shift (start time +
+     * grace period) and marks the attendance LATE if it exceeds it. No-op if the
+     * employee has no active shift assignment - callers keep whatever late flag
+     * they already set (e.g. a manual HR override).
+     */
+    private void applyLateDetection(Attendance attendance, Long companyId, Long employeeId,
+                                     java.time.LocalTime checkInTime) {
+        if (checkInTime == null) return;
+
+        EmployeeShiftAssignment shiftAssignment = shiftAssignmentRepository
+                .findByCompanyIdAndEmployeeIdAndActive(companyId, employeeId)
+                .orElse(null);
+        if (shiftAssignment == null) return;
+
+        long lateMinutes = java.time.temporal.ChronoUnit.MINUTES
+                .between(shiftAssignment.getShift().getStartTime(), checkInTime);
+
+        if (lateMinutes > shiftAssignment.getShift().getGracePeriodMinutes()) {
+            attendance.setLate(true);
+            attendance.setLateMinutes(lateMinutes);
+            attendance.setStatus(AttendanceStatus.LATE);
+        } else {
+            attendance.setLate(false);
+            attendance.setLateMinutes(0);
+        }
     }
 
     @Override
@@ -120,12 +152,14 @@ public class AttendanceServiceImpl implements AttendanceService {
     public AttendanceResponse getById(Long id) {
         Attendance attendance = attendanceRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Attendance not found"));
+        requireViewOrOwn(attendance.getEmployee() != null ? attendance.getEmployee().getId() : null);
         return AttendanceMapper.toResponse(attendance);
     }
 
     @Override
     @Transactional(readOnly = true)
     public AttendanceResponse getByEmployeeAndDate(Long employeeId, LocalDate date) {
+        requireViewOrOwn(employeeId);
         Attendance attendance = attendanceRepository.findByEmployeeIdAndAttendanceDate(employeeId, date)
                 .orElseThrow(() -> new ResourceNotFoundException("Attendance not found"));
         return AttendanceMapper.toResponse(attendance);
@@ -134,6 +168,7 @@ public class AttendanceServiceImpl implements AttendanceService {
     @Override
     @Transactional(readOnly = true)
     public Page<AttendanceResponse> getByEmployee(Long employeeId, Pageable pageable) {
+        requireViewOrOwn(employeeId);
         Long companyId = securityUtil.getCurrentCompanyId();
         return attendanceRepository.findByCompanyIdAndEmployeeId(companyId, employeeId, pageable)
                 .map(AttendanceMapper::toResponse);
@@ -142,6 +177,7 @@ public class AttendanceServiceImpl implements AttendanceService {
     @Override
     @Transactional(readOnly = true)
     public Page<AttendanceResponse> getByCompanyAndDateRange(LocalDate start, LocalDate end, Pageable pageable) {
+        authorizationService.checkPermission(PermissionCode.ATTENDANCE_VIEW);
         Long companyId = securityUtil.getCurrentCompanyId();
         return attendanceRepository.findByCompanyIdAndAttendanceDateBetween(companyId, start, end, pageable)
                 .map(AttendanceMapper::toResponse);
@@ -150,6 +186,7 @@ public class AttendanceServiceImpl implements AttendanceService {
     @Override
     @Transactional(readOnly = true)
     public Page<AttendanceResponse> getByStatus(AttendanceStatus status, Pageable pageable) {
+        authorizationService.checkPermission(PermissionCode.ATTENDANCE_VIEW);
         Long companyId = securityUtil.getCurrentCompanyId();
         return attendanceRepository.findByCompanyIdAndStatus(companyId, status, pageable)
                 .map(AttendanceMapper::toResponse);
@@ -158,6 +195,7 @@ public class AttendanceServiceImpl implements AttendanceService {
     @Override
     @Transactional(readOnly = true)
     public Page<AttendanceResponse> listAll(Pageable pageable) {
+        authorizationService.checkPermission(PermissionCode.ATTENDANCE_VIEW);
         Long companyId = securityUtil.getCurrentCompanyId();
         return attendanceRepository.findByCompanyIdAndDeletedFalse(companyId, pageable)
                 .map(AttendanceMapper::toResponse);
@@ -166,6 +204,7 @@ public class AttendanceServiceImpl implements AttendanceService {
     @Override
     @Transactional(readOnly = true)
     public List<AttendanceResponse> getLateAttendances(LocalDate date) {
+        authorizationService.checkPermission(PermissionCode.ATTENDANCE_VIEW);
         Long companyId = securityUtil.getCurrentCompanyId();
         return attendanceRepository.findLateAttendances(companyId, date)
                 .stream()
@@ -176,6 +215,7 @@ public class AttendanceServiceImpl implements AttendanceService {
     @Override
     @Transactional(readOnly = true)
     public List<AttendanceResponse> getAbsentees(LocalDate date) {
+        authorizationService.checkPermission(PermissionCode.ATTENDANCE_VIEW);
         Long companyId = securityUtil.getCurrentCompanyId();
         return attendanceRepository.findByCompanyIdAndStatusAndAttendanceDateBetween(
                 companyId, AttendanceStatus.ABSENT, date, date)
@@ -205,6 +245,7 @@ public class AttendanceServiceImpl implements AttendanceService {
     @Override
     @Transactional
     public void updateStatus(Long id, AttendanceStatus status) {
+        authorizationService.checkPermission(PermissionCode.ATTENDANCE_APPROVE);
         Attendance attendance = attendanceRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Attendance not found"));
         attendance.setStatus(status);
@@ -214,6 +255,7 @@ public class AttendanceServiceImpl implements AttendanceService {
     @Override
     @Transactional
     public void approveAttendance(Long id, String approverName) {
+        authorizationService.checkPermission(PermissionCode.ATTENDANCE_APPROVE);
         Attendance attendance = attendanceRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Attendance not found"));
         attendance.setApproved(true);
@@ -225,6 +267,7 @@ public class AttendanceServiceImpl implements AttendanceService {
     @Override
     @Transactional
     public AttendanceResponse delete(Long id) {
+        authorizationService.checkPermission(PermissionCode.ATTENDANCE_APPROVE);
         Attendance attendance = attendanceRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Attendance not found"));
         attendance.softDelete();
@@ -235,6 +278,7 @@ public class AttendanceServiceImpl implements AttendanceService {
     @Override
     @Transactional
     public AttendanceResponse createManual(AttendanceRequest request) {
+        authorizationService.checkPermission(PermissionCode.ATTENDANCE_MARK);
         Long companyId = securityUtil.getCurrentCompanyId();
         Employee employee = employeeRepository.findById(request.getEmployeeId())
                 .orElseThrow(() -> new ResourceNotFoundException("Employee not found"));
@@ -252,6 +296,14 @@ public class AttendanceServiceImpl implements AttendanceService {
                 .lateMinutes(request.getLateMinutes())
                 .isVerified(true)
                 .build();
+
+        // Auto-detect lateness from the employee's assigned shift when a check-in
+        // time is given; falls back to whatever isLate/lateMinutes HR passed in
+        // above if the employee has no active shift assignment to compare against.
+        applyLateDetection(attendance, companyId, request.getEmployeeId(), request.getCheckInTime());
+        if (attendance.isLate() && attendance.getStatus() != AttendanceStatus.LATE) {
+            attendance.setStatus(AttendanceStatus.LATE);
+        }
 
         // Calculate total hours
         if (attendance.getCheckInTime() != null && attendance.getCheckOutTime() != null) {

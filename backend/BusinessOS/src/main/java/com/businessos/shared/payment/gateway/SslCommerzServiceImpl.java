@@ -29,6 +29,7 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@SuppressWarnings("deprecation")
 public class SslCommerzServiceImpl implements SslCommerzService {
 
     private final SslCommerzProperties properties;
@@ -124,7 +125,7 @@ public class SslCommerzServiceImpl implements SslCommerzService {
         String valId = params.get("val_id");
         logWebhook(params);
 
-        PaymentGatewayTransaction tx = transactionRepository.findByTranId(tranId)
+        PaymentGatewayTransaction tx = transactionRepository.findByTranIdForUpdate(tranId)
             .orElseThrow(() -> new ResourceNotFoundException("Unknown transaction: " + tranId));
 
         // Idempotency: success callback AND IPN both land here

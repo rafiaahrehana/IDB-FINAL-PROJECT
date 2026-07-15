@@ -42,7 +42,6 @@ public class Service extends BaseEntity {
     private String description;
     private String icon;
     private String imageUrl;
-    private Long categoryId;
     private String categoryName;
     private String startingPrice;
     private String estimatedTime;

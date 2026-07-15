@@ -41,6 +41,9 @@ public interface SupportTicketRepository extends JpaRepository<SupportTicket, Lo
 
     long countByStatusAndCompanyId(TicketStatus status, Long companyId);
 
+    long countByCompanyIdAndStatusAndCreatedAtBetween(
+            Long companyId, TicketStatus status, LocalDateTime from, LocalDateTime to);
+
     long countByAssignedToAgentId(Long agentId);
 
     Page<SupportTicket> findByCompanyIdAndTitleContainingIgnoreCase(Long companyId, String keyword, Pageable pageable);

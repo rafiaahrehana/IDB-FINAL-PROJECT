@@ -11,6 +11,8 @@ import { Loader } from '../../shared/components/loader/loader';
 import { AuthService } from '../../core/services/auth.service';
 import { LocationComponent } from '../../shared/components/location/location.component';
 import { LocationRequest } from '../../shared/models/location.model';
+import { FileUpload } from '../../shared/components/file-upload/file-upload';
+import { FileUploadResult } from '../../shared/services/file-upload.service';
 
 interface PrefRow {
   key: keyof UpdateNotificationPreferenceRequest;
@@ -21,7 +23,7 @@ interface PrefRow {
 
 @Component({
   selector: 'app-notification-preferences',
-  imports: [CommonModule, FormsModule, Loader, LocationComponent],
+  imports: [CommonModule, FormsModule, Loader, LocationComponent, FileUpload],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './preferences.html',
   styleUrl: './preferences.scss'
@@ -137,6 +139,12 @@ export class Preferences implements OnInit {
   }
 
   // SAVE PROFILE
+  // Uploaded via the shared FileUpload component (avatar variant - images only,
+  // server-validated); the returned URL is saved when the profile form is submitted.
+  onAvatarUploaded(result: FileUploadResult): void {
+    this.profileForm.image = result.fileUrl;
+  }
+
   saveProfile(locationData?: LocationRequest): void {
     if (!this.profileForm.firstName.trim() || !this.profileForm.lastName.trim()) {
       this.error = 'First name and Last name are required';

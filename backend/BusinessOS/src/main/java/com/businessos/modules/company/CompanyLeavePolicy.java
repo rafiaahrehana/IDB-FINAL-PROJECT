@@ -33,6 +33,9 @@ public class CompanyLeavePolicy extends BaseEntity {
 
     private Integer maxConsecutiveDays;
 
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
     @Builder.Default
     private boolean requiresApproval = true;
     @Builder.Default
@@ -42,6 +45,7 @@ public class CompanyLeavePolicy extends BaseEntity {
     @Builder.Default
     private boolean active = true;
 
+    @Builder.Default
     private int applicableFromMonths = 0;
 
     @ManyToOne(fetch = FetchType.LAZY)

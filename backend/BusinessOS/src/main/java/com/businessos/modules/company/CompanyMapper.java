@@ -12,11 +12,6 @@ public class CompanyMapper {
         r.setCompanyEmail(c.getCompanyEmail());
         r.setCompanyPhone(c.getCompanyPhone());
         r.setWebsite(c.getWebsite());
-        r.setLocation(c.getLocation());
-        r.setLogo(c.getLogo());
-        r.setPrimaryColor(c.getPrimaryColor());
-        r.setSecondaryColor(c.getSecondaryColor());
-        r.setTagline(c.getTagline());
         r.setPortalAbout(c.getPortalAbout());
         r.setStatus(c.getStatus());
         r.setSubscriptionPlan(c.getSubscriptionPlan());
@@ -35,13 +30,8 @@ public class CompanyMapper {
         r.setId(c.getId());
         r.setCompanyName(c.getCompanyName());
         r.setSubdomain(c.getSubdomain());
-        r.setLogo(c.getLogo());
-        r.setPrimaryColor(c.getPrimaryColor());
-        r.setSecondaryColor(c.getSecondaryColor());
-        r.setTagline(c.getTagline());
         r.setPortalAbout(c.getPortalAbout());
         r.setWebsite(c.getWebsite());
-        r.setLocation(c.getLocation());
         r.setCompanyPhone(c.getCompanyPhone());
         r.setCompanyEmail(c.getCompanyEmail());
         return r;

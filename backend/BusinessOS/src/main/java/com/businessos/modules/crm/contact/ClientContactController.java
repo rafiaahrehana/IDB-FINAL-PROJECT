@@ -33,7 +33,7 @@ public class ClientContactController {
     @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     @GetMapping("/{id}")
     public ResponseEntity<ClientContactResponse> getById(@PathVariable Long clientId, @PathVariable Long id) {
-        return ResponseEntity.ok(clientContactService.getById(id));
+        return ResponseEntity.ok(clientContactService.getById(clientId, id));
     }
 
     @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
@@ -42,19 +42,19 @@ public class ClientContactController {
             @PathVariable Long clientId,
             @PathVariable Long id,
             @Valid @RequestBody ClientContactRequest request) {
-        return ResponseEntity.ok(clientContactService.update(id, request));
+        return ResponseEntity.ok(clientContactService.update(clientId, id, request));
     }
 
     @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     @PatchMapping("/{id}/primary")
     public ResponseEntity<ClientContactResponse> markPrimary(@PathVariable Long clientId, @PathVariable Long id) {
-        return ResponseEntity.ok(clientContactService.markPrimary(id));
+        return ResponseEntity.ok(clientContactService.markPrimary(clientId, id));
     }
 
     @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long clientId, @PathVariable Long id) {
-        clientContactService.delete(id);
+        clientContactService.delete(clientId, id);
         return ResponseEntity.noContent().build();
     }
 }

@@ -23,7 +23,7 @@ public class CompanyResponse {
     private String secondaryColor;
     private String tagline;
     private String portalAbout;
-    private com.businessos.shared.address.LocationResponse locationDetail;
+    private com.businessos.shared.address.AddressResponse locationDetail;
     private CompanyStatus status;
     private SubscriptionPlan subscriptionPlan;
     private LocalDate subscriptionStart;

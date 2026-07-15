@@ -33,7 +33,7 @@ public class ServicePackageRequest {
     private BigDecimal packagePrice;
 
     @DecimalMin(value = "0.0", message = "Discount must be zero or positive")
-    private Double discountPercent;
+    private BigDecimal discountPercent;
 
     @NotNull(message = "Billing cycle is required")
     private BillingCycle billingCycle;

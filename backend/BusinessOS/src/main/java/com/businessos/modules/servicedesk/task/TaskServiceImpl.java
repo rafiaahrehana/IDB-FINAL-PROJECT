@@ -41,6 +41,7 @@ public class TaskServiceImpl implements TaskService {
     public TaskResponse addTask(Long requestId, CreateTaskRequest request) {
         Long companyId = requireCompanyId();
         ServiceRequest sr = findServiceRequestInTenant(requestId);
+        guardNotClosed(sr);
         User currentUser = securityUtil.getCurrentUser();
 
         Task task = Task.builder()
@@ -95,7 +96,8 @@ public class TaskServiceImpl implements TaskService {
     @Transactional
     public TaskResponse updateTask(Long requestId, Long taskId, UpdateTaskRequest request) {
         Long companyId = requireCompanyId();
-        findServiceRequestInTenant(requestId);
+        ServiceRequest sr = findServiceRequestInTenant(requestId);
+        guardNotClosed(sr);
         Task task = taskRepository.findByIdAndCompanyId(taskId, companyId)
             .orElseThrow(() -> new ResourceNotFoundException("Task not found: " + taskId));
 
@@ -110,22 +112,39 @@ public class TaskServiceImpl implements TaskService {
                 task.setCompletedAt(LocalDateTime.now());
         }
         if (request.getAssignedEmployeeId() != null) {
-            task.setAssignedEmployee(
-                employeeRepository.findByIdAndCompanyId(
+            Employee emp = employeeRepository.findByIdAndCompanyId(
                     request.getAssignedEmployeeId(), companyId)
                     .orElseThrow(() -> new ResourceNotFoundException(
-                        "Employee not found: " + request.getAssignedEmployeeId())));
+                        "Employee not found: " + request.getAssignedEmployeeId()));
+            boolean reassigned = task.getAssignedEmployee() == null
+                    || !task.getAssignedEmployee().getId().equals(emp.getId());
+            task.setAssignedEmployee(emp);
+            if (reassigned && emp.getUser() != null) {
+                notificationService.sendForServiceRequest(CreateNotificationRequest.forRequest(
+                    NotificationType.REQUEST_ASSIGNED,
+                    "Task Assigned",
+                    "Task \"" + task.getTitle() + "\" has been assigned to you.",
+                    emp.getUser().getId(), companyId, requestId
+                ));
+            }
         }
+        taskRepository.save(task);
         return TaskMapper.toTaskResponse(task);
     }
 
     @Override
     @Transactional
     public void deleteTask(Long requestId, Long taskId) {
-        findServiceRequestInTenant(requestId);
+        ServiceRequest sr = findServiceRequestInTenant(requestId);
+        guardNotClosed(sr);
         Task task = taskRepository.findByIdAndCompanyId(taskId, requireCompanyId())
             .orElseThrow(() -> new ResourceNotFoundException("Task not found: " + taskId));
         task.softDelete();
+    }
+
+    private void guardNotClosed(ServiceRequest sr) {
+        if (sr.isPermanentlyClosed())
+            throw new BadRequestException("This request is permanently closed");
     }
 
     private Long requireCompanyId() {
@@ -148,22 +167,19 @@ public class TaskServiceImpl implements TaskService {
         return sr;
     }
 
+    /** Staff have full tenant-scoped access; only CLIENT is restricted to requests they own. */
     private void guardAccess(ServiceRequest sr) {
         User user = securityUtil.getCurrentUser();
         if (user == null || user.getRole() == null) return;
-        
+
         String role = user.getRole().name();
-        if (role.equals("COMPANY_OWNER") || role.equals("SYSTEM_ADMIN")) return;
-        
-        boolean isOwner = sr.getClient() != null 
-                && sr.getClient().getUser() != null 
+        if (!role.equals("CLIENT")) return;
+
+        boolean isOwner = sr.getClient() != null
+                && sr.getClient().getUser() != null
                 && sr.getClient().getUser().getId().equals(user.getId());
-                
-        boolean isAssigned = sr.getAssignedEmployee() != null 
-                && sr.getAssignedEmployee().getUser() != null 
-                && sr.getAssignedEmployee().getUser().getId().equals(user.getId());
-                
-        if (!isOwner && !isAssigned) {
+
+        if (!isOwner) {
             throw new ForbiddenException("You do not have permission to access tasks for this service request");
         }
     }

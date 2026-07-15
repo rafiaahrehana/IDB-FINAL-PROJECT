@@ -61,7 +61,13 @@ export class AuthInterceptor implements HttpInterceptor {
       }),
       catchError(err => {
         this.isRefreshing = false;
-        this.authService.logout();
+        // /auth/refresh only ever fails with 400 (BadRequestException, for both an
+        // invalid and an expired/revoked token) - never 401/403. A network failure
+        // (status 0) or a 5xx just means the backend was briefly unreachable (e.g.
+        // restarting during dev) - don't wipe a perfectly good session for that.
+        if (err.status === 400 || err.status === 401 || err.status === 403) {
+          this.authService.logout();
+        }
         return throwError(() => err);
       })
     );

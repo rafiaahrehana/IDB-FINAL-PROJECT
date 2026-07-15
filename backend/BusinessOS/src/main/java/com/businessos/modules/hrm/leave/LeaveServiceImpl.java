@@ -56,7 +56,7 @@ public class LeaveServiceImpl implements LeaveService {
         if (leaveRequestRepository.hasOverlappingLeave(
                 employee.getId(), request.getStartDate(), request.getEndDate(),
                 List.of(LeaveRequestStatus.REJECTED, LeaveRequestStatus.CANCELLED))) {
-            throw new BadRequestException("You already have a leave requeststatus overlapping this period");
+            throw new BadRequestException("You already have a leave request overlapping this period");
         }
 
         int totalDays = (int) ChronoUnit.DAYS.between(request.getStartDate(), request.getEndDate()) + 1;

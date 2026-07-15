@@ -1,8 +1,10 @@
 import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { SoftwareLicense } from '../../models/itam.model';
+import { SoftwareLicense, SoftwareLicenseSeat } from '../../models/itam.model';
 import { SoftwareService } from '../../services/software.service';
+import { Employee } from '../../../hrm/models/hrm.model';
+import { EmployeeService } from '../../../hrm/services/employee.service';
 import { Pagination } from '../../../../shared/components/pagination/pagination';
 import { Loader } from '../../../../shared/components/loader/loader';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
@@ -16,6 +18,7 @@ import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/conf
 })
 export class Software implements OnInit {
   licenses: SoftwareLicense[] = [];
+  employees: Employee[] = [];
   totalPages = 0;
   page = 0;
   loading = false;
@@ -27,36 +30,61 @@ export class Software implements OnInit {
   editId: number | null = null;
   form: any = {};
   deleteTarget: SoftwareLicense | null = null;
-  statuses = ['ACTIVE', 'EXPIRED', 'EXPIRING_SOON', 'CANCELLED'];
-  licenseTypes = ['PERPETUAL', 'SUBSCRIPTION', 'VOLUME', 'OEM', 'FREEWARE', 'OPEN_SOURCE'];
+  statuses = ['ACTIVE', 'EXPIRED', 'EXPIRING_SOON', 'SUSPENDED', 'REVOKED'];
+  licenseTypes = ['PERPETUAL', 'SUBSCRIPTION', 'TRIAL', 'OPEN_SOURCE'];
+  renewalTypes = ['ANNUAL', 'MONTHLY', 'BIENNIAL', 'PERPETUAL'];
 
-  constructor(private softwareService: SoftwareService, private cdr: ChangeDetectorRef) {}
+  seatsTarget: SoftwareLicense | null = null;
+  seatHolders: SoftwareLicenseSeat[] = [];
+  seatsLoading = false;
+  newSeatEmployeeId: number | null = null;
+
+  constructor(
+    private softwareService: SoftwareService,
+    private employeeService: EmployeeService,
+    private cdr: ChangeDetectorRef,
+  ) {}
 
   ngOnInit(): void {
     this.load();
+    this.employeeService.list(0, 500).subscribe({ next: (res) => { this.employees = res.content; this.cdr.markForCheck(); } });
   }
 
   load(): void {
     this.loading = true;
     this.cdr.markForCheck();
-    const obs = this.showExpiring
-      ? this.softwareService.expiring()
-      : this.statusFilter
+    if (this.showExpiring) {
+      this.softwareService.expiring().subscribe({
+        next: (res) => {
+          this.licenses = res;
+          this.totalPages = 1;
+          this.loading = false;
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.error = 'Failed to load licenses';
+          this.loading = false;
+          this.cdr.markForCheck();
+        },
+      });
+    } else {
+      const obs = this.statusFilter
         ? this.softwareService.listByStatus(this.statusFilter, this.page)
         : this.softwareService.list(this.page);
-    obs.subscribe({
-      next: (res) => {
-        this.licenses = res.content;
-        this.totalPages = res.totalPages;
-        this.loading = false;
-        this.cdr.markForCheck();
-      },
-      error: () => {
-        this.error = 'Failed to load licenses';
-        this.loading = false;
-        this.cdr.markForCheck();
-      },
-    });
+      obs.subscribe({
+        next: (res) => {
+          this.licenses = res.content;
+          this.totalPages = res.totalPages;
+          this.loading = false;
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.error = 'Failed to load licenses';
+          this.loading = false;
+          this.cdr.markForCheck();
+        },
+      });
+    }
   }
 
   save(): void {
@@ -71,6 +99,50 @@ export class Software implements OnInit {
         this.load();
       },
       error: (err) => { this.error = err?.error?.message || 'Failed'; this.cdr.markForCheck(); },
+    });
+  }
+
+  openSeats(l: SoftwareLicense): void {
+    this.seatsTarget = l;
+    this.newSeatEmployeeId = null;
+    this.error = '';
+    this.loadSeatHolders();
+  }
+
+  loadSeatHolders(): void {
+    if (!this.seatsTarget) return;
+    this.seatsLoading = true;
+    this.cdr.markForCheck();
+    this.softwareService.getSeatHolders(this.seatsTarget.id).subscribe({
+      next: (res) => { this.seatHolders = res; this.seatsLoading = false; this.cdr.markForCheck(); },
+      error: () => { this.seatsLoading = false; this.cdr.markForCheck(); },
+    });
+  }
+
+  assignSeat(): void {
+    if (!this.seatsTarget || !this.newSeatEmployeeId) return;
+    this.softwareService.assignSeat(this.seatsTarget.id, this.newSeatEmployeeId).subscribe({
+      next: () => {
+        this.newSeatEmployeeId = null;
+        this.success = 'Seat assigned';
+        this.cdr.markForCheck();
+        this.loadSeatHolders();
+        this.load();
+      },
+      error: (err) => { this.error = err?.error?.message || 'Failed to assign seat'; this.cdr.markForCheck(); },
+    });
+  }
+
+  releaseSeat(seat: SoftwareLicenseSeat): void {
+    if (!this.seatsTarget) return;
+    this.softwareService.releaseSeat(this.seatsTarget.id, seat.employeeId).subscribe({
+      next: () => {
+        this.success = 'Seat released';
+        this.cdr.markForCheck();
+        this.loadSeatHolders();
+        this.load();
+      },
+      error: (err) => { this.error = err?.error?.message || 'Failed to release seat'; this.cdr.markForCheck(); },
     });
   }
 
@@ -97,7 +169,8 @@ export class Software implements OnInit {
         ACTIVE: 'text-bg-success',
         EXPIRED: 'text-bg-danger',
         EXPIRING_SOON: 'text-bg-warning',
-        CANCELLED: 'text-bg-secondary',
+        SUSPENDED: 'text-bg-secondary',
+        REVOKED: 'text-bg-dark',
       }[s] || 'text-bg-light'
     );
   }

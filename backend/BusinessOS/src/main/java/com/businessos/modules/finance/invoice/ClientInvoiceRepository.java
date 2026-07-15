@@ -16,6 +16,8 @@ public interface ClientInvoiceRepository extends JpaRepository<ClientInvoice, Lo
 
     Optional<ClientInvoice> findByInvoiceNumber(String invoiceNumber);
 
+    Optional<ClientInvoice> findByCompanyIdAndInvoiceNumber(Long companyId, String invoiceNumber);
+
     Optional<ClientInvoice> findByIdAndCompanyId(Long id, Long companyId);
 
     @EntityGraph(attributePaths = {"client"})
@@ -79,5 +81,30 @@ public interface ClientInvoiceRepository extends JpaRepository<ClientInvoice, Lo
         @Param("currentDate") java.time.LocalDate currentDate,
         @Param("newStatus") InvoiceStatus newStatus,
         @Param("oldStatuses") List<InvoiceStatus> oldStatuses
+    );
+
+    /**
+     * Used by InvoiceOverdueScheduler to know exactly which invoices are about to
+     * flip to OVERDUE - queried BEFORE markOverdueInvoices() runs, so each one can
+     * be notified once rather than every day it stays overdue.
+     */
+    @Query("SELECT i FROM ClientInvoice i WHERE i.dueDate < :currentDate AND i.status IN :oldStatuses AND i.deleted = false")
+    List<ClientInvoice> findNewlyOverdue(
+        @Param("currentDate") java.time.LocalDate currentDate,
+        @Param("oldStatuses") List<InvoiceStatus> oldStatuses
+    );
+
+    /** Used by the AR Aging report - anything still owed, regardless of how overdue. */
+    @EntityGraph(attributePaths = {"client"})
+    @Query("""
+        SELECT i FROM ClientInvoice i
+        WHERE i.companyId = :companyId
+          AND i.status IN :outstandingStatuses
+          AND i.balanceAmount > 0
+          AND i.deleted = false
+        """)
+    List<ClientInvoice> findOutstandingByCompanyId(
+        @Param("companyId") Long companyId,
+        @Param("outstandingStatuses") List<InvoiceStatus> outstandingStatuses
     );
 }

@@ -22,7 +22,7 @@ import { PricingCardComponent } from '../../components/pricing-card/pricing-card
       <section class="py-5 stats-strip">
         <div class="container">
           <div class="row g-4">
-            @for (s of stats; track s.id) {
+            @for (s of stats; track $index) {
               <div class="col-6 col-md-3"><app-stat-card [stat]="s"></app-stat-card></div>
             }
           </div>

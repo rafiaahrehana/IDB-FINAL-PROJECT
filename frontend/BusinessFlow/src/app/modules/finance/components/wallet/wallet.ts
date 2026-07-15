@@ -28,8 +28,7 @@ export class WalletPage implements OnInit {
   types = WALLET_TRANSACTION_TYPES;
 
   showTopUp = false;
-  topUpForm = { amount: 0, reference: '', notes: '' };
-  saving = false;
+  topUpForm = { amount: 0 };
 
   constructor(
     private walletService: WalletService,
@@ -78,30 +77,8 @@ export class WalletPage implements OnInit {
   }
 
   openTopUp(): void {
-    this.topUpForm = { amount: 0, reference: '', notes: '' };
+    this.topUpForm = { amount: 0 };
     this.showTopUp = true;
-  }
-
-  doTopUp(): void {
-    if (!this.topUpForm.amount || this.topUpForm.amount <= 0) return;
-    this.saving = true;
-    this.cdr.markForCheck();
-    this.walletService.topUp(this.topUpForm).subscribe({
-      next: (w) => {
-        this.wallet = w;
-        this.saving = false;
-        this.showTopUp = false;
-        this.success = 'Wallet topped up successfully';
-        this.page = 0;
-        this.cdr.markForCheck();
-        this.loadTransactions();
-      },
-      error: (err) => {
-        this.saving = false;
-        this.error = err?.error?.message || 'Failed to top up wallet';
-        this.cdr.markForCheck();
-      },
-    });
   }
 
   // SSLCommerz checkout; on validated success the backend credits the wallet

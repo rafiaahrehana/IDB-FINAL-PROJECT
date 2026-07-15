@@ -14,15 +14,20 @@ import {
 import { EmployeeService } from '../../services/employee.service';
 import { DepartmentService } from '../../services/department.service';
 import { DesignationService } from '../../services/designation.service';
+import { ShiftService } from '../../services/shift.service';
 import { Pagination } from '../../../../shared/components/pagination/pagination';
 import { Loader } from '../../../../shared/components/loader/loader';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
 import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/confirm-dialog';
 import { LocationComponent } from '../../../../shared/components/location/location.component';
+import { FileUpload } from '../../../../shared/components/file-upload/file-upload';
+import { FileUploadResult } from '../../../../shared/services/file-upload.service';
+import { CustomRoleService } from '../../../roles-permissions/services/custom-role.service';
+import { CustomRole } from '../../../roles-permissions/models/roles-permissions.model';
 
 @Component({
   selector: 'app-employees',
-  imports: [CommonModule, FormsModule, RouterLink, Pagination, Loader, EmptyState, ConfirmDialog, LocationComponent],
+  imports: [CommonModule, FormsModule, RouterLink, Pagination, Loader, EmptyState, ConfirmDialog, LocationComponent, FileUpload],
   templateUrl: './employees.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './employees.scss',
@@ -31,6 +36,7 @@ export class Employees implements OnInit {
   employees: Employee[] = [];
   departments: Department[] = [];
   designations: Designation[] = [];
+  shifts: any[] = [];
   totalPages = 0;
   page = 0;
   loading = false;
@@ -45,6 +51,8 @@ export class Employees implements OnInit {
   showForm = false;
   saving = false;
   form: CreateEmployeeRequest = this.emptyForm();
+  customRoles: CustomRole[] = [];
+  assignRoleId: number | null = null;
 
   terminateTarget: Employee | null = null;
 
@@ -52,6 +60,8 @@ export class Employees implements OnInit {
     private employeeService: EmployeeService,
     private departmentService: DepartmentService,
     private designationService: DesignationService,
+    private shiftService: ShiftService,
+    private customRoleService: CustomRoleService,
     private cdr: ChangeDetectorRef,
   ) {}
 
@@ -59,6 +69,8 @@ export class Employees implements OnInit {
     this.load();
     this.departmentService.listActive().subscribe({ next: (d) => { this.departments = d; this.cdr.markForCheck(); } });
     this.designationService.listActive().subscribe({ next: (d) => { this.designations = d; this.cdr.markForCheck(); } });
+    this.shiftService.list(0, 100).subscribe({ next: (res) => { this.shifts = res.content; this.cdr.markForCheck(); } });
+    this.customRoleService.list().subscribe({ next: (r) => { this.customRoles = r; this.cdr.markForCheck(); } });
   }
 
   load(): void {
@@ -85,14 +97,28 @@ export class Employees implements OnInit {
     this.saving = true;
     this.error = '';
     this.employeeService.create(this.cleanPayload()).subscribe({
-      next: () => {
-        this.saving = false;
-        this.showForm = false;
-        this.form = this.emptyForm();
-        this.success = 'Employee created successfully';
-        this.page = 0;
-        this.cdr.markForCheck();
-        this.load();
+      next: (created) => {
+        const roleId = this.assignRoleId;
+        const finish = (message: string) => {
+          this.saving = false;
+          this.showForm = false;
+          this.form = this.emptyForm();
+          this.assignRoleId = null;
+          this.success = message;
+          this.page = 0;
+          this.cdr.markForCheck();
+          this.load();
+        };
+        if (roleId) {
+          // Role assignment needs the employee's own id, so it's a follow-up
+          // call after creation rather than part of CreateEmployeeRequest.
+          this.customRoleService.assignEmployee(roleId, created.id).subscribe({
+            next: () => finish('Employee created and role assigned'),
+            error: () => finish('Employee created, but assigning the role failed - you can assign it from the employee\'s profile'),
+          });
+        } else {
+          finish('Employee created successfully');
+        }
       },
       error: (err) => {
         this.saving = false;
@@ -144,5 +170,9 @@ export class Employees implements OnInit {
 
   onLocationChange(location: any) {
     this.form.location = location;
+  }
+
+  onAvatarUploaded(result: FileUploadResult): void {
+    this.form.profileImageUrl = result.fileUrl;
   }
 }

@@ -19,26 +19,30 @@ public class AssetAssignmentHistoryServiceImpl implements AssetAssignmentHistory
     @Transactional(readOnly = true)
     @Override
     public Page<AssetAssignmentHistoryResponse> historyForAsset(Long assetId, Pageable pageable) {
-        return historyRepository.findByAssetIdOrderByAssignedAtDesc(assetId, pageable)
+        Long companyId = requireCompanyId();
+        return historyRepository.findByCompanyIdAndAssetIdOrderByAssignedAtDesc(companyId, assetId, pageable)
             .map(AssetAssignmentHistoryMapper::toAssetHistoryResponse);
     }
 
     @Transactional(readOnly = true)
     @Override
     public Page<AssetAssignmentHistoryResponse> historyForEmployee(Long employeeId, Pageable pageable) {
-        Long companyId = securityUtil.getCurrentCompanyId();
-        if (companyId == null) throw new BadRequestException("No company context");
+        Long companyId = requireCompanyId();
         return historyRepository.findByCompanyIdAndEmployeeIdOrderByAssignedAtDesc(companyId, employeeId, pageable)
             .map(AssetAssignmentHistoryMapper::toAssetHistoryResponse);
     }
 
+    @Transactional(readOnly = true)
     @Override
-    public Page<AssetAssignmentHistoryResponse> historyForAsset(Long assetId, java.awt.print.Pageable pageable) {
-        return null;
+    public Page<AssetAssignmentHistoryResponse> listAll(Pageable pageable) {
+        Long companyId = requireCompanyId();
+        return historyRepository.findByCompanyIdOrderByAssignedAtDesc(companyId, pageable)
+            .map(AssetAssignmentHistoryMapper::toAssetHistoryResponse);
     }
 
-    @Override
-    public Page<AssetAssignmentHistoryResponse> historyForEmployee(Long employeeId, java.awt.print.Pageable pageable) {
-        return null;
+    private Long requireCompanyId() {
+        Long id = securityUtil.getCurrentCompanyId();
+        if (id == null) throw new BadRequestException("No company context");
+        return id;
     }
 }

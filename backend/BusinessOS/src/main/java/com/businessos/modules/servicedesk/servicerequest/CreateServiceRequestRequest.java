@@ -37,7 +37,11 @@ public class CreateServiceRequestRequest {
      */
     private Long subscriptionId;
 
-    @NotNull(message = "Payment choice is required")
+    /**
+     * Payment choice and method — reserved for future payment gateway integration.
+     * Currently not used in the create flow; the backend generates an invoice
+     * automatically when agreedPrice > 0.
+     */
     private com.businessos.enums.PaymentChoice paymentChoice;
 
     private com.businessos.enums.PaymentMethod paymentMethod;

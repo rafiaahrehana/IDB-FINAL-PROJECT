@@ -7,11 +7,11 @@ import java.util.Optional;
 
 public interface ServiceCategoryRepository extends JpaRepository<ServiceCategory, Long> {
 
-    List<ServiceCategory> findByActiveTrueOrderBySortOrderAsc();
+    List<ServiceCategory> findByCompanyIdAndActiveTrueOrderBySortOrderAsc(Long companyId);
 
-    List<ServiceCategory> findAllByOrderBySortOrderAsc();
+    List<ServiceCategory> findByCompanyIdOrderBySortOrderAsc(Long companyId);
 
-    Optional<ServiceCategory> findByName(String name);
+    Optional<ServiceCategory> findByIdAndCompanyId(Long id, Long companyId);
 
-    boolean existsByName(String name);
+    boolean existsByCompanyIdAndName(Long companyId, String name);
 }

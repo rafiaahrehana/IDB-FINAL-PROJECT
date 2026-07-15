@@ -134,7 +134,7 @@ export interface PricingPlan {
   featured: boolean;
 }
 
-export interface Stat { id: number; value: string; label: string; icon: string; }
+export interface Stat { id?: number; value: string; label: string; icon: string; }
 
 export interface CmsPage {
   slug: string;

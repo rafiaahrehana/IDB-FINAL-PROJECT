@@ -22,28 +22,28 @@ public class SLAPolicyController {
     private final SLAPolicyService service;
 
     @PostMapping
-    @PreAuthorize("hasRole('SUPPORT_MANAGER') or hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasRole('SUPPORT_MANAGER') or hasRole('COMPANY_OWNER') or hasAnyRole('SUPER_ADMIN', 'SYSTEM_ADMIN')")
     @Operation(summary = "Create SLA Policy")
     public ResponseEntity<SLAPolicyResponse> create(@Valid @RequestBody SLAPolicyRequest request) {
         return new ResponseEntity<>(service.create(request), HttpStatus.CREATED);
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('SUPPORT_AGENT') or hasRole('SUPPORT_MANAGER') or hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasRole('SUPPORT_AGENT') or hasRole('SUPPORT_MANAGER') or hasRole('COMPANY_OWNER') or hasAnyRole('SUPER_ADMIN', 'SYSTEM_ADMIN')")
     @Operation(summary = "Get SLA Policy by ID")
     public ResponseEntity<SLAPolicyResponse> getById(@PathVariable Long id) {
         return ResponseEntity.ok(service.getById(id));
     }
 
     @GetMapping("/priority/{priority}")
-    @PreAuthorize("hasRole('SUPPORT_AGENT') or hasRole('SUPPORT_MANAGER') or hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasRole('SUPPORT_AGENT') or hasRole('SUPPORT_MANAGER') or hasRole('COMPANY_OWNER') or hasAnyRole('SUPER_ADMIN', 'SYSTEM_ADMIN')")
     @Operation(summary = "Get SLA Policy by Priority")
     public ResponseEntity<SLAPolicyResponse> getByPriority(@PathVariable TicketPriority priority) {
         return ResponseEntity.ok(service.getByPriority(priority));
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('SUPPORT_AGENT') or hasRole('SUPPORT_MANAGER') or hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasRole('SUPPORT_AGENT') or hasRole('SUPPORT_MANAGER') or hasRole('COMPANY_OWNER') or hasAnyRole('SUPER_ADMIN', 'SYSTEM_ADMIN')")
     @Operation(summary = "Get all SLA Policies")
     public ResponseEntity<Page<SLAPolicyResponse>> getAll(
             @RequestParam(defaultValue = "0") int page,
@@ -52,14 +52,14 @@ public class SLAPolicyController {
     }
 
     @GetMapping("/active")
-    @PreAuthorize("hasRole('SUPPORT_AGENT') or hasRole('SUPPORT_MANAGER') or hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasRole('SUPPORT_AGENT') or hasRole('SUPPORT_MANAGER') or hasRole('COMPANY_OWNER') or hasAnyRole('SUPER_ADMIN', 'SYSTEM_ADMIN')")
     @Operation(summary = "Get Active SLA Policies")
     public ResponseEntity<List<SLAPolicyResponse>> getActive() {
         return ResponseEntity.ok(service.getActive());
     }
 
     @PatchMapping("/{id}")
-    @PreAuthorize("hasRole('SUPPORT_MANAGER') or hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasRole('SUPPORT_MANAGER') or hasRole('COMPANY_OWNER') or hasAnyRole('SUPER_ADMIN', 'SYSTEM_ADMIN')")
     @Operation(summary = "Update SLA Policy")
     public ResponseEntity<SLAPolicyResponse> update(
             @PathVariable Long id,
@@ -68,7 +68,7 @@ public class SLAPolicyController {
     }
 
     @PatchMapping("/{id}/status")
-    @PreAuthorize("hasRole('SUPPORT_MANAGER') or hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasRole('SUPPORT_MANAGER') or hasRole('COMPANY_OWNER') or hasAnyRole('SUPER_ADMIN', 'SYSTEM_ADMIN')")
     @Operation(summary = "Update SLA Policy Status")
     public ResponseEntity<Void> updateStatus(
             @PathVariable Long id,
@@ -78,7 +78,7 @@ public class SLAPolicyController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasRole('COMPANY_OWNER') or hasAnyRole('SUPER_ADMIN', 'SYSTEM_ADMIN')")
     @Operation(summary = "Delete SLA Policy")
     public ResponseEntity<SLAPolicyResponse> delete(@PathVariable Long id) {
         return ResponseEntity.ok(service.delete(id));

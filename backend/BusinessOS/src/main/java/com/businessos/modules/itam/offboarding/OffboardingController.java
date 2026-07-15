@@ -19,26 +19,26 @@ public class OffboardingController {
     private final OffboardingChecklistService checklistService;
 
     @PostMapping
-    @PreAuthorize("hasRole('HR_MANAGER') or hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     public ResponseEntity<OffboardingChecklistResponse> createChecklist(
             @Valid @RequestBody OffboardingChecklistRequest request) {
         return new ResponseEntity<>(checklistService.create(request), HttpStatus.CREATED);
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('HR_MANAGER') or hasRole('COMPANY_ADMIN') or hasRole('IT_MANAGER')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     public ResponseEntity<OffboardingChecklistResponse> getChecklistById(@PathVariable Long id) {
         return ResponseEntity.ok(checklistService.getById(id));
     }
 
     @GetMapping("/employee/{employeeId}")
-    @PreAuthorize("hasRole('HR_MANAGER') or hasRole('COMPANY_ADMIN') or hasRole('IT_MANAGER')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     public ResponseEntity<OffboardingChecklistResponse> getChecklistByEmployee(@PathVariable Long employeeId) {
         return ResponseEntity.ok(checklistService.getByEmployee(employeeId));
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('HR_MANAGER') or hasRole('COMPANY_ADMIN') or hasRole('IT_MANAGER')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     public ResponseEntity<Page<OffboardingChecklistResponse>> getAllChecklists(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
@@ -46,48 +46,53 @@ public class OffboardingController {
     }
 
     @GetMapping("/pending")
-    @PreAuthorize("hasRole('HR_MANAGER') or hasRole('COMPANY_ADMIN') or hasRole('IT_MANAGER')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     public ResponseEntity<List<OffboardingChecklistResponse>> getPendingChecklists() {
         return ResponseEntity.ok(checklistService.getPendingChecklists());
     }
 
     @PatchMapping("/{id}/hardware-collected")
-    @PreAuthorize("hasRole('IT_MANAGER') or hasRole('COMPANY_ADMIN')")
-    public ResponseEntity<Void> markHardwareCollected(@PathVariable Long id) {
-        checklistService.markHardwareCollected(id);
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
+    public ResponseEntity<Void> markHardwareCollected(@PathVariable Long id,
+            @RequestBody(required = false) OffboardingStepUpdateRequest body) {
+        checklistService.markHardwareCollected(id, body != null ? body.getNotes() : null);
         return ResponseEntity.ok().build();
     }
 
     @PatchMapping("/{id}/licenses-revoked")
-    @PreAuthorize("hasRole('IT_MANAGER') or hasRole('COMPANY_ADMIN')")
-    public ResponseEntity<Void> markLicensesRevoked(@PathVariable Long id) {
-        checklistService.markLicensesRevoked(id);
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
+    public ResponseEntity<Void> markLicensesRevoked(@PathVariable Long id,
+            @RequestBody(required = false) OffboardingStepUpdateRequest body) {
+        checklistService.markLicensesRevoked(id, body != null ? body.getNotes() : null);
         return ResponseEntity.ok().build();
     }
 
     @PatchMapping("/{id}/access-revoked")
-    @PreAuthorize("hasRole('IT_MANAGER') or hasRole('COMPANY_ADMIN')")
-    public ResponseEntity<Void> markAccessRevoked(@PathVariable Long id) {
-        checklistService.markAccessRevoked(id);
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
+    public ResponseEntity<Void> markAccessRevoked(@PathVariable Long id,
+            @RequestBody(required = false) OffboardingStepUpdateRequest body) {
+        checklistService.markAccessRevoked(id, body != null ? body.getNotes() : null);
         return ResponseEntity.ok().build();
     }
 
     @PatchMapping("/{id}/data-handed-over")
-    @PreAuthorize("hasRole('MANAGER') or hasRole('HR_MANAGER') or hasRole('COMPANY_ADMIN')")
-    public ResponseEntity<Void> markDataHandedOver(@PathVariable Long id) {
-        checklistService.markDataHandedOver(id);
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
+    public ResponseEntity<Void> markDataHandedOver(@PathVariable Long id,
+            @RequestBody(required = false) OffboardingStepUpdateRequest body) {
+        checklistService.markDataHandedOver(id, body != null ? body.getNotes() : null);
         return ResponseEntity.ok().build();
     }
 
     @PatchMapping("/{id}/exit-interview")
-    @PreAuthorize("hasRole('HR_MANAGER') or hasRole('COMPANY_ADMIN')")
-    public ResponseEntity<Void> markExitInterviewCompleted(@PathVariable Long id) {
-        checklistService.markExitInterviewCompleted(id);
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
+    public ResponseEntity<Void> markExitInterviewCompleted(@PathVariable Long id,
+            @RequestBody(required = false) OffboardingStepUpdateRequest body) {
+        checklistService.markExitInterviewCompleted(id, body != null ? body.getNotes() : null);
         return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('HR_MANAGER') or hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     public ResponseEntity<OffboardingChecklistResponse> deleteChecklist(@PathVariable Long id) {
         return ResponseEntity.ok(checklistService.delete(id));
     }

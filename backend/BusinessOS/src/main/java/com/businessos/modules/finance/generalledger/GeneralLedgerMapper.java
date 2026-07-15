@@ -13,6 +13,7 @@ public class GeneralLedgerMapper {
                 .accountId(entity.getAccount() != null ? entity.getAccount().getId() : null)
                 .accountName(entity.getAccount() != null ? entity.getAccount().getAccountName() : null)
                 .accountCode(entity.getAccount() != null ? entity.getAccount().getAccountCode() : null)
+                .accountType(entity.getAccount() != null ? entity.getAccount().getType() : null)
                 .debitAmount(entity.getDebitAmount())
                 .creditAmount(entity.getCreditAmount())
                 .description(entity.getDescription())

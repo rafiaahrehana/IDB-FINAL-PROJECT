@@ -1,7 +1,9 @@
 package com.businessos.modules.finance.reports.controller;
 
 import com.businessos.modules.finance.reports.dto.AccountLedger;
+import com.businessos.modules.finance.reports.dto.AgeingReport;
 import com.businessos.modules.finance.reports.dto.BalanceSheetReport;
+import com.businessos.modules.finance.reports.dto.CashFlowReport;
 import com.businessos.modules.finance.reports.dto.ProfitLossReport;
 import com.businessos.modules.finance.reports.dto.TrialBalanceReport;
 import com.businessos.modules.finance.reports.service.FinancialReportService;
@@ -19,7 +21,7 @@ import java.time.LocalDate;
 @RequestMapping("/api/company/finance/reports")
 @RequiredArgsConstructor
 @Tag(name = "Financial Reports", description = "Financial Reports Management")
-@PreAuthorize("hasRole('FINANCE_MANAGER') or hasRole('COMPANY_ADMIN')")
+@PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
 public class FinancialReportController {
 
     private final FinancialReportService service;
@@ -53,5 +55,20 @@ public class FinancialReportController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
         return ResponseEntity.ok(service.generateAccountLedger(accountId, startDate, endDate));
+    }
+
+    @GetMapping("/ageing")
+    @Operation(summary = "Generate Accounts Receivable Ageing Report")
+    public ResponseEntity<AgeingReport> generateAgeingReport(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate asOfDate) {
+        return ResponseEntity.ok(service.generateAgeingReport(asOfDate));
+    }
+
+    @GetMapping("/cash-flow")
+    @Operation(summary = "Generate Cash Flow Statement")
+    public ResponseEntity<CashFlowReport> generateCashFlowReport(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        return ResponseEntity.ok(service.generateCashFlowReport(startDate, endDate));
     }
 }

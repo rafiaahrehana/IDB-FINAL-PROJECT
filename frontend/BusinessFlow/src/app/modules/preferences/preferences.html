@@ -75,8 +75,19 @@
 
             <div class="row g-3 mb-4">
               <div class="col-md-6">
-                <label for="profileImage" class="form-label fw-semibold small text-secondary">Profile Image URL</label>
-                <input type="text" id="profileImage" class="form-control" [(ngModel)]="profileForm.image" name="image" placeholder="https://example.com/avatar.jpg" />
+                <label class="form-label fw-semibold small text-secondary">Profile Picture</label>
+                <div class="d-flex align-items-center gap-3">
+                  @if (profileForm.image) {
+                    <img [src]="profileForm.image" alt="Profile picture" class="rounded-circle" style="width:56px;height:56px;object-fit:cover" />
+                  } @else {
+                    <div class="rounded-circle bg-light d-flex align-items-center justify-content-center text-muted" style="width:56px;height:56px">
+                      <i class="bi bi-person fs-4"></i>
+                    </div>
+                  }
+                  <div class="flex-grow-1">
+                    <app-file-upload label="Upload from your computer" accept="image/*" variant="avatar" [maxSizeMB]="5" (uploaded)="onAvatarUploaded($event)" />
+                  </div>
+                </div>
               </div>
               <div class="col-md-6">
                 <label for="langPref" class="form-label fw-semibold small text-secondary">Language Preference</label>

@@ -18,22 +18,13 @@ public class WebsiteService {
     private final WebsiteSettingsRepository settingsRepository;
     private final NavItemRepository navItemRepository;
     private final ServiceRepository serviceRepository;
-    @org.springframework.beans.factory.annotation.Qualifier("websiteServiceCategoryRepository")
-    private final ServiceCategoryRepository serviceCategoryRepository;
-    private final BlogRepository blogRepository;
-    private final TestimonialRepository testimonialRepository;
+    private final WebsiteContentRepository contentRepository;
+    private final WebsitePersonRepository personRepository;
     private final FaqRepository faqRepository;
-    private final TeamMemberRepository teamMemberRepository;
-    @org.springframework.beans.factory.annotation.Qualifier("portalProjectRepository")
     private final PortalProjectRepository projectRepository;
     private final PricingPlanRepository pricingPlanRepository;
-    private final StatRepository statRepository;
-    private final CmsPageRepository cmsPageRepository;
-    @org.springframework.beans.factory.annotation.Qualifier("websiteServiceRequestRepository")
     private final ServiceRequestRepository serviceRequestRepository;
 
-    // Resolve the tenant company from the request host (subdomain.businessos.com)
-    // or an explicit subdomain query param.
     public Long resolveCompanyId(String host, String subdomainParam) {
         String subdomain = subdomainParam;
         if (subdomain == null && host != null) {
@@ -78,11 +69,7 @@ public class WebsiteService {
             return serviceRepository.findByCompanyIdAndTitleContainingIgnoreCase(q, companyId);
         }
         if (category != null && !category.isBlank()) {
-            Optional<ServiceCategory> cat = serviceCategoryRepository.findBySlugAndCompanyId(category, companyId);
-            if (cat.isPresent()) {
-                return serviceRepository.findByCompanyIdAndCategoryId(companyId, cat.get().getId());
-            }
-            return List.of();
+            return serviceRepository.findByCompanyIdAndCategoryNameIgnoreCase(companyId, category);
         }
         return serviceRepository.findByCompanyId(companyId);
     }
@@ -92,28 +79,28 @@ public class WebsiteService {
                 .orElseThrow(() -> new ResourceNotFoundException("Service not found: " + slug));
     }
 
-    public List<BlogPost> getBlogs(Long companyId, String category) {
+    public List<WebsiteContent> getBlogs(Long companyId, String category) {
         if (category != null && !category.isBlank()) {
-            return blogRepository.findByCompanyIdAndCategoryIgnoreCase(category, companyId);
+            return contentRepository.findByCompanyIdAndTypeAndCategoryIgnoreCase(companyId, ContentType.POST, category);
         }
-        return blogRepository.findByCompanyIdOrderByPublishedAtDesc(companyId);
+        return contentRepository.findByCompanyIdAndTypeOrderByPublishedAtDesc(companyId, ContentType.POST);
     }
 
-    public BlogPost getBlog(Long companyId, String slug) {
-        return blogRepository.findBySlugAndCompanyId(slug, companyId)
+    public WebsiteContent getBlog(Long companyId, String slug) {
+        return contentRepository.findBySlugAndCompanyIdAndType(slug, companyId, ContentType.POST)
                 .orElseThrow(() -> new ResourceNotFoundException("Post not found: " + slug));
     }
 
-    public List<Testimonial> getTestimonials(Long companyId) {
-        return testimonialRepository.findByCompanyId(companyId);
+    public List<WebsitePerson> getTestimonials(Long companyId) {
+        return personRepository.findByCompanyIdAndType(companyId, PersonType.TESTIMONIAL);
     }
 
     public List<Faq> getFaqs(Long companyId) {
         return faqRepository.findByCompanyId(companyId);
     }
 
-    public List<TeamMember> getTeam(Long companyId) {
-        return teamMemberRepository.findByCompanyId(companyId);
+    public List<WebsitePerson> getTeam(Long companyId) {
+        return personRepository.findByCompanyIdAndType(companyId, PersonType.TEAM_MEMBER);
     }
 
     public List<PortalProject> getProjects(Long companyId) {
@@ -125,11 +112,11 @@ public class WebsiteService {
     }
 
     public List<Stat> getStats(Long companyId) {
-        return statRepository.findByCompanyId(companyId);
+        return getSettings(companyId).getStats();
     }
 
-    public CmsPage getPage(Long companyId, String slug) {
-        return cmsPageRepository.findBySlugAndCompanyId(slug, companyId)
+    public WebsiteContent getPage(Long companyId, String slug) {
+        return contentRepository.findBySlugAndCompanyIdAndType(slug, companyId, ContentType.PAGE)
                 .orElseThrow(() -> new ResourceNotFoundException("Page not found: " + slug));
     }
 

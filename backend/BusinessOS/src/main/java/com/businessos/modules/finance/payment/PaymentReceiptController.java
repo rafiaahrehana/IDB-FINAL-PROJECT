@@ -20,21 +20,30 @@ public class PaymentReceiptController {
     private final PaymentReceiptService service;
 
     @PostMapping
-    @PreAuthorize("hasRole('FINANCE_MANAGER') or hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     @Operation(summary = "Create Payment Receipt")
     public ResponseEntity<PaymentReceiptResponse> create(@Valid @RequestBody PaymentReceiptRequest request) {
         return new ResponseEntity<>(service.create(request), HttpStatus.CREATED);
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('FINANCE_MANAGER') or hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     @Operation(summary = "Get Payment Receipt by ID")
     public ResponseEntity<PaymentReceiptResponse> getById(@PathVariable Long id) {
         return ResponseEntity.ok(service.getById(id));
     }
 
+    @GetMapping("/me")
+    @PreAuthorize("hasRole('CLIENT')")
+    @Operation(summary = "Get the caller's own payment receipts")
+    public ResponseEntity<Page<PaymentReceiptResponse>> getMyReceipts(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(service.getMyReceipts(PageRequest.of(page, size)));
+    }
+
     @GetMapping
-    @PreAuthorize("hasRole('FINANCE_MANAGER') or hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     @Operation(summary = "Get all Payment Receipts")
     public ResponseEntity<Page<PaymentReceiptResponse>> getAll(
             @RequestParam(defaultValue = "0") int page,
@@ -43,7 +52,7 @@ public class PaymentReceiptController {
     }
 
     @PostMapping("/{id}/confirm")
-    @PreAuthorize("hasRole('FINANCE_MANAGER') or hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     @Operation(summary = "Confirm Payment Receipt")
     public ResponseEntity<Void> confirmPayment(@PathVariable Long id) {
         service.confirmPayment(id);
@@ -51,7 +60,7 @@ public class PaymentReceiptController {
     }
 
     @PostMapping("/{id}/deposit")
-    @PreAuthorize("hasRole('FINANCE_MANAGER') or hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     @Operation(summary = "Mark Payment Receipt as Deposited")
     public ResponseEntity<Void> markAsDeposited(
             @PathVariable Long id,
@@ -61,7 +70,7 @@ public class PaymentReceiptController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasRole('COMPANY_OWNER')")
     @Operation(summary = "Delete Payment Receipt")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         service.delete(id);

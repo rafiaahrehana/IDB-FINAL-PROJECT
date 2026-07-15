@@ -13,6 +13,8 @@ public interface ChartOfAccountRepository extends JpaRepository<ChartOfAccount, 
 
     Optional<ChartOfAccount> findByCompanyIdAndAccountCode(Long companyId, String accountCode);
 
+    Optional<ChartOfAccount> findByIdAndCompanyId(Long id, Long companyId);
+
     Page<ChartOfAccount> findByCompanyIdAndTypeAndActiveTrue(Long companyId, AccountType type, Pageable pageable);
 
     Page<ChartOfAccount> findByCompanyIdAndActive(Long companyId, boolean active, Pageable pageable);

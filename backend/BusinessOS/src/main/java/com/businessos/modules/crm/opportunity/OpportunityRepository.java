@@ -24,8 +24,8 @@ public interface OpportunityRepository extends JpaRepository<Opportunity, Long> 
     List<Opportunity> findByCompanyIdAndStageNotInOrderByExpectedCloseDateAsc(Long companyId, List<OpportunityStage> stages);
 
     @Query("SELECT o FROM Opportunity o WHERE o.company.id = :companyId AND " +
-           "(LOWER(o.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-           "LOWER(o.client.clientCompanyName) LIKE LOWER(CONCAT('%', :keyword, '%'))) AND " +
+           "(LOWER(o.name) LIKE LOWER(CONCAT('%', :keyword, '%')) ESCAPE '\\' OR " +
+           "LOWER(o.client.clientCompanyName) LIKE LOWER(CONCAT('%', :keyword, '%')) ESCAPE '\\') AND " +
            "o.deleted = false")
     Page<Opportunity> searchOpportunities(@Param("companyId") Long companyId, @Param("keyword") String keyword, Pageable pageable);
 

@@ -1,8 +1,12 @@
 import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { OffboardingChecklist } from '../../models/itam.model';
+import { OffboardingChecklist, SoftwareLicenseSeat } from '../../models/itam.model';
 import { OffboardingService } from '../../services/offboarding.service';
+import { SoftwareService } from '../../services/software.service';
+import { HrAssetService } from '../../../hrm/services/hr-asset.service';
+import { EmployeeService } from '../../../hrm/services/employee.service';
+import { Employee, HrAsset } from '../../../hrm/models/hrm.model';
 import { Pagination } from '../../../../shared/components/pagination/pagination';
 import { Loader } from '../../../../shared/components/loader/loader';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
@@ -17,6 +21,7 @@ import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/conf
 export class Offboarding implements OnInit {
   checklists: OffboardingChecklist[] = [];
   pending: OffboardingChecklist[] = [];
+  employees: Employee[] = [];
   totalPages = 0;
   page = 0;
   loading = false;
@@ -30,11 +35,22 @@ export class Offboarding implements OnInit {
   selected: OffboardingChecklist | null = null;
   deleteTarget: OffboardingChecklist | null = null;
 
-  constructor(private offboardingService: OffboardingService, private cdr: ChangeDetectorRef) {}
+  assignedAssets: HrAsset[] = [];
+  assignedLicenses: SoftwareLicenseSeat[] = [];
+  assignedLoading = false;
+
+  constructor(
+    private offboardingService: OffboardingService,
+    private assetService: HrAssetService,
+    private softwareService: SoftwareService,
+    private employeeService: EmployeeService,
+    private cdr: ChangeDetectorRef,
+  ) {}
 
   ngOnInit(): void {
     this.load();
     this.loadPending();
+    this.employeeService.list(0, 500).subscribe({ next: (res) => { this.employees = res.content; this.cdr.markForCheck(); } });
   }
 
   load(): void {
@@ -77,11 +93,47 @@ export class Offboarding implements OnInit {
 
   view(c: OffboardingChecklist): void {
     this.selected = c;
+    this.assignedAssets = [];
+    this.assignedLicenses = [];
+    this.assignedLoading = true;
+    this.cdr.markForCheck();
+
+    this.assetService.listForEmployee(c.employeeId).subscribe({
+      next: (res) => { this.assignedAssets = res; this.assignedLoading = false; this.cdr.markForCheck(); },
+      error: () => { this.assignedLoading = false; this.cdr.markForCheck(); },
+    });
+    this.softwareService.getLicensesForEmployee(c.employeeId).subscribe({
+      next: (res) => { this.assignedLicenses = res; this.cdr.markForCheck(); },
+    });
   }
 
   refreshSelected(): void {
     if (!this.selected) return;
     this.offboardingService.getById(this.selected.id).subscribe({ next: (c) => { this.selected = c; this.cdr.markForCheck(); } });
+  }
+
+  returnAsset(asset: HrAsset): void {
+    if (!this.selected) return;
+    this.assetService.unassign(asset.id).subscribe({
+      next: () => {
+        this.success = asset.name + ' returned';
+        this.cdr.markForCheck();
+        this.view(this.selected!);
+      },
+      error: (err) => { this.error = err?.error?.message || 'Failed to return asset'; this.cdr.markForCheck(); },
+    });
+  }
+
+  revokeLicenseSeat(seat: SoftwareLicenseSeat): void {
+    if (!this.selected) return;
+    this.softwareService.releaseSeat(seat.licenseId, seat.employeeId).subscribe({
+      next: () => {
+        this.success = seat.softwareName + ' seat revoked';
+        this.cdr.markForCheck();
+        this.view(this.selected!);
+      },
+      error: (err) => { this.error = err?.error?.message || 'Failed to revoke seat'; this.cdr.markForCheck(); },
+    });
   }
 
   markHardware(): void {

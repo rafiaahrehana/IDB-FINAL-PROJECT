@@ -8,6 +8,8 @@ import com.businessos.core.base.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.Filter;
+import org.hibernate.annotations.FilterDef;
+import org.hibernate.annotations.ParamDef;
 @Getter
 @Setter
 @NoArgsConstructor
@@ -21,6 +23,7 @@ import org.hibernate.annotations.Filter;
         @Index(name = "idx_ai_conv_feature",  columnList = "company_id, feature")
     }
 )
+@FilterDef(name = "tenantFilter", parameters = @ParamDef(name = "companyId", type = Long.class))
 @Filter(name = "tenantFilter", condition = "company_id = :companyId")
 public class AiConversation extends BaseEntity {
 

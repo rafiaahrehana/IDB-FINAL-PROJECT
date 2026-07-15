@@ -24,8 +24,8 @@
         <ul class="list-group list-group-flush">
           @for (item of byType(type); track item.id) {
           <li class="list-group-item py-2">
-            <a [routerLink]="item.link" class="fw-semibold small d-block">{{ item.title }}</a>
-            <span class="text-muted small">{{ item.subtitle }}</span>
+            <a [routerLink]="item.link" class="fw-semibold small d-block" [innerHTML]="highlight(item.title)"></a>
+            <span class="text-muted small" [innerHTML]="highlight(item.subtitle)"></span>
           </li>
           }
         </ul>

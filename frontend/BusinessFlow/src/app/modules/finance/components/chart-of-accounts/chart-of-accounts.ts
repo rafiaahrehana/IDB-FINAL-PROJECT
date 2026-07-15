@@ -25,7 +25,7 @@ export class ChartOfAccounts implements OnInit {
   editId: number | null = null;
   deleteTarget: ChartOfAccount | null = null;
   form: Partial<ChartOfAccount> = {};
-  accountTypes = ['ASSET', 'LIABILITY', 'EQUITY', 'REVENUE', 'EXPENSE'];
+  accountTypes = ['ASSET', 'LIABILITY', 'EQUITY', 'REVENUE', 'EXPENSE', 'CONTRA_ASSET', 'CONTRA_LIABILITY', 'CONTRA_REVENUE'];
 
   constructor(private coaService: CoaService, private cdr: ChangeDetectorRef) {}
 
@@ -66,6 +66,8 @@ export class ChartOfAccounts implements OnInit {
       type: a.type,
       description: a.description,
       active: a.active,
+      isHeaderAccount: a.isHeaderAccount,
+      allowDirectPosting: a.allowDirectPosting,
     };
     this.showForm = true;
     this.error = '';

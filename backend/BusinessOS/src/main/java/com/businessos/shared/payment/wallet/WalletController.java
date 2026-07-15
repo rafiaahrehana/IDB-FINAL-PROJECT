@@ -1,7 +1,6 @@
 package com.businessos.shared.payment.wallet;
 
 import com.businessos.enums.WalletTransactionType;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -21,11 +20,6 @@ public class WalletController {
     @GetMapping
     public ResponseEntity<WalletResponse> getWallet() {
         return ResponseEntity.ok(walletService.getOrCreateWallet());
-    }
-
-    @PostMapping("/top-up")
-    public ResponseEntity<WalletResponse> topUp(@Valid @RequestBody WalletTopUpRequest request) {
-        return ResponseEntity.ok(walletService.topUp(request));
     }
 
     @GetMapping("/transactions")

@@ -7,7 +7,10 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "webhook_logs")
+@Table(name = "webhook_logs", indexes = {
+    @Index(name = "idx_webhook_retry", columnList = "status, nextRetryAt"),
+    @Index(name = "idx_webhook_transaction", columnList = "transactionId")
+})
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class WebhookLog {
 

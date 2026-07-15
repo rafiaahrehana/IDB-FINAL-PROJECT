@@ -202,7 +202,7 @@
         </div>
         <div class="modal-body">
           <div class="text-muted small mb-2">{{ planTarget.companyName }} · currently on <strong>{{ planTarget.subscriptionPlan | titlecase }}</strong></div>
-          <select class="form-select form-select-sm" [(ngModel)]="newPlan">
+          <select class="form-select form-select-sm" [(ngModel)]="newPlan" (ngModelChange)="onPlanChange($event)">
             @for (p of plans; track p) { <option [value]="p">{{ p | titlecase }}</option> }
           </select>
           <div class="row g-2 mt-1">

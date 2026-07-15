@@ -32,7 +32,7 @@ public class AssetServiceImpl implements AssetService {
     @Transactional
     public AssetResponse create(AssetRequest request) {
         Long companyId = requireCompanyId();
-        Asset asset = new Asset(); asset.setName(request.getName()); asset.setCategory(request.getCategory()); asset.setSerialNumber(request.getSerialNumber()); asset.setNotes(request.getDescription()); asset.setPurchaseDate(request.getPurchaseDate()); asset.setPurchasePrice(request.getPurchaseCost() != null ? request.getPurchaseCost().doubleValue() : null); asset.setStatus(AssetStatus.AVAILABLE); asset.setCompany(companyRef(companyId));
+        Asset asset = new Asset(); asset.setName(request.getName()); asset.setCategory(request.getCategory()); asset.setSerialNumber(request.getSerialNumber()); asset.setNotes(request.getDescription()); asset.setPurchaseDate(request.getPurchaseDate()); asset.setPurchasePrice(request.getPurchaseCost()); asset.setStatus(AssetStatus.AVAILABLE); asset.setCompany(companyRef(companyId));
         asset.setAssetTag(request.getAssetTag());
         asset.setBrand(request.getBrand());
         asset.setModel(request.getModel());
@@ -89,7 +89,7 @@ public class AssetServiceImpl implements AssetService {
         if (request.getSerialNumber() != null) asset.setSerialNumber(request.getSerialNumber());
         if (request.getDescription()  != null) asset.setNotes(request.getDescription());
         if (request.getPurchaseDate() != null) asset.setPurchaseDate(request.getPurchaseDate());
-        if (request.getPurchaseCost() != null) asset.setPurchasePrice(request.getPurchaseCost() != null ? request.getPurchaseCost().doubleValue() : null);
+        if (request.getPurchaseCost() != null) asset.setPurchasePrice(request.getPurchaseCost());
         if (request.getNotes()        != null) asset.setNotes(request.getNotes());
         if (request.getAssetTag()        != null) asset.setAssetTag(request.getAssetTag());
         if (request.getBrand()           != null) asset.setBrand(request.getBrand());

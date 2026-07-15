@@ -1,0 +1,20 @@
+<div class="sidebar-wrapper sidebar-scroll h-100 py-3">
+
+  <div class="px-4 mb-4 mt-2 d-flex align-items-center">
+    <div class="rounded-3 bg-white p-2 d-inline-flex align-items-center justify-content-center me-2 shadow-sm" style="width: 32px; height: 32px;">
+      <i class="bi bi-layers-fill text-primary" style="font-size: 1.2rem;"></i>
+    </div>
+    <span class="fs-5 fw-bold text-white" style="letter-spacing: -0.5px;">BusinessOS</span>
+  </div>
+
+  <div class="sidebar-group-header px-4 mt-4 mb-2 text-uppercase fw-bold">Client Portal</div>
+  <ul class="nav flex-column mb-4">
+    @for (item of items; track item.link) {
+      <li class="nav-item">
+        <a class="sidebar-link" [routerLink]="item.link" routerLinkActive="active">
+          <i class="bi {{ item.icon }}"></i>{{ item.label }}
+        </a>
+      </li>
+    }
+  </ul>
+</div>

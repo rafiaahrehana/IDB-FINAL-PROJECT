@@ -31,15 +31,22 @@ public class AiProviderResolver {
     private final AiKeyDecryptor keyDecryptor;
 
     public AiProviderAdapter resolve(Long companyId) {
-        Optional<AiProviderConfig> config =
-            configRepository.findByCompanyIdAndActiveTrue(companyId);
-
-        if (config.isPresent()) {
-            
-            return buildFromConfig(config.get());
+        if (companyId != null) {
+            Optional<AiProviderConfig> config =
+                configRepository.findByCompanyIdAndActiveTrue(companyId);
+            if (config.isPresent()) {
+                return buildFromConfig(config.get());
+            }
         }
 
-        
+        // Fallback to global platform configuration in database (companyId = null)
+        Optional<AiProviderConfig> globalConfig =
+            configRepository.findByCompanyIdAndActiveTrue(null);
+        if (globalConfig.isPresent()) {
+            return buildFromConfig(globalConfig.get());
+        }
+
+        // Fallback to application.properties defaults
         return buildFromDefaults();
     }
 

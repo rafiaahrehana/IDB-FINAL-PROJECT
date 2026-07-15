@@ -32,8 +32,9 @@ public class ClientInvoice extends BaseEntity {
     private LocalDate invoiceDate;
     private LocalDate dueDate;
 
-    @OneToMany(mappedBy = "invoice", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<ClientInvoiceItem> items;
+    @OneToMany(mappedBy = "invoice", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    @Builder.Default
+    private List<ClientInvoiceItem> items = new java.util.ArrayList<>();
 
     @Builder.Default
     private BigDecimal subtotal = BigDecimal.ZERO;

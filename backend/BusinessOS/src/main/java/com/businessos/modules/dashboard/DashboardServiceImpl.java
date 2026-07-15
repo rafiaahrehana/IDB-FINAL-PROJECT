@@ -36,6 +36,7 @@ import org.springframework.data.domain.PageRequest;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -59,15 +60,25 @@ public class DashboardServiceImpl implements DashboardService {
     private final SecurityUtil              securityUtil;
 
     @Override
-    public DashboardSummaryResponse getSummary() {
+    public DashboardSummaryResponse getSummary(LocalDate from, LocalDate to) {
         Long companyId = securityUtil.getCurrentCompanyId();
         if (companyId == null) {
             throw new BadRequestException("No company context for current platformuser");
         }
 
+        // Period filter - only "new in period" metrics respect from/to; current-state
+        // counts (open opportunities, pending requests, totals, wallet balance) and
+        // completedRequestsAllTime stay all-time by design - a snapshot shouldn't change
+        // based on a trailing window.
+        LocalDateTime periodStart = from != null ? from.atStartOfDay() : null;
+        LocalDateTime periodEnd = to != null ? to.atTime(23, 59, 59) : null;
+        boolean hasPeriod = periodStart != null && periodEnd != null;
+
         // CRM
         long totalLeads       = leadRepository.countByCompanyId(companyId);
-        long newLeads         = leadRepository.countByCompanyIdAndStatus(companyId, LeadStatus.NEW);
+        long newLeads         = hasPeriod
+            ? leadRepository.countByCompanyIdAndStatusAndCreatedAtBetween(companyId, LeadStatus.NEW, periodStart, periodEnd)
+            : leadRepository.countByCompanyIdAndStatus(companyId, LeadStatus.NEW);
         long qualifiedLeads   = leadRepository.countByCompanyIdAndStatus(companyId, LeadStatus.QUALIFIED);
         long totalClients     = clientRepository.countByCompanyId(companyId);
 
@@ -99,7 +110,9 @@ public class DashboardServiceImpl implements DashboardService {
         long openTickets = supportTicketRepository.countByStatusAndCompanyId(TicketStatus.OPEN, companyId)
                          + supportTicketRepository.countByStatusAndCompanyId(TicketStatus.IN_PROGRESS, companyId)
                          + supportTicketRepository.countByStatusAndCompanyId(TicketStatus.WAITING, companyId);
-        long newTickets  = supportTicketRepository.countByStatusAndCompanyId(TicketStatus.NEW, companyId);
+        long newTickets  = hasPeriod
+            ? supportTicketRepository.countByCompanyIdAndStatusAndCreatedAtBetween(companyId, TicketStatus.NEW, periodStart, periodEnd)
+            : supportTicketRepository.countByStatusAndCompanyId(TicketStatus.NEW, companyId);
 
         // Finance
         BigDecimal outstanding = invoiceRepository.sumOutstandingByCompanyId(
@@ -191,8 +204,9 @@ public class DashboardServiceImpl implements DashboardService {
 
   //AI Business Insights
     @Override
+    @Transactional(timeout = 30)
     public InsightsResponse getAiInsights() {
-        DashboardSummaryResponse summary = getSummary();
+        DashboardSummaryResponse summary = getSummary(null, null);
 
         String metrics = """
             Total leads: %d (new: %d, qualified: %d)

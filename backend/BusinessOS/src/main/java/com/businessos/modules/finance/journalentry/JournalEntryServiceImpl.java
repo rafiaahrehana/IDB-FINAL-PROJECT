@@ -3,6 +3,9 @@ package com.businessos.modules.finance.journalentry;
 import com.businessos.modules.finance.chartofaccounts.ChartOfAccount;
 import com.businessos.modules.finance.chartofaccounts.ChartOfAccountRepository;
 import com.businessos.modules.finance.generalledger.GeneralLedgerService;
+import com.businessos.modules.finance.generalledger.GlReferenceType;
+import com.businessos.auth.role.enums.PermissionCode;
+import com.businessos.auth.role.service.AuthorizationService;
 import com.businessos.security.SecurityUtil;
 import com.businessos.shared.exception.ResourceNotFoundException;
 import com.businessos.shared.exception.BadRequestException;
@@ -22,17 +25,19 @@ public class JournalEntryServiceImpl implements JournalEntryService {
     private final ChartOfAccountRepository coaRepository;
     private final GeneralLedgerService glService;
     private final SecurityUtil securityUtil;
+    private final AuthorizationService authorizationService;
 
     @Override
     @Transactional
     public JournalEntryResponse create(JournalEntryRequest request) {
+        authorizationService.checkPermission(PermissionCode.JOURNAL_ENTRY_CREATE);
         Long companyId = securityUtil.getCurrentCompanyId();
 
         // Validate accounts exist
-        ChartOfAccount debitAccount = coaRepository.findById(request.getDebitAccountId())
+        ChartOfAccount debitAccount = coaRepository.findByIdAndCompanyId(request.getDebitAccountId(), companyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Debit account not found"));
 
-        ChartOfAccount creditAccount = coaRepository.findById(request.getCreditAccountId())
+        ChartOfAccount creditAccount = coaRepository.findByIdAndCompanyId(request.getCreditAccountId(), companyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Credit account not found"));
 
         String jeNumber = generateJENumber(companyId);
@@ -59,14 +64,19 @@ public class JournalEntryServiceImpl implements JournalEntryService {
     @Override
     @Transactional(readOnly = true)
     public JournalEntryResponse getById(Long id) {
-        JournalEntry je = jeRepository.findById(id)
+        authorizationService.checkPermission(PermissionCode.JOURNAL_ENTRY_VIEW);
+        return JournalEntryMapper.toResponse(findInTenant(id));
+    }
+
+    private JournalEntry findInTenant(Long id) {
+        return jeRepository.findByIdAndCompanyId(id, securityUtil.getCurrentCompanyId())
                 .orElseThrow(() -> new ResourceNotFoundException("Journal entry not found"));
-        return JournalEntryMapper.toResponse(je);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<JournalEntryResponse> getAll(Pageable pageable) {
+        authorizationService.checkPermission(PermissionCode.JOURNAL_ENTRY_VIEW);
         Long companyId = securityUtil.getCurrentCompanyId();
         return jeRepository.findByCompanyId(companyId, pageable)
                 .map(JournalEntryMapper::toResponse);
@@ -75,8 +85,8 @@ public class JournalEntryServiceImpl implements JournalEntryService {
     @Override
     @Transactional
     public void approve(Long id) {
-        JournalEntry je = jeRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Journal entry not found"));
+        authorizationService.checkPermission(PermissionCode.JOURNAL_ENTRY_APPROVE);
+        JournalEntry je = findInTenant(id);
 
         if (je.isApproved()) {
             throw new BadRequestException("Journal entry is already approved");
@@ -89,8 +99,8 @@ public class JournalEntryServiceImpl implements JournalEntryService {
     @Override
     @Transactional
     public void post(Long id) {
-        JournalEntry je = jeRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Journal entry not found"));
+        authorizationService.checkPermission(PermissionCode.JOURNAL_ENTRY_POST);
+        JournalEntry je = findInTenant(id);
 
         if (!je.isApproved()) {
             throw new BadRequestException("Journal entry must be approved before posting");
@@ -106,7 +116,7 @@ public class JournalEntryServiceImpl implements JournalEntryService {
                 je.getAmount(),
                 BigDecimal.ZERO,
                 je.getDescription(),
-                "JOURNAL_ENTRY",
+                GlReferenceType.JOURNAL_ENTRY,
                 je.getId(),
                 je.getJournalEntryNumber()
         );
@@ -116,7 +126,7 @@ public class JournalEntryServiceImpl implements JournalEntryService {
                 BigDecimal.ZERO,
                 je.getAmount(),
                 je.getDescription(),
-                "JOURNAL_ENTRY",
+                GlReferenceType.JOURNAL_ENTRY,
                 je.getId(),
                 je.getJournalEntryNumber()
         );
@@ -128,8 +138,7 @@ public class JournalEntryServiceImpl implements JournalEntryService {
     @Override
     @Transactional
     public JournalEntryResponse delete(Long id) {
-        JournalEntry je = jeRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Journal entry not found"));
+        JournalEntry je = findInTenant(id);
 
         if (je.isPosted()) {
             throw new BadRequestException("Cannot delete posted journal entries");
@@ -141,8 +150,13 @@ public class JournalEntryServiceImpl implements JournalEntryService {
     }
 
     private String generateJENumber(Long companyId) {
-        long count = jeRepository.count() + 1;
-        return String.format("JE-%04d-%06d", LocalDate.now().getYear(), count);
+        int year = LocalDate.now().getYear();
+        String prefix = "JE-" + year + "-";
+        String maxNumber = jeRepository
+                .findMaxJENumberByCompanyAndPrefix(companyId, prefix)
+                .orElse(prefix + "000000");
+        long sequence = Long.parseLong(maxNumber.substring(prefix.length())) + 1;
+        return String.format("%s%06d", prefix, sequence);
     }
 }
 

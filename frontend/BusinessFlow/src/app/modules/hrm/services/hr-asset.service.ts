@@ -13,8 +13,9 @@ export class HrAssetService {
     return this.api.getPaged<HrAsset>(this.endpoint, page, size);
   }
 
-  listForEmployee(employeeId: number, page = 0, size = 20): Observable<PagedResponse<HrAsset>> {
-    return this.api.getPaged<HrAsset>(`${this.endpoint}/employee/${employeeId}`, page, size);
+  // Backend returns a plain List<AssetResponse> here, not a paged response.
+  listForEmployee(employeeId: number): Observable<HrAsset[]> {
+    return this.api.get<HrAsset[]>(`${this.endpoint}/employee/${employeeId}`);
   }
 
   getById(id: number): Observable<HrAsset> {

@@ -2,9 +2,12 @@ package com.businessos.modules.ai.dto.request;
 
 import com.businessos.modules.ai.enums.AiModel;
 import com.businessos.modules.ai.enums.AiProviderType;
+import jakarta.validation.constraints.NotNull;
 
 public class AiProviderConfigRequest {
+    @NotNull(message = "Provider type is required")
     private AiProviderType aiProviderType;
+    @NotNull(message = "Model is required")
     private AiModel model;
     private String apiKey;
     private Double temperature;

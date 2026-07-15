@@ -3,7 +3,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 
 interface NavGroup { label: string; icon: string; items: NavItem[]; roles?: string[]; }
-interface NavItem { label: string; link: string; icon: string; }
+interface NavItem { label: string; link: string; icon: string; roles?: string[]; }
 
 @Component({
   selector: 'app-sidebar',
@@ -15,7 +15,10 @@ export class Sidebar {
   constructor(private auth: AuthService) {}
 
   get visibleGroups(): NavGroup[] {
-    return this.groups.filter(g => !g.roles || this.auth.hasAnyRole(g.roles));
+    return this.groups
+      .filter(g => !g.roles || this.auth.hasAnyRole(g.roles))
+      .map(g => ({ ...g, items: g.items.filter(i => !i.roles || this.auth.hasAnyRole(i.roles)) }))
+      .filter(g => g.items.length > 0);
   }
 
   groups: NavGroup[] = [
@@ -25,7 +28,7 @@ export class Sidebar {
       roles: ['COMPANY_OWNER'],
       items: [
         { label: 'Website View', link: '/website-view', icon: 'bi-globe' },
-        { label: 'Portal Settings', link: '/portal-settings', icon: 'bi-brush' },
+        { label: 'Website Management', link: '/website-management', icon: 'bi-layout-text-window-reverse' },
       ]
     },
     {
@@ -42,7 +45,13 @@ export class Sidebar {
       items: [
         { label: 'Leads', link: '/crm/leads', icon: 'bi-person-plus' },
         { label: 'Pipeline', link: '/crm/pipeline', icon: 'bi-kanban' },
-        { label: 'Accounts', link: '/crm/clients', icon: 'bi-building' },
+      ]
+    },
+    {
+      label: 'Client Management',
+      icon: 'bi-people-fill',
+      items: [
+        { label: 'All Clients', link: '/crm/clients', icon: 'bi-building' },
       ]
     },
     {
@@ -80,11 +89,9 @@ export class Sidebar {
       icon: 'bi-life-preserver',
       items: [
         { label: 'Tickets', link: '/support/tickets', icon: 'bi-chat-left-dots' },
-        { label: 'Agents', link: '/support/agents', icon: 'bi-person-badge' },
         { label: 'Messages', link: '/support/messages', icon: 'bi-chat-dots' },
         { label: 'Categories', link: '/support/categories', icon: 'bi-tags' },
         { label: 'SLA Policies', link: '/support/sla-policies', icon: 'bi-stopwatch' },
-        { label: 'Context Switches', link: '/support/context-switches', icon: 'bi-arrow-left-right' },
         { label: 'Audit Logs', link: '/support/audit-logs', icon: 'bi-shield-check' },
       ]
     },
@@ -106,6 +113,7 @@ export class Sidebar {
         { label: 'Employees', link: '/hrm/employees', icon: 'bi-person-vcard' },
         { label: 'Departments', link: '/hrm/departments', icon: 'bi-diagram-3' },
         { label: 'Designations', link: '/hrm/designations', icon: 'bi-award' },
+        { label: 'Roles & Permissions', link: '/roles-permissions', icon: 'bi-shield-lock', roles: ['COMPANY_OWNER'] },
         { label: 'Shifts', link: '/hrm/shifts', icon: 'bi-clock-history' },
         { label: 'Announcements', link: '/hrm/announcements', icon: 'bi-megaphone' },
         { label: 'Holidays', link: '/hrm/holidays', icon: 'bi-calendar-event' },
@@ -132,19 +140,6 @@ export class Sidebar {
         { label: 'Leaves', link: '/attendance/leaves', icon: 'bi-calendar-x' },
         { label: 'Biometric Data', link: '/attendance/biometric-data', icon: 'bi-fingerprint' },
         { label: 'Reports', link: '/attendance/reports', icon: 'bi-file-earmark-bar-graph' },
-      ]
-    },
-    {
-      label: 'Platform Admin',
-      icon: 'bi-shield-lock',
-      roles: ['SUPER_ADMIN', 'SYSTEM_ADMIN', 'PLATFORM_ACCOUNTANT', 'SALES_MANAGER'],
-      items: [
-        { label: 'Companies', link: '/platform/companies', icon: 'bi-buildings' },
-        { label: 'Platform Users', link: '/platform/platform-users', icon: 'bi-person-badge' },
-        { label: 'Custom Roles', link: '/platform/custom-roles', icon: 'bi-shield' },
-        { label: 'Feature Flags', link: '/platform/feature-flags', icon: 'bi-flag' },
-        { label: 'Locations Master', link: '/platform/locations', icon: 'bi-geo-alt' },
-        { label: 'Platform Expenses', link: '/platform/platform-expenses', icon: 'bi-cash-stack' },
       ]
     },
   ];

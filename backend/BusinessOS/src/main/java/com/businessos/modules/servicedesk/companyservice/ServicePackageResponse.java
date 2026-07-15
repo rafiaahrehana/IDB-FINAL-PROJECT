@@ -18,7 +18,7 @@ public class ServicePackageResponse {
     private String descriptionBn;
     private String iconUrl;
     private BigDecimal packagePrice;
-    private Double discountPercent;
+    private BigDecimal discountPercent;
     private BillingCycle billingCycle;
     private Integer requestQuota;
     private boolean autoRenew;

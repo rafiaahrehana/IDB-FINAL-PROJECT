@@ -1,5 +1,7 @@
 package com.businessos.modules.hrm.attendance.biometric.device;
 
+import com.businessos.auth.role.enums.PermissionCode;
+import com.businessos.auth.role.service.AuthorizationService;
 import com.businessos.security.SecurityUtil;
 import com.businessos.shared.exception.ResourceNotFoundException;
 import com.businessos.shared.exception.BadRequestException;
@@ -18,10 +20,12 @@ public class BiometricDeviceServiceImpl implements BiometricDeviceService {
 
     private final BiometricDeviceRepository deviceRepository;
     private final SecurityUtil securityUtil;
+    private final AuthorizationService authorizationService;
 
     @Override
     @Transactional
     public BiometricDeviceResponse create(BiometricDeviceRequest request) {
+        authorizationService.checkPermission(PermissionCode.BIOMETRIC_MANAGE);
         Long companyId = securityUtil.getCurrentCompanyId();
 
         if (deviceRepository.findByCompanyIdAndDeviceId(companyId, request.getDeviceId()).isPresent()) {
@@ -40,6 +44,7 @@ public class BiometricDeviceServiceImpl implements BiometricDeviceService {
     @Override
     @Transactional(readOnly = true)
     public BiometricDeviceResponse getById(Long id) {
+        authorizationService.checkPermission(PermissionCode.BIOMETRIC_VIEW);
         BiometricDevice device = deviceRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Device not found"));
         return BiometricDeviceMapper.toResponse(device);
@@ -48,6 +53,7 @@ public class BiometricDeviceServiceImpl implements BiometricDeviceService {
     @Override
     @Transactional(readOnly = true)
     public BiometricDeviceResponse getByDeviceId(String deviceId) {
+        authorizationService.checkPermission(PermissionCode.BIOMETRIC_VIEW);
         Long companyId = securityUtil.getCurrentCompanyId();
         BiometricDevice device = deviceRepository.findByCompanyIdAndDeviceId(companyId, deviceId)
                 .orElseThrow(() -> new ResourceNotFoundException("Device not found"));
@@ -57,6 +63,7 @@ public class BiometricDeviceServiceImpl implements BiometricDeviceService {
     @Override
     @Transactional(readOnly = true)
     public Page<BiometricDeviceResponse> getAll(Pageable pageable) {
+        authorizationService.checkPermission(PermissionCode.BIOMETRIC_VIEW);
         Long companyId = securityUtil.getCurrentCompanyId();
         return deviceRepository.findByCompanyId(companyId, pageable)
                 .map(BiometricDeviceMapper::toResponse);
@@ -65,6 +72,7 @@ public class BiometricDeviceServiceImpl implements BiometricDeviceService {
     @Override
     @Transactional(readOnly = true)
     public Page<BiometricDeviceResponse> getByStatus(BiometricDeviceStatus status, Pageable pageable) {
+        authorizationService.checkPermission(PermissionCode.BIOMETRIC_VIEW);
         Long companyId = securityUtil.getCurrentCompanyId();
         return deviceRepository.findByCompanyIdAndStatus(companyId, status, pageable)
                 .map(BiometricDeviceMapper::toResponse);
@@ -73,6 +81,7 @@ public class BiometricDeviceServiceImpl implements BiometricDeviceService {
     @Override
     @Transactional(readOnly = true)
     public List<BiometricDeviceResponse> getOnlineDevices() {
+        authorizationService.checkPermission(PermissionCode.BIOMETRIC_VIEW);
         Long companyId = securityUtil.getCurrentCompanyId();
         return deviceRepository.findByCompanyIdAndIsOnline(companyId, true)
                 .stream()
@@ -83,6 +92,7 @@ public class BiometricDeviceServiceImpl implements BiometricDeviceService {
     @Override
     @Transactional
     public BiometricDeviceResponse update(Long id, BiometricDeviceRequest request) {
+        authorizationService.checkPermission(PermissionCode.BIOMETRIC_MANAGE);
         BiometricDevice device = deviceRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Device not found"));
 
@@ -110,6 +120,7 @@ public class BiometricDeviceServiceImpl implements BiometricDeviceService {
     @Override
     @Transactional
     public void updateStatus(Long id, BiometricDeviceStatus status) {
+        authorizationService.checkPermission(PermissionCode.BIOMETRIC_MANAGE);
         BiometricDevice device = deviceRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Device not found"));
         device.setStatus(status);
@@ -119,6 +130,7 @@ public class BiometricDeviceServiceImpl implements BiometricDeviceService {
     @Override
     @Transactional
     public void updateOnlineStatus(Long id, boolean online) {
+        authorizationService.checkPermission(PermissionCode.BIOMETRIC_MANAGE);
         BiometricDevice device = deviceRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Device not found"));
         device.setOnline(online);
@@ -129,6 +141,7 @@ public class BiometricDeviceServiceImpl implements BiometricDeviceService {
     @Override
     @Transactional
     public void recordSync(Long id) {
+        authorizationService.checkPermission(PermissionCode.BIOMETRIC_MANAGE);
         BiometricDevice device = deviceRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Device not found"));
         device.setLastSyncTime(LocalDateTime.now());
@@ -138,6 +151,7 @@ public class BiometricDeviceServiceImpl implements BiometricDeviceService {
     @Override
     @Transactional
     public BiometricDeviceResponse delete(Long id) {
+        authorizationService.checkPermission(PermissionCode.BIOMETRIC_MANAGE);
         BiometricDevice device = deviceRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Device not found"));
         device.softDelete();

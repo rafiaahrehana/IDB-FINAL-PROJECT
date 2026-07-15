@@ -1,0 +1,41 @@
+.security-section {
+  position: relative;
+  overflow: hidden;
+}
+
+.tracking-wide {
+  letter-spacing: 0.05em;
+}
+
+.text-purple {
+  color: #61399e;
+}
+
+.bg-purple-dark {
+  background-color: #4a287c;
+}
+
+.text-lavender {
+  color: #e6d8fa;
+}
+
+.bg-lavender-light {
+  background-color: #f7f3fd;
+  border: 1px solid #e0d0f5 !important;
+}
+
+.security-card {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  height: 100%;
+}
+
+.hover-card-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+}
+
+.icon-box {
+  width: 44px;
+  height: 44px;
+}

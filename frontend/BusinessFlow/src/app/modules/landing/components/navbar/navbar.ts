@@ -21,4 +21,15 @@ export class NavbarComponent {
   toggleMobileMenu() {
     this.isMobileMenuOpen.update(v => !v);
   }
+
+  scrollTo(id: string, event: Event) {
+    event.preventDefault();
+    const element = document.getElementById(id);
+    if (element) {
+      // Offset for fixed navbar
+      const y = element.getBoundingClientRect().top + window.scrollY - 80;
+      window.scrollTo({ top: y, behavior: 'smooth' });
+    }
+    this.isMobileMenuOpen.set(false);
+  }
 }

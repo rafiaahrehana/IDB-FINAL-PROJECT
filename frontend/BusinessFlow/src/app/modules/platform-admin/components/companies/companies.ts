@@ -149,8 +149,20 @@ export class Companies implements OnInit {
   openPlanChange(c: Company): void {
     this.planTarget = c;
     this.newPlan = c.subscriptionPlan;
-    this.planAmountPaid = null;
+    this.onPlanChange(this.newPlan);
     this.planTransactionRef = '';
+  }
+
+  onPlanChange(plan: SubscriptionPlan): void {
+    if (plan === 'FREE') {
+      this.planAmountPaid = 0;
+    } else if (plan === 'STARTER') {
+      this.planAmountPaid = 4900;
+    } else if (plan === 'PRO') {
+      this.planAmountPaid = 9900;
+    } else if (plan === 'ENTERPRISE') {
+      this.planAmountPaid = 0;
+    }
   }
 
   doChangePlan(): void {

@@ -18,7 +18,7 @@ public class AttendanceReportController {
     private final AttendanceReportService attendanceReportService;
 
     @GetMapping("/daily")
-    @PreAuthorize("hasRole('HR_MANAGER') or hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     public ResponseEntity<DailyAttendanceReport> getDailyReport(
             @RequestParam(defaultValue = "#{T(java.time.LocalDate).now().toString()}") 
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
@@ -26,7 +26,7 @@ public class AttendanceReportController {
     }
 
     @GetMapping("/monthly")
-    @PreAuthorize("hasRole('HR_MANAGER') or hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     public ResponseEntity<MonthlyAttendanceReport> getMonthlyReport(
             @RequestParam int month,
             @RequestParam int year) {
@@ -34,7 +34,7 @@ public class AttendanceReportController {
     }
 
     @GetMapping("/employee/{employeeId}")
-    @PreAuthorize("hasRole('EMPLOYEE') or hasRole('MANAGER') or hasRole('HR_MANAGER') or hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     public ResponseEntity<EmployeeAttendanceSummary> getEmployeeSummary(
             @PathVariable Long employeeId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
@@ -43,7 +43,7 @@ public class AttendanceReportController {
     }
 
     @GetMapping("/department")
-    @PreAuthorize("hasRole('MANAGER') or hasRole('HR_MANAGER') or hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     public ResponseEntity<DepartmentAttendanceReport> getDepartmentReport(
             @RequestParam String department,
             @RequestParam(defaultValue = "#{T(java.time.LocalDate).now().toString()}") 
@@ -52,7 +52,7 @@ public class AttendanceReportController {
     }
 
     @GetMapping("/late-absent")
-    @PreAuthorize("hasRole('HR_MANAGER') or hasRole('COMPANY_ADMIN')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     public ResponseEntity<LateAndAbsentReport> getLateAndAbsentReport(
             @RequestParam(defaultValue = "#{T(java.time.LocalDate).now().toString()}") 
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {

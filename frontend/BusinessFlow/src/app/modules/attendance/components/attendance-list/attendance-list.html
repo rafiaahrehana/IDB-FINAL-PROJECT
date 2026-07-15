@@ -1,10 +1,13 @@
 <div class="container-fluid py-3">
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h4 class="mb-0">Attendance Records</h4>
-    <select class="form-select form-select-sm" style="width:160px" [(ngModel)]="statusFilter" (change)="page=0;load()">
-      <option value="">All statuses</option>
-      @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
-    </select>
+    <div class="d-flex gap-2">
+      <select class="form-select form-select-sm" style="width:160px" [(ngModel)]="statusFilter" (change)="page=0;load()">
+        <option value="">All statuses</option>
+        @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
+      </select>
+      <button class="btn btn-primary btn-sm" (click)="openAdd()"><i class="bi bi-plus-lg me-1"></i>Add Attendance</button>
+    </div>
   </div>
   @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
   @if (success) { <div class="alert alert-success py-2">{{ success }}</div> }
@@ -35,3 +38,75 @@
   }
   @if (!loading && !records.length) { <app-empty-state icon="bi-calendar-check" message="No attendance records." /> }
 </div>
+
+@if (showForm) {
+<div class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,.5)">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Add Attendance</h5>
+        <button type="button" class="btn-close" (click)="showForm = false"></button>
+      </div>
+      <form #f="ngForm" (ngSubmit)="save()">
+        <div class="modal-body">
+          @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Employee</label>
+              <select class="form-select form-select-sm" name="employeeId" [(ngModel)]="form.employeeId" required>
+                <option [ngValue]="undefined" disabled>Select an employee</option>
+                @for (e of employees; track e.id) { <option [ngValue]="e.id">{{ e.firstName }} {{ e.lastName }} ({{ e.employeeNumber }})</option> }
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Date</label>
+              <input type="date" class="form-control form-control-sm" name="attendanceDate" [(ngModel)]="form.attendanceDate" required>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Status</label>
+              <select class="form-select form-select-sm" name="status" [(ngModel)]="form.status" required>
+                @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Check In</label>
+              <input type="time" class="form-control form-control-sm" name="checkInTime" [(ngModel)]="form.checkInTime">
+              <div class="form-text">If the employee has an assigned shift, late is detected automatically from this time.</div>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Check Out</label>
+              <input type="time" class="form-control form-control-sm" name="checkOutTime" [(ngModel)]="form.checkOutTime">
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+              <div class="form-check">
+                <input type="checkbox" class="form-check-input" id="isLate" name="isLate" [(ngModel)]="form.isLate">
+                <label class="form-check-label small" for="isLate">Mark late manually</label>
+              </div>
+            </div>
+            @if (form.isLate) {
+            <div class="col-md-3">
+              <label class="form-label">Late Minutes</label>
+              <input type="number" min="0" class="form-control form-control-sm" name="lateMinutes" [(ngModel)]="form.lateMinutes">
+            </div>
+            }
+            <div class="col-12">
+              <div class="form-text mb-2">Manual "late" only applies if the employee has no assigned shift to compare against - otherwise the shift's start time + grace period decides it.</div>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Notes</label>
+              <textarea class="form-control form-control-sm" rows="2" name="adminNotes" [(ngModel)]="form.adminNotes" maxlength="500"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" (click)="showForm = false">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm" [disabled]="f.invalid || saving">
+            @if (saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
+            Save
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+}

@@ -27,11 +27,13 @@ public class FeatureFlagController {
     private final FeatureFlagRepository flagRepository;
 
     @GetMapping
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<FeatureFlag>> getAll() {
         return ResponseEntity.ok(flagRepository.findAll());
     }
 
     @GetMapping("/{key}")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<FeatureFlag> getByKey(@PathVariable String key) {
         return ResponseEntity.ok(flagRepository.findByFlagKey(key)
                 .orElseThrow(() -> new ResourceNotFoundException("Feature flag not found: " + key)));

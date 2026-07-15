@@ -10,33 +10,44 @@ import { RouterLink } from '@angular/router';
   styleUrls: ['./pricing.scss']
 })
 export class PricingComponent {
+  trustBadges = ['No setup fees', 'Cancel anytime', 'Secure & reliable', '24/7 Support'];
+
   plans = signal([
     {
-      name: 'Starter',
-      price: '$49',
-      period: 'per user/month',
-      desc: 'Essential features for small teams.',
-      features: ['CRM & Basic HRM', 'Standard Support', '5GB Storage', 'Standard Reports'],
+      name: 'Free Trial',
+      price: '$0',
+      period: '14 days free',
+      features: ['Full platform access', 'No credit card required', 'Explore all core features'],
       highlighted: false,
-      btnClass: 'btn-outline-bos'
+      btnText: 'Start Free Trial',
+      btnClass: 'btn-outline-purple'
+    },
+    {
+      name: 'Starter',
+      price: '$20',
+      period: 'per user/month',
+      features: ['Up to 10 team members', 'Core CRM & HRM modules', 'Standard reporting', 'Email support'],
+      highlighted: false,
+      btnText: 'Get Started',
+      btnClass: 'btn-outline-purple'
     },
     {
       name: 'Professional',
-      price: '$99',
+      price: '$100',
       period: 'per user/month',
-      desc: 'Advanced tools for growing companies.',
-      features: ['All Starter Features', 'Full Suite Access', 'AI Assistant', 'Advanced Workflows', '24/7 Priority Support'],
+      features: ['Unlimited team members', 'All modules included', 'AI-powered automation', 'Advanced analytics', 'Priority support'],
       highlighted: true,
-      btnClass: 'btn-primary-bos'
+      btnText: 'Get Started',
+      btnClass: 'btn-purple-solid'
     },
     {
       name: 'Enterprise',
-      price: 'Custom',
-      period: 'billed annually',
-      desc: 'Dedicated resources and custom SLA.',
-      features: ['All Pro Features', 'Dedicated Success Manager', 'Custom Integrations', 'On-Premise Option', 'Volume Discounts'],
+      price: '$200',
+      period: 'per user/month',
+      features: ['Custom integrations', 'Dedicated account manager', 'SLA & premium support', 'Advanced security', 'Onboarding & training'],
       highlighted: false,
-      btnClass: 'btn-outline-bos'
+      btnText: 'Contact Sales',
+      btnClass: 'btn-outline-purple'
     }
   ]);
 }

@@ -1,0 +1,70 @@
+<div class="container-fluid py-3">
+  <div class="page-hero">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+      <div>
+        <div class="page-hero-label">CRM</div>
+        <h4 class="page-hero-title underline-lavender">Pipeline Reports</h4>
+        <div class="page-hero-subtitle">Stage breakdown and win/loss trends across your sales pipeline.</div>
+      </div>
+      <div class="page-hero-actions">
+        <a routerLink="/crm/pipeline" class="btn btn-hero-secondary px-3 fw-semibold text-decoration-none">
+          <i class="bi bi-arrow-left me-1"></i>Back to Pipeline
+        </a>
+      </div>
+    </div>
+  </div>
+
+  @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
+  @if (loading) { <app-loader /> }
+
+  @if (!loading && summary) {
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="text-muted small text-uppercase" style="letter-spacing:.04em">Won</div>
+          <div class="fs-3 fw-bold text-success">{{ wonAmount | currency }}</div>
+          <div class="text-muted small">{{ wonDeals.length }} deals closed won</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="text-muted small text-uppercase" style="letter-spacing:.04em">Lost</div>
+          <div class="fs-3 fw-bold text-danger">{{ lostAmount | currency }}</div>
+          <div class="text-muted small">{{ lostDeals.length }} deals closed lost</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="text-muted small text-uppercase" style="letter-spacing:.04em">Win Rate</div>
+          <div class="fs-3 fw-bold">{{ winRate }}%</div>
+          <div class="text-muted small">Of all closed deals</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-white py-2 fw-semibold">Pipeline Value by Stage</div>
+        <div class="card-body" style="min-height:320px">
+          <canvas baseChart [data]="stageChartData!" type="bar" [options]="stageChartOptions"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-white py-2 fw-semibold">Won vs Lost (last 6 months)</div>
+        <div class="card-body" style="min-height:320px">
+          <canvas baseChart [data]="trendChartData!" type="bar" [options]="trendChartOptions"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+  }
+</div>

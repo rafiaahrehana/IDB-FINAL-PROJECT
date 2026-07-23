@@ -1,6 +1,32 @@
 package com.businessos.modules.finance.invoice;
 
+import com.businessos.modules.crm.client.Client;
+import com.businessos.auth.user.User;
+
 public class ClientInvoiceMapper {
+
+    private static String getClientDisplayName(Client client) {
+        if (client == null) return null;
+        try {
+            if (client.getClientCompanyName() != null && !client.getClientCompanyName().trim().isEmpty()) {
+                return client.getClientCompanyName().trim();
+            }
+        } catch (Exception e) {
+            // ignore proxy errors
+        }
+        try {
+            if (client.getUser() != null) {
+                String first = client.getUser().getFirstName();
+                String last = client.getUser().getLastName();
+                if (first != null || last != null) {
+                    return ((first != null ? first.trim() : "") + " " + (last != null ? last.trim() : "")).trim();
+                }
+            }
+        } catch (Exception e) {
+            // ignore proxy errors
+        }
+        return "Client";
+    }
 
     public static ClientInvoiceResponse toResponse(ClientInvoice entity) {
         if (entity == null) return null;
@@ -10,7 +36,9 @@ public class ClientInvoiceMapper {
                 .companyId(entity.getCompanyId())
                 .invoiceNumber(entity.getInvoiceNumber())
                 .clientId(entity.getClient() != null ? entity.getClient().getId() : null)
-                .clientName(entity.getClient() != null ? entity.getClient().getClientCompanyName() : null)
+                .clientName(getClientDisplayName(entity.getClient()))
+                .serviceRequestId(entity.getServiceRequest() != null ? entity.getServiceRequest().getId() : null)
+                .serviceRequestTitle(entity.getServiceRequest() != null ? entity.getServiceRequest().getTitle() : null)
                 .invoiceDate(entity.getInvoiceDate())
                 .dueDate(entity.getDueDate())
                 .items(ClientInvoiceItemMapper.toResponseList(entity.getItems()))

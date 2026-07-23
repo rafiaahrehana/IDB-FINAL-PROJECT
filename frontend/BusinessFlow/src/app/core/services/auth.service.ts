@@ -2,7 +2,8 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { BehaviorSubject, Observable, throwError } from 'rxjs';
-import { map, tap, catchError } from 'rxjs/operators';
+import { map, tap, catchError, switchMap } from 'rxjs/operators';
+import { PermissionService } from './permission.service';
 import {
   LoginRequest,
   LoginResponse,
@@ -36,8 +37,6 @@ export class AuthService {
   private readonly REFRESH_TOKEN_KEY = 'refresh_token';
   private readonly USER_KEY = 'user';
 
-  // Backup slots used only while impersonating, so "End session" can restore the
-  // platform admin's own identity without a fresh login.
   private readonly ADMIN_TOKEN_KEY = 'admin_access_token';
   private readonly ADMIN_USER_KEY = 'admin_user';
   private readonly IMPERSONATION_KEY = 'impersonation_session';
@@ -51,11 +50,14 @@ export class AuthService {
   private impersonationSubject = new BehaviorSubject<ImpersonationSession | null>(this.getImpersonationFromStorage());
   public impersonation$ = this.impersonationSubject.asObservable();
 
-  constructor(private http: HttpClient, private router: Router) {
+  constructor(
+    private http: HttpClient,
+    private router: Router,
+    private permissionService: PermissionService,
+  ) {
     this.initializeAuthState();
   }
 
-  /** True for the 7 SaaS-provider staff roles (never Company-scoped roles). */
   isPlatformUser(): boolean {
     const user = this.currentUserSubject.value;
     return !!user && user.roles.some(r => PLATFORM_ROLES.includes(r));
@@ -69,12 +71,6 @@ export class AuthService {
     return this.impersonationSubject.value;
   }
 
-  /**
-   * Switches the active session into an impersonated Company view: backs up the
-   * platform admin's own token/identity, swaps in the scoped impersonation token,
-   * and marks the user as COMPANY_OWNER so tenant route guards / dashboard render
-   * the normal Company experience.
-   */
   startImpersonation(response: ImpersonationResponse): void {
     const adminUser = this.currentUserSubject.value;
     if (adminUser) {
@@ -107,13 +103,10 @@ export class AuthService {
     localStorage.setItem(this.IMPERSONATION_KEY, JSON.stringify(session));
     this.impersonationSubject.next(session);
 
-    this.router.navigate(['/website-view']);
+    this.router.navigate(['/']);
   }
 
-  /**
-   * Ends the impersonation session (best-effort server call) and restores the
-   * platform admin's own token/identity.
-   */
+
   endImpersonation(): Observable<any> {
     const session = this.impersonationSubject.value;
     const restore = () => {
@@ -154,13 +147,11 @@ export class AuthService {
     return (raw && raw !== 'undefined') ? JSON.parse(raw) : null;
   }
  
-  /**
-   * Login user with credentials
-   */
   login(credentials: LoginRequest): Observable<User> {
+    let loggedInUser!: User;
     return this.http.post<LoginResponse>(`${this.API_URL}/login`, credentials).pipe(
       tap(response => {
-        const user: User = {
+        loggedInUser = {
           id: response.userId,
           username: response.email,
           email: response.email,
@@ -169,18 +160,24 @@ export class AuthService {
           companyId: response.companyId
         };
         this.setTokens(response.accessToken, response.refreshToken);
-        this.setUserInStorage(user);
-        this.currentUserSubject.next(user);
+        this.setUserInStorage(loggedInUser);
+        this.currentUserSubject.next(loggedInUser);
         this.isAuthenticatedSubject.next(true);
       }),
-      map(response => ({
-        id: response.userId,
-        username: response.email,
-        email: response.email,
-        fullName: response.firstName,
-        roles: [response.role],
-        companyId: response.companyId
-      } as User)),
+      // Load permissions before this observable completes so they're already cached
+      // (route guards read them synchronously) by the time the caller navigates away
+      // from the login page.
+      switchMap(() => this.permissionService.load()),
+      switchMap(() => this.permissionService.loadCatalog()),
+      // Load profile so that we have the profile picture url from the start!
+      switchMap(() => this.getProfile()),
+      tap(profile => {
+        loggedInUser.fullName = `${profile.firstName} ${profile.lastName}`;
+        loggedInUser.profileImageUrl = this.resolveImageUrl(profile.image);
+        this.setUserInStorage(loggedInUser);
+        this.currentUserSubject.next(loggedInUser);
+      }),
+      map(() => loggedInUser),
       catchError(error => {
         console.error('Login failed', error);
         return throwError(() => error);
@@ -267,6 +264,7 @@ export class AuthService {
     this.impersonationSubject.next(null);
     this.currentUserSubject.next(null);
     this.isAuthenticatedSubject.next(false);
+    this.permissionService.clear();
   }
  
   /**
@@ -287,10 +285,16 @@ export class AuthService {
       tap(response => {
         this.setTokens(response.accessToken, response.refreshToken);
         this.isAuthenticatedSubject.next(true);
+        const user = this.getUserFromStorage();
+        if (user) {
+          this.currentUserSubject.next(user);
+        }
+        this.permissionService.load().subscribe({ error: () => {} });
+        this.permissionService.loadCatalog().subscribe({ error: () => {} });
       })
     );
   }
- 
+
   /**
    * Get current access token
    */
@@ -410,12 +414,27 @@ export class AuthService {
         const storedUser = this.getUserFromStorage();
         if (storedUser) {
           storedUser.fullName = `${profile.firstName} ${profile.lastName}`;
-          storedUser.profileImageUrl = profile.image;
+          storedUser.profileImageUrl = this.resolveImageUrl(profile.image);
           this.setUserInStorage(storedUser);
           this.currentUserSubject.next(storedUser);
         }
       })
     );
+  }
+
+  /**
+   * Refreshes just the cached avatar (navbar, sidebar) after it's changed somewhere
+   * other than the /users/profile flow above - e.g. the Employee self-update endpoint
+   * (PATCH /api/employees/me) also syncs the User's image server-side, but that
+   * response never passes through AuthService, so the cached currentUser would
+   * otherwise keep showing the old picture until the next login/refresh.
+   */
+  updateCurrentUserImage(imageUrl: string | null | undefined): void {
+    const storedUser = this.getUserFromStorage();
+    if (!storedUser) return;
+    storedUser.profileImageUrl = this.resolveImageUrl(imageUrl);
+    this.setUserInStorage(storedUser);
+    this.currentUserSubject.next(storedUser);
   }
 
   /**
@@ -440,16 +459,56 @@ export class AuthService {
     localStorage.removeItem(this.USER_KEY);
   }
  
+  resolveImageUrl(url: string | undefined | null): string | undefined {
+    if (!url) return undefined;
+    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
+      return url;
+    }
+    const base = environment.apiUrl.replace(/\/api$/, '');
+    const cleanUrl = url.startsWith('/') ? url : `/${url}`;
+    return `${base}${cleanUrl}`;
+  }
+
   /**
    * Initialize auth state on app startup
    */
   private initializeAuthState(): void {
+    const user = this.getUserFromStorage();
+    if (user) {
+      this.currentUserSubject.next(user);
+    }
+
     const isAuthenticated = this.hasValidToken();
     this.isAuthenticatedSubject.next(isAuthenticated);
- 
+
     if (isAuthenticated) {
-      const user = this.getUserFromStorage();
-      this.currentUserSubject.next(user);
+      // Deferred to a macrotask: authInterceptor calls inject(AuthService) on every
+      // HTTP request, including these two. Firing them synchronously here - while
+      // AuthService's own constructor (and thus its DI registration) is still on the
+      // stack - makes Angular see a reentrant injection of a token that's still being
+      // constructed and throw NG0200 (circular dependency). Deferring lets the
+      // constructor return and AuthService finish registering before either call fires.
+      setTimeout(() => {
+        this.permissionService.load().subscribe({ error: () => {} });
+        this.permissionService.loadCatalog().subscribe({ error: () => {} });
+        // Fetch profile to populate full name and image url!
+        this.getProfile().subscribe({
+          next: (profile) => {
+            const activeUser: User = user || {
+              id: profile.id,
+              username: profile.email,
+              email: profile.email,
+              fullName: `${profile.firstName} ${profile.lastName}`,
+              roles: [profile.role],
+              companyId: null
+            };
+            activeUser.fullName = `${profile.firstName} ${profile.lastName}`;
+            activeUser.profileImageUrl = this.resolveImageUrl(profile.image);
+            this.setUserInStorage(activeUser);
+            this.currentUserSubject.next(activeUser);
+          }
+        });
+      }, 0);
     }
   }
 }

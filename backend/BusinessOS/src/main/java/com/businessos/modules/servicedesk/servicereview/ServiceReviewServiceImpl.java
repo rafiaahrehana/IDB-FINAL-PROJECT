@@ -6,6 +6,8 @@ import com.businessos.modules.servicedesk.servicerequest.ServiceRequest;
 import com.businessos.modules.servicedesk.servicerequest.ServiceRequestRepository;
 import com.businessos.enums.ServiceRequestStatus;
 import com.businessos.modules.company.Company;
+import com.businessos.auth.role.enums.PermissionCode;
+import com.businessos.auth.role.service.AuthorizationService;
 import com.businessos.security.SecurityUtil;
 import com.businessos.shared.exception.BadRequestException;
 import com.businessos.shared.exception.ResourceNotFoundException;
@@ -27,6 +29,7 @@ public class ServiceReviewServiceImpl implements ServiceReviewService {
     private final ServiceRequestRepository serviceRequestRepository;
     private final ClientRepository clientRepository;
     private final SecurityUtil securityUtil;
+    private final AuthorizationService authorizationService;
 
     @Override
     @Transactional
@@ -100,6 +103,7 @@ public class ServiceReviewServiceImpl implements ServiceReviewService {
     @Override
     @Transactional(readOnly = true)
     public Page<ServiceReviewResponse> listAll(Pageable pageable) {
+        authorizationService.checkPermission(PermissionCode.REVIEW_VIEW);
         Long companyId = requireCompanyId();
         /*
          * BUG-FIX: was reviewRepository.findAll(pageable) — returned ALL tenants' reviews.
@@ -131,6 +135,7 @@ public class ServiceReviewServiceImpl implements ServiceReviewService {
     @Override
     @Transactional
     public void delete(Long id) {
+        authorizationService.checkPermission(PermissionCode.REVIEW_DELETE);
         Long companyId = requireCompanyId();
         /*
          * BUG-FIX 1: was reviewRepository.findById(id) — no tenant check. Fixed to

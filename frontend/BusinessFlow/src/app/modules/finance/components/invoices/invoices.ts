@@ -10,10 +10,11 @@ import { Pagination } from '../../../../shared/components/pagination/pagination'
 import { Loader } from '../../../../shared/components/loader/loader';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
 import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/confirm-dialog';
+import { HasPermissionDirective } from '../../../../shared/directives/has-permission.directive';
 
 @Component({
   selector: 'app-invoices',
-  imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState, ConfirmDialog],
+  imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState, ConfirmDialog, HasPermissionDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './invoices.html',
 })
@@ -26,7 +27,7 @@ export class Invoices implements OnInit {
   error = '';
   success = '';
   statusFilter = '';
-  selected?: Invoice;
+  selected?: Invoice | null;
   paymentAmount: number | null = null;
   paymentMethod = 'BANK_TRANSFER';
   statuses = ['DRAFT', 'ISSUED', 'PARTIALLY_PAID', 'PAID', 'OVERDUE', 'CANCELLED'];
@@ -49,7 +50,10 @@ export class Invoices implements OnInit {
 
   ngOnInit(): void {
     this.load();
-    this.clientService.list(0, 200).subscribe({ next: (res) => { this.clients = res.content; this.cdr.markForCheck(); } });
+    this.clientService.listActive().subscribe({
+      next: (res) => { this.clients = res; this.cdr.markForCheck(); },
+      error: () => { this.error = 'Failed to load clients'; this.cdr.markForCheck(); },
+    });
   }
 
   load(): void {
@@ -74,7 +78,10 @@ export class Invoices implements OnInit {
   }
 
   view(invoice: Invoice): void {
-    this.invoiceService.getById(invoice.id).subscribe({ next: (i) => { this.selected = i; this.cdr.markForCheck(); } });
+    this.invoiceService.getById(invoice.id).subscribe({
+      next: (i) => { this.selected = i; this.cdr.markForCheck(); },
+      error: () => { this.error = 'Failed to load invoice details'; this.cdr.markForCheck(); },
+    });
   }
 
   private emptyForm(): InvoiceRequest {
@@ -273,6 +280,20 @@ export class Invoices implements OnInit {
     }
     this.gatewayPayment.redirectToGateway('INVOICE', this.selected.id, remaining,
       (msg) => { this.error = msg; this.cdr.markForCheck(); });
+  }
+
+  downloadPdf(invoice: Invoice): void {
+    this.invoiceService.downloadPdf(invoice.id).subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${invoice.invoiceNumber}.pdf`;
+        a.click();
+        URL.revokeObjectURL(url);
+      },
+      error: () => { this.error = 'Failed to download invoice'; this.cdr.markForCheck(); },
+    });
   }
 
   statusClass(s: string): string {

@@ -172,7 +172,7 @@ public class LeadController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         return ResponseEntity.ok(leadService.getActivities(leadId,
-                PageRequest.of(page, size, Sort.by("activityAt").descending())));
+                PageRequest.of(page, size, Sort.by("activityDate").descending())));
     }
 
     @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")

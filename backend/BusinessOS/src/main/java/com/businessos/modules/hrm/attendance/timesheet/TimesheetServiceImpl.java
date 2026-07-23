@@ -7,6 +7,8 @@ import com.businessos.shared.exception.BadRequestException;
 import com.businessos.shared.exception.ResourceNotFoundException;
 import com.businessos.modules.hrm.employee.EmployeeRepository;
 import com.businessos.modules.servicedesk.task.TaskRepository;
+import com.businessos.auth.role.enums.PermissionCode;
+import com.businessos.auth.role.service.AuthorizationService;
 import com.businessos.security.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 
@@ -27,6 +29,7 @@ public class TimesheetServiceImpl implements TimesheetService {
     private final EmployeeRepository  employeeRepository;
     private final TaskRepository      taskRepository;
     private final SecurityUtil        securityUtil;
+    private final AuthorizationService authorizationService;
 
     @Override
     @Transactional
@@ -70,6 +73,7 @@ public class TimesheetServiceImpl implements TimesheetService {
     @Override
     @Transactional(readOnly = true)
     public Page<TimesheetResponse> listForEmployee(Long employeeId, Pageable pageable) {
+        authorizationService.checkPermission(PermissionCode.TIMESHEET_VIEW);
         return timesheetRepository.findByCompanyIdAndEmployeeId(requireCompanyId(), employeeId, pageable)
             .map(TimesheetMapper::toTimesheetResponse);
     }
@@ -104,6 +108,7 @@ public class TimesheetServiceImpl implements TimesheetService {
     @Override
     @Transactional
     public TimesheetResponse approve(Long id) {
+        authorizationService.checkPermission(PermissionCode.TIMESHEET_APPROVE);
         Timesheet ts = findInTenant(id);
         Employee approver = employeeRepository.findByUserId(securityUtil.getCurrentUser().getId())
             .orElseThrow(() -> new BadRequestException("Employee profile not found"));

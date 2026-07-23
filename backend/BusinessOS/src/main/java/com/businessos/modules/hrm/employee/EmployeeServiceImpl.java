@@ -6,7 +6,9 @@ import com.businessos.modules.hrm.designation.Designation;
 import com.businessos.modules.hrm.attendance.shift.Shift;
 import com.businessos.auth.user.User;
 import com.businessos.enums.EmploymentStatus;
+import com.businessos.auth.role.enums.PermissionCode;
 import com.businessos.auth.role.enums.Role;
+import com.businessos.auth.role.service.AuthorizationService;
 import com.businessos.shared.exception.BadRequestException;
 import com.businessos.shared.exception.ResourceNotFoundException;
 import com.businessos.modules.company.CompanyRepository;
@@ -46,6 +48,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     private final EmployeeMapper employeeMapper;
     private final com.businessos.shared.address.AddressMapper addressMapper;
     private final SecurityUtil securityUtil;
+    private final AuthorizationService authorizationService;
 
     private Long requireCompanyId() {
         Long companyId = securityUtil.getCurrentCompanyId();
@@ -91,6 +94,7 @@ public class EmployeeServiceImpl implements EmployeeService {
                 .role(Role.EMPLOYEE)
                 .active(true)
                 .emailVerified(true)
+                .image(request.getProfileImageUrl())
                 .build();
         userRepository.save(user);
 
@@ -217,8 +221,13 @@ public class EmployeeServiceImpl implements EmployeeService {
             emp.setWorkPhone(request.getWorkPhone());
         if (request.getOfficialEmail() != null)
             emp.setOfficialEmail(request.getOfficialEmail());
-        if (request.getProfileImageUrl() != null)
+        if (request.getProfileImageUrl() != null) {
             emp.setProfileImageUrl(request.getProfileImageUrl());
+            User user = emp.getUser();
+            if (user != null) {
+                user.setImage(request.getProfileImageUrl());
+            }
+        }
     }
 
     private void updateEmployeeRelationships(Employee emp, UpdateEmployeeRequest request, Long companyId) {
@@ -266,6 +275,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     @Override
     @Transactional
     public EmployeeResponse create(CreateEmployeeRequest request) {
+        authorizationService.checkPermission(PermissionCode.EMPLOYEE_CREATE);
 
         Long companyId = requireCompanyId();
         validateEmployeeCreation(request);
@@ -295,20 +305,87 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     @Override
+    @Transactional
+    public EmployeeResponse updateMyProfile(SelfUpdateEmployeeRequest request) {
+        Employee emp = findCurrentEmployee();
+
+        if (request.getWorkPhone() != null)
+            emp.setWorkPhone(request.getWorkPhone());
+        if (request.getPhone() != null) {
+            User user = emp.getUser();
+            if (user != null) {
+                user.setPhone(request.getPhone());
+            }
+        }
+        if (request.getGender() != null)
+            emp.setGender(request.getGender());
+        if (request.getFatherName() != null)
+            emp.setFatherName(request.getFatherName());
+        if (request.getMotherName() != null)
+            emp.setMotherName(request.getMotherName());
+        if (request.getNationalId() != null)
+            emp.setNationalId(request.getNationalId());
+        if (request.getTaxId() != null)
+            emp.setTaxId(request.getTaxId());
+        if (request.getEmergencyContactName() != null)
+            emp.setEmergencyContactName(request.getEmergencyContactName());
+        if (request.getEmergencyContactPhone() != null)
+            emp.setEmergencyContactPhone(request.getEmergencyContactPhone());
+        if (request.getEmergencyContactRelation() != null)
+            emp.setEmergencyContactRelation(request.getEmergencyContactRelation());
+        if (request.getLocation() != null) {
+            if (emp.getLocation() == null) {
+                emp.setLocation(addressMapper.toEntity(request.getLocation()));
+            } else {
+                addressMapper.updateEntityFromRequest(emp.getLocation(), request.getLocation());
+            }
+        }
+        if (request.getProfileImageUrl() != null) {
+            emp.setProfileImageUrl(request.getProfileImageUrl());
+            User user = emp.getUser();
+            if (user != null) {
+                user.setImage(request.getProfileImageUrl());
+            }
+        }
+
+        employeeRepository.save(emp);
+        return employeeMapper.toDTO(emp);
+    }
+
+    @Override
     @Transactional(readOnly = true)
-    public Page<EmployeeResponse> listAll(Long departmentId, Pageable pageable) {
+    public Page<EmployeeResponse> listAll(Long departmentId, boolean excludeOwner, Pageable pageable) {
+        // Deliberately NOT gated by EMPLOYEE_VIEW here: this single endpoint is also
+        // used as a cross-module employee-picker (Assign Asset, Manage Seats, Payroll,
+        // Offboarding, etc. all call it) by users who may hold a narrower permission
+        // relevant to THAT module but not EMPLOYEE_VIEW itself. Gating it would break
+        // those pickers. The HRM "Employees" admin page is gated at the frontend
+        // sidebar/route level only until this endpoint is split into a full admin view
+        // vs a lightweight picker.
         Long companyId = requireCompanyId();
 
-        if (departmentId != null)
-            return employeeRepository.findByCompanyIdAndDepartmentId(companyId, departmentId, pageable)
-                    .map(employeeMapper::toDTO);
-        return employeeRepository.findByCompanyId(companyId, pageable)
-                .map(employeeMapper::toDTO);
+        Long ownerUserId = null;
+        if (excludeOwner) {
+            Company company = findCompanyById(companyId);
+            ownerUserId = company.getOwner() != null ? company.getOwner().getId() : null;
+        }
+
+        if (departmentId != null) {
+            Page<Employee> page = ownerUserId != null
+                    ? employeeRepository.findByCompanyIdAndDepartmentIdAndUserIdNot(companyId, departmentId, ownerUserId, pageable)
+                    : employeeRepository.findByCompanyIdAndDepartmentId(companyId, departmentId, pageable);
+            return page.map(employeeMapper::toDTO);
+        }
+        Page<Employee> page = ownerUserId != null
+                ? employeeRepository.findByCompanyIdAndUserIdNot(companyId, ownerUserId, pageable)
+                : employeeRepository.findByCompanyId(companyId, pageable);
+        return page.map(employeeMapper::toDTO);
     }
 
     @Override
     @Transactional
     public EmployeeResponse update(Long id, UpdateEmployeeRequest request) {
+        authorizationService.checkPermission(PermissionCode.EMPLOYEE_UPDATE);
 
         Long companyId = requireCompanyId();
         Employee emp = findEmployeeById(id);
@@ -322,6 +399,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     @Override
     @Transactional
     public void terminate(Long id) {
+        authorizationService.checkPermission(PermissionCode.EMPLOYEE_DELETE);
 
         Employee emp = findEmployeeById(id);
         emp.setActive(false);

@@ -1,16 +1,34 @@
-<div class="container-fluid py-3">
-  <!-- Header -->
-  <div class="page-header d-flex justify-content-between align-items-center mb-4">
-    <div>
-      <h4 class="page-title mb-0">Dashboard</h4>
-      <div class="page-subtitle mt-1">Live analytics driving insights</div>
-    </div>
-    
-    <div class="btn-group bg-white rounded-3 shadow-sm border p-1">
-      <button class="btn btn-sm rounded-3 px-3 fw-semibold" [class]="selectedRange === 'day' ? 'btn-primary-bos' : 'btn-light border-0 text-muted bg-transparent'" (click)="setRange('day')">Day</button>
-      <button class="btn btn-sm rounded-3 px-3 fw-semibold" [class]="selectedRange === 'week' ? 'btn-primary-bos' : 'btn-light border-0 text-muted bg-transparent'" (click)="setRange('week')">Week</button>
-      <button class="btn btn-sm rounded-3 px-3 fw-semibold" [class]="selectedRange === 'month' ? 'btn-primary-bos' : 'btn-light border-0 text-muted bg-transparent'" (click)="setRange('month')">Month</button>
-      <button class="btn btn-sm rounded-3 px-3 fw-semibold" [class]="selectedRange === 'year' ? 'btn-primary-bos' : 'btn-light border-0 text-muted bg-transparent'" (click)="setRange('year')">Year</button>
+<div class="container-fluid py-4">
+  <!-- Dynamic Greeting Header -->
+  <div class="page-hero mb-4">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+      <div>
+        <div class="page-hero-label">WORKSPACE</div>
+        <h4 class="page-hero-title underline-sky">
+          @if (isPlatformRole) {
+            {{ timeGreeting }}, {{ userFirstName }}!
+          } @else if (isCompanyRole) {
+            {{ timeGreeting }}, {{ userFirstName }}!
+          } @else {
+            Welcome back, {{ userFirstName }}!
+          }
+        </h4>
+        <div class="page-hero-subtitle">{{ subtitle }}</div>
+      </div>
+      
+      <div class="page-hero-actions">
+        <div class="filter-chip" style="background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); color: #fff;">
+          <i class="bi bi-calendar3"></i>
+          <span>{{ currentRangeLabel }}</span>
+        </div>
+        
+        <div class="btn-group">
+          <button class="btn btn-hero-secondary" [style.background]="selectedRange === 'day' ? 'rgba(255,255,255,0.2)' : 'transparent'" (click)="setRange('day')">Day</button>
+          <button class="btn btn-hero-secondary" [style.background]="selectedRange === 'week' ? 'rgba(255,255,255,0.2)' : 'transparent'" (click)="setRange('week')">Week</button>
+          <button class="btn btn-hero-secondary" [style.background]="selectedRange === 'month' ? 'rgba(255,255,255,0.2)' : 'transparent'" (click)="setRange('month')">Month</button>
+          <button class="btn btn-hero-secondary" [style.background]="selectedRange === 'year' ? 'rgba(255,255,255,0.2)' : 'transparent'" (click)="setRange('year')">Year</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -19,178 +37,786 @@
   }
 
   @if (error) {
-    <div class="alert alert-danger py-2">{{ error }}</div>
+    <div class="alert alert-danger py-2 mb-4">{{ error }}</div>
   }
 
   <!-- ============ COMPANY VIEW (COMPANY_OWNER / EMPLOYEE) ============ -->
-  @if (isCompanyRole) {
-    @if (summary) {
-      <div class="row g-3 mb-4">
-        <div class="col-12"><h6 class="text-uppercase text-muted small mb-0">CRM</h6></div>
-        <div class="col-6 col-lg-3">
-          <app-stat-card label="Total Leads" [value]="summary.totalLeads" icon="bi-person-plus"
-            variant="purple" [sub]="summary.newLeads + ' new, ' + summary.qualifiedLeads + ' qualified'" link="/crm/leads" />
-        </div>
-        <div class="col-6 col-lg-3">
-          <app-stat-card label="Accounts" [value]="summary.totalClients" icon="bi-people" variant="info" link="/crm/clients" />
-        </div>
-        <div class="col-6 col-lg-3">
-          <app-stat-card label="Open Opportunities" [value]="summary.openOpportunities" icon="bi-kanban"
-            variant="primary" [sub]="fmt(summary.pipelineValue) + ' pipeline'" link="/crm/pipeline" />
-        </div>
-        <div class="col-6 col-lg-3">
-          <app-stat-card label="Weighted Forecast" [value]="fmt(summary.weightedForecast)" icon="bi-graph-up-arrow"
-            variant="success" link="/crm/pipeline" />
-        </div>
-
-        <div class="col-12 mt-3"><h6 class="text-uppercase text-muted small mb-0">Servicedesk &amp; Support</h6></div>
-        <div class="col-6 col-lg-3">
-          <app-stat-card label="Pending Requests" [value]="summary.pendingRequests" icon="bi-hourglass-split"
-            variant="purple" link="/servicedesk/requests" />
-        </div>
-        <div class="col-6 col-lg-3">
-          <app-stat-card label="In Progress" [value]="summary.inProgressRequests" icon="bi-arrow-repeat"
-            variant="info" [sub]="summary.completedRequestsAllTime + ' completed all-time'" link="/servicedesk/requests" />
-        </div>
-        <div class="col-6 col-lg-3">
-          <app-stat-card label="SLA Breached" [value]="summary.slaBreachedOpen" icon="bi-shield-exclamation"
-            [variant]="summary.slaBreachedOpen > 0 ? 'danger' : 'success'" link="/servicedesk/requests" />
-        </div>
-        <div class="col-6 col-lg-3">
-          <app-stat-card label="Support Tickets" [value]="summary.openTickets" icon="bi-chat-left-dots"
-            variant="dark" [sub]="summary.newTickets + ' new'" link="/support/tickets" />
-        </div>
-
-        <div class="col-12 mt-3"><h6 class="text-uppercase text-muted small mb-0">Finance</h6></div>
-        <div class="col-6 col-lg-3">
-          <app-stat-card label="Outstanding Invoices" [value]="fmt(summary.outstandingInvoiceAmount)" icon="bi-file-earmark-text"
-            [variant]="summary.outstandingInvoiceAmount > 0 ? 'danger' : 'success'" link="/finance/invoices" />
-        </div>
-        <div class="col-6 col-lg-3">
-          <app-stat-card label="Wallet Balance" [value]="fmt(summary.walletBalance)" icon="bi-wallet2"
-            variant="dark" link="/finance/wallet" />
-        </div>
-        <div class="col-6 col-lg-3">
-          <app-stat-card label="Wallet Credits" [value]="fmt(summary.walletCreditBalance)" icon="bi-cash-stack"
-            variant="success" link="/finance/wallet" />
-        </div>
-      </div>
-    }
-
-    <div class="row g-4 mb-4">
-      <!-- Recommendations -->
-      <div class="col-12 col-lg-7">
-        <div class="card h-100">
-          <div class="card-header bg-white py-3">
-            <span class="fw-bold"><i class="bi bi-lightbulb text-warning me-2"></i>Recommendations</span>
-          </div>
-          <div class="card-body">
-            @if (recommendations.length) {
-              <div class="d-flex flex-column gap-2">
-                @for (rec of recommendations; track rec.message) {
-                  <a [routerLink]="rec.link" class="d-flex align-items-start gap-2 text-decoration-none p-2 rounded-3"
-                     [class.bg-danger-subtle]="rec.severity === 'CRITICAL'"
-                     [class.bg-warning-subtle]="rec.severity === 'WARNING'"
-                     [class.bg-light]="rec.severity === 'INFO'">
-                    <i class="bi mt-1"
-                       [class.bi-exclamation-octagon-fill]="rec.severity === 'CRITICAL'"
-                       [class.text-danger]="rec.severity === 'CRITICAL'"
-                       [class.bi-exclamation-triangle-fill]="rec.severity === 'WARNING'"
-                       [class.text-warning]="rec.severity === 'WARNING'"
-                       [class.bi-info-circle-fill]="rec.severity === 'INFO'"
-                       [class.text-info]="rec.severity === 'INFO'"></i>
-                    <span class="text-dark small">{{ rec.message }}</span>
-                  </a>
-                }
+  @if (isCompanyRole && summary) {
+    
+    <!-- Top Stat Cards -->
+    <div class="row g-3 mb-4">
+      <!-- Total Leads -->
+      @if (permissionService.hasPermission('LEAD_VIEW')) {
+      <div class="col-12 col-sm-6 col-lg-3">
+        <div class="stat-card">
+          <div class="card-body p-3 d-flex flex-column justify-content-between">
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="stat-label">Total Leads</span>
+              <div class="stat-icon-wrap">
+                <i class="bi bi-people-fill text-indigo"></i>
               </div>
-            } @else {
-              <div class="text-muted small">Nothing needs your attention right now.</div>
-            }
+            </div>
+            <div class="mt-2">
+              <div class="stat-value">{{ summary.totalLeads }}</div>
+              <div class="stat-trend text-success">
+                <i class="bi bi-arrow-up-right"></i>
+                <span>{{ summary.leadsTrend >= 0 ? '+' : '' }}{{ summary.leadsTrend | number:'1.0-0' }}% vs last 7 days</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
+      }
 
-      <!-- AI Insights -->
-      <div class="col-12 col-lg-5">
-        <div class="card h-100">
-          <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
-            <span class="fw-bold"><i class="bi bi-stars text-warning me-2"></i>AI Business Insights</span>
-            <button class="btn btn-sm btn-primary-bos" [disabled]="insightsLoading" (click)="generateInsights()">
-              @if (insightsLoading) { <span class="spinner-border spinner-border-sm me-1"></span> }
-              Generate
-            </button>
-          </div>
-          <div class="card-body">
-            @if (insightsError) {
-              <div class="text-danger small">{{ insightsError }}</div>
-            } @else if (insights) {
-              <div class="small" style="white-space: pre-wrap;">{{ insights }}</div>
-            } @else {
-              <div class="text-muted small">Click Generate for an AI-written summary of your CRM, Servicedesk, and Finance activity.</div>
-            }
+      <!-- Total Clients -->
+      @if (permissionService.hasPermission('CLIENT_VIEW')) {
+      <div class="col-12 col-sm-6 col-lg-3">
+        <div class="stat-card">
+          <div class="card-body p-3 d-flex flex-column justify-content-between">
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="stat-label">Total Clients</span>
+              <div class="stat-icon-wrap">
+                <i class="bi bi-building text-indigo"></i>
+              </div>
+            </div>
+            <div class="mt-2">
+              <div class="stat-value">{{ summary.totalClients }}</div>
+              <div class="stat-trend text-success">
+                <i class="bi bi-arrow-up-right"></i>
+                <span>{{ summary.clientsTrend >= 0 ? '+' : '' }}{{ summary.clientsTrend | number:'1.0-0' }}% vs last 7 days</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
+      }
+
+      <!-- Open Opportunities -->
+      @if (permissionService.hasPermission('OPPORTUNITY_VIEW')) {
+      <div class="col-12 col-sm-6 col-lg-3">
+        <div class="stat-card">
+          <div class="card-body p-3 d-flex flex-column justify-content-between">
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="stat-label">Open Opportunities</span>
+              <div class="stat-icon-wrap">
+                <i class="bi bi-bullseye text-indigo"></i>
+              </div>
+            </div>
+            <div class="mt-2">
+              <div class="stat-value">{{ summary.openOpportunities }}</div>
+              <div class="stat-trend text-success">
+                <i class="bi bi-arrow-up-right"></i>
+                <span>{{ summary.opportunitiesTrend >= 0 ? '+' : '' }}{{ summary.opportunitiesTrend | number:'1.0-0' }}% vs last 7 days</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      }
+
+      <!-- Weighted Forecast -->
+      @if (permissionService.hasPermission('OPPORTUNITY_VIEW')) {
+      <div class="col-12 col-sm-6 col-lg-3">
+        <div class="stat-card">
+          <div class="card-body p-3 d-flex flex-column justify-content-between">
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="stat-label">Weighted Forecast</span>
+              <div class="stat-icon-wrap">
+                <i class="bi bi-graph-up text-success"></i>
+              </div>
+            </div>
+            <div class="mt-2">
+              <div class="stat-value">{{ formatCurrency(summary.weightedForecast) }}</div>
+              <div class="stat-trend text-success">
+                <i class="bi bi-arrow-up-right"></i>
+                <span>{{ summary.weightedForecastTrend >= 0 ? '+' : '' }}{{ summary.weightedForecastTrend | number:'1.0-0' }}% vs last 7 days</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      }
+    </div>
+
+    <!-- Second Row of Stat Cards -->
+    <div class="row g-3 mb-4">
+      <!-- Service Requests -->
+      @if (permissionService.hasPermission('SERVICE_REQUEST_VIEW')) {
+        <div class="col-12 col-sm-6 col-lg-3">
+          <div class="stat-card">
+            <div class="card-body p-3 d-flex flex-column justify-content-between">
+              <div class="d-flex justify-content-between align-items-center">
+                <span class="stat-label">Service Requests</span>
+                <div class="stat-icon-wrap">
+                  <i class="bi bi-clipboard-check text-indigo"></i>
+                </div>
+              </div>
+              <div class="mt-2">
+                <div class="stat-value">{{ summary.totalServiceRequests }}</div>
+                <div class="stat-trend text-muted">
+                  <i class="bi bi-people"></i>
+                  <span>Requested by clients</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Support Tickets -->
+      @if (permissionService.hasPermission('TICKET_VIEW')) {
+        <div class="col-12 col-sm-6 col-lg-3">
+          <div class="stat-card">
+            <div class="card-body p-3 d-flex flex-column justify-content-between">
+              <div class="d-flex justify-content-between align-items-center">
+                <span class="stat-label">Support Tickets</span>
+                <div class="stat-icon-wrap">
+                  <i class="bi bi-ticket-perforated text-indigo"></i>
+                </div>
+              </div>
+              <div class="mt-2">
+                <div class="stat-value">{{ summary.openTickets }}</div>
+                <div class="stat-trend text-muted">
+                  <i class="bi bi-info-circle"></i>
+                  <span>Active open tickets</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Pending Leave Approvals -->
+      @if (permissionService.hasPermission('LEAVE_VIEW')) {
+        <div class="col-12 col-sm-6 col-lg-3">
+          <div class="stat-card">
+            <div class="card-body p-3 d-flex flex-column justify-content-between">
+              <div class="d-flex justify-content-between align-items-center">
+                <span class="stat-label">Pending Leaves</span>
+                <div class="stat-icon-wrap">
+                  <i class="bi bi-calendar-minus text-success"></i>
+                </div>
+              </div>
+              <div class="mt-2">
+                <div class="stat-value">{{ summary.pendingLeaveApprovals }}</div>
+                <div class="stat-trend text-muted">
+                  <i class="bi bi-check-circle"></i>
+                  <span>Requests awaiting review</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Payroll Status -->
+      @if (permissionService.hasPermission('PAYROLL_VIEW')) {
+        <div class="col-12 col-sm-6 col-lg-3">
+          <div class="stat-card">
+            <div class="card-body p-3 d-flex flex-column justify-content-between">
+              <div class="d-flex justify-content-between align-items-center">
+                <span class="stat-label">Payroll Status</span>
+                <div class="stat-icon-wrap">
+                  <i class="bi bi-card-checklist text-indigo"></i>
+                </div>
+              </div>
+              <div class="mt-2">
+                <div class="stat-value">{{ summary.payrollProcessedThisMonth }}</div>
+                <div class="stat-trend text-muted">
+                  <i class="bi bi-credit-card"></i>
+                  <span>Processed this month</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+
+    <!-- Middle Widgets Row -->
+    <div class="row g-4 mb-4">
+      <!-- Sales Overview Chart -->
+      @if (permissionService.hasPermission('LEAD_VIEW')) {
+      <div class="col-12 col-lg-5">
+        <div class="card chart-card h-100">
+          <div class="card-header border-0 d-flex justify-content-between align-items-center px-4 pt-4 pb-0">
+            <div>
+              <h5 class="card-title mb-0">Sales Overview</h5>
+              <div class="small text-secondary mt-1">
+                Total Leads: <span class="fw-bold">{{ summary.totalLeads }}</span>
+                <span class="text-success ms-2 fw-semibold"><i class="bi bi-arrow-up-short"></i>18%</span>
+              </div>
+            </div>
+            <div class="dropdown">
+              <button class="btn btn-sm filter-btn rounded-pill px-3" type="button" data-bs-toggle="dropdown">
+                {{ rangeLabel }}
+              </button>
+              <ul class="dropdown-menu dropdown-menu-end border-0 shadow-sm">
+                <li><a class="dropdown-item" (click)="setRange('day')">Today</a></li>
+                <li><a class="dropdown-item" (click)="setRange('week')">This Week</a></li>
+                <li><a class="dropdown-item" (click)="setRange('month')">This Month</a></li>
+                <li><a class="dropdown-item" (click)="setRange('year')">This Year</a></li>
+              </ul>
+            </div>
+          </div>
+          <div class="card-body px-4 pb-4 pt-2">
+            <!-- Native SVG line chart -->
+            <div class="mt-3" style="min-height: 180px;">
+              <svg viewBox="0 0 520 200" class="w-100 h-100" style="overflow: visible;">
+                <!-- Y Axis Labels -->
+                <text x="20" y="34" text-anchor="end" font-size="10" fill="#94a3b8" font-weight="500">300</text>
+                <text x="20" y="59" text-anchor="end" font-size="10" fill="#94a3b8" font-weight="500">250</text>
+                <text x="20" y="84" text-anchor="end" font-size="10" fill="#94a3b8" font-weight="500">200</text>
+                <text x="20" y="109" text-anchor="end" font-size="10" fill="#94a3b8" font-weight="500">150</text>
+                <text x="20" y="134" text-anchor="end" font-size="10" fill="#94a3b8" font-weight="500">100</text>
+                <text x="20" y="159" text-anchor="end" font-size="10" fill="#94a3b8" font-weight="500">50</text>
+                <text x="20" y="184" text-anchor="end" font-size="10" fill="#94a3b8" font-weight="500">0</text>
+
+                <!-- Grid lines -->
+                <line x1="25" y1="180" x2="495" y2="180" stroke="#f1f5f9" stroke-width="2" />
+                <line x1="25" y1="155" x2="495" y2="155" stroke="#f1f5f9" stroke-width="2" />
+                <line x1="25" y1="130" x2="495" y2="130" stroke="#f1f5f9" stroke-width="2" />
+                <line x1="25" y1="105" x2="495" y2="105" stroke="#f1f5f9" stroke-width="2" />
+                <line x1="25" y1="80" x2="495" y2="80" stroke="#f1f5f9" stroke-width="2" />
+                <line x1="25" y1="55" x2="495" y2="55" stroke="#f1f5f9" stroke-width="2" />
+                <line x1="25" y1="30" x2="495" y2="30" stroke="#f1f5f9" stroke-width="2" />
+                
+                <!-- Area path (gradient fill) -->
+                <path [attr.d]="getAreaPath(summary.salesOverviewData)" 
+                      fill="url(#indigo-grad)" />
+                      
+                <!-- Curved Line path -->
+                <path [attr.d]="getLinePath(summary.salesOverviewData)" 
+                      fill="none" 
+                      stroke="#4F46E5" 
+                      stroke-width="3.5" 
+                      stroke-linecap="round" />
+                      
+                <!-- Data points -->
+                @for (val of summary.salesOverviewData; track $index) {
+                  <circle [attr.cx]="$index * 75 + 25" 
+                          [attr.cy]="getYCoordinate(val)" 
+                          r="6" 
+                          fill="#4F46E5" 
+                          stroke="#ffffff" 
+                          stroke-width="2" />
+                }
+                
+                <!-- X Axis Date Labels -->
+                @for (lbl of summary.salesOverviewLabels; track $index) {
+                  <text [attr.x]="$index * 75 + 25" 
+                        y="198" 
+                        text-anchor="middle" 
+                        font-size="10.5" 
+                        fill="#64748b" 
+                        font-weight="600">
+                    {{ lbl }}
+                  </text>
+                }
+
+                <!-- Gradients -->
+                <defs>
+                  <linearGradient id="indigo-grad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#4F46E5" stop-opacity="0.25" />
+                    <stop offset="100%" stop-color="#4F46E5" stop-opacity="0.0" />
+                  </linearGradient>
+                </defs>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+      }
+
+      <!-- Service Desk Overview -->
+      @if (permissionService.hasPermission('SERVICE_REQUEST_VIEW')) {
+      <div class="col-12 col-md-7 col-lg-4">
+        <div class="card chart-card h-100">
+          <div class="card-header border-0 d-flex justify-content-between align-items-center px-4 pt-4 pb-0">
+            <div>
+              <h5 class="card-title mb-0">Service Desk Overview</h5>
+            </div>
+            <div class="dropdown">
+              <button class="btn btn-sm filter-btn rounded-pill px-3" type="button" data-bs-toggle="dropdown">
+                {{ rangeLabel }}
+              </button>
+              <ul class="dropdown-menu dropdown-menu-end border-0 shadow-sm">
+                <li><a class="dropdown-item" (click)="setRange('day')">Today</a></li>
+                <li><a class="dropdown-item" (click)="setRange('week')">This Week</a></li>
+                <li><a class="dropdown-item" (click)="setRange('month')">This Month</a></li>
+                <li><a class="dropdown-item" (click)="setRange('year')">This Year</a></li>
+              </ul>
+            </div>
+          </div>
+          <div class="card-body px-4 pb-4 pt-2 d-flex align-items-center">
+            <div class="row w-100 align-items-center">
+              <div class="col-6 d-flex justify-content-center position-relative">
+                <!-- Native Donut Chart SVG -->
+                <svg viewBox="0 0 160 160" style="max-height: 140px; width: 140px; transform: rotate(-90deg);">
+                  <!-- Base circle -->
+                  <circle cx="80" cy="80" r="60" fill="transparent" stroke="#f1f5f9" stroke-width="16" />
+                  
+                  <!-- Segments -->
+                  <circle cx="80" cy="80" r="60" fill="transparent" 
+                          [attr.stroke]="getDonutSegment(0).stroke" 
+                          stroke-width="16"
+                          [attr.stroke-dasharray]="getDonutSegment(0).dashArray" 
+                          [attr.stroke-dashoffset]="getDonutSegment(0).dashOffset" />
+                          
+                  <circle cx="80" cy="80" r="60" fill="transparent" 
+                          [attr.stroke]="getDonutSegment(1).stroke" 
+                          stroke-width="16"
+                          [attr.stroke-dasharray]="getDonutSegment(1).dashArray" 
+                          [attr.stroke-dashoffset]="getDonutSegment(1).dashOffset" />
+                          
+                  <circle cx="80" cy="80" r="60" fill="transparent" 
+                          [attr.stroke]="getDonutSegment(2).stroke" 
+                          stroke-width="16"
+                          [attr.stroke-dasharray]="getDonutSegment(2).dashArray" 
+                          [attr.stroke-dashoffset]="getDonutSegment(2).dashOffset" />
+                          
+                  <circle cx="80" cy="80" r="60" fill="transparent" 
+                          [attr.stroke]="getDonutSegment(3).stroke" 
+                          stroke-width="16"
+                          [attr.stroke-dasharray]="getDonutSegment(3).dashArray" 
+                          [attr.stroke-dashoffset]="getDonutSegment(3).dashOffset" />
+                </svg>
+                <div class="donut-center-overlay">
+                  <span class="stat-value">{{ summary.serviceDeskPendingCount + summary.serviceDeskInProgressCount + summary.serviceDeskResolvedCount + summary.serviceDeskOnHoldCount }}</span>
+                  <span class="donut-center-label">Total</span>
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="d-flex flex-column gap-2">
+                  <div class="d-flex align-items-center justify-content-between small">
+                    <span class="text-secondary fw-semibold"><i class="bi bi-circle-fill me-2" style="color: #f59e0b; font-size: 8px;"></i>Pending</span>
+                    <span class="fw-bold text-dark">{{ summary.serviceDeskPendingCount }}</span>
+                  </div>
+                  <div class="d-flex align-items-center justify-content-between small">
+                    <span class="text-secondary fw-semibold"><i class="bi bi-circle-fill me-2" style="color: #0284c7; font-size: 8px;"></i>In Progress</span>
+                    <span class="fw-bold text-dark">{{ summary.serviceDeskInProgressCount }}</span>
+                  </div>
+                  <div class="d-flex align-items-center justify-content-between small">
+                    <span class="text-secondary fw-semibold"><i class="bi bi-circle-fill me-2" style="color: #10b981; font-size: 8px;"></i>Resolved</span>
+                    <span class="fw-bold text-dark">{{ summary.serviceDeskResolvedCount }}</span>
+                  </div>
+                  <div class="d-flex align-items-center justify-content-between small">
+                    <span class="text-secondary fw-semibold"><i class="bi bi-circle-fill me-2" style="color: #6b7280; font-size: 8px;"></i>On Hold</span>
+                    <span class="fw-bold text-dark">{{ summary.serviceDeskOnHoldCount }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      }
+
+      <!-- Task Summary -->
+      @if (permissionService.hasPermission('SERVICE_REQUEST_VIEW')) {
+      <div class="col-12 col-md-5 col-lg-3">
+        <div class="card chart-card h-100">
+          <div class="card-header border-0 d-flex justify-content-between align-items-center px-4 pt-4 pb-0">
+            <div>
+              <h5 class="card-title mb-0">Task Summary</h5>
+            </div>
+            <div class="dropdown">
+              <button class="btn btn-sm filter-btn rounded-pill px-3" type="button" data-bs-toggle="dropdown">
+                {{ rangeLabel }}
+              </button>
+              <ul class="dropdown-menu dropdown-menu-end border-0 shadow-sm">
+                <li><a class="dropdown-item" (click)="setRange('day')">Today</a></li>
+                <li><a class="dropdown-item" (click)="setRange('week')">This Week</a></li>
+                <li><a class="dropdown-item" (click)="setRange('month')">This Month</a></li>
+                <li><a class="dropdown-item" (click)="setRange('year')">This Year</a></li>
+              </ul>
+            </div>
+          </div>
+          <div class="card-body px-4 pb-4 pt-3">
+            <div class="d-flex flex-column gap-3">
+              <!-- Tasks Created -->
+              <div class="d-flex align-items-center gap-3">
+                <div class="task-icon-wrap bg-indigo-light">
+                  <i class="bi bi-check2-square text-indigo"></i>
+                </div>
+                <div class="flex-grow-1">
+                  <div class="text-secondary small fw-semibold">Tasks Created</div>
+                  <div class="fw-bold text-dark mb-0">{{ summary.tasksCreatedCount }}</div>
+                </div>
+                <span [class]="summary.tasksCreatedTrend >= 0 ? 'text-success small fw-semibold' : 'text-danger small fw-semibold'">
+                  <i [class]="summary.tasksCreatedTrend >= 0 ? 'bi bi-arrow-up' : 'bi bi-arrow-down'"></i>
+                  {{ summary.tasksCreatedTrend > 0 ? summary.tasksCreatedTrend : (summary.tasksCreatedTrend * -1) | number:'1.0-0' }}%
+                </span>
+              </div>
+              
+              <!-- Tasks Completed -->
+              <div class="d-flex align-items-center gap-3">
+                <div class="task-icon-wrap bg-success-light">
+                  <i class="bi bi-check2-all text-success"></i>
+                </div>
+                <div class="flex-grow-1">
+                  <div class="text-secondary small fw-semibold">Tasks Completed</div>
+                  <div class="fw-bold text-dark mb-0">{{ summary.tasksCompletedCount }}</div>
+                </div>
+                <span [class]="summary.tasksCompletedTrend >= 0 ? 'text-success small fw-semibold' : 'text-danger small fw-semibold'">
+                  <i [class]="summary.tasksCompletedTrend >= 0 ? 'bi bi-arrow-up' : 'bi bi-arrow-down'"></i>
+                  {{ summary.tasksCompletedTrend > 0 ? summary.tasksCompletedTrend : (summary.tasksCompletedTrend * -1) | number:'1.0-0' }}%
+                </span>
+              </div>
+
+              <!-- Overdue Tasks -->
+              <div class="d-flex align-items-center gap-3">
+                <div class="task-icon-wrap bg-danger-light">
+                  <i class="bi bi-exclamation-octagon text-danger"></i>
+                </div>
+                <div class="flex-grow-1">
+                  <div class="text-secondary small fw-semibold">Overdue Tasks</div>
+                  <div class="fw-bold text-dark mb-0">{{ summary.tasksOverdueCount }}</div>
+                </div>
+                <span class="text-secondary small fw-semibold"><i class="bi bi-dash"></i>0%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      }
+    </div>
+
+    <!-- Bottom Widgets Row -->
+    <div class="row g-3">
+      <!-- Outstanding Invoices -->
+      @if (permissionService.hasPermission('INVOICE_VIEW')) {
+      <div class="col-12 col-md-6 col-lg-3">
+        <div class="card module-card h-100">
+          <div class="card-header border-0 d-flex justify-content-between align-items-center px-4 pt-3 pb-0">
+            <h6 class="card-title-sm mb-0">Outstanding Invoices</h6>
+            <a routerLink="/finance/invoices" class="view-all-link">View All</a>
+          </div>
+          <div class="card-body px-4 pb-3 pt-2">
+            <div class="mb-2">
+              <div class="stat-value text-danger">{{ formatCurrency(summary.outstandingInvoiceAmount) }}</div>
+              <span class="badge rounded-pill bg-danger-light text-danger px-2 py-0.5" style="font-size: 0.7rem;">{{ summary.overdueInvoices?.length || 0 }} Invoices Overdue</span>
+            </div>
+            <div class="list-group list-group-flush mt-2">
+              @for (inv of summary.overdueInvoices; track inv.invoiceNumber) {
+                <div class="list-group-item bg-transparent d-flex justify-content-between align-items-center py-2 px-0">
+                  <div>
+                    <div class="fw-bold text-dark small">{{ inv.invoiceNumber }}</div>
+                    <div class="text-secondary" style="font-size: 11px;">{{ inv.clientName }}</div>
+                  </div>
+                  <div class="text-end">
+                    <div class="fw-bold text-dark small">{{ formatCurrency(inv.amount) }}</div>
+                    <span class="text-danger" style="font-size: 10px; font-weight: 600;">Overdue {{ inv.daysOverdue }} days</span>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+      }
+
+      <!-- Wallet Overview -->
+      @if (permissionService.hasPermission('WALLET_VIEW')) {
+      <div class="col-12 col-md-6 col-lg-3">
+        <div class="card module-card h-100">
+          <div class="card-header border-0 d-flex justify-content-between align-items-center px-4 pt-3 pb-0">
+            <h6 class="card-title-sm mb-0">Wallet Overview</h6>
+            <a routerLink="/finance/wallet" class="view-all-link">View All</a>
+          </div>
+          <div class="card-body px-4 pb-3 pt-2">
+            <div class="mb-1">
+              <div class="text-secondary small fw-semibold" style="font-size: 11px;">Wallet Balance</div>
+              <div class="stat-value text-success">{{ formatCurrency(summary.walletBalance) }}</div>
+              <span class="text-success small fw-semibold"><i class="bi bi-arrow-up-right me-1"></i>+{{ formatCurrency(summary.walletBalanceTrend) }} this month</span>
+            </div>
+            <div class="row g-2 mt-2">
+              <div class="col-6">
+                <div class="mini-stat-card">
+                  <div class="text-secondary fw-semibold" style="font-size: 10px;">Wallet Credits</div>
+                  <div class="fw-bold text-dark small">{{ formatCurrency(summary.walletCredits) }}</div>
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="mini-stat-card">
+                  <div class="text-secondary fw-semibold" style="font-size: 10px;">Wallet Debits</div>
+                  <div class="fw-bold text-dark small">{{ formatCurrency(summary.walletDebits) }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      }
+
+      <!-- Employees -->
+      @if (permissionService.hasPermission('EMPLOYEE_VIEW')) {
+      <div class="col-12 col-md-6 col-lg-3">
+        <div class="card module-card h-100">
+          <div class="card-header border-0 d-flex justify-content-between align-items-center px-4 pt-3 pb-0">
+            <h6 class="card-title-sm mb-0">Employees</h6>
+            <a routerLink="/hrm/employees" class="view-all-link">View All</a>
+          </div>
+          <div class="card-body px-4 pb-3 pt-2">
+            <div class="mb-2">
+              <div class="text-secondary small fw-semibold" style="font-size: 11px;">Total Employees</div>
+              <div class="stat-value text-dark">{{ summary.totalEmployees }}</div>
+              <span class="text-indigo small fw-semibold"><i class="bi bi-arrow-up-right me-1"></i>+{{ summary.employeesTrend | number:'1.0-0' }} vs last month</span>
+            </div>
+            <div class="mt-2">
+              <div class="mb-2">
+                <div class="d-flex justify-content-between text-secondary small fw-semibold mb-1">
+                  <span>Present Today</span>
+                  <span class="text-dark fw-bold">{{ summary.employeesPresentToday }}</span>
+                </div>
+                <div class="progress">
+                  <div class="progress-bar-indigo" role="progressbar" [style.width.%]="(summary.employeesPresentToday / summary.totalEmployees) * 100"></div>
+                </div>
+              </div>
+              <div class="mb-0">
+                <div class="d-flex justify-content-between text-secondary small fw-semibold mb-1">
+                  <span>On Leave</span>
+                  <span class="text-dark fw-bold">{{ summary.employeesOnLeave }}</span>
+                </div>
+                <div class="progress">
+                  <div class="progress-bar-teal" role="progressbar" [style.width.%]="(summary.employeesOnLeave / summary.totalEmployees) * 100"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      }
+
+      <!-- Announcements -->
+      @if (permissionService.hasPermission('ANNOUNCEMENT_VIEW')) {
+      <div class="col-12 col-md-6 col-lg-3">
+        <div class="card module-card h-100">
+          <div class="card-header border-0 d-flex justify-content-between align-items-center px-4 pt-3 pb-0">
+            <h6 class="card-title-sm mb-0">Announcements</h6>
+            <a routerLink="/hrm/announcements" class="view-all-link">View All</a>
+          </div>
+          <div class="card-body px-4 pb-3 pt-2">
+            <div class="list-group list-group-flush">
+              @for (ann of summary.announcements; track ann.title) {
+                <div class="list-group-item bg-transparent d-flex gap-3 align-items-start py-2 px-0">
+                  <div class="announcement-icon-wrap">
+                    <i class="bi bi-megaphone text-amber" style="font-size: 0.85rem;"></i>
+                  </div>
+                  <div class="flex-grow-1">
+                    <div class="d-flex justify-content-between align-items-center">
+                      <h6 class="fw-bold text-dark small mb-0">{{ ann.title }}</h6>
+                      <span class="text-muted text-nowrap ms-2" style="font-size: 10px;">{{ ann.timeAgo }}</span>
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+      }
     </div>
   }
 
   <!-- ============ PLATFORM VIEW (SaaS staff roles) ============ -->
-  @if (isPlatformRole) {
-    @if (platformSummary) {
-      <div class="row g-3 mb-4">
-        <div class="col-12"><h6 class="text-uppercase text-muted small mb-0">Companies</h6></div>
-        <div class="col-6 col-lg-3">
-          <app-stat-card label="Total Companies" [value]="platformSummary.totalCompanies" icon="bi-buildings"
-            variant="purple" [link]="canManagePlatform ? '/platform/companies' : ''" />
-        </div>
-        <div class="col-6 col-lg-3">
-          <app-stat-card label="Active" [value]="platformSummary.activeCompanies" icon="bi-check-circle" [queryParams]="{status: 'ACTIVE'}"
-            variant="success" [link]="canManagePlatform ? '/platform/companies' : ''" />
-        </div>
-        <div class="col-6 col-lg-3">
-          <app-stat-card label="On Trial" [value]="platformSummary.trialCompanies" icon="bi-hourglass-split" [queryParams]="{status: 'TRIAL'}"
-            variant="info" [sub]="platformSummary.trialsExpiringWithin7Days + ' expiring within 7 days'"
-            [link]="canManagePlatform ? '/platform/companies' : ''" />
-        </div>
-        <div class="col-6 col-lg-3">
-          <app-stat-card label="Suspended" [value]="platformSummary.suspendedCompanies" icon="bi-pause-circle" [queryParams]="{status: 'SUSPENDED'}"
-            [variant]="platformSummary.suspendedCompanies > 0 ? 'danger' : 'dark'"
-            [sub]="platformSummary.pendingVerificationCompanies + ' pending verification'"
-            [link]="canManagePlatform ? '/platform/companies' : ''" />
-        </div>
+  @if (isPlatformRole && platformSummary) {
+    <div class="row g-3 mb-3">
+      <div class="col-12"><div class="section-label">Companies</div></div>
 
-        <div class="col-12 mt-3"><h6 class="text-uppercase text-muted small mb-0">Subscriptions &amp; Staff</h6></div>
-        <div class="col-6 col-lg-3">
-          <app-stat-card label="Free / Starter" [value]="platformSummary.freePlanCompanies + platformSummary.starterPlanCompanies"
-            icon="bi-box" variant="dark"
-            [sub]="platformSummary.freePlanCompanies + ' free, ' + platformSummary.starterPlanCompanies + ' starter'" />
-        </div>
-        <div class="col-6 col-lg-3">
-          <app-stat-card label="Pro Plan" [value]="platformSummary.proPlanCompanies" icon="bi-rocket-takeoff" [queryParams]="{plan: 'PRO'}"
-            variant="primary" />
-        </div>
-        <div class="col-6 col-lg-3">
-          <app-stat-card label="Enterprise Plan" [value]="platformSummary.enterprisePlanCompanies" icon="bi-building-gear" [queryParams]="{plan: 'ENTERPRISE'}"
-            variant="purple" />
-        </div>
-        <div class="col-6 col-lg-3">
-          <app-stat-card label="Platform Users" [value]="platformSummary.totalPlatformUsers" icon="bi-person-badge"
-            variant="info" [link]="canManagePlatform ? '/platform/platform-users' : ''" />
-        </div>
-        <div class="col-6 col-lg-3">
-          <app-stat-card label="Total Revenue" [value]="fmt(platformSummary.totalRevenue)" icon="bi-cash-stack"
-            variant="success" [sub]="fmt(platformSummary.revenueThisMonth) + ' this month'" />
+      <div class="col-6 col-lg-3">
+        <a [routerLink]="canManagePlatform ? '/platform/companies' : null" class="card platform-kpi-card h-100 text-decoration-none">
+          <div class="card-body p-3">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <span class="stat-label">Total Companies</span>
+              <div class="stat-icon-wrap-sm bg-indigo-light">
+                <i class="bi bi-buildings text-indigo"></i>
+              </div>
+            </div>
+            <div class="stat-value">{{ platformSummary.totalCompanies }}</div>
+            <div class="text-secondary small mb-2">All registered companies</div>
+            <svg viewBox="0 0 100 32" class="w-100" style="height:28px;overflow:visible">
+              <path [attr.d]="sparklineArea(companyCountSeries('totalCompanies'))" fill="#4F46E5" fill-opacity="0.12" />
+              <path [attr.d]="sparklinePath(companyCountSeries('totalCompanies'))" fill="none" stroke="#4F46E5" stroke-width="2" stroke-linecap="round" />
+            </svg>
+          </div>
+        </a>
+      </div>
+
+      <div class="col-6 col-lg-3">
+        <a [routerLink]="canManagePlatform ? '/platform/companies' : null" [queryParams]="{status: 'ACTIVE'}" class="card platform-kpi-card h-100 text-decoration-none">
+          <div class="card-body p-3">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <span class="stat-label">Active Companies</span>
+              <div class="stat-icon-wrap-sm bg-success-light">
+                <i class="bi bi-people text-success"></i>
+              </div>
+            </div>
+            <div class="stat-value">{{ platformSummary.activeCompanies }}</div>
+            <div class="text-secondary small mb-2">Currently active</div>
+            <svg viewBox="0 0 100 32" class="w-100" style="height:28px;overflow:visible">
+              <path [attr.d]="sparklineArea(companyCountSeries('activeCompanies'))" fill="#16A34A" fill-opacity="0.12" />
+              <path [attr.d]="sparklinePath(companyCountSeries('activeCompanies'))" fill="none" stroke="#16A34A" stroke-width="2" stroke-linecap="round" />
+            </svg>
+          </div>
+        </a>
+      </div>
+
+      <div class="col-6 col-lg-3">
+        <a [routerLink]="canManagePlatform ? '/platform/companies' : null" [queryParams]="{status: 'TRIAL'}" class="card platform-kpi-card h-100 text-decoration-none">
+          <div class="card-body p-3">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <span class="stat-label">On Trial</span>
+              <div class="stat-icon-wrap-sm bg-info-light">
+                <i class="bi bi-hourglass-split text-info"></i>
+              </div>
+            </div>
+            <div class="stat-value">{{ platformSummary.trialCompanies }}</div>
+            <div class="text-secondary small mb-2">{{ platformSummary.trialsExpiringWithin7Days }} expiring within 7 days</div>
+            <svg viewBox="0 0 100 32" class="w-100" style="height:28px;overflow:visible">
+              <path [attr.d]="sparklineArea(companyCountSeries('trialCompanies'))" fill="#0ea5e9" fill-opacity="0.12" />
+              <path [attr.d]="sparklinePath(companyCountSeries('trialCompanies'))" fill="none" stroke="#0ea5e9" stroke-width="2" stroke-linecap="round" />
+            </svg>
+          </div>
+        </a>
+      </div>
+
+      <div class="col-6 col-lg-3">
+        <a [routerLink]="canManagePlatform ? '/platform/companies' : null" [queryParams]="{status: 'SUSPENDED'}" class="card platform-kpi-card h-100 text-decoration-none">
+          <div class="card-body p-3">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <span class="stat-label">Suspended</span>
+              <div class="stat-icon-wrap-sm bg-warning-light">
+                <i class="bi bi-pause-circle text-warning"></i>
+              </div>
+            </div>
+            <div class="stat-value">{{ platformSummary.suspendedCompanies }}</div>
+            <div class="text-secondary small mb-2">{{ platformSummary.pendingVerificationCompanies }} pending verification</div>
+            <svg viewBox="0 0 100 32" class="w-100" style="height:28px;overflow:visible">
+              <path [attr.d]="sparklineArea(companyCountSeries('suspendedCompanies'))" fill="#f97316" fill-opacity="0.12" />
+              <path [attr.d]="sparklinePath(companyCountSeries('suspendedCompanies'))" fill="none" stroke="#f97316" stroke-width="2" stroke-linecap="round" />
+            </svg>
+          </div>
+        </a>
+      </div>
+    </div>
+
+    <div class="row g-3 mb-3">
+      <!-- Subscriptions & Revenue -->
+      <div class="col-lg-8">
+        <div class="card chart-card h-100">
+          <div class="card-body p-4">
+            <h6 class="card-title mb-3">Subscriptions &amp; Revenue</h6>
+
+            <div class="row g-2 mb-4">
+              @for (p of platformSummary.companiesByPlan; track p.code) {
+              <div class="col-6 col-md-3">
+                <a routerLink="/platform/companies" [queryParams]="{plan: p.code}" class="plan-card">
+                  <div class="d-flex align-items-center gap-2 mb-1">
+                    <div class="stat-icon-wrap-xs bg-indigo-light">
+                      <i class="bi bi-box small text-indigo"></i>
+                    </div>
+                    <span class="text-muted small">{{ p.name }}</span>
+                  </div>
+                  <div class="fs-5 fw-bold text-dark">{{ p.count }}</div>
+                  <div class="text-muted small">Companies on this plan</div>
+                </a>
+              </div>
+              }
+              <div class="col-6 col-md-3">
+                <a [routerLink]="canManagePlatform ? '/platform/platform-users' : null" class="plan-card">
+                  <div class="d-flex align-items-center gap-2 mb-1">
+                    <div class="stat-icon-wrap-xs bg-info-light">
+                      <i class="bi bi-person-badge small text-info"></i>
+                    </div>
+                    <span class="text-muted small">Platform Users</span>
+                  </div>
+                  <div class="fs-5 fw-bold text-dark">{{ platformSummary.totalPlatformUsers }}</div>
+                  <div class="text-muted small">Total platform users</div>
+                </a>
+              </div>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <div>
+                <div class="text-secondary small text-uppercase fw-semibold d-flex align-items-center gap-1" style="letter-spacing:.04em">
+                  Total Revenue
+                  <i class="bi bi-info-circle" title="Sum of SubscriptionHistory.amountPaid"></i>
+                </div>
+                <div class="stat-value">{{ fmt(platformSummary.totalRevenue) }}</div>
+                <div class="text-secondary small">{{ fmt(platformSummary.revenueThisMonth) }} this month</div>
+              </div>
+              <div class="dropdown">
+                <button class="btn btn-sm filter-btn rounded-pill px-3" type="button" data-bs-toggle="dropdown">
+                  {{ rangeLabel }}
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end border-0 shadow-sm">
+                  <li><a class="dropdown-item" (click)="setRange('day')">Today</a></li>
+                  <li><a class="dropdown-item" (click)="setRange('week')">This Week</a></li>
+                  <li><a class="dropdown-item" (click)="setRange('month')">This Month</a></li>
+                  <li><a class="dropdown-item" (click)="setRange('year')">This Year</a></li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="mt-2" style="min-height:160px">
+              <svg viewBox="0 0 520 175" class="w-100 h-100" style="overflow:visible">
+                @for (yl of revenueYLabels(); track $index) {
+                  <text x="20" [attr.y]="160 - (yl / revenueChartMax) * 160 + 4" text-anchor="end" font-size="10" fill="#94a3b8" font-weight="500">{{ yl | number:'1.0-0' }}</text>
+                  <line x1="25" [attr.y1]="160 - (yl / revenueChartMax) * 160" x2="495" [attr.y2]="160 - (yl / revenueChartMax) * 160" stroke="#f1f5f9" stroke-width="1.5" />
+                }
+                <path [attr.d]="revenueAreaPath()" fill="url(#revenue-grad)" />
+                <path [attr.d]="revenueLinePath()" fill="none" stroke="#4F46E5" stroke-width="2.5" stroke-linecap="round" />
+                @for (lbl of revenueXLabels(); track $index) {
+                  <text [attr.x]="lbl.x" y="173" text-anchor="middle" font-size="10" fill="#64748b" font-weight="600">{{ lbl.label }}</text>
+                }
+                <defs>
+                  <linearGradient id="revenue-grad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#4F46E5" stop-opacity="0.2" />
+                    <stop offset="100%" stop-color="#4F46E5" stop-opacity="0" />
+                  </linearGradient>
+                </defs>
+              </svg>
+            </div>
+          </div>
         </div>
       </div>
-    }
 
-    <h6 class="text-uppercase text-muted small mb-2">Quick Actions</h6>
+      <!-- Platform Overview -->
+      <div class="col-lg-4">
+        <div class="card chart-card h-100">
+          <div class="card-body p-4">
+            <h6 class="card-title mb-3">Platform Overview</h6>
+            <div class="d-flex flex-column gap-3">
+              @for (row of platformOverviewRows; track row.label) {
+                <div class="d-flex align-items-center gap-3">
+                  <div class="stat-icon-wrap-sm" [style.background]="row.bg">
+                    <i class="bi small" [class]="row.icon" [style.color]="row.fg"></i>
+                  </div>
+                  <div class="flex-grow-1">
+                    <div class="text-secondary small">{{ row.label }}</div>
+                  </div>
+                  <div class="text-end">
+                    <div class="fw-bold text-dark">{{ row.value }}</div>
+                  </div>
+                  @if (row.pct !== null) {
+                    <span class="badge rounded-pill small" [class]="row.value > 0 ? 'text-bg-success' : 'text-bg-secondary'" style="min-width:52px">{{ row.pct }}%</span>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-label mb-2">Quick Actions</div>
     <div class="row g-3">
       @for (q of quickLinks; track q.label) {
         <div class="col-6 col-md-4 col-lg-3">
           <a [routerLink]="q.link" class="card text-decoration-none h-100 transition-hover">
             <div class="card-body d-flex align-items-center gap-3 py-3">
-              <i class="bi fs-4 text-primary" [class]="q.icon"></i>
+              <i class="bi fs-4 text-indigo" [class]="q.icon"></i>
               <div>
                 <div class="fw-semibold text-dark">{{ q.label }}</div>
                 <div class="text-muted small">{{ q.description }}</div>
@@ -203,34 +829,32 @@
   }
 
   <!-- ============ CLIENT VIEW ============ -->
-  @if (isClientRole) {
-    @if (clientSummary) {
-      <div class="row g-3 mb-4">
-        <div class="col-6 col-lg-3">
-          <app-stat-card label="Pending Requests" [value]="clientSummary.pendingRequests" icon="bi-hourglass-split"
-            variant="purple" link="/servicedesk/requests" />
-        </div>
-        <div class="col-6 col-lg-3">
-          <app-stat-card label="In Progress" [value]="clientSummary.inProgressRequests" icon="bi-arrow-repeat"
-            variant="info" [sub]="clientSummary.completedRequests + ' completed'" link="/servicedesk/requests" />
-        </div>
-        <div class="col-6 col-lg-3">
-          <app-stat-card label="Unpaid Invoices" [value]="clientSummary.unpaidInvoices" icon="bi-receipt"
-            [variant]="clientSummary.unpaidInvoices > 0 ? 'danger' : 'success'" />
-        </div>
-        <div class="col-6 col-lg-3">
-          <app-stat-card label="Amount Due" [value]="fmt(clientSummary.outstandingInvoiceAmount)" icon="bi-cash-stack"
-            variant="dark" />
-        </div>
+  @if (isClientRole && clientSummary) {
+    <div class="row g-3 mb-4">
+      <div class="col-6 col-lg-3">
+        <app-stat-card label="Pending Requests" [value]="clientSummary.pendingRequests" icon="bi-hourglass-split"
+          variant="purple" link="/servicedesk/requests" />
       </div>
-    }
+      <div class="col-6 col-lg-3">
+        <app-stat-card label="In Progress" [value]="clientSummary.inProgressRequests" icon="bi-arrow-repeat"
+          variant="info" [sub]="clientSummary.completedRequests + ' completed'" link="/servicedesk/requests" />
+      </div>
+      <div class="col-6 col-lg-3">
+        <app-stat-card label="Unpaid Invoices" [value]="clientSummary.unpaidInvoices" icon="bi-receipt"
+          [variant]="clientSummary.unpaidInvoices > 0 ? 'danger' : 'success'" />
+      </div>
+      <div class="col-6 col-lg-3">
+        <app-stat-card label="Amount Due" [value]="fmt(clientSummary.outstandingInvoiceAmount)" icon="bi-cash-stack"
+          variant="dark" />
+      </div>
+    </div>
 
     <div class="row g-3">
       @for (q of quickLinks; track q.label) {
         <div class="col-6 col-md-4 col-lg-3">
           <a [routerLink]="q.link" class="card text-decoration-none h-100 transition-hover">
             <div class="card-body d-flex align-items-center gap-3 py-3">
-              <i class="bi fs-4 text-primary" [class]="q.icon"></i>
+              <i class="bi fs-4 text-indigo" [class]="q.icon"></i>
               <div>
                 <div class="fw-semibold text-dark">{{ q.label }}</div>
                 <div class="text-muted small">{{ q.description }}</div>

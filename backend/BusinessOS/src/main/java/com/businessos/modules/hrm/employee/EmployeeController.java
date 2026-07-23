@@ -27,15 +27,21 @@ public class EmployeeController {
     public ResponseEntity<Page<EmployeeResponse>> listAll(
             @RequestParam(required = false) Long departmentId,
             @RequestParam(required = false) EmploymentStatus status,
+            @RequestParam(defaultValue = "false") boolean excludeOwner,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        return ResponseEntity.ok(employeeService.listAll(departmentId,
+        return ResponseEntity.ok(employeeService.listAll(departmentId, excludeOwner,
                 PageRequest.of(page, size, Sort.by("createdAt").descending())));
     }
 
     @GetMapping("/me")
     public ResponseEntity<EmployeeResponse> getMyProfile() {
         return ResponseEntity.ok(employeeService.getMyProfile());
+    }
+
+    @PatchMapping("/me")
+    public ResponseEntity<EmployeeResponse> updateMyProfile(@RequestBody SelfUpdateEmployeeRequest request) {
+        return ResponseEntity.ok(employeeService.updateMyProfile(request));
     }
 
     @GetMapping("/{id}")

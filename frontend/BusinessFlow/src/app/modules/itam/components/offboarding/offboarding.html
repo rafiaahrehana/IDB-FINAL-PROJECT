@@ -1,7 +1,14 @@
 <div class="container-fluid py-3">
-  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-    <h4 class="mb-0">Employee Offboarding</h4>
-    <button class="btn btn-primary btn-sm" (click)="showForm = true"><i class="bi bi-plus"></i> Start Offboarding</button>
+  <div class="page-hero">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+      <div>
+        <div class="page-hero-label">IT ASSETS</div>
+        <h4 class="page-hero-title underline-cyan">Employee Offboarding</h4>
+      </div>
+      <div class="page-hero-actions">
+        <button *appHasPermission="'OFFBOARDING_CREATE'" class="btn btn-hero-primary btn-sm" (click)="showForm = true"><i class="bi bi-plus-circle"></i> Start Offboarding</button>
+      </div>
+    </div>
   </div>
   @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
   @if (success) { <div class="alert alert-success py-2">{{ success }}</div> }
@@ -34,7 +41,7 @@
       @if (!loading && checklists.length) {
       <div class="card"><div class="table-responsive">
         <table class="table table-hover table-sm align-middle mb-0">
-          <thead class="table-light"><tr><th>Employee</th><th>Started</th><th class="text-end">Progress</th><th>Status</th><th></th></tr></thead>
+          <thead><tr><th>Employee</th><th>Started</th><th class="text-end">Progress</th><th>Status</th><th></th></tr></thead>
           <tbody>
             @for (c of checklists; track c.id) {
             <tr role="button" [class.table-active]="selected?.id === c.id" (click)="view(c)">
@@ -50,7 +57,7 @@
                 @if (c.completed) { <span class="badge text-bg-success">Completed</span> }
                 @if (!c.completed) { <span class="badge text-bg-warning">In Progress</span> }
               </td>
-              <td class="text-end"><button class="btn btn-outline-danger btn-sm" (click)="deleteTarget = c; $event.stopPropagation()"><i class="bi bi-trash"></i></button></td>
+              <td class="text-end"><button *appHasPermission="'OFFBOARDING_DELETE'" class="btn btn-outline-danger btn-sm" (click)="deleteTarget = c; $event.stopPropagation()"><i class="bi bi-trash"></i></button></td>
             </tr>
             }
           </tbody>
@@ -79,7 +86,7 @@
               <div class="d-flex justify-content-between align-items-center">
                 <span><i class="bi bi-laptop me-2"></i>Hardware Collected</span>
                 @if (selected.hardwareCollected) { <span class="badge text-bg-success">Done</span> }
-                @if (!selected.hardwareCollected) { <button class="btn btn-outline-primary btn-sm" (click)="markHardware()">Mark Done</button> }
+                @if (!selected.hardwareCollected) { <button *appHasPermission="'OFFBOARDING_MANAGE'" class="btn btn-outline-primary btn-sm" (click)="markHardware()">Mark Done</button> }
               </div>
               @if (assignedLoading) { <div class="small text-muted mt-1">Loading...</div> }
               @if (!assignedLoading && assignedAssets.length) {
@@ -87,7 +94,7 @@
                 @for (a of assignedAssets; track a.id) {
                 <li class="d-flex justify-content-between align-items-center py-1">
                   <span>{{ a.name }} <span class="text-muted">({{ a.assetTag || a.serialNumber || 'no tag' }})</span></span>
-                  <button class="btn btn-outline-secondary btn-sm py-0" (click)="returnAsset(a)">Return</button>
+                  <button *appHasPermission="'OFFBOARDING_MANAGE'" class="btn btn-outline-secondary btn-sm py-0" (click)="returnAsset(a)">Return</button>
                 </li>
                 }
               </ul>
@@ -98,14 +105,14 @@
               <div class="d-flex justify-content-between align-items-center">
                 <span><i class="bi bi-key me-2"></i>Licenses Revoked</span>
                 @if (selected.licensesRevoked) { <span class="badge text-bg-success">Done</span> }
-                @if (!selected.licensesRevoked) { <button class="btn btn-outline-primary btn-sm" (click)="markLicenses()">Mark Done</button> }
+                @if (!selected.licensesRevoked) { <button *appHasPermission="'OFFBOARDING_MANAGE'" class="btn btn-outline-primary btn-sm" (click)="markLicenses()">Mark Done</button> }
               </div>
               @if (!assignedLoading && assignedLicenses.length) {
               <ul class="list-unstyled small mt-2 mb-0">
                 @for (s of assignedLicenses; track s.id) {
                 <li class="d-flex justify-content-between align-items-center py-1">
                   <span>{{ s.softwareName }}</span>
-                  <button class="btn btn-outline-secondary btn-sm py-0" (click)="revokeLicenseSeat(s)">Revoke</button>
+                  <button *appHasPermission="'OFFBOARDING_MANAGE'" class="btn btn-outline-secondary btn-sm py-0" (click)="revokeLicenseSeat(s)">Revoke</button>
                 </li>
                 }
               </ul>
@@ -115,17 +122,17 @@
             <div class="list-group-item d-flex justify-content-between align-items-center px-0">
               <span><i class="bi bi-shield-lock me-2"></i>Access Revoked</span>
               @if (selected.accessRevoked) { <span class="badge text-bg-success">Done</span> }
-              @if (!selected.accessRevoked) { <button class="btn btn-outline-primary btn-sm" (click)="markAccess()">Mark Done</button> }
+              @if (!selected.accessRevoked) { <button *appHasPermission="'OFFBOARDING_MANAGE'" class="btn btn-outline-primary btn-sm" (click)="markAccess()">Mark Done</button> }
             </div>
             <div class="list-group-item d-flex justify-content-between align-items-center px-0">
               <span><i class="bi bi-folder-symlink me-2"></i>Data Handed Over</span>
               @if (selected.dataHandedOver) { <span class="badge text-bg-success">Done</span> }
-              @if (!selected.dataHandedOver) { <button class="btn btn-outline-primary btn-sm" (click)="markData()">Mark Done</button> }
+              @if (!selected.dataHandedOver) { <button *appHasPermission="'OFFBOARDING_MANAGE'" class="btn btn-outline-primary btn-sm" (click)="markData()">Mark Done</button> }
             </div>
             <div class="list-group-item d-flex justify-content-between align-items-center px-0">
               <span><i class="bi bi-chat-square-text me-2"></i>Exit Interview</span>
               @if (selected.exitInterviewCompleted) { <span class="badge text-bg-success">Done</span> }
-              @if (!selected.exitInterviewCompleted) { <button class="btn btn-outline-primary btn-sm" (click)="markExitInterview()">Mark Done</button> }
+              @if (!selected.exitInterviewCompleted) { <button *appHasPermission="'OFFBOARDING_MANAGE'" class="btn btn-outline-primary btn-sm" (click)="markExitInterview()">Mark Done</button> }
             </div>
           </div>
 

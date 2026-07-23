@@ -2,6 +2,8 @@ package com.businessos.modules.hrm.leave.companyleavePolicy;
 
 import com.businessos.modules.company.Company;
 import com.businessos.modules.company.CompanyLeavePolicy;
+import com.businessos.auth.role.enums.PermissionCode;
+import com.businessos.auth.role.service.AuthorizationService;
 import com.businessos.shared.exception.BadRequestException;
 import com.businessos.shared.exception.ResourceNotFoundException;
 import com.businessos.security.SecurityUtil;
@@ -21,10 +23,12 @@ public class CompanyLeavePolicyServiceImpl implements CompanyLeavePolicyService 
 
     private final CompanyLeavePolicyRepository policyRepository;
     private final SecurityUtil securityUtil;
+    private final AuthorizationService authorizationService;
 
     @Override
     @Transactional
     public CompanyLeavePolicyResponse create(CompanyLeavePolicyRequest request) {
+        authorizationService.checkPermission(PermissionCode.LEAVE_POLICY_CREATE);
         Long companyId = requireCompanyId();
         CompanyLeavePolicy policy = CompanyLeavePolicy.builder()
             .leaveType(request.getLeaveType())
@@ -51,6 +55,7 @@ public class CompanyLeavePolicyServiceImpl implements CompanyLeavePolicyService 
     @Override
     @Transactional(readOnly = true)
     public Page<CompanyLeavePolicyResponse> listAll(Pageable pageable) {
+        authorizationService.checkPermission(PermissionCode.LEAVE_POLICY_VIEW);
         return policyRepository.findByCompanyId(requireCompanyId(), pageable)
             .map(CompanyLeavePolicyMapper::toLeavePolicyResponse);
     }
@@ -58,6 +63,7 @@ public class CompanyLeavePolicyServiceImpl implements CompanyLeavePolicyService 
     @Override
     @Transactional(readOnly = true)
     public List<CompanyLeavePolicyResponse> listActive() {
+        authorizationService.checkPermission(PermissionCode.LEAVE_POLICY_VIEW);
         return policyRepository.findByCompanyIdAndActiveTrue(requireCompanyId())
             .stream().map(CompanyLeavePolicyMapper::toLeavePolicyResponse).toList();
     }
@@ -65,6 +71,7 @@ public class CompanyLeavePolicyServiceImpl implements CompanyLeavePolicyService 
     @Override
     @Transactional
     public CompanyLeavePolicyResponse update(Long id, CompanyLeavePolicyRequest request) {
+        authorizationService.checkPermission(PermissionCode.LEAVE_POLICY_UPDATE);
         CompanyLeavePolicy policy = findInTenant(id);
         policy.setLeaveType(request.getLeaveType());
         policy.setEmploymentType(request.getEmploymentType());
@@ -81,6 +88,7 @@ public class CompanyLeavePolicyServiceImpl implements CompanyLeavePolicyService 
     @Override
     @Transactional
     public void delete(Long id) {
+        authorizationService.checkPermission(PermissionCode.LEAVE_POLICY_DELETE);
         findInTenant(id).softDelete();
     }
 

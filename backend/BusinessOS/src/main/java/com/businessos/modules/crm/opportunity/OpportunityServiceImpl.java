@@ -13,6 +13,8 @@ import com.businessos.modules.crm.lead.Lead;
 import com.businessos.modules.crm.lead.LeadRepository;
 import com.businessos.modules.hrm.employee.Employee;
 import com.businessos.modules.hrm.employee.EmployeeRepository;
+import com.businessos.auth.role.enums.PermissionCode;
+import com.businessos.auth.role.service.AuthorizationService;
 import com.businessos.security.SecurityUtil;
 import com.businessos.shared.exception.BadRequestException;
 import com.businessos.shared.exception.ResourceNotFoundException;
@@ -44,9 +46,11 @@ public class OpportunityServiceImpl implements OpportunityService {
     private final AutomationEventPublisher automationEventPublisher;
     private final NotificationService notificationService;
     private final SecurityUtil securityUtil;
+    private final AuthorizationService authorizationService;
 
     @Override
     public OpportunityResponse create(OpportunityRequest request) {
+        authorizationService.checkPermission(PermissionCode.OPPORTUNITY_CREATE);
         Long companyId = requireCompanyId();
         Client client = clientRepository.findByIdAndCompanyId(request.getClientId(), companyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Client not found"));
@@ -64,6 +68,7 @@ public class OpportunityServiceImpl implements OpportunityService {
 
     @Override
     public OpportunityResponse createFromLead(Long leadId, OpportunityRequest request) {
+        authorizationService.checkPermission(PermissionCode.OPPORTUNITY_CREATE);
         Long companyId = requireCompanyId();
         Lead lead = leadRepository.findByIdAndCompanyId(leadId, companyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Lead not found"));
@@ -105,6 +110,7 @@ public class OpportunityServiceImpl implements OpportunityService {
     @Transactional(readOnly = true)
     public Page<OpportunityResponse> listAll(OpportunityStage stage, Long clientId, Long ownerId, String keyword,
             Pageable pageable) {
+        authorizationService.checkPermission(PermissionCode.OPPORTUNITY_VIEW);
         Long companyId = requireCompanyId();
         Page<Opportunity> page;
         if (keyword != null && !keyword.isBlank()) {
@@ -129,6 +135,7 @@ public class OpportunityServiceImpl implements OpportunityService {
 
     @Override
     public OpportunityResponse update(Long id, OpportunityRequest request) {
+        authorizationService.checkPermission(PermissionCode.OPPORTUNITY_UPDATE);
         Long companyId = requireCompanyId();
         Opportunity opportunity = findOwned(id);
 
@@ -167,6 +174,7 @@ public class OpportunityServiceImpl implements OpportunityService {
 
     @Override
     public OpportunityResponse changeStage(Long id, ChangeStageRequest request) {
+        authorizationService.checkPermission(PermissionCode.OPPORTUNITY_UPDATE);
         Opportunity opportunity = findOwned(id);
         OpportunityStage from = opportunity.getStage();
         OpportunityStage to = request.getStage();
@@ -257,6 +265,7 @@ public class OpportunityServiceImpl implements OpportunityService {
 
     @Override
     public void delete(Long id) {
+        authorizationService.checkPermission(PermissionCode.OPPORTUNITY_DELETE);
         Opportunity opportunity = findOwned(id);
         opportunity.softDelete();
         opportunityRepository.save(opportunity);

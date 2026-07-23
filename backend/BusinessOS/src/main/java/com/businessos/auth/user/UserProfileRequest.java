@@ -7,8 +7,10 @@ import lombok.Data;
 public class UserProfileRequest {
     private String firstName;
     private String lastName;
+    private String email;
     private String phone;
     private String image;
     private String languagePreference;
     private AddressRequest location;
+    private String companyEmail;
 }

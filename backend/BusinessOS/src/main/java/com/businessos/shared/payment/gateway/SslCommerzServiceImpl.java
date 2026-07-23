@@ -1,12 +1,24 @@
 package com.businessos.shared.payment.gateway;
 
+import com.businessos.auth.role.enums.Role;
+import com.businessos.auth.user.User;
 import com.businessos.enums.WalletTransactionType;
+import com.businessos.modules.company.Company;
+import com.businessos.modules.company.CompanyRepository;
+import com.businessos.modules.company.CompanyService;
+import com.businessos.modules.finance.invoice.ClientInvoice;
+import com.businessos.modules.finance.invoice.ClientInvoiceRepository;
 import com.businessos.modules.finance.invoice.ClientInvoiceService;
+import com.businessos.modules.servicedesk.companyservice.PackageSubscription;
+import com.businessos.modules.servicedesk.companyservice.PackageSubscriptionRepository;
 import com.businessos.modules.servicedesk.companyservice.ServicePackageService;
 import com.businessos.security.SecurityUtil;
 import com.businessos.shared.exception.BadRequestException;
+import com.businessos.shared.exception.ForbiddenException;
 import com.businessos.shared.exception.ResourceNotFoundException;
 import com.businessos.shared.payment.wallet.WalletService;
+import com.businessos.shared.subscription.SubscriptionPlanDefinition;
+import com.businessos.shared.subscription.SubscriptionPlanDefinitionRepository;
 import com.businessos.shared.webhook.WebhookLog;
 import com.businessos.shared.webhook.WebhookLogRepository;
 import tools.jackson.databind.JsonNode;
@@ -36,14 +48,19 @@ public class SslCommerzServiceImpl implements SslCommerzService {
     private final PaymentGatewayTransactionRepository transactionRepository;
     private final WebhookLogRepository webhookLogRepository;
     private final ClientInvoiceService invoiceService;
+    private final ClientInvoiceRepository invoiceRepository;
     private final WalletService walletService;
     private final ServicePackageService packageService;
+    private final PackageSubscriptionRepository subscriptionRepository;
+    private final CompanyRepository companyRepository;
+    private final CompanyService companyService;
+    private final SubscriptionPlanDefinitionRepository subscriptionPlanDefinitionRepository;
     private final SecurityUtil securityUtil;
     private final ObjectMapper objectMapper;
 
     private final RestClient restClient = RestClient.create();
 
-    @Value("${app.backend-url:http://localhost:8080}")
+    @Value("${app.backend-url:http://localhost:8085}")
     private String backendUrl;
 
     @Override
@@ -56,7 +73,22 @@ public class SslCommerzServiceImpl implements SslCommerzService {
             throw new BadRequestException("Amount must be greater than zero");
         }
         Long companyId = securityUtil.getCurrentCompanyId();
-        var user = securityUtil.getCurrentUser();
+        if (companyId == null) {
+            throw new BadRequestException("No company context");
+        }
+        User user = securityUtil.getCurrentUser();
+        validateTarget(purpose, targetId, companyId, user);
+
+        // The client-supplied amount is only trustworthy for purposes where it's
+        // derived from a record the server already owns (invoice/subscription total,
+        // wallet top-up choice). A platform plan upgrade must never be priced by the
+        // caller - always charge the catalog price for the requested plan.
+        BigDecimal effectiveAmount = purpose == GatewayPurpose.PLATFORM_SUBSCRIPTION
+            ? decodePlan(targetId).getPrice()
+            : amount;
+        if (effectiveAmount == null || effectiveAmount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new BadRequestException("Amount must be greater than zero");
+        }
 
         String tranId = "BOS-" + UUID.randomUUID().toString().replace("-", "").substring(0, 24);
 
@@ -66,7 +98,7 @@ public class SslCommerzServiceImpl implements SslCommerzService {
             .targetId(targetId)
             .companyId(companyId)
             .initiatedByUserId(user != null ? user.getId() : null)
-            .amount(amount)
+            .amount(effectiveAmount)
             .currency(properties.getCurrency())
             .status(GatewayTransactionStatus.INITIATED)
             .initiatedAt(LocalDateTime.now())
@@ -77,7 +109,7 @@ public class SslCommerzServiceImpl implements SslCommerzService {
         MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
         form.add("store_id", properties.getStoreId());
         form.add("store_passwd", properties.getStorePassword());
-        form.add("total_amount", amount.toPlainString());
+        form.add("total_amount", effectiveAmount.toPlainString());
         form.add("currency", properties.getCurrency());
         form.add("tran_id", tranId);
         form.add("success_url", cb + "/success");
@@ -118,6 +150,68 @@ public class SslCommerzServiceImpl implements SslCommerzService {
         }
     }
 
+    /**
+     * Staff (COMPANY_OWNER/EMPLOYEE) may initiate payment against any target in
+     * their own company - tenant scoping via companyId is enough. A CLIENT may
+     * only pay their own invoice/subscription; without this, any authenticated
+     * client could pass an arbitrary targetId belonging to another client in the
+     * same tenant and activate/settle it with their own card.
+     */
+    private void validateTarget(GatewayPurpose purpose, Long targetId, Long companyId, User user) {
+        boolean isClient = user != null && user.getRole() == Role.CLIENT;
+
+        switch (purpose) {
+            case INVOICE -> {
+                ClientInvoice invoice = invoiceRepository.findByIdAndCompanyId(targetId, companyId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Invoice not found: " + targetId));
+                if (isClient && !ownedByUser(invoice.getClient(), user)) {
+                    throw new ForbiddenException("This invoice does not belong to you");
+                }
+            }
+            case PACKAGE_SUBSCRIPTION -> {
+                PackageSubscription subscription = subscriptionRepository
+                    .findByIdAndCompanyId(targetId, companyId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Subscription not found: " + targetId));
+                if (isClient && !ownedByUser(subscription.getClient(), user)) {
+                    throw new ForbiddenException("This subscription does not belong to you");
+                }
+            }
+            case WALLET_TOPUP -> {
+                // Credits the company's shared wallet, not a specific client's record -
+                // no per-target ownership to check beyond the companyId tenant scope.
+            }
+            case PLATFORM_SUBSCRIPTION -> {
+                if (user == null || user.getRole() != Role.COMPANY_OWNER) {
+                    throw new ForbiddenException("Only the company owner can change the subscription plan");
+                }
+                SubscriptionPlanDefinition targetPlan = decodePlan(targetId);
+                Company company = companyRepository.findById(companyId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Company not found"));
+                BigDecimal currentPrice = subscriptionPlanDefinitionRepository
+                    .findByCode(company.getSubscriptionPlan())
+                    .map(SubscriptionPlanDefinition::getPrice)
+                    .orElse(BigDecimal.ZERO);
+                if (targetPlan.getPrice().compareTo(currentPrice) <= 0) {
+                    throw new BadRequestException("You can only upgrade to a higher-priced plan than your current one");
+                }
+            }
+        }
+    }
+
+    /** InitiateGatewayPaymentRequest.targetId is the SubscriptionPlanDefinition's own id. */
+    private SubscriptionPlanDefinition decodePlan(Long targetId) {
+        if (targetId == null) {
+            throw new BadRequestException("Invalid subscription plan");
+        }
+        return subscriptionPlanDefinitionRepository.findById(targetId)
+            .filter(SubscriptionPlanDefinition::isActive)
+            .orElseThrow(() -> new BadRequestException("Invalid subscription plan"));
+    }
+
+    private boolean ownedByUser(com.businessos.modules.crm.client.Client client, User user) {
+        return client != null && client.getUser() != null && client.getUser().getId().equals(user.getId());
+    }
+
     @Override
     @Transactional
     public GatewayTransactionStatus handleSuccess(Map<String, String> params) {
@@ -149,6 +243,9 @@ public class SslCommerzServiceImpl implements SslCommerzService {
                 WalletTransactionType.CREDIT, tx.getTranId(), "SSLCommerz top-up");
             case PACKAGE_SUBSCRIPTION -> packageService.activateForCompany(
                 tx.getCompanyId(), tx.getTargetId());
+            case PLATFORM_SUBSCRIPTION -> companyService.applyPaidPlanUpgrade(
+                tx.getCompanyId(), decodePlan(tx.getTargetId()), tx.getAmount(),
+                tx.getTranId(), tx.getInitiatedByUserId());
         }
 
         tx.setStatus(GatewayTransactionStatus.SUCCESS);

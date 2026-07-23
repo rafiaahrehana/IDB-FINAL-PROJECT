@@ -137,7 +137,7 @@ public class SoftwareLicenseServiceImpl implements SoftwareLicenseService {
         license.setInstallationLocation(request.getInstallationLocation());
         license.setEstimatedUserCount(request.getEstimatedUserCount());
         license.setComplianceNotes(request.getComplianceNotes());
-        license.setAutoRenew(request.isAutoRenew());
+        license.setAutoRenew(request.isAutoRenewOrDefault());
         license.setNotes(request.getNotes());
         license.setRenewalNotes(request.getRenewalNotes());
 

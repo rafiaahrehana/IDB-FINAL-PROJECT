@@ -146,6 +146,27 @@ export interface UpdateEmployeeRequest {
   profileImageUrl?: string;
 }
 
+// SelfUpdateEmployeeRequest - the narrow subset of UpdateEmployeeRequest an employee may
+// self-edit via PATCH /employees/me (see backend SelfUpdateEmployeeRequest for why the
+// rest - job title, department, salary, bank details, employment status, date of birth -
+// stays HR-only).
+export interface SelfUpdateEmployeeRequest {
+  workPhone?: string;
+  // Personal mobile number - lives on the User account (Employee.phone below),
+  // distinct from workPhone which lives on the Employee record.
+  phone?: string;
+  profileImageUrl?: string;
+  gender?: Gender;
+  fatherName?: string;
+  motherName?: string;
+  nationalId?: string;
+  taxId?: string;
+  location?: LocationRequest;
+  emergencyContactName?: string;
+  emergencyContactPhone?: string;
+  emergencyContactRelation?: string;
+}
+
 // DepartmentResponse
 export interface Department {
   id: number;
@@ -288,6 +309,29 @@ export interface SalaryStructureRequest {
   notes?: string;
 }
 
+export interface EducationQualification {
+  id: number;
+  employeeId: number;
+  employeeName: string;
+  degree: string;
+  institution: string;
+  fieldOfStudy?: string;
+  passingYear?: number;
+  result?: string;
+  notes?: string;
+  createdAt: string;
+}
+
+export interface EducationQualificationRequest {
+  employeeId: number;
+  degree: string;
+  institution: string;
+  fieldOfStudy?: string;
+  passingYear?: number;
+  result?: string;
+  notes?: string;
+}
+
 export interface Announcement {
   id: number;
   title: string;
@@ -315,6 +359,11 @@ export interface AnnouncementRequest {
   notifyAll?: boolean;
   priority?: number;
   attachmentUrl?: string;
+}
+
+export interface AnnouncementDraftResponse {
+  title: string;
+  body: string;
 }
 
 export interface Holiday {

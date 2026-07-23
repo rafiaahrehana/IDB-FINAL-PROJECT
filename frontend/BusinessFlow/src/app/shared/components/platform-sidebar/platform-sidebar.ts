@@ -5,11 +5,6 @@ import { AuthService } from '../../../core/services/auth.service';
 interface NavGroup { label: string; icon: string; items: NavItem[]; roles?: string[]; }
 interface NavItem { label: string; link: string; icon: string; }
 
-// Sidebar for platform (SaaS-provider) staff only - SUPER_ADMIN, SYSTEM_ADMIN,
-// SUPPORT_AGENT, SUPPORT_MANAGER, MARKETING_MANAGER, PLATFORM_ACCOUNTANT, SALES_MANAGER.
-// Deliberately has NO CRM/Finance/HRM/Servicedesk/ITAM/Attendance groups - those are
-// Company (tenant) data and platform staff reach them only via "Access Company"
-// impersonation, never as their own identity. See auth.service.ts PLATFORM_ROLES.
 @Component({
   selector: 'app-platform-sidebar',
   imports: [RouterLink, RouterLinkActive],
@@ -30,6 +25,7 @@ export class PlatformSidebar {
       roles: ['SUPER_ADMIN', 'SYSTEM_ADMIN', 'PLATFORM_ACCOUNTANT', 'SALES_MANAGER', 'SUPPORT_AGENT', 'SUPPORT_MANAGER'],
       items: [
         { label: 'Companies', link: '/platform/companies', icon: 'bi-buildings' },
+        { label: 'Subscription Management', link: '/platform/subscription-management', icon: 'bi-credit-card' },
       ]
     },
     {

@@ -1,6 +1,7 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { PricingPlan } from '../../models/site.model';
+import { SiteService } from '../../services/site.service';
 
 @Component({
   selector: 'app-pricing-card',
@@ -25,7 +26,7 @@ import { PricingPlan } from '../../models/site.model';
             <li class="mb-2"><i class="bi bi-check-circle-fill me-2 text-success"></i>{{ f }}</li>
           }
         </ul>
-        <a routerLink="/request-service" class="btn w-100 fw-semibold"
+        <a [routerLink]="basePath + '/request-service'" class="btn w-100 fw-semibold"
            [class.btn-primary]="plan.featured"
            [class.btn-outline-dark]="!plan.featured"
            style="border-radius: var(--site-btn-radius)">
@@ -47,4 +48,7 @@ import { PricingPlan } from '../../models/site.model';
 })
 export class PricingCardComponent {
   @Input({ required: true }) plan!: PricingPlan;
+
+  private siteService = inject(SiteService);
+  basePath = this.siteService.getBasePath();
 }

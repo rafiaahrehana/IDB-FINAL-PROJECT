@@ -1,5 +1,16 @@
 <div class="container-fluid py-3">
-  <h4 class="mb-3">Biometric Data</h4>
+  <div class="page-hero">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+      <div>
+        <div class="page-hero-label">ATTENDANCE</div>
+        <h4 class="page-hero-title underline-amber">Biometric Data</h4>
+        <div class="page-hero-subtitle">Manage biometric devices and employee enrollments.</div>
+      </div>
+      <div class="page-hero-actions">
+        <button *appHasPermission="'BIOMETRIC_MANAGE'" class="btn-hero-primary" (click)="openCreateDevice()"><i class="bi bi-plus-circle"></i> Register Device</button>
+      </div>
+    </div>
+  </div>
   @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
   @if (success) { <div class="alert alert-success py-2">{{ success }}</div> }
 
@@ -10,7 +21,7 @@
 
   @if (tab === 'devices') {
   <div class="d-flex justify-content-end mb-3">
-    <button class="btn btn-primary btn-sm" (click)="openCreateDevice()"><i class="bi bi-plus"></i> Register Device</button>
+    <button *appHasPermission="'BIOMETRIC_MANAGE'" class="btn btn-success btn-sm" (click)="openCreateDevice()"><i class="bi bi-plus"></i> Register Device</button>
   </div>
 
   @if (showDeviceForm) {
@@ -49,7 +60,7 @@
   @if (!deviceLoading && devices.length) {
   <div class="card"><div class="table-responsive">
     <table class="table table-hover table-sm align-middle mb-0">
-      <thead class="table-light"><tr><th>Name</th><th>Type</th><th>Device ID</th><th>Location</th><th>Status</th><th>Online</th><th>Enrollments</th><th></th></tr></thead>
+      <thead><tr><th>Name</th><th>Type</th><th>Device ID</th><th>Location</th><th>Status</th><th>Online</th><th>Enrollments</th><th></th></tr></thead>
       <tbody>
         @for (d of devices; track d.id) {
         <tr>
@@ -64,8 +75,8 @@
           </td>
           <td class="small">{{ d.totalEnrollments }} / {{ d.maxEnrollments }}</td>
           <td class="text-end text-nowrap">
-            <button class="btn btn-outline-secondary btn-sm me-1" (click)="openEditDevice(d)"><i class="bi bi-pencil"></i></button>
-            <button class="btn btn-outline-danger btn-sm" (click)="deleteDeviceTarget = d"><i class="bi bi-trash"></i></button>
+            <button *appHasPermission="'BIOMETRIC_MANAGE'" class="btn btn-outline-secondary btn-sm me-1" (click)="openEditDevice(d)"><i class="bi bi-pencil"></i></button>
+            <button *appHasPermission="'BIOMETRIC_MANAGE'" class="btn btn-outline-danger btn-sm" (click)="deleteDeviceTarget = d"><i class="bi bi-trash"></i></button>
           </td>
         </tr>
         }
@@ -86,7 +97,7 @@
         <input type="number" class="form-control form-control-sm" style="width:180px" [(ngModel)]="employeeIdLookup" (keyup.enter)="loadEnrollments()" />
       </div>
       <button class="btn btn-primary btn-sm" [disabled]="!employeeIdLookup" (click)="loadEnrollments()">Load</button>
-      <button class="btn btn-outline-primary btn-sm" [disabled]="!employeeIdLookup" (click)="openEnroll()"><i class="bi bi-plus"></i> Enroll</button>
+      <button *appHasPermission="'BIOMETRIC_MANAGE'" class="btn btn-outline-primary btn-sm" [disabled]="!employeeIdLookup" (click)="openEnroll()"><i class="bi bi-plus"></i> Enroll</button>
     </div>
   </div></div>
 
@@ -110,7 +121,7 @@
   @if (!enrollmentLoading && enrollments.length) {
   <div class="card"><div class="table-responsive">
     <table class="table table-hover table-sm align-middle mb-0">
-      <thead class="table-light"><tr><th>Device</th><th>Type</th><th>Quality</th><th>Successful</th><th>Failed</th><th>Last Verified</th><th></th></tr></thead>
+      <thead><tr><th>Device</th><th>Type</th><th>Quality</th><th>Successful</th><th>Failed</th><th>Last Verified</th><th></th></tr></thead>
       <tbody>
         @for (e of enrollments; track e.id) {
         <tr>
@@ -120,7 +131,7 @@
           <td class="small text-success">{{ e.successfulMatches }}</td>
           <td class="small text-danger">{{ e.failedMatches }}</td>
           <td class="small text-muted">{{ e.lastVerifiedTime ? (e.lastVerifiedTime | date:'medium') : '-' }}</td>
-          <td class="text-end"><button class="btn btn-outline-danger btn-sm" (click)="deleteEnrollmentTarget = e"><i class="bi bi-trash"></i></button></td>
+          <td class="text-end"><button *appHasPermission="'BIOMETRIC_MANAGE'" class="btn btn-outline-danger btn-sm" (click)="deleteEnrollmentTarget = e"><i class="bi bi-trash"></i></button></td>
         </tr>
         }
       </tbody>

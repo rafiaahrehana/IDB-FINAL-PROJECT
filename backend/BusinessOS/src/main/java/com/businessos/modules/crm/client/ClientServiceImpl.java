@@ -2,6 +2,8 @@
 package com.businessos.modules.crm.client;
 
 import com.businessos.auth.role.enums.Role;
+import com.businessos.auth.role.enums.PermissionCode;
+import com.businessos.auth.role.service.AuthorizationService;
 import com.businessos.modules.company.Company;
 import com.businessos.modules.hrm.employee.Employee;
 import com.businessos.auth.user.User;
@@ -25,6 +27,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -39,10 +43,12 @@ public class ClientServiceImpl implements ClientService {
     private final EmailService emailService;
     private final EmailBranding emailBranding;
     private final CompanyRepository companyRepository;
+    private final AuthorizationService authorizationService;
 
     @Override
     @Transactional
     public ClientResponse create(CreateClientRequest request) {
+        authorizationService.checkPermission(PermissionCode.CLIENT_CREATE);
         Long companyId = requireCompanyId();
 
         String normalizedEmail = request.getEmail().toLowerCase().trim();
@@ -183,6 +189,7 @@ public class ClientServiceImpl implements ClientService {
     @Override
     @Transactional(readOnly = true)
     public Page<ClientResponse> listAll(ClientStatus status, Pageable pageable) {
+        authorizationService.checkPermission(PermissionCode.CLIENT_VIEW);
         Long companyId = requireCompanyId();
         Page<Client> page = status != null
                 ? clientRepository.findByCompanyIdAndStatus(companyId, status, pageable)
@@ -190,9 +197,21 @@ public class ClientServiceImpl implements ClientService {
         return page.map(ClientMapper::toResponse);
     }
 
+    // Deliberately NOT gated by CLIENT_VIEW: this is the active-client picker consumed
+    // by Invoices, Payment Receipts, and the CRM Pipeline board when attaching a client
+    // to an unrelated record - users with INVOICE_VIEW/PAYMENT_RECEIPT_VIEW/OPPORTUNITY_VIEW
+    // but not CLIENT_VIEW still need it to populate that dropdown.
+    @Override
+    @Transactional(readOnly = true)
+    public List<ClientResponse> listActive() {
+        return clientRepository.findByCompanyIdAndStatus(requireCompanyId(), ClientStatus.ACTIVE)
+                .stream().map(ClientMapper::toResponse).toList();
+    }
+
     @Override
     @Transactional
     public ClientResponse update(Long id, UpdateClientRequest request) {
+        authorizationService.checkPermission(PermissionCode.CLIENT_UPDATE);
         Long companyId = requireCompanyId();
         Client client = findInTenant(id);
 
@@ -223,6 +242,7 @@ public class ClientServiceImpl implements ClientService {
     @Override
     @Transactional
     public void delete(Long id) {
+        authorizationService.checkPermission(PermissionCode.CLIENT_DELETE);
         Client client = findInTenant(id);
         client.softDelete();
         clientRepository.save(client);

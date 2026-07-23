@@ -2,7 +2,6 @@ package com.businessos.shared.subscription;
 
 import com.businessos.auth.user.User;
 import com.businessos.modules.company.Company;
-import com.businessos.enums.SubscriptionPlan;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -28,13 +27,12 @@ public class SubscriptionHistory {
     @JoinColumn(name = "company_id", nullable = false)
     private Company company;
 
-    @Enumerated(EnumType.STRING)
+    // References SubscriptionPlanDefinition.code, same as Company.subscriptionPlan.
     @Column(nullable = false)
-    private SubscriptionPlan fromPlan;
+    private String fromPlan;
 
-    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private SubscriptionPlan toPlan;
+    private String toPlan;
 
     private LocalDate subscriptionStart;
     private LocalDate subscriptionEnd;

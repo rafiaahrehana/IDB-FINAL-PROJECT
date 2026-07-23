@@ -1,5 +1,6 @@
 import { Injectable, NgZone } from '@angular/core';
 import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
@@ -16,7 +17,7 @@ export class MetricsStreamService {
   public getTrafficStream(): Observable<number> {
     return new Observable(observer => {
       // Create connection to the SSE endpoint
-      const eventSource = new EventSource('http://localhost:8080/api/v1/metrics/stream');
+      const eventSource = new EventSource(`${environment.apiUrl}/v1/metrics/stream`);
 
       eventSource.onmessage = (event) => {
         // MUST run outside Angular to avoid change detection thrashing

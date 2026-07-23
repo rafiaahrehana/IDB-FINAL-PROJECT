@@ -69,7 +69,7 @@
           <label class="field-label">Email Address</label>
           <div class="field-input-wrap">
             <i class="bi bi-envelope field-icon"></i>
-            <input type="email" class="field-input" formControlName="email"
+            <input type="email" id="email" name="email" class="field-input" formControlName="email"
                    placeholder="you@company.com"
                    [class.invalid]="form.controls.email.touched && form.controls.email.invalid"/>
           </div>
@@ -82,7 +82,7 @@
           <label class="field-label">Password</label>
           <div class="field-input-wrap">
             <i class="bi bi-lock field-icon"></i>
-            <input [type]="showPwd ? 'text' : 'password'" class="field-input" formControlName="password"
+            <input [type]="showPwd ? 'text' : 'password'" id="password" name="password" class="field-input" formControlName="password"
                    placeholder="Enter your password"
                    [class.invalid]="form.controls.password.touched && form.controls.password.invalid"/>
             <button type="button" class="eye-btn" (click)="showPwd = !showPwd">
@@ -96,7 +96,7 @@
 
         <div class="remember-row">
           <label class="remember-label">
-            <input type="checkbox" class="remember-cb"> Remember me
+            <input type="checkbox" id="remember" name="remember" class="remember-cb"> Remember me
           </label>
           <a routerLink="/auth/forgot-password" class="forgot-link">Forgot password?</a>
         </div>
@@ -123,7 +123,7 @@
           Microsoft
         </button>
         <button class="social-btn" type="button">
-          <i class="bi bi-shield-fill" style="color:#6B46FF;font-size:16px;"></i>
+          <i class="bi bi-shield-fill" style="color:#4F46E5;font-size:16px;"></i>
           SSO
         </button>
       </div>

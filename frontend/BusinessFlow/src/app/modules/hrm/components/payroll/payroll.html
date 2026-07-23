@@ -1,42 +1,49 @@
 <div class="container-fluid py-3">
-  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-    <h4 class="mb-0">Payroll</h4>
-    <div class="d-flex gap-2">
-      <select
-        class="form-select form-select-sm"
-        style="width: 110px"
-        [(ngModel)]="month"
-        (change)="page = 0; load()"
-      >
-        @for (m of months; track m) {
-          <option [ngValue]="m">{{ m | number: '2.0' }}</option>
-        }
-      </select>
-      <select
-        class="form-select form-select-sm"
-        style="width: 110px"
-        [(ngModel)]="year"
-        (change)="page = 0; load()"
-      >
-        @for (y of years; track y) {
-          <option [ngValue]="y">{{ y }}</option>
-        }
-      </select>
-      <button
-        class="btn btn-outline-primary btn-sm text-nowrap"
-        [disabled]="generating"
-        (click)="openGenerate()"
-      >
-        @if (generating) {
-          <span class="spinner-border spinner-border-sm me-1"></span>
-        } @else {
-          <i class="bi bi-lightning-charge me-1"></i>
-        }
-        Generate for All Employees
-      </button>
-      <button class="btn btn-primary btn-sm text-nowrap" (click)="showForm = true">
-        <i class="bi bi-plus-lg me-1"></i>Add Payroll
-      </button>
+  <div class="page-hero">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+      <div>
+        <div class="page-hero-label">HRM</div>
+        <h4 class="page-hero-title underline-mint">Payroll</h4>
+        <div class="page-hero-subtitle">Manage employee salaries and payments</div>
+      </div>
+      <div class="page-hero-actions">
+        <select
+          class="form-select form-select-sm"
+          style="width: 110px"
+          [(ngModel)]="month"
+          (change)="page = 0; load()"
+        >
+          @for (m of months; track m) {
+            <option [ngValue]="m">{{ m | number: '2.0' }}</option>
+          }
+        </select>
+        <select
+          class="form-select form-select-sm"
+          style="width: 110px"
+          [(ngModel)]="year"
+          (change)="page = 0; load()"
+        >
+          @for (y of years; track y) {
+            <option [ngValue]="y">{{ y }}</option>
+          }
+        </select>
+        <button
+          *appHasPermission="'PAYROLL_PROCESS'"
+          class="btn btn-hero-secondary"
+          [disabled]="generating"
+          (click)="openGenerate()"
+        >
+          @if (generating) {
+            <span class="spinner-border spinner-border-sm me-1"></span>
+          } @else {
+            <i class="bi bi-lightning-charge me-1"></i>
+          }
+          Generate for All Employees
+        </button>
+        <button *appHasPermission="'PAYROLL_PROCESS'" class="btn btn-hero-primary" (click)="showForm = true">
+          <i class="bi bi-plus-circle"></i> Add Payroll
+        </button>
+      </div>
     </div>
   </div>
 
@@ -76,7 +83,7 @@
     <div class="card">
       <div class="table-responsive">
         <table class="table table-hover table-sm align-middle mb-0">
-          <thead class="table-light">
+          <thead>
             <tr>
               <th>Employee</th>
               <th>Period</th>
@@ -126,6 +133,7 @@
                 <td class="text-end text-nowrap">
                   @if (p.status === 'DRAFT') {
                     <button
+                      *appHasPermission="'PAYROLL_APPROVE'"
                       class="btn btn-outline-info btn-sm py-0 me-1"
                       title="Approve"
                       (click)="approve(p)"
@@ -133,6 +141,7 @@
                       <i class="bi bi-check2-circle"></i>
                     </button>
                     <button
+                      *appHasPermission="'PAYROLL_PROCESS'"
                       class="btn btn-outline-danger btn-sm py-0"
                       title="Delete"
                       (click)="deleteTarget = p"
@@ -142,6 +151,7 @@
                   }
                   @if (p.status === 'APPROVED') {
                     <button
+                      *appHasPermission="'PAYROLL_APPROVE'"
                       class="btn btn-outline-success btn-sm py-0"
                       title="Mark Paid"
                       (click)="openPay(p)"
@@ -172,9 +182,9 @@
     <div class="modal-dialog modal-lg modal-dialog-centered">
       <div class="modal-content">
         <form #f="ngForm" (ngSubmit)="f.valid && save()">
-          <div class="modal-header">
-            <h5 class="modal-title">Add Payroll</h5>
-            <button type="button" class="btn-close" (click)="showForm = false"></button>
+          <div class="modal-header" style="background: #4F46E5; color:#fff;">
+            <h5 class="modal-title" style="color:#fff;">Add Payroll</h5>
+            <button type="button" class="btn-close btn-close-white" (click)="showForm = false"></button>
           </div>
           <div class="modal-body">
             <div class="row g-3">
@@ -363,9 +373,9 @@
   <div class="modal d-block" tabindex="-1" style="background: rgba(0, 0, 0, 0.4)">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Mark as Paid</h5>
-          <button type="button" class="btn-close" (click)="payTarget = null"></button>
+        <div class="modal-header" style="background: #059669; color:#fff;">
+          <h5 class="modal-title" style="color:#fff;">Mark as Paid</h5>
+          <button type="button" class="btn-close btn-close-white" (click)="payTarget = null"></button>
         </div>
         <div class="modal-body">
           <p class="small mb-2">

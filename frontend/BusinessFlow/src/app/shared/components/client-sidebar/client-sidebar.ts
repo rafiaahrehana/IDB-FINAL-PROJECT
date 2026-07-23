@@ -15,6 +15,7 @@ export class ClientSidebar {
   items: NavItem[] = [
     { label: 'Dashboard', link: '/client/dashboard', icon: 'bi-grid-1x2' },
     { label: 'Profile Settings', link: '/client/profile', icon: 'bi-person-gear' },
+    { label: 'Service Catalog', link: '/client/categories', icon: 'bi-tags' },
     { label: 'My Requests', link: '/client/requests', icon: 'bi-clipboard-check' },
     { label: 'My Packages', link: '/client/packages', icon: 'bi-box-seam' },
     { label: 'Payment', link: '/client/payments', icon: 'bi-credit-card' },

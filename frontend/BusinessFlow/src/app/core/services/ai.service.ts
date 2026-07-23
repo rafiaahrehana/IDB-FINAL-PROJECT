@@ -1,6 +1,8 @@
 import { Injectable } from '@angular/core';
+import { HttpContext } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { ApiService, PagedResponse } from './api.service';
+import { SKIP_ERROR_TOAST } from '../interceptors/http-context-tokens';
 import {
   AiProviderConfig,
   AiProviderConfigRequest,
@@ -31,11 +33,28 @@ export class AiService {
   }
 
   getConfig(): Observable<AiProviderConfig> {
-    return this.api.get<AiProviderConfig>('/ai/config');
+    // ai-settings.ts already treats a failed load as "no config yet" and keeps its
+    // defaults - a fresh company legitimately has none, so this isn't worth alarming
+    // the user with a global toast every time they open the page.
+    return this.api.get<AiProviderConfig>('/ai/config', undefined, new HttpContext().set(SKIP_ERROR_TOAST, true));
   }
 
   saveConfig(config: AiProviderConfigRequest): Observable<AiProviderConfig> {
     return this.api.post<AiProviderConfig>('/ai/config', config);
+  }
+
+  // A company can save one config per provider - this lists all of them
+  // (Claude, Gemini, etc. side by side), not just the currently active one.
+  listConfigs(): Observable<AiProviderConfig[]> {
+    return this.api.get<AiProviderConfig[]>('/ai/configs');
+  }
+
+  activateConfig(id: number): Observable<AiProviderConfig> {
+    return this.api.patch<AiProviderConfig>(`/ai/config/${id}/activate`, {});
+  }
+
+  deleteConfig(id: number): Observable<void> {
+    return this.api.delete<void>(`/ai/config/${id}`);
   }
 
   getUsage(date?: string): Observable<AiUsageSummary> {

@@ -1,15 +1,19 @@
 :host {
+  width: 240px;
+  flex-shrink: 0;
   height: 100%;
 }
 
 .sidebar-wrapper {
   transition: all 0.3s ease;
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   user-select: none;
-  background-color: #2e1065; /* Dark purple */
+  background-color: #0F1115;
   height: 100%;
   overflow-y: auto;
   overflow-x: hidden;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
 }
 
 .sidebar-scroll {
@@ -21,50 +25,50 @@
   }
   
   &::-webkit-scrollbar-thumb {
-    background: rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.08);
     border-radius: 4px;
   }
 }
 
 .sidebar-link {
-  color: #ffffff !important; /* White text */
-  transition: all 0.2s ease-in-out;
+  color: #B4B7BE !important;
+  transition: all 0.15s ease-in-out;
   cursor: pointer;
   text-decoration: none;
-  font-size: 0.95rem;
-  padding: 0.75rem 1.25rem;
-  border-radius: 8px;
-  margin: 0.15rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0.55rem 12px;
+  border-radius: 6px;
+  margin: 1px 8px;
   display: flex;
   align-items: center;
   
   i {
-    transition: transform 0.2s ease-in-out;
-    opacity: 0.8;
-    color: #ffffff;
-    font-size: 1.1rem;
-    margin-right: 0.75rem;
+    transition: color 0.15s ease-in-out;
+    color: rgba(180, 183, 190, 0.55);
+    font-size: 1rem;
+    width: 18px;
+    text-align: center;
+    margin-right: 0.6rem;
+    flex-shrink: 0;
   }
   
   &:hover {
-    background-color: #f8f5ff; /* Light purple bg */
-    color: #6d28d9 !important; /* Text purple */
+    background-color: rgba(255, 255, 255, 0.06);
+    color: #fff !important;
     
     i {
-      transform: scale(1.05);
-      color: #6d28d9 !important; /* Icon purple */
-      opacity: 1;
+      color: rgba(255, 255, 255, 0.85) !important;
     }
   }
   
   &.active {
-    background: #ffffff !important; /* White bg */
-    color: #2e1065 !important; /* Dark purple text */
-    font-weight: 600 !important;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    background: #4F46E5 !important;
+    color: #fff !important;
+    font-weight: 600;
     
     i {
-      color: #2e1065 !important; /* Dark purple icon */
+      color: #fff !important;
       opacity: 1;
     }
   }
@@ -72,12 +76,30 @@
 
 .sidebar-group-header {
   font-size: 0.65rem;
-  letter-spacing: 0.08em;
-  color: #94a3b8;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #F59E0B !important;
+  padding: 1.2rem 20px 0.3rem;
 }
 
-.text-purple-gradient {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+// All groups use the same styling now
+.sidebar-link.group-crm,
+.sidebar-link.group-finance,
+.sidebar-link.group-hrm,
+.sidebar-link.group-attendance,
+.sidebar-link.group-support,
+.sidebar-link.group-it-assets,
+.sidebar-link.group-portal,
+.sidebar-link.group-ai,
+.sidebar-link.group-servicedesk {
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.06) !important;
+    color: #fff !important;
+    i { color: rgba(255, 255, 255, 0.85) !important; }
+  }
+  &.active {
+    background: #4F46E5 !important;
+    color: #fff !important;
+    i { color: #fff !important; }
+  }
 }

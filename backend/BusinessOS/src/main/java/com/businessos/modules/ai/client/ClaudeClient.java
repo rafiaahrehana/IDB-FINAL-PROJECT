@@ -39,7 +39,7 @@ public class ClaudeClient implements AiHttpClient {
             "model",      model,
             "max_tokens", maxTokens,
             "temperature", temperature,
-            "messages",   List.of(Map.of("role", "platformuser", "content", prompt))
+            "messages",   List.of(Map.of("role", "user", "content", prompt))
         );
 
         try {

@@ -1,7 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AiService } from '../../../../core/services/ai.service';
+import { extractErrorMessage } from '../../../../core/utils/http-error.util';
 import {
   AiProviderType,
   AiModel,
@@ -43,14 +44,20 @@ export class AiSettings implements OnInit {
     'GENERAL',
   ];
 
-  config: AiProviderConfigRequest = {
-    aiProviderType: 'GEMINI',
-    model: 'GEMINI_2_5_FLASH',
-    temperature: 0.7,
-    maxTokens: 1024,
-  };
+  // A company can save one config per provider (Claude, Gemini, ... side by
+  // side) - configs is every saved one, at most one of them active at a time
+  // (the one AiProviderResolver actually uses for generation).
+  configs: AiProviderConfig[] = [];
+  loadingConfigs = true;
+
+  config: AiProviderConfigRequest = this.emptyConfigForm();
   savingConfig = false;
   configError = '';
+
+  // Form visibility: null editingConfigId = adding a brand-new provider
+  // (blank form); a set id = editing that specific saved config.
+  showForm = false;
+  editingConfigId: number | null = null;
 
   usageDate = '';
   usage?: AiUsageSummary;
@@ -70,38 +77,89 @@ export class AiSettings implements OnInit {
 
   objectKeys = Object.keys;
 
-  constructor(private aiService: AiService) {}
+  constructor(private aiService: AiService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
-    this.loadConfig();
+    this.loadConfigs();
     this.loadTemplates();
   }
 
-  loadConfig(): void {
-    this.aiService.getConfig().subscribe({
+  private emptyConfigForm(): AiProviderConfigRequest {
+    return { aiProviderType: 'GEMINI', model: 'GEMINI_2_5_FLASH', temperature: 0.7, maxTokens: 1024 };
+  }
+
+  loadConfigs(): void {
+    this.loadingConfigs = true;
+    this.aiService.listConfigs().subscribe({
       next: (res) => {
-        this.config = {
-          aiProviderType: res.provider,
-          model: res.model,
-          temperature: res.temperature,
-          maxTokens: res.maxTokens,
-        };
+        this.configs = res;
+        this.loadingConfigs = false;
+        this.cdr.markForCheck();
       },
       error: () => {
-        /* no config yet — keep defaults */
+        this.configs = [];
+        this.loadingConfigs = false;
+        this.cdr.markForCheck();
       },
     });
+  }
+
+  // Blank form - adds a genuinely new provider, doesn't touch any existing one.
+  openAddNew(): void {
+    this.editingConfigId = null;
+    this.config = this.emptyConfigForm();
+    this.configError = '';
+    this.showForm = true;
+    this.cdr.markForCheck();
+  }
+
+  // Pre-filled form for a specific saved config (API key left blank - "leave
+  // blank to keep existing" on save).
+  openEdit(c: AiProviderConfig): void {
+    this.editingConfigId = c.id ?? null;
+    this.config = { aiProviderType: c.provider, model: c.model, temperature: c.temperature, maxTokens: c.maxTokens };
+    this.configError = '';
+    this.showForm = true;
+    this.cdr.markForCheck();
+  }
+
+  cancelConfigure(): void {
+    this.showForm = false;
+    this.configError = '';
+    this.cdr.markForCheck();
   }
 
   saveConfig(): void {
     this.savingConfig = true;
     this.configError = '';
     this.aiService.saveConfig(this.config).subscribe({
-      next: () => (this.savingConfig = false),
-      error: (err) => {
-        this.configError = err?.error?.message || 'Failed to save provider config';
+      next: () => {
         this.savingConfig = false;
+        this.showForm = false;
+        this.cdr.markForCheck();
+        this.loadConfigs();
       },
+      error: (err) => {
+        this.configError = extractErrorMessage(err, 'Failed to save provider config');
+        this.savingConfig = false;
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  activate(c: AiProviderConfig): void {
+    if (!c.id || c.active) return;
+    this.aiService.activateConfig(c.id).subscribe({
+      next: () => this.loadConfigs(),
+      error: (err) => { this.configError = extractErrorMessage(err, 'Failed to activate provider'); this.cdr.markForCheck(); },
+    });
+  }
+
+  deleteConfig(c: AiProviderConfig): void {
+    if (!c.id) return;
+    this.aiService.deleteConfig(c.id).subscribe({
+      next: () => this.loadConfigs(),
+      error: (err) => { this.configError = extractErrorMessage(err, 'Failed to delete provider'); this.cdr.markForCheck(); },
     });
   }
 
@@ -112,10 +170,12 @@ export class AiSettings implements OnInit {
       next: (res) => {
         this.usage = res;
         this.loadingUsage = false;
+        this.cdr.markForCheck();
       },
       error: (err) => {
         this.usageError = err?.error?.message || 'Failed to load usage';
         this.loadingUsage = false;
+        this.cdr.markForCheck();
       },
     });
   }
@@ -126,8 +186,9 @@ export class AiSettings implements OnInit {
       next: (res) => {
         this.templates = res.content;
         this.loadingTemplates = false;
+        this.cdr.markForCheck();
       },
-      error: () => (this.loadingTemplates = false),
+      error: () => { this.loadingTemplates = false; this.cdr.markForCheck(); },
     });
   }
 
@@ -139,11 +200,13 @@ export class AiSettings implements OnInit {
       next: () => {
         this.savingTemplate = false;
         this.newTemplate = { feature: 'GENERAL', name: '', template: '', changeNotes: '' };
+        this.cdr.markForCheck();
         this.loadTemplates();
       },
       error: (err) => {
         this.templateError = err?.error?.message || 'Failed to save template';
         this.savingTemplate = false;
+        this.cdr.markForCheck();
       },
     });
   }

@@ -27,4 +27,7 @@ public interface AnnouncementService {
 
     /** ADMIN / OWNER: soft-delete a draft announcement */
     void delete(Long id);
+
+    /** ADMIN / OWNER: ask AI to draft a title/body, with real company context injected. Not persisted. */
+    AnnouncementDraftResponse draftWithAi(AnnouncementDraftRequest request);
 }

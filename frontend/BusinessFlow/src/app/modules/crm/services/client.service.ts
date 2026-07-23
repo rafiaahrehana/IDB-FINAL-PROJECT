@@ -13,6 +13,11 @@ export class ClientService {
     return this.api.getPaged<Client>(this.endpoint, page, size, status ? { status } : undefined);
   }
 
+  // Lightweight, ungated - use this for pickers/dropdowns outside the Clients admin page.
+  listActive(): Observable<Client[]> {
+    return this.api.get<Client[]>(`${this.endpoint}/active`);
+  }
+
   getById(id: number): Observable<Client> {
     return this.api.get<Client>(`${this.endpoint}/${id}`);
   }

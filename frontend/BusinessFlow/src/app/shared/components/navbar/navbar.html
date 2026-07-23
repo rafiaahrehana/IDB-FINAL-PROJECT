@@ -1,141 +1,73 @@
-<nav class="navbar appbar px-3 d-flex align-items-center justify-content-between">
-  <div class="d-flex align-items-center gap-3 min-w-0">
-    <button type="button" class="btn btn-light border-0 p-2 d-md-none" (click)="toggleSidebar()" aria-label="Toggle menu">
-      <i class="bi bi-list fs-5"></i>
+<nav class="navbar appbar">
+  <div class="brand-container">
+    <button type="button" class="hamburger-btn" (click)="toggleSidebar()"
+      aria-label="Toggle menu">
+      <i class="bi bi-list"></i>
     </button>
-    <div class="d-flex align-items-center gap-2">
-      <div class="d-flex align-items-center justify-content-center bg-white text-primary rounded-3" style="width: 32px; height: 32px;">
-        <i class="bi bi-boxes fs-6"></i>
+    <a class="brand-logo" routerLink="/dashboard">
+      <div class="brand-icon">
+        <i class="bi bi-box"></i>
       </div>
-      <span class="fw-bold text-white mb-0" style="font-size: 1.15rem;">BusinessOS</span>
-    </div>
-  </div>
-
-  <!-- Global Search Bar in Navbar -->
-  <div class="input-group d-none d-md-flex flex-grow-1 mx-4" style="max-width: 500px">
-    <input name="searchQuery" class="form-control form-control-sm border-0" placeholder="Search leads, accounts, tickets..."
-           [(ngModel)]="searchQuery" (keyup.enter)="goSearch()" />
-    <button class="btn btn-light btn-sm fw-semibold text-primary" (click)="goSearch()">
-      <i class="bi bi-search"></i> Search
-    </button>
-    <button class="btn btn-warning btn-sm fw-semibold" (click)="goSearchAi()">
-      <i class="bi bi-stars"></i> Ask AI
-    </button>
-  </div>
-
-  <div class="d-flex align-items-center gap-3">
-    <!-- Branch Selector -->
-    <div class="d-none d-lg-block">
-      <button class="btn btn-light border-0 px-3 py-1 d-flex align-items-center gap-2 hover-card-lift" type="button" data-bs-toggle="modal" data-bs-target="#branchSelectorModal" style="border-radius: 20px; font-size: 0.85rem; background: rgba(255,255,255,0.15); color: white;">
-        <i class="bi bi-building"></i> 
-        <span class="fw-medium">Head Office - Dhaka</span>
-        <i class="bi bi-chevron-down ms-1" style="font-size: 0.75rem;"></i>
-      </button>
-    </div>
-
-    <!-- Language Switcher -->
-    <div class="dropdown d-none d-md-block">
-      <button class="btn btn-light border-0 p-2" type="button" data-bs-toggle="dropdown" aria-label="Language">
-        <i class="bi bi-globe fs-5"></i>
-      </button>
-      <ul class="dropdown-menu dropdown-menu-end border-0 shadow-sm mt-2">
-        <li><a class="dropdown-item active" href="#">English (EN)</a></li>
-        <li><a class="dropdown-item" href="#">Bangla (BN)</a></li>
-      </ul>
-    </div>
-
-    <!-- AI Assistant -->
-    <a class="btn btn-light border-0 p-2" routerLink="/ai" aria-label="AI Assistant" title="AI Assistant">
-      <i class="bi bi-stars fs-5 text-warning"></i>
+      <span>BusinessOS</span>
     </a>
-    
-    <!-- Notifications -->
-    <app-notification-bell />
-    
-    <!-- User Profile -->
-    <div class="dropdown ms-2">
-      <a class="btn border-0 p-0 dropdown-toggle text-decoration-none d-flex align-items-center" role="button" data-bs-toggle="dropdown" aria-label="Profile">
-        <span class="d-flex align-items-center justify-content-center bg-white text-primary fw-semibold rounded-circle shadow-sm" style="width: 36px; height: 36px; font-size: 0.9rem;">
-          {{ ((auth.currentUser$ | async)?.fullName || 'U').substring(0,1).toUpperCase() }}
-        </span>
-      </a>
-      <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end border-0 shadow mt-3" style="min-width: 220px; border-radius: 12px; background-color: #1e1b4b;">
-        <li class="px-3 py-2">
-          <div class="fw-bold text-white">{{ ((auth.currentUser$ | async)?.fullName || 'User') }}</div>
-          <div class="text-white opacity-75 small">Admin</div>
-        </li>
-        <li><hr class="dropdown-divider border-secondary"></li>
-        <li>
-          <a class="dropdown-item d-flex align-items-center gap-2 py-2 text-white" routerLink="/notifications/preferences">
-            <i class="bi bi-gear opacity-75"></i>Settings
-          </a>
-        </li>
-        <li>
-          <a class="dropdown-item d-flex align-items-center gap-2 py-2 text-danger" role="button" (click)="auth.logout()">
-            <i class="bi bi-box-arrow-right"></i>Logout
-          </a>
-        </li>
-      </ul>
+  </div>
+
+  <div class="navbar-content">
+    <div></div>
+
+    <div class="search-wrapper">
+      <i class="bi bi-search search-icon"></i>
+      <input name="searchQuery" class="form-control search-input" placeholder="Search modules, reports..."
+        [(ngModel)]="searchQuery" (keyup.enter)="goSearch()" />
+      <span class="kbd-shortcut">&#8984;K</span>
+    </div>
+
+      <div class="d-flex align-items-center gap-2 justify-content-end">
+      <button class="btn-nav-action" (click)="goSearchAi()" title="AI Search">
+        <i class="bi bi-stars"></i>
+      </button>
+
+      <app-notification-bell />
+
+      <button class="btn-nav-action" [routerLink]="settingsLink()" title="Settings">
+        <i class="bi bi-gear"></i>
+      </button>
+
+      <div class="dropdown">
+        <a class="user-chip dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-label="Profile">
+          @if ((auth.currentUser$ | async)?.profileImageUrl; as pic) {
+            <img [src]="pic" alt="Profile picture" class="user-avatar" />
+          } @else {
+            <span class="user-avatar user-avatar-initials">
+              {{ ((auth.currentUser$ | async)?.fullName || 'U').substring(0,1).toUpperCase() }}
+            </span>
+          }
+          <div class="user-info d-none d-md-flex">
+            <span class="user-name">{{ (auth.currentUser$ | async)?.fullName || 'User' }}</span>
+            <span class="user-role">{{ roleLabel((auth.currentUser$ | async)?.roles) }}</span>
+          </div>
+          <i class="bi bi-chevron-down ms-1" style="font-size:0.65rem; color:#6B7280;"></i>
+        </a>
+        <ul class="dropdown-menu dropdown-menu-end border-0 shadow-sm mt-2"
+          style="min-width: 220px; border-radius: 10px;">
+          <li class="px-3 py-2">
+            <div class="fw-bold" style="font-size: 0.875rem; color: #111827;">{{ ((auth.currentUser$ | async)?.fullName || 'User') }}</div>
+            <div class="text-muted" style="font-size: 0.78rem;">{{ roleLabel((auth.currentUser$ | async)?.roles) }}</div>
+          </li>
+          <li><hr class="dropdown-divider" style="margin: 0.3rem 0;"></li>
+          <li>
+            <a class="dropdown-item d-flex align-items-center gap-2 py-2" [routerLink]="settingsLink()">
+              <i class="bi bi-gear opacity-75"></i>Settings
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item d-flex align-items-center gap-2 py-2 text-danger" role="button"
+              (click)="auth.logout()">
+              <i class="bi bi-box-arrow-right"></i>Logout
+            </a>
+          </li>
+        </ul>
+      </div>
     </div>
   </div>
 </nav>
-
-<!-- Branch Selector Modal -->
-<div class="modal fade" id="branchSelectorModal" tabindex="-1" aria-labelledby="branchSelectorModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content border-0 shadow rounded-4">
-      <div class="modal-header border-0 pb-0">
-        <h5 class="modal-title fw-bold" id="branchSelectorModalLabel">Select Workspace</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body p-4">
-        <div class="input-search mb-4">
-          <i class="bi bi-search"></i>
-          <input type="text" class="form-control form-control-sm rounded-3 bg-light border-0" placeholder="Search branches...">
-        </div>
-        
-        <div class="d-flex flex-column gap-2">
-          <!-- Active Branch -->
-          <a href="javascript:void(0)" class="text-decoration-none p-3 rounded-3 border border-primary bg-primary bg-opacity-10 d-flex align-items-center justify-content-between" data-bs-dismiss="modal">
-            <div class="d-flex align-items-center gap-3">
-              <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                <i class="bi bi-building"></i>
-              </div>
-              <div>
-                <h6 class="mb-0 fw-bold text-dark">Head Office - Dhaka</h6>
-                <div class="small text-muted">Primary Headquarters</div>
-              </div>
-            </div>
-            <i class="bi bi-check-circle-fill text-primary fs-5"></i>
-          </a>
-          
-          <!-- Chittagong Branch -->
-          <a href="javascript:void(0)" class="text-decoration-none p-3 rounded-3 border border-light bg-white hover-card-lift d-flex align-items-center justify-content-between shadow-sm" data-bs-dismiss="modal">
-            <div class="d-flex align-items-center gap-3">
-              <div class="bg-light text-muted rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                <i class="bi bi-building"></i>
-              </div>
-              <div>
-                <h6 class="mb-0 fw-bold text-dark">Branch - Chittagong</h6>
-                <div class="small text-muted">Chattogram Division</div>
-              </div>
-            </div>
-          </a>
-          
-          <!-- Sylhet Branch -->
-          <a href="javascript:void(0)" class="text-decoration-none p-3 rounded-3 border border-light bg-white hover-card-lift d-flex align-items-center justify-content-between shadow-sm" data-bs-dismiss="modal">
-            <div class="d-flex align-items-center gap-3">
-              <div class="bg-light text-muted rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                <i class="bi bi-building"></i>
-              </div>
-              <div>
-                <h6 class="mb-0 fw-bold text-dark">Branch - Sylhet</h6>
-                <div class="small text-muted">Sylhet Division</div>
-              </div>
-            </div>
-          </a>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>

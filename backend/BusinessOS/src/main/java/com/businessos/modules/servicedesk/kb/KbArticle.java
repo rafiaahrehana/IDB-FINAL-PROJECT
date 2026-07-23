@@ -14,6 +14,9 @@ import java.time.LocalDateTime;
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class KbArticle extends BaseEntity {
 
+    @Column(name = "company_id", nullable = false)
+    private Long companyId;
+
     @Column(nullable = false)
     private String title;
 

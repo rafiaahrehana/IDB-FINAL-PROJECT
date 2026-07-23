@@ -23,6 +23,8 @@ public class TaskResponse {
     private Long serviceRequestId;
     private Long assignedEmployeeId;
     private String assignedEmployeeName;
+    private String assignedEmployeeRole;
+    private Double estimatedHours;
     private Long createdById;
     private String createdByName;
     private Long workflowStageId;

@@ -101,7 +101,7 @@ import { PricingCardComponent } from '../../components/pricing-card/pricing-card
             }
           </div>
           <div class="text-center mt-4">
-            <a routerLink="/services" class="btn btn-brand-outline px-4" style="border-radius: var(--site-btn-radius)">View All Services</a>
+            <a [routerLink]="basePath + '/services'" class="btn btn-brand-outline px-4" style="border-radius: var(--site-btn-radius)">View All Services</a>
           </div>
         </div>
       </section>
@@ -155,7 +155,7 @@ import { PricingCardComponent } from '../../components/pricing-card/pricing-card
             }
           </div>
           <div class="text-center mt-4">
-            <a routerLink="/portfolio" class="btn btn-brand-outline px-4" style="border-radius: var(--site-btn-radius)">View Portfolio</a>
+            <a [routerLink]="basePath + '/portfolio'" class="btn btn-brand-outline px-4" style="border-radius: var(--site-btn-radius)">View Portfolio</a>
           </div>
         </div>
       </section>
@@ -208,7 +208,7 @@ import { PricingCardComponent } from '../../components/pricing-card/pricing-card
             }
           </div>
           <div class="text-center mt-4">
-            <a routerLink="/blog" class="btn btn-brand-outline px-4" style="border-radius: var(--site-btn-radius)">View All Posts</a>
+            <a [routerLink]="basePath + '/blog'" class="btn btn-brand-outline px-4" style="border-radius: var(--site-btn-radius)">View All Posts</a>
           </div>
         </div>
       </section>
@@ -242,10 +242,10 @@ import { PricingCardComponent } from '../../components/pricing-card/pricing-card
             <h2 class="fw-bold mb-3">Ready to Get Started?</h2>
             <p class="mb-4 opacity-75">Let us help you take your business to the next level.</p>
             <div class="d-flex justify-content-center gap-3 flex-wrap">
-              <a routerLink="/request-service" class="btn btn-light btn-lg px-5" style="border-radius: var(--site-btn-radius)">
+              <a [routerLink]="basePath + '/request-service'" class="btn btn-light btn-lg px-5" style="border-radius: var(--site-btn-radius)">
                 Get a Free Quote <i class="bi bi-arrow-right ms-2"></i>
               </a>
-              <a routerLink="/contact" class="btn btn-outline-light btn-lg px-5" style="border-radius: var(--site-btn-radius)">
+              <a [routerLink]="basePath + '/contact'" class="btn btn-outline-light btn-lg px-5" style="border-radius: var(--site-btn-radius)">
                 Contact Us
               </a>
             </div>
@@ -293,6 +293,7 @@ import { PricingCardComponent } from '../../components/pricing-card/pricing-card
 })
 export class SiteHomePage implements OnInit {
   private siteService = inject(SiteService);
+  basePath = this.siteService.getBasePath();
 
   settings: SiteSettings = DEFAULT_SITE;
   stats: Stat[] = [];

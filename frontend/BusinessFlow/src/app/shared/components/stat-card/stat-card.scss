@@ -1,50 +1,50 @@
-// Gradient stat tiles inspired by the dashboard design reference.
-// Colors are defined as CSS variables per variant so they stay easy to theme.
-
 .stat-card {
-  --stat-gradient: linear-gradient(135deg, var(--bs-primary), #3B82F6);
-  background: var(--stat-gradient);
-  color: #fff;
+  background: #fff;
+  color: #111827;
   position: relative;
   overflow: hidden;
   min-height: 120px;
-  box-shadow: var(--bos-shadow-card);
+  border: 1px solid #E5E7EB;
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
-  border-radius: var(--bs-border-radius-lg);
 
   &:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--bs-box-shadow-lg);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   }
 
   .stat-label {
-    color: rgba(255, 255, 255, 0.85);
-    letter-spacing: 0.05em;
-    font-size: 0.7rem;
+    color: #6B7280;
+    letter-spacing: 0.04em;
+    font-size: 0.78rem;
     text-transform: uppercase;
+    font-weight: 600;
   }
 
   .stat-value {
-    font-size: 2rem;
+    font-size: 1.75rem;
     line-height: 1.1;
     font-family: var(--bos-heading-font);
-    font-weight: 700;
+    font-weight: 800;
+    color: #111827;
   }
 
   .stat-sub {
-    color: rgba(255, 255, 255, 0.75);
+    color: #6B7280;
+    font-size: 0.78rem;
   }
 
   .stat-icon {
-    font-size: 2.5rem;
-    color: rgba(255, 255, 255, 0.2);
+    font-size: 2rem;
+    color: rgba(79, 70, 229, 0.12);
     line-height: 1;
   }
 
-  &.variant-primary { --stat-gradient: linear-gradient(135deg, var(--bs-primary), #3B82F6); }
-  &.variant-purple  { --stat-gradient: linear-gradient(135deg, var(--bs-primary), #5A35E5); }
-  &.variant-success { --stat-gradient: linear-gradient(135deg, var(--bs-success), #10b981); }
-  &.variant-info    { --stat-gradient: linear-gradient(135deg, var(--bs-info), #0ea5e9); }
-  &.variant-dark    { --stat-gradient: linear-gradient(135deg, #1E1B4B, #2E2A5B); }
-  &.variant-danger  { --stat-gradient: linear-gradient(135deg, var(--bs-danger), #be123c); }
+  &.variant-primary .stat-icon { color: rgba(79, 70, 229, 0.15); }
+  &.variant-success .stat-icon { color: rgba(22, 163, 74, 0.15); }
+  &.variant-info .stat-icon { color: rgba(37, 99, 235, 0.15); }
+  &.variant-danger .stat-icon { color: rgba(220, 38, 38, 0.15); }
+  &.variant-purple .stat-icon { color: rgba(79, 70, 229, 0.15); }
+  &.variant-dark .stat-icon { color: rgba(17, 24, 39, 0.1); }
 }

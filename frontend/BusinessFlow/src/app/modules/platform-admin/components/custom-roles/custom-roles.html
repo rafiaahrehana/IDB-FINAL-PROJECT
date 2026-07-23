@@ -4,14 +4,14 @@
       <h4 class="mb-1">Custom Roles</h4>
       <div class="text-muted small">Define custom roles that companies can assign to their users.</div>
     </div>
-    <button class="btn btn-primary btn-sm" (click)="openCreate()"><i class="bi bi-plus"></i> New Role</button>
+    <button class="btn btn-success btn-sm" (click)="openCreate()"><i class="bi bi-plus"></i> New Role</button>
   </div>
   @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
   @if (success) { <div class="alert alert-success py-2">{{ success }}</div> }
   @if (loading) { <app-loader /> }
 
   @if (showForm) {
-  <div class="card border-0 shadow-sm mb-3">
+  <div class="card mb-3">
     <div class="card-header bg-white py-2 fw-semibold">{{ editingId ? 'Edit Role' : 'New Role' }}</div>
     <div class="card-body">
       <div class="row g-2">
@@ -30,7 +30,7 @@
   <div class="card border-0 shadow-sm">
     <div class="table-responsive">
       <table class="table table-hover align-middle mb-0">
-        <thead class="table-light">
+        <thead>
           <tr><th>Name</th><th>Description</th><th>Type</th><th>Status</th><th></th></tr>
         </thead>
         <tbody>

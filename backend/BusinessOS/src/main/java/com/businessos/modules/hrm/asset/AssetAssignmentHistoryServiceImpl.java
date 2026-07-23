@@ -1,6 +1,8 @@
 package com.businessos.modules.hrm.asset;
 
 
+import com.businessos.auth.role.enums.PermissionCode;
+import com.businessos.auth.role.service.AuthorizationService;
 import com.businessos.shared.exception.BadRequestException;
 import com.businessos.security.SecurityUtil;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +17,7 @@ public class AssetAssignmentHistoryServiceImpl implements AssetAssignmentHistory
 
     private final AssetAssignmentHistoryRepository historyRepository;
     private final SecurityUtil                     securityUtil;
+    private final AuthorizationService             authorizationService;
 
     @Transactional(readOnly = true)
     @Override
@@ -32,9 +35,12 @@ public class AssetAssignmentHistoryServiceImpl implements AssetAssignmentHistory
             .map(AssetAssignmentHistoryMapper::toAssetHistoryResponse);
     }
 
+    // This single endpoint backs both the ITAM Assignments page and the HRM asset
+    // history view, so either permission unlocks it.
     @Transactional(readOnly = true)
     @Override
     public Page<AssetAssignmentHistoryResponse> listAll(Pageable pageable) {
+        authorizationService.checkAnyPermission(PermissionCode.ASSET_ASSIGNMENT_VIEW, PermissionCode.ASSET_VIEW);
         Long companyId = requireCompanyId();
         return historyRepository.findByCompanyIdOrderByAssignedAtDesc(companyId, pageable)
             .map(AssetAssignmentHistoryMapper::toAssetHistoryResponse);

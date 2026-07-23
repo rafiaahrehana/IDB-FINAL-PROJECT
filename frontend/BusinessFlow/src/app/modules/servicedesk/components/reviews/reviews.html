@@ -1,6 +1,12 @@
 <div class="container-fluid py-3">
-  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-    <h4 class="mb-0">Reviews</h4>
+  <div class="page-hero">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+      <div>
+        <div class="page-hero-label">SERVICE DESK</div>
+        <h4 class="page-hero-title underline-rose">Reviews</h4>
+      </div>
+      <div class="page-hero-actions"></div>
+    </div>
   </div>
   @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
   @if (success) { <div class="alert alert-success py-2">{{ success }}</div> }
@@ -29,7 +35,7 @@
   <div class="card">
     <div class="table-responsive">
       <table class="table table-hover table-sm align-middle mb-0">
-        <thead class="table-light">
+        <thead>
           <tr><th>Service</th><th>Client</th><th>Rating</th><th>Comment</th><th>Status</th><th>Date</th><th></th></tr>
         </thead>
         <tbody>
@@ -45,7 +51,7 @@
             <td><span class="badge" [class.text-bg-success]="r.published" [class.text-bg-secondary]="!r.published">{{ r.published ? 'Published' : 'Draft' }}</span></td>
             <td class="text-muted small">{{ r.createdAt | date:'mediumDate' }}</td>
             <td class="text-end text-nowrap">
-              <button class="btn btn-outline-danger btn-sm" (click)="deleteTarget = r"><i class="bi bi-trash"></i></button>
+              <button *appHasPermission="'REVIEW_DELETE'" class="btn btn-outline-danger btn-sm" (click)="deleteTarget = r"><i class="bi bi-trash"></i></button>
             </td>
           </tr>
           }

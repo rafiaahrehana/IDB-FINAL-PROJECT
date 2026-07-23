@@ -103,26 +103,40 @@ public class AiServiceImpl implements AiService {
     public AiProviderConfigResponse saveProviderConfig(AiProviderConfigRequest request) {
         Long companyId = securityUtil.getCurrentCompanyId();
 
-        AiProviderConfig config = configRepository.findByCompanyIdAndActiveTrue(companyId)
-            .orElseGet(() -> { 
-                AiProviderConfig c = new AiProviderConfig(); 
-                c.setCompany(companyRef(companyId)); 
-                return c; 
+        // Upsert by (companyId, provider) - a company can save one config per
+        // provider (uq_ai_config_company_provider). Previously this looked up
+        // the single *active* row regardless of provider, so saving a second
+        // provider (e.g. Gemini alongside an already-saved Claude) silently
+        // overwrote the Claude row instead of creating its own.
+        AiProviderConfig config = configRepository
+            .findByCompanyIdAndAiProviderType(companyId, request.getAiProviderType())
+            .orElseGet(() -> {
+                AiProviderConfig c = new AiProviderConfig();
+                c.setCompany(companyRef(companyId));
+                c.setAiProviderType(request.getAiProviderType());
+                return c;
             });
 
-        config.setAiProviderType(request.getAiProviderType());
         config.setAiModel(request.getModel());
-        config.setActive(true);
 
+        // Trimmed before encrypting - a copy-pasted key very commonly carries an
+        // invisible leading/trailing newline or space, which the provider's API
+        // rejects outright (e.g. Anthropic's "invalid x-api-key") with no hint
+        // that whitespace, not the key itself, was the problem.
         if (request.getApiKey() != null && !request.getApiKey().isBlank())
-            config.setApiKeyEncrypted(keyDecryptor.encrypt(request.getApiKey()));
+            config.setApiKeyEncrypted(keyDecryptor.encrypt(request.getApiKey().trim()));
         if (request.getTemperature() != null)
             config.setTemperature(request.getTemperature());
         if (request.getMaxTokens() != null)
             config.setMaxTokens(request.getMaxTokens());
 
+        // Saving a config is "I want to use this now" - make it the active one
+        // and deactivate whichever provider was active before, so exactly one
+        // config drives AiProviderResolver.resolve() at all times.
+        deactivateAllExcept(companyId, null);
+        config.setActive(true);
         configRepository.save(config);
-        
+
         return AiMapper.toConfigResponse(config);
     }
 
@@ -133,6 +147,54 @@ public class AiServiceImpl implements AiService {
             .map(AiMapper::toConfigResponse)
             .orElseThrow(() -> new ResourceNotFoundException(
                 "No AI provider config found"));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<AiProviderConfigResponse> listProviderConfigs() {
+        return configRepository.findByCompanyIdOrderByAiProviderType(securityUtil.getCurrentCompanyId())
+            .stream()
+            .map(AiMapper::toConfigResponse)
+            .toList();
+    }
+
+    @Override
+    @Transactional
+    public AiProviderConfigResponse activateProviderConfig(Long id) {
+        Long companyId = securityUtil.getCurrentCompanyId();
+        AiProviderConfig config = configRepository.findById(id)
+            .filter(c -> c.getCompany() != null && companyId.equals(c.getCompany().getId()))
+            .orElseThrow(() -> new ResourceNotFoundException("Provider config not found: " + id));
+
+        deactivateAllExcept(companyId, id);
+        config.setActive(true);
+        configRepository.save(config);
+        return AiMapper.toConfigResponse(config);
+    }
+
+    @Override
+    @Transactional
+    public void deleteProviderConfig(Long id) {
+        Long companyId = securityUtil.getCurrentCompanyId();
+        AiProviderConfig config = configRepository.findById(id)
+            .filter(c -> c.getCompany() != null && companyId.equals(c.getCompany().getId()))
+            .orElseThrow(() -> new ResourceNotFoundException("Provider config not found: " + id));
+
+        if (config.isActive()) {
+            throw new com.businessos.shared.exception.BadRequestException(
+                "Cannot delete the active provider - activate a different one first.");
+        }
+        configRepository.delete(config);
+    }
+
+    /** Deactivates every saved config for the company except (optionally) the one given. */
+    private void deactivateAllExcept(Long companyId, Long keepId) {
+        for (AiProviderConfig c : configRepository.findByCompanyIdOrderByAiProviderType(companyId)) {
+            if (c.isActive() && !c.getId().equals(keepId)) {
+                c.setActive(false);
+                configRepository.save(c);
+            }
+        }
     }
 
     @Override

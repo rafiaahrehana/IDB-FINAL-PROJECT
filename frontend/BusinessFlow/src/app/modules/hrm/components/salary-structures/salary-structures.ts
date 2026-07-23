@@ -7,10 +7,11 @@ import { EmployeeService } from '../../services/employee.service';
 import { Loader } from '../../../../shared/components/loader/loader';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
 import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/confirm-dialog';
+import { HasPermissionDirective } from '../../../../shared/directives/has-permission.directive';
 
 @Component({
   selector: 'app-salary-structures',
-  imports: [CommonModule, FormsModule, Loader, EmptyState, ConfirmDialog],
+  imports: [CommonModule, FormsModule, Loader, EmptyState, ConfirmDialog, HasPermissionDirective],
   templateUrl: './salary-structures.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './salary-structures.scss',

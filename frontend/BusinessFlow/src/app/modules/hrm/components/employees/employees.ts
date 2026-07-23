@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -10,8 +10,10 @@ import {
   EmploymentStatus,
   EMPLOYMENT_STATUSES,
   EMPLOYMENT_TYPES,
+  EducationQualificationRequest
 } from '../../models/hrm.model';
 import { EmployeeService } from '../../services/employee.service';
+import { EducationQualificationService } from '../../services/education-qualification.service';
 import { DepartmentService } from '../../services/department.service';
 import { DesignationService } from '../../services/designation.service';
 import { ShiftService } from '../../services/shift.service';
@@ -23,16 +25,19 @@ import { LocationComponent } from '../../../../shared/components/location/locati
 import { FileUpload } from '../../../../shared/components/file-upload/file-upload';
 import { FileUploadResult } from '../../../../shared/services/file-upload.service';
 import { CustomRoleService } from '../../../roles-permissions/services/custom-role.service';
+import { HasPermissionDirective } from '../../../../shared/directives/has-permission.directive';
 import { CustomRole } from '../../../roles-permissions/models/roles-permissions.model';
 
 @Component({
   selector: 'app-employees',
-  imports: [CommonModule, FormsModule, RouterLink, Pagination, Loader, EmptyState, ConfirmDialog, LocationComponent, FileUpload],
+  imports: [CommonModule, FormsModule, RouterLink, Pagination, Loader, EmptyState, ConfirmDialog, LocationComponent, FileUpload, HasPermissionDirective],
   templateUrl: './employees.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './employees.scss',
 })
 export class Employees implements OnInit {
+  @ViewChild(LocationComponent) locationComponent!: LocationComponent;
+
   employees: Employee[] = [];
   departments: Department[] = [];
   designations: Designation[] = [];
@@ -51,8 +56,14 @@ export class Employees implements OnInit {
   showForm = false;
   saving = false;
   form: CreateEmployeeRequest = this.emptyForm();
+  confirmPassword = '';
+  showPassword = false;
+  showConfirmPassword = false;
   customRoles: CustomRole[] = [];
   assignRoleId: number | null = null;
+  qualifications: Partial<EducationQualificationRequest>[] = [
+    { degree: '', institution: '', fieldOfStudy: '', passingYear: undefined, result: '' }
+  ];
 
   terminateTarget: Employee | null = null;
 
@@ -62,6 +73,7 @@ export class Employees implements OnInit {
     private designationService: DesignationService,
     private shiftService: ShiftService,
     private customRoleService: CustomRoleService,
+    private educationService: EducationQualificationService,
     private cdr: ChangeDetectorRef,
   ) {}
 
@@ -69,7 +81,7 @@ export class Employees implements OnInit {
     this.load();
     this.departmentService.listActive().subscribe({ next: (d) => { this.departments = d; this.cdr.markForCheck(); } });
     this.designationService.listActive().subscribe({ next: (d) => { this.designations = d; this.cdr.markForCheck(); } });
-    this.shiftService.list(0, 100).subscribe({ next: (res) => { this.shifts = res.content; this.cdr.markForCheck(); } });
+    this.shiftService.listActive().subscribe({ next: (res) => { this.shifts = res; this.cdr.markForCheck(); } });
     this.customRoleService.list().subscribe({ next: (r) => { this.customRoles = r; this.cdr.markForCheck(); } });
   }
 
@@ -77,7 +89,7 @@ export class Employees implements OnInit {
     this.loading = true;
     this.error = '';
     this.employeeService
-      .list(this.page, 20, this.departmentFilter || undefined, this.statusFilter || undefined)
+      .list(this.page, 20, this.departmentFilter || undefined, this.statusFilter || undefined, true)
       .subscribe({
         next: (res) => {
           this.employees = res.content;
@@ -94,11 +106,34 @@ export class Employees implements OnInit {
   }
 
   save(): void {
+    if (this.locationComponent && this.locationComponent.locationForm) {
+      const locFormValue = this.locationComponent.locationForm.getRawValue();
+      const hasAnyLocValue = Object.values(locFormValue).some(val => val !== null && val !== '');
+      if (hasAnyLocValue) {
+        if (this.locationComponent.locationForm.invalid) {
+          this.locationComponent.locationForm.markAllAsTouched();
+          this.error = 'Please fill all required location fields';
+          this.cdr.markForCheck();
+          return;
+        }
+        this.form.location = locFormValue as any;
+        Object.keys(this.form.location!).forEach(k => {
+          if (typeof (this.form.location as any)[k] === 'string') {
+            (this.form.location as any)[k] = (this.form.location as any)[k].trim();
+          }
+        });
+      } else {
+        delete this.form.location;
+      }
+    }
+
     this.saving = true;
     this.error = '';
     this.employeeService.create(this.cleanPayload()).subscribe({
       next: (created) => {
         const roleId = this.assignRoleId;
+        const qualsToCreate = this.qualifications.filter(q => q.degree && q.institution);
+        
         const finish = (message: string) => {
           this.saving = false;
           this.showForm = false;
@@ -109,15 +144,40 @@ export class Employees implements OnInit {
           this.cdr.markForCheck();
           this.load();
         };
+
+        const handleQualsAndFinish = (baseMessage: string) => {
+          if (qualsToCreate.length === 0) {
+            finish(baseMessage);
+            return;
+          }
+          
+          let completed = 0;
+          let hasError = false;
+          qualsToCreate.forEach(q => {
+            const payload = { ...q, employeeId: created.id } as EducationQualificationRequest;
+            this.educationService.create(payload).subscribe({
+              next: () => {
+                completed++;
+                if (completed === qualsToCreate.length) finish(baseMessage + (hasError ? ' (some qualifications failed)' : ''));
+              },
+              error: () => {
+                hasError = true;
+                completed++;
+                if (completed === qualsToCreate.length) finish(baseMessage + ' (some qualifications failed)');
+              }
+            });
+          });
+        };
+
         if (roleId) {
           // Role assignment needs the employee's own id, so it's a follow-up
           // call after creation rather than part of CreateEmployeeRequest.
           this.customRoleService.assignEmployee(roleId, created.id).subscribe({
-            next: () => finish('Employee created and role assigned'),
-            error: () => finish('Employee created, but assigning the role failed - you can assign it from the employee\'s profile'),
+            next: () => handleQualsAndFinish('Employee created and role assigned'),
+            error: () => handleQualsAndFinish('Employee created, but assigning the role failed'),
           });
         } else {
-          finish('Employee created successfully');
+          handleQualsAndFinish('Employee created successfully');
         }
       },
       error: (err) => {
@@ -158,7 +218,21 @@ export class Employees implements OnInit {
     return payload;
   }
 
+  addQualification(): void {
+    this.qualifications.push({ degree: '', institution: '', fieldOfStudy: '', passingYear: undefined, result: '' });
+  }
+
+  removeQualification(index: number): void {
+    this.qualifications.splice(index, 1);
+  }
+
   private emptyForm(): CreateEmployeeRequest {
+    this.confirmPassword = '';
+    this.showPassword = false;
+    this.showConfirmPassword = false;
+    this.qualifications = [
+      { degree: '', institution: '', fieldOfStudy: '', passingYear: undefined, result: '' }
+    ];
     return {
       firstName: '',
       lastName: '',

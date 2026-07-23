@@ -12,26 +12,23 @@
 }
 
 .bg-purple-dark {
-  background-color: #4a287c;
+  background-color: #3730A3;
 }
 
 .text-lavender {
-  color: #e6d8fa;
-}
-
-.bg-lavender-light {
-  background-color: #f7f3fd;
-  border: 1px solid #e0d0f5 !important;
+  color: #c7d2fe;
 }
 
 .security-card {
+  border: 1px solid var(--card-border-color, #c7d2fe);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   height: 100%;
 }
 
 .hover-card-lift:hover {
   transform: translateY(-4px);
+  border-color: var(--card-hover-border-color) !important;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
 }
 

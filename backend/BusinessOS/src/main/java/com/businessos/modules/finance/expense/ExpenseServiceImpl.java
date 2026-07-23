@@ -83,13 +83,31 @@ public class ExpenseServiceImpl implements ExpenseService {
     @Transactional(readOnly = true)
     public ExpenseResponse getById(Long id) {
         Expense expense = findInTenant(id);
+        // Platform expenses have no CustomRole to check EXPENSE_VIEW against - the
+        // controller's role-based @PreAuthorize (PLATFORM_ACCOUNTANT/SUPER_ADMIN)
+        // already gates this for that branch (mirrors SupportTicketServiceImpl.getAll).
+        if (isPlatformCaller()) {
+            return ExpenseMapper.toResponse(expense);
+        }
         if (!authorizationService.hasPermission(PermissionCode.EXPENSE_VIEW)) {
             requireOwnExpense(expense);
         }
         return ExpenseMapper.toResponse(expense);
     }
 
+    private boolean isPlatformCaller() {
+        User current = securityUtil.getCurrentUser();
+        return current != null && current.isPlatformUser();
+    }
+
+    // Platform expenses (SaaS provider's own operating costs) are stored with a null
+    // companyId - they belong to no tenant, so they're looked up/listed separately
+    // from tenant expenses rather than by the caller's (nonexistent) company id.
     private Expense findInTenant(Long id) {
+        if (isPlatformCaller()) {
+            return expenseRepository.findByIdAndCompanyIdIsNull(id)
+                    .orElseThrow(() -> new ResourceNotFoundException("Expense not found"));
+        }
         return expenseRepository.findByIdAndCompanyId(id, securityUtil.getCurrentCompanyId())
                 .orElseThrow(() -> new ResourceNotFoundException("Expense not found"));
     }
@@ -108,6 +126,10 @@ public class ExpenseServiceImpl implements ExpenseService {
     @Override
     @Transactional(readOnly = true)
     public Page<ExpenseResponse> getAll(Pageable pageable) {
+        if (isPlatformCaller()) {
+            return expenseRepository.findByCompanyIdIsNull(pageable)
+                    .map(ExpenseMapper::toResponse);
+        }
         authorizationService.checkPermission(PermissionCode.EXPENSE_VIEW);
         Long companyId = securityUtil.getCurrentCompanyId();
         return expenseRepository.findByCompanyId(companyId, pageable)
@@ -117,6 +139,10 @@ public class ExpenseServiceImpl implements ExpenseService {
     @Override
     @Transactional(readOnly = true)
     public Page<ExpenseResponse> getByStatus(ExpenseStatus status, Pageable pageable) {
+        if (isPlatformCaller()) {
+            return expenseRepository.findByCompanyIdIsNullAndStatus(status, pageable)
+                    .map(ExpenseMapper::toResponse);
+        }
         authorizationService.checkPermission(PermissionCode.EXPENSE_VIEW);
         Long companyId = securityUtil.getCurrentCompanyId();
         return expenseRepository.findByCompanyIdAndStatus(companyId, status, pageable)
@@ -126,6 +152,10 @@ public class ExpenseServiceImpl implements ExpenseService {
     @Override
     @Transactional(readOnly = true)
     public Page<ExpenseResponse> getByVendorName(String vendorName, Pageable pageable) {
+        if (isPlatformCaller()) {
+            return expenseRepository.findByCompanyIdIsNullAndVendorName(vendorName, pageable)
+                    .map(ExpenseMapper::toResponse);
+        }
         authorizationService.checkPermission(PermissionCode.EXPENSE_VIEW);
         Long companyId = securityUtil.getCurrentCompanyId();
         return expenseRepository.findByCompanyIdAndVendorName(companyId, vendorName, pageable)
@@ -154,7 +184,7 @@ public class ExpenseServiceImpl implements ExpenseService {
     public ExpenseResponse update(Long id, ExpenseRequest request) {
         Expense expense = findInTenant(id);
 
-        if (!authorizationService.hasPermission(PermissionCode.EXPENSE_UPDATE)) {
+        if (!isPlatformCaller() && !authorizationService.hasPermission(PermissionCode.EXPENSE_UPDATE)) {
             requireOwnExpense(expense);
         }
 
@@ -182,7 +212,9 @@ public class ExpenseServiceImpl implements ExpenseService {
     @Override
     @Transactional
     public void approveExpense(Long id, String approvalNotes) {
-        authorizationService.checkPermission(PermissionCode.EXPENSE_APPROVE);
+        if (!isPlatformCaller()) {
+            authorizationService.checkPermission(PermissionCode.EXPENSE_APPROVE);
+        }
         Expense expense = findInTenant(id);
 
         User currentUser = securityUtil.getCurrentUser();
@@ -201,7 +233,9 @@ public class ExpenseServiceImpl implements ExpenseService {
     @Override
     @Transactional
     public void rejectExpense(Long id, String reason) {
-        authorizationService.checkPermission(PermissionCode.EXPENSE_REJECT);
+        if (!isPlatformCaller()) {
+            authorizationService.checkPermission(PermissionCode.EXPENSE_REJECT);
+        }
         Expense expense = findInTenant(id);
         expense.reject();
         expense.setApprovalNotes(reason);
@@ -211,7 +245,9 @@ public class ExpenseServiceImpl implements ExpenseService {
     @Override
     @Transactional
     public void markAsPaid(Long id, String reimbursementMethod, String referenceNumber) {
-        authorizationService.checkPermission(PermissionCode.EXPENSE_APPROVE);
+        if (!isPlatformCaller()) {
+            authorizationService.checkPermission(PermissionCode.EXPENSE_APPROVE);
+        }
         Expense expense = findInTenant(id);
         expense.markAsPaid(reimbursementMethod, referenceNumber);
         expenseRepository.save(expense);
@@ -238,6 +274,9 @@ public class ExpenseServiceImpl implements ExpenseService {
     @Transactional
     public void delete(Long id) {
         Expense expense = findInTenant(id);
+        if (!isPlatformCaller() && !authorizationService.hasPermission(PermissionCode.EXPENSE_DELETE)) {
+            requireOwnExpense(expense);
+        }
         if (expense.getStatus() == ExpenseStatus.PAID) {
             throw new BadRequestException("Cannot delete a paid expense - it has GL entries");
         }
@@ -248,8 +287,12 @@ public class ExpenseServiceImpl implements ExpenseService {
     private String generateExpenseNumber(Long companyId) {
         int year = LocalDate.now().getYear();
         String prefix = "EXP-" + year + "-";
-        String maxNumber = expenseRepository
-                .findMaxExpenseNumberByCompanyAndPrefix(companyId, prefix)
+        // companyId is null for platform expenses - the tenant query's "= :companyId"
+        // never matches NULL rows, so the sequence needs its own IS NULL lookup or
+        // every platform expense would collide on 000001.
+        String maxNumber = (companyId == null
+                ? expenseRepository.findMaxExpenseNumberByPlatformAndPrefix(prefix)
+                : expenseRepository.findMaxExpenseNumberByCompanyAndPrefix(companyId, prefix))
                 .orElse(prefix + "000000");
         long sequence = Long.parseLong(maxNumber.substring(prefix.length())) + 1;
         return String.format("%s%06d", prefix, sequence);

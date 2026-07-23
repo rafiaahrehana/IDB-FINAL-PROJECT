@@ -10,6 +10,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.access.prepost.PreAuthorize;
 
+import java.util.List;
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/recruitment/jobs")
@@ -30,6 +32,11 @@ public class JobPostingController {
             @RequestParam(defaultValue = "20") int size) {
         return ResponseEntity.ok(jobPostingService.listAll(status,
                 PageRequest.of(page, size, Sort.by("createdAt").descending())));
+    }
+
+    @GetMapping("/open")
+    public ResponseEntity<List<JobPostingResponse>> listOpen() {
+        return ResponseEntity.ok(jobPostingService.listOpen());
     }
 
     @GetMapping("/{id}")

@@ -1,6 +1,7 @@
 import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import {
   Client,
   Opportunity,
@@ -11,10 +12,24 @@ import {
 import { OpportunityService } from '../../services/opportunity.service';
 import { ClientService } from '../../services/client.service';
 import { Loader } from '../../../../shared/components/loader/loader';
+import { HasPermissionDirective } from '../../../../shared/directives/has-permission.directive';
+
+// Fixed per-stage color, never reassigned by data (see dataviz skill) - a light
+// to deep purple/blue progression across the open funnel, then the reserved
+// status colors (green/red) for the two closed outcomes.
+const STAGE_COLORS: Record<string, string> = {
+  PROSPECTING: '#8b5cf6',
+  QUALIFICATION: '#6366f1',
+  NEEDS_ANALYSIS: '#3b82f6',
+  PROPOSAL: '#0ea5e9',
+  NEGOTIATION: '#7d55fa',
+  CLOSED_WON: '#10b981',
+  CLOSED_LOST: '#ef4444',
+};
 
 @Component({
   selector: 'app-pipeline-board',
-  imports: [CommonModule, FormsModule, Loader],
+  imports: [CommonModule, FormsModule, Loader, HasPermissionDirective],
   templateUrl: './pipeline-board.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './pipeline-board.scss',
@@ -39,13 +54,25 @@ export class PipelineBoard implements OnInit {
   constructor(
     private opportunityService: OpportunityService,
     private clientService: ClientService,
+    private router: Router,
     private cdr: ChangeDetectorRef,
   ) {}
 
+  viewReports(): void {
+    this.router.navigate(['/crm/pipeline/reports']);
+  }
+
+  stageColor(stage: string): string {
+    return STAGE_COLORS[stage] || '#6b7280';
+  }
+
+  get lostValue(): number {
+    return this.summary?.stages.find((s) => s.stage === 'CLOSED_LOST')?.totalAmount || 0;
+  }
+
   ngOnInit(): void {
     this.load();
-    // For the "Client" dropdown; a page of 100 covers typical client counts
-    this.clientService.list(0, 100).subscribe({ next: (res) => { this.clients = res.content; this.cdr.markForCheck(); } });
+    this.clientService.listActive().subscribe({ next: (res) => { this.clients = res; this.cdr.markForCheck(); } });
   }
 
   private emptyForm(): any {

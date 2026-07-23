@@ -11,6 +11,7 @@ package com.businessos.modules.finance.generalledger;
 public enum GlReferenceType {
     INVOICE,
     INVOICE_CANCEL,
+    INVOICE_REFUND,
     PAYMENT_RECEIPT,
     EXPENSE,
     PAYROLL,

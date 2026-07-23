@@ -58,7 +58,13 @@ export class Notifications implements OnInit {
         next: () => { n.read = true; this.notificationService.refreshCount(); this.cdr.markForCheck(); }
       });
     }
-    if (n.actionUrl) this.router.navigateByUrl(n.actionUrl);
+    if (n.actionUrl) {
+      let targetUrl = n.actionUrl;
+      if (targetUrl.startsWith('/announcements/') || targetUrl.startsWith('/hrm/announcements/')) {
+        targetUrl = '/hrm/announcements';
+      }
+      this.router.navigateByUrl(targetUrl);
+    }
   }
 
   // MARK ALL AS READ

@@ -13,9 +13,11 @@ import com.businessos.auth.password.ChangePasswordRequest;
 import com.businessos.auth.password.ForgotPasswordRequest;
 import com.businessos.auth.password.ResetPasswordRequest;
 import com.businessos.modules.crm.client.ClientRepository;
+import com.businessos.modules.hrm.employee.Employee;
+import com.businessos.modules.hrm.employee.EmployeeNumberGenerator;
 import com.businessos.modules.hrm.employee.EmployeeRepository;
 import com.businessos.enums.CompanyStatus;
-import com.businessos.enums.SubscriptionPlan;
+import com.businessos.enums.EmploymentStatus;
 import com.businessos.shared.audit.AuditService;
 import com.businessos.modules.company.Company;
 import com.businessos.modules.company.CompanyRepository;
@@ -96,11 +98,25 @@ public class AuthServiceImpl implements AuthService {
             .companyEmail(request.getCompanyEmail() != null ? request.getCompanyEmail().toLowerCase().trim() : null)
             .companyPhone(request.getCompanyPhone())
             .locationDetail(request.getLocation())
-            .subscriptionPlan(SubscriptionPlan.FREE)
+            .subscriptionPlan("FREE")
             .status(CompanyStatus.TRIAL)
             .owner(user)
             .build();
         companyRepository.save(company);
+
+        // Every module that scopes "my work" (leads, leaves, timesheets, expenses, payroll...)
+        // looks up the current user's Employee record - without this, the owner immediately
+        // hits "Employee profile not found" the moment they touch any of those screens.
+        Employee ownerEmployee = Employee.builder()
+            .user(user)
+            .company(company)
+            .employeeNumber(EmployeeNumberGenerator.next(employeeRepository, company.getId()))
+            .jobTitle("Owner")
+            .employmentStatus(EmploymentStatus.ACTIVE)
+            .hireDate(LocalDate.now())
+            .active(true)
+            .build();
+        employeeRepository.save(ownerEmployee);
 
         String verificationToken = jwtService.generateActionToken(
             user.getEmail(), TokenType.EMAIL_VERIFICATION, EMAIL_VERIFY_HOURS * 3600000L);
@@ -135,7 +151,10 @@ public class AuthServiceImpl implements AuthService {
             user.getEmail(), user.getRole().name(), companyId);
         String refreshToken = jwtService.generateRefreshToken(user.getEmail());
 
-        revokeAllRefreshTokens(user);
+        // Deliberately NOT revoking existing refresh tokens here - each login issues its
+        // own independent refresh token so multiple concurrent sessions (a second tab,
+        // another device) keep working. Only resetPassword()/changePassword() revoke
+        // every refresh token, since those genuinely need to kill all other sessions.
         persistToken(user, refreshToken, TokenType.REFRESH,
             LocalDateTime.now().plusSeconds(refreshExpirationMs / 1000));
 

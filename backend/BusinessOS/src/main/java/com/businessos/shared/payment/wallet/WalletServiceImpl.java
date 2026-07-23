@@ -1,5 +1,7 @@
 package com.businessos.shared.payment.wallet;
 
+import com.businessos.auth.role.enums.PermissionCode;
+import com.businessos.auth.role.service.AuthorizationService;
 import com.businessos.enums.WalletTransactionType;
 import com.businessos.shared.exception.BadRequestException;
 
@@ -22,10 +24,12 @@ public class WalletServiceImpl implements WalletService {
     private final WalletRepository walletRepository;
     private final WalletTransactionRepository txRepository;
     private final SecurityUtil securityUtil;
+    private final AuthorizationService authorizationService;
 
     @Override
     @Transactional
     public WalletResponse getOrCreateWallet() {
+        authorizationService.checkPermission(PermissionCode.WALLET_VIEW);
         Long companyId = requireCompanyId();
         Wallet wallet = walletRepository.findByContextTypeAndContextId("COMPANY", companyId)
             .orElseGet(() -> createWallet("COMPANY", companyId));
@@ -35,6 +39,7 @@ public class WalletServiceImpl implements WalletService {
     @Override
     @Transactional(readOnly = true)
     public Page<WalletTransactionResponse> getTransactions(WalletTransactionType type, Pageable pageable) {
+        authorizationService.checkPermission(PermissionCode.WALLET_VIEW);
         Long companyId = requireCompanyId();
         Page<WalletTransaction> page = type != null
             ? txRepository.findByWalletContextTypeAndWalletContextIdAndTypeOrderByTransactedAtDesc("COMPANY", companyId, type, pageable)

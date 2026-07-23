@@ -1,6 +1,7 @@
-import { Component, OnInit, ViewChild, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 
 import {
   NotificationPreference,
@@ -9,10 +10,6 @@ import {
 import { NotificationService } from '../../core/services/notification.service';
 import { Loader } from '../../shared/components/loader/loader';
 import { AuthService } from '../../core/services/auth.service';
-import { LocationComponent } from '../../shared/components/location/location.component';
-import { LocationRequest } from '../../shared/models/location.model';
-import { FileUpload } from '../../shared/components/file-upload/file-upload';
-import { FileUploadResult } from '../../shared/services/file-upload.service';
 
 interface PrefRow {
   key: keyof UpdateNotificationPreferenceRequest;
@@ -23,36 +20,32 @@ interface PrefRow {
 
 @Component({
   selector: 'app-notification-preferences',
-  imports: [CommonModule, FormsModule, Loader, LocationComponent, FileUpload],
+  imports: [CommonModule, FormsModule, RouterLink, Loader],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './preferences.html',
   styleUrl: './preferences.scss'
 })
 export class Preferences implements OnInit {
-  @ViewChild(LocationComponent) locationComponent!: LocationComponent;
+  activeTab: 'notifications' | 'security' = 'notifications';
 
-  activeTab: 'profile' | 'notifications' | 'security' = 'profile';
-
-  // PROFILE VARIABLES
-  profile: any = null;
-  loadingProfile = false;
-  savingProfile = false;
-
-  profileForm = {
-    firstName: '',
-    lastName: '',
-    phone: '',
-    image: '',
-    languagePreference: 'EN'
-  };
-
-  // SECURITY (CHANGE PASSWORD) VARIABLES
+  // SECURITY (CHANGE PASSWORD & EMAIL) VARIABLES
   changingPassword = false;
+  showCurrentPassword = false;
+  showNewPassword = false;
+  showConfirmPassword = false;
+
+  editingEmail = false;
+  editingPassword = false;
+  changingEmail = false;
 
   passwordForm = {
     currentPassword: '',
     newPassword: '',
     confirmPassword: ''
+  };
+
+  emailForm = {
+    newEmail: ''
   };
 
   // NOTIFICATION VARIABLES
@@ -85,109 +78,14 @@ export class Preferences implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.loadProfile();
     this.load();
   }
 
   // TAB CONTROLS
-  setTab(tab: 'profile' | 'notifications' | 'security'): void {
+  setTab(tab: 'notifications' | 'security'): void {
     this.activeTab = tab;
     this.error = '';
     this.success = '';
-    
-    if (tab === 'profile' && this.profile && this.profile.location) {
-      setTimeout(() => {
-        if (this.locationComponent) {
-          this.locationComponent.resolveExistingLocation(this.profile.location);
-        }
-      }, 50);
-    }
-  }
-
-  // LOAD PROFILE
-  loadProfile(): void {
-    this.loadingProfile = true;
-    this.error = '';
-    this.cdr.markForCheck();
-    this.authService.getProfile().subscribe({
-      next: (res) => {
-        this.profile = res;
-        this.profileForm = {
-          firstName: res.firstName || '',
-          lastName: res.lastName || '',
-          phone: res.phone || '',
-          image: res.image || '',
-          languagePreference: res.languagePreference || 'EN'
-        };
-        this.loadingProfile = false;
-        this.cdr.markForCheck();
-        
-        if (res.location) {
-          setTimeout(() => {
-            if (this.locationComponent) {
-              this.locationComponent.resolveExistingLocation(res.location);
-            }
-          }, 50);
-        }
-      },
-      error: () => {
-        this.error = 'Failed to load profile details';
-        this.loadingProfile = false;
-        this.cdr.markForCheck();
-      }
-    });
-  }
-
-  // SAVE PROFILE
-  // Uploaded via the shared FileUpload component (avatar variant - images only,
-  // server-validated); the returned URL is saved when the profile form is submitted.
-  onAvatarUploaded(result: FileUploadResult): void {
-    this.profileForm.image = result.fileUrl;
-  }
-
-  saveProfile(locationData?: LocationRequest): void {
-    if (!this.profileForm.firstName.trim() || !this.profileForm.lastName.trim()) {
-      this.error = 'First name and Last name are required';
-      return;
-    }
-
-    this.savingProfile = true;
-    this.error = '';
-    this.success = '';
-    this.cdr.markForCheck();
-
-    const payload: any = {
-      firstName: this.profileForm.firstName.trim(),
-      lastName: this.profileForm.lastName.trim(),
-      phone: this.profileForm.phone ? this.profileForm.phone.trim() : null,
-      image: this.profileForm.image ? this.profileForm.image.trim() : null,
-      languagePreference: this.profileForm.languagePreference
-    };
-
-    if (locationData) {
-      payload.location = locationData;
-    } else if (this.locationComponent) {
-      if (this.locationComponent.locationForm.valid) {
-        payload.location = this.locationComponent.locationForm.getRawValue();
-      }
-    }
-
-    this.authService.updateProfile(payload).subscribe({
-      next: (res) => {
-        this.profile = res;
-        this.success = 'Profile and location updated successfully';
-        this.savingProfile = false;
-        this.cdr.markForCheck();
-        if (res.location && this.locationComponent) {
-          this.locationComponent.resolveExistingLocation(res.location);
-        }
-      },
-      error: (err) => {
-        this.error = err?.error?.message || 'Failed to update profile details';
-        this.savingProfile = false;
-        this.cdr.markForCheck();
-      }
-    });
   }
 
   // CHANGE PASSWORD
@@ -215,7 +113,7 @@ export class Preferences implements OnInit {
     this.authService.changePassword({ currentPassword, newPassword, confirmPassword }).subscribe({
       next: () => {
         this.changingPassword = false;
-        this.passwordForm = { currentPassword: '', newPassword: '', confirmPassword: '' };
+        this.resetPasswordForm();
         // Backend revokes ALL refresh tokens on password change, so this session
         // can no longer refresh - log out and send the user back to sign in.
         this.success = 'Password changed successfully. Redirecting to sign in...';
@@ -228,6 +126,54 @@ export class Preferences implements OnInit {
         this.cdr.markForCheck();
       }
     });
+  }
+
+  saveEmail(): void {
+    if (!this.emailForm.newEmail.trim()) {
+      this.error = 'Email is required';
+      return;
+    }
+    this.changingEmail = true;
+    this.error = '';
+    this.success = '';
+    this.cdr.markForCheck();
+
+    // Simulate an API call
+    setTimeout(() => {
+      this.changingEmail = false;
+      this.editingEmail = false;
+      this.success = 'Email updated successfully (Mock)';
+      this.cdr.markForCheck();
+    }, 1000);
+  }
+
+  resetPasswordForm(): void {
+    this.passwordForm = {
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: ''
+    };
+    this.showCurrentPassword = false;
+    this.showNewPassword = false;
+    this.showConfirmPassword = false;
+    this.error = '';
+    this.success = '';
+    this.cdr.markForCheck();
+  }
+
+  get passwordStrength(): { label: string; class: string; bars: number } {
+    const pw = this.passwordForm.newPassword;
+    if (!pw) return { label: '', class: '', bars: 0 };
+    let score = 0;
+    if (pw.length >= 8) score++;
+    if (/[A-Z]/.test(pw)) score++;
+    if (/[a-z]/.test(pw)) score++;
+    if (/[0-9]/.test(pw)) score++;
+    if (/[!@#$%^&*()_+\-=\[\]{};':\\|,.<>\/?]/.test(pw)) score++;
+
+    if (score <= 2) return { label: 'Weak', class: 'text-danger', bars: 1 };
+    if (score <= 4) return { label: 'Medium', class: 'text-warning', bars: 3 };
+    return { label: 'Strong', class: 'text-success', bars: 5 };
   }
 
   // LOAD PREFERENCES
@@ -262,6 +208,45 @@ export class Preferences implements OnInit {
     this.notificationService.updatePreferences(payload).subscribe({
       next: (res: NotificationPreference) => { this.preference = res; this.saving = false; this.success = 'Preferences saved'; this.cdr.markForCheck(); },
       error: (err: any) => { this.saving = false; this.error = err?.error?.message || 'Failed to save preferences'; this.cdr.markForCheck(); }
+    });
+  }
+
+  togglePreference(key: keyof UpdateNotificationPreferenceRequest, val: boolean): void {
+    if (!this.preference) return;
+    this.preference[key] = val;
+
+    const payload: UpdateNotificationPreferenceRequest = {
+      emailOnServiceRequest: this.preference.emailOnServiceRequest,
+      emailOnStatusChange: this.preference.emailOnStatusChange,
+      emailOnInvoice: this.preference.emailOnInvoice,
+      emailOnPayment: this.preference.emailOnPayment,
+      emailOnTaskAssigned: this.preference.emailOnTaskAssigned,
+      emailOnLeaveUpdate: this.preference.emailOnLeaveUpdate,
+      inAppOnServiceRequest: this.preference.inAppOnServiceRequest,
+      inAppOnStatusChange: this.preference.inAppOnStatusChange,
+      emailMarketing: this.preference.emailMarketing,
+    };
+
+    this.error = '';
+    this.success = '';
+    this.cdr.markForCheck();
+
+    this.notificationService.updatePreferences(payload).subscribe({
+      next: (res: NotificationPreference) => {
+        this.preference = res;
+        this.success = 'Notification preference updated';
+        this.cdr.markForCheck();
+        setTimeout(() => {
+          if (this.success === 'Notification preference updated') {
+            this.success = '';
+            this.cdr.markForCheck();
+          }
+        }, 3000);
+      },
+      error: (err: any) => {
+        this.error = err?.error?.message || 'Failed to save preferences';
+        this.cdr.markForCheck();
+      }
     });
   }
 

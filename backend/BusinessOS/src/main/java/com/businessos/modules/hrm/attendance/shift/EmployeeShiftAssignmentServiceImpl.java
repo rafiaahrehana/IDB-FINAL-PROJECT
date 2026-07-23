@@ -2,6 +2,8 @@ package com.businessos.modules.hrm.attendance.shift;
 
 import com.businessos.modules.hrm.employee.Employee;
 import com.businessos.modules.hrm.employee.EmployeeRepository;
+import com.businessos.auth.role.enums.PermissionCode;
+import com.businessos.auth.role.service.AuthorizationService;
 import com.businessos.security.SecurityUtil;
 import com.businessos.shared.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -19,10 +21,12 @@ public class EmployeeShiftAssignmentServiceImpl implements EmployeeShiftAssignme
     private final EmployeeRepository employeeRepository;
     private final ShiftRepository shiftRepository;
     private final SecurityUtil securityUtil;
+    private final AuthorizationService authorizationService;
 
     @Override
     @Transactional
     public EmployeeShiftAssignmentResponse create(EmployeeShiftAssignmentRequest request) {
+        authorizationService.checkPermission(PermissionCode.SHIFT_ASSIGNMENT_CREATE);
         Long companyId = securityUtil.getCurrentCompanyId();
         
         Employee employee = employeeRepository.findByIdAndCompanyId(request.getEmployeeId(), companyId)
@@ -67,6 +71,7 @@ public class EmployeeShiftAssignmentServiceImpl implements EmployeeShiftAssignme
     @Override
     @Transactional(readOnly = true)
     public Page<EmployeeShiftAssignmentResponse> getAll(Pageable pageable) {
+        authorizationService.checkPermission(PermissionCode.SHIFT_ASSIGNMENT_VIEW);
         Long companyId = securityUtil.getCurrentCompanyId();
         return assignmentRepository.findByCompanyId(companyId, pageable)
                 .map(EmployeeShiftAssignmentMapper::toResponse);
@@ -93,6 +98,7 @@ public class EmployeeShiftAssignmentServiceImpl implements EmployeeShiftAssignme
     @Override
     @Transactional
     public EmployeeShiftAssignmentResponse update(Long id, EmployeeShiftAssignmentRequest request) {
+        authorizationService.checkPermission(PermissionCode.SHIFT_ASSIGNMENT_UPDATE);
         Long companyId = securityUtil.getCurrentCompanyId();
         EmployeeShiftAssignment assignment = assignmentRepository.findByIdAndCompanyId(id, companyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Assignment not found"));
@@ -112,6 +118,7 @@ public class EmployeeShiftAssignmentServiceImpl implements EmployeeShiftAssignme
     @Override
     @Transactional
     public void endAssignment(Long id) {
+        authorizationService.checkPermission(PermissionCode.SHIFT_ASSIGNMENT_UPDATE);
         Long companyId = securityUtil.getCurrentCompanyId();
         EmployeeShiftAssignment assignment = assignmentRepository.findByIdAndCompanyId(id, companyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Assignment not found"));
@@ -123,6 +130,7 @@ public class EmployeeShiftAssignmentServiceImpl implements EmployeeShiftAssignme
     @Override
     @Transactional
     public EmployeeShiftAssignmentResponse delete(Long id) {
+        authorizationService.checkPermission(PermissionCode.SHIFT_ASSIGNMENT_DELETE);
         Long companyId = securityUtil.getCurrentCompanyId();
         EmployeeShiftAssignment assignment = assignmentRepository.findByIdAndCompanyId(id, companyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Assignment not found"));

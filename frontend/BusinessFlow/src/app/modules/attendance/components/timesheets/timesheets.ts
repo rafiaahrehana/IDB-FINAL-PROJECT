@@ -3,14 +3,18 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Timesheet, TimesheetRequest } from '../../models/attendance.model';
 import { TimesheetService } from '../../services/timesheet.service';
+import { Employee } from '../../../hrm/models/hrm.model';
+import { EmployeeService } from '../../../hrm/services/employee.service';
 import { Pagination } from '../../../../shared/components/pagination/pagination';
 import { Loader } from '../../../../shared/components/loader/loader';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
 import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/confirm-dialog';
+import { HasPermissionDirective } from '../../../../shared/directives/has-permission.directive';
+import { StatCard } from '../../../../shared/components/stat-card/stat-card';
 
 @Component({
   selector: 'app-timesheets',
-  imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState, ConfirmDialog],
+  imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState, ConfirmDialog, HasPermissionDirective, StatCard],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './timesheets.html',
 })
@@ -28,17 +32,26 @@ export class Timesheets implements OnInit {
   form: TimesheetRequest = this.emptyForm();
   deleteTarget: Timesheet | null = null;
 
-  // MANAGER VIEW - look up a specific employee's timesheets by ID
+  employees: Employee[] = [];
   employeeIdFilter?: number;
+  weekFilter = '';
   employeeTimesheets: Timesheet[] = [];
   employeePage = 0;
   employeeTotalPages = 0;
   employeeLoading = false;
 
-  constructor(private timesheetService: TimesheetService, private cdr: ChangeDetectorRef) {}
+  constructor(
+    private timesheetService: TimesheetService,
+    private employeeService: EmployeeService,
+    private cdr: ChangeDetectorRef,
+  ) {}
 
   ngOnInit(): void {
     this.load();
+    this.employeeService.list(0, 500).subscribe({
+      next: (res) => { this.employees = res.content; this.cdr.markForCheck(); },
+      error: () => { this.error = 'Failed to load employees'; this.cdr.markForCheck(); },
+    });
   }
 
   emptyForm(): TimesheetRequest {
@@ -121,11 +134,83 @@ export class Timesheets implements OnInit {
     this.load();
   }
 
-  // MANAGER VIEW
+  private isSameDate(dateStr: string, ref: Date): boolean {
+    return dateStr === ref.toISOString().slice(0, 10);
+  }
+
+  private isInCurrentWeek(dateStr: string): boolean {
+    const d = new Date(dateStr + 'T00:00:00');
+    const now = new Date();
+    const day = (now.getDay() + 6) % 7; // Monday = 0
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - day);
+    monday.setHours(0, 0, 0, 0);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    sunday.setHours(23, 59, 59, 999);
+    return d >= monday && d <= sunday;
+  }
+
+  get todayHours(): number {
+    const today = new Date();
+    return this.myTimesheets
+      .filter((t) => this.isSameDate(t.workDate, today))
+      .reduce((sum, t) => sum + (t.hoursWorked || 0), 0);
+  }
+
+  get weekHours(): number {
+    return this.myTimesheets
+      .filter((t) => this.isInCurrentWeek(t.workDate))
+      .reduce((sum, t) => sum + (t.hoursWorked || 0), 0);
+  }
+
+  get weekBillableHours(): number {
+    return this.myTimesheets
+      .filter((t) => this.isInCurrentWeek(t.workDate))
+      .reduce((sum, t) => sum + (t.billableHours || 0), 0);
+  }
+
+  // Anything past a standard 40-hour week counts as overtime.
+  get weekOvertimeHours(): number {
+    return Math.max(0, this.weekHours - 40);
+  }
+
+  get pendingCount(): number {
+    return this.myTimesheets.filter((t) => !t.approved).length;
+  }
+
+  statusLabel(t: Timesheet): string {
+    return t.approved ? 'Approved' : 'Pending';
+  }
+
+  statusBadgeClass(t: Timesheet): string {
+    return t.approved ? 'text-bg-success' : 'text-bg-warning';
+  }
+
   loadEmployeeTimesheets(): void {
     if (!this.employeeIdFilter) return;
     this.employeeLoading = true;
     this.cdr.markForCheck();
+
+    if (this.weekFilter) {
+      const { from, to } = this.weekRange(this.weekFilter);
+      this.timesheetService.listByRange(this.employeeIdFilter, from, to).subscribe({
+        next: (res) => {
+          this.employeeTimesheets = res;
+          this.employeeTotalPages = 1;
+          this.employeePage = 0;
+          this.employeeLoading = false;
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.error = 'Failed to load timesheets for that employee';
+          this.employeeLoading = false;
+          this.cdr.markForCheck();
+        },
+      });
+      return;
+    }
+
     this.timesheetService.listForEmployee(this.employeeIdFilter, this.employeePage).subscribe({
       next: (res) => {
         this.employeeTimesheets = res.content;
@@ -139,6 +224,20 @@ export class Timesheets implements OnInit {
         this.cdr.markForCheck();
       },
     });
+  }
+
+  // Converts an HTML5 <input type="week"> value (e.g. "2026-W29") into a Monday-Sunday date range.
+  private weekRange(weekValue: string): { from: string; to: string } {
+    const [yearStr, weekStr] = weekValue.split('-W');
+    const year = Number(yearStr);
+    const week = Number(weekStr);
+    const jan4 = new Date(year, 0, 4);
+    const jan4Day = (jan4.getDay() + 6) % 7;
+    const monday = new Date(jan4);
+    monday.setDate(jan4.getDate() - jan4Day + (week - 1) * 7);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    return { from: monday.toISOString().slice(0, 10), to: sunday.toISOString().slice(0, 10) };
   }
 
   approve(t: Timesheet): void {

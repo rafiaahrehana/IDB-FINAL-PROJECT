@@ -44,6 +44,13 @@ public class DashboardController {
         return ResponseEntity.ok(dashboardService.getPlatformSummary());
     }
 
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'SYSTEM_ADMIN', 'SUPPORT_AGENT', 'SUPPORT_MANAGER', 'MARKETING_MANAGER', 'PLATFORM_ACCOUNTANT', 'SALES_MANAGER')")
+    @GetMapping("/platform-metrics-history")
+    public ResponseEntity<java.util.List<PlatformMetricsPoint>> getPlatformMetricsHistory(
+            @RequestParam(defaultValue = "30") int days) {
+        return ResponseEntity.ok(dashboardService.getPlatformMetricsHistory(Math.min(days, 365)));
+    }
+
     @PreAuthorize("hasRole('CLIENT')")
     @GetMapping("/client-summary")
     public ResponseEntity<ClientSummaryResponse> getClientSummary() {

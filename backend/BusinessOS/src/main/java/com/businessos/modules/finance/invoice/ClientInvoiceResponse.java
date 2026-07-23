@@ -9,6 +9,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import com.businessos.enums.InvoiceStatus;
+import com.businessos.enums.RefundStatus;
 @Data
 @Builder
 @NoArgsConstructor
@@ -19,6 +20,10 @@ public class ClientInvoiceResponse {
     private String invoiceNumber;
     private Long clientId;
     private String clientName;
+    private Long serviceRequestId;
+    private String serviceRequestTitle;
+    // Only populated by getMyInvoices() - the latest refund (if any) for this invoice.
+    private RefundStatus refundStatus;
     private LocalDate invoiceDate;
     private LocalDate dueDate;
     private List<ClientInvoiceItemResponse> items;

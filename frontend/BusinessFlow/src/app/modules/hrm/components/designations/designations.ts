@@ -7,10 +7,11 @@ import { Pagination } from '../../../../shared/components/pagination/pagination'
 import { Loader } from '../../../../shared/components/loader/loader';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
 import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/confirm-dialog';
+import { HasPermissionDirective } from '../../../../shared/directives/has-permission.directive';
 
 @Component({
   selector: 'app-designations',
-  imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState, ConfirmDialog],
+  imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState, ConfirmDialog, HasPermissionDirective],
   templateUrl: './designations.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './designations.scss',

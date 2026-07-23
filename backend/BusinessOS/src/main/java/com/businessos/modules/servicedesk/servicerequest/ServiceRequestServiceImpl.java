@@ -31,6 +31,9 @@ import com.businessos.modules.servicedesk.workflow.stage.WorkflowStageRepository
 import com.businessos.modules.servicedesk.workflow.stage.WorkflowStage;
 import com.businessos.modules.servicedesk.approval.StageApproval;
 import com.businessos.modules.servicedesk.approval.StageApprovalRepository;
+import com.businessos.auth.role.enums.PermissionCode;
+import com.businessos.auth.role.enums.Role;
+import com.businessos.auth.role.service.AuthorizationService;
 import com.businessos.security.SecurityUtil;
 import com.businessos.shared.notification.NotificationService;
 import com.businessos.shared.email.EmailBranding;
@@ -76,6 +79,7 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
     private final StageApprovalRepository stageApprovalRepository;
     private final NotificationService notificationService;
     private final SecurityUtil securityUtil;
+    private final AuthorizationService authorizationService;
     private final EmailService emailService;
     private final EmailBranding emailBranding;
     private final CompanyRepository companyRepository;
@@ -186,18 +190,19 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
 
             ClientInvoiceRequest invoiceRequest = ClientInvoiceRequest.builder()
                 .clientId(client.getId())
+                .serviceRequestId(sr.getId())
                 .invoiceDate(java.time.LocalDate.now())
                 .dueDate(java.time.LocalDate.now().plusDays(3))
                 .notes("Invoice for Service Request: " + sr.getTitle())
                 .items(List.of(item))
                 .build();
 
-            ClientInvoiceResponse invoiceResponse = invoiceService.create(invoiceRequest);
+            ClientInvoiceResponse invoiceResponse = invoiceService.createForServiceRequest(companyId, invoiceRequest);
             sr.setInvoiceId(invoiceResponse.getId());
             serviceRequestRepository.save(sr);
             response.setInvoiceId(invoiceResponse.getId());
-            
-            invoiceService.sendInvoice(invoiceResponse.getId());
+
+            invoiceService.sendInvoiceForServiceRequest(invoiceResponse.getId());
         }
 
         return response;
@@ -212,6 +217,7 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
     @Override
     @Transactional(readOnly = true)
     public Page<ServiceRequestResponse> listAll(ServiceRequestStatus status, Pageable pageable) {
+        authorizationService.checkPermission(PermissionCode.SERVICE_REQUEST_VIEW);
         Long companyId = requireCompanyId();
         Page<ServiceRequest> page = status != null
             ? serviceRequestRepository.findByCompanyIdAndStatus(companyId, status, pageable)
@@ -246,6 +252,9 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
     @Override
     @Transactional
     public ServiceRequestResponse update(Long id, UpdateServiceRequestRequest request) {
+        authorizationService.checkAnyPermission(
+            PermissionCode.SERVICE_REQUEST_ASSIGN, PermissionCode.SERVICE_REQUEST_APPROVE,
+            PermissionCode.SERVICE_REQUEST_CLOSE);
         ServiceRequest sr = findInTenant(id);
         guardNotClosed(sr);
 
@@ -269,6 +278,16 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
     @Override
     @Transactional
     public ServiceRequestResponse changeStatus(Long id, ChangeRequestStatusRequest request) {
+        // Terminal transitions (completing/rejecting/cancelling) require the
+        // dedicated "close" permission; everything else that advances a request
+        // through its lifecycle only needs the (lighter) "approve" permission.
+        ServiceRequestStatus targetStatus = request.getStatus();
+        boolean isTerminal = targetStatus == ServiceRequestStatus.COMPLETED
+            || targetStatus == ServiceRequestStatus.REJECTED
+            || targetStatus == ServiceRequestStatus.CANCELLED;
+        authorizationService.checkPermission(
+            isTerminal ? PermissionCode.SERVICE_REQUEST_CLOSE : PermissionCode.SERVICE_REQUEST_APPROVE);
+
         ServiceRequest sr = findInTenant(id);
         guardNotClosed(sr);
 
@@ -315,6 +334,7 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
     @Override
     @Transactional
     public ServiceRequestResponse assign(Long id, Long employeeId) {
+        authorizationService.checkPermission(PermissionCode.SERVICE_REQUEST_ASSIGN);
         Long companyId = requireCompanyId();
         ServiceRequest sr = findInTenant(id);
         guardNotClosed(sr);
@@ -325,6 +345,11 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
 
         if (sr.getStatus() == ServiceRequestStatus.PENDING) {
             validateRequiredDocuments(sr);
+        }
+
+        if (sr.getAssignedEmployee() != null && sr.getAssignedEmployee().getId().equals(employeeId)) {
+            // Already assigned to this employee, no need to duplicate history or emails
+            return toResponse(sr);
         }
 
         ServiceRequestStatus old = sr.getStatus();
@@ -362,14 +387,28 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
         ServiceRequest sr = findInTenant(id);
         guardNotClosed(sr);
 
+        User currentUser = securityUtil.getCurrentUser();
+        // Once staff has been assigned, a client can no longer self-cancel - staff
+        // is already working the request, so it needs to go through support instead.
+        // Staff themselves keep unrestricted cancel (e.g. to force-cancel a stuck one).
+        if (currentUser.getRole() == Role.CLIENT && sr.getAssignedEmployee() != null) {
+            throw new BadRequestException(
+                "Cannot cancel after a team member has been assigned. Please contact support.");
+        }
+
+        Long companyId = requireCompanyId();
         ServiceRequestStatus oldStatus = sr.getStatus();
         sr.setStatus(ServiceRequestStatus.CANCELLED);
         sr.setPermanentlyClosed(true);
         recordStatusChange(sr, oldStatus, ServiceRequestStatus.CANCELLED,
-            "Cancelled by platformuser", securityUtil.getCurrentUser(), requireCompanyId());
+            "Cancelled by platformuser", currentUser, companyId);
 
         if (sr.getSubscription() != null) {
             packageService.releaseQuota(sr.getSubscription().getId());
+        }
+
+        if (sr.getInvoiceId() != null) {
+            invoiceService.cancelOrRefundForServiceRequest(companyId, sr.getInvoiceId());
         }
     }
 
@@ -758,18 +797,19 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
 
             ClientInvoiceRequest invoiceRequest = ClientInvoiceRequest.builder()
                 .clientId(sr.getClient().getId())
+                .serviceRequestId(sr.getId())
                 .invoiceDate(java.time.LocalDate.now())
                 .dueDate(java.time.LocalDate.now().plusDays(3))
                 .notes("Invoice for Service Request: " + sr.getTitle())
                 .items(List.of(item))
                 .build();
 
-            ClientInvoiceResponse invoiceResponse = invoiceService.create(invoiceRequest);
+            ClientInvoiceResponse invoiceResponse = invoiceService.createForServiceRequest(companyId, invoiceRequest);
             sr.setInvoiceId(invoiceResponse.getId());
             serviceRequestRepository.save(sr);
             response.setInvoiceId(invoiceResponse.getId());
             
-            invoiceService.sendInvoice(invoiceResponse.getId());
+            invoiceService.sendInvoiceForServiceRequest(invoiceResponse.getId());
         }
         
         return response;

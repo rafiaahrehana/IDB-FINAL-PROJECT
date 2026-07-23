@@ -140,7 +140,12 @@ public class CustomRoleServiceImpl implements CustomRoleService {
             throw new BadRequestException("System roles cannot be modified.");
         }
 
+        // Flush the delete before re-inserting - Hibernate's default flush order runs
+        // inserts before deletes within the same flush, so without this, re-saving an
+        // unchanged (or overlapping) permission set violates the
+        // (custom_role_id, permission_id) unique constraint on every save.
         rolePermissionRepository.deleteByCustomRoleId(role.getId());
+        rolePermissionRepository.flush();
 
         List<String> codes = permissionCodes == null ? List.of() : permissionCodes;
         for (String code : codes) {

@@ -13,6 +13,8 @@ import com.businessos.modules.ai.enums.AiFeature;
 import com.businessos.modules.ai.service.AiService;
 import com.businessos.auth.role.enums.PermissionCode;
 import com.businessos.auth.role.service.AuthorizationService;
+import com.businessos.auth.user.User;
+import com.businessos.security.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -32,10 +34,12 @@ public class AiController {
 
     private final AiService aiService;
     private final AuthorizationService authorizationService;
+    private final SecurityUtil securityUtil;
 
     @PostMapping("/generate")
     @PreAuthorize("hasAnyRole('COMPANY_OWNER','SALES_MANAGER','EMPLOYEE')")
     public ResponseEntity<AiGenerateResponse> generate(@Valid @RequestBody AiGenerateRequest request) {
+        checkTenantPermission();
         return new ResponseEntity<>(aiService.generate(request), HttpStatus.CREATED);
     }
 
@@ -45,8 +49,18 @@ public class AiController {
             @RequestParam(required = false) AiFeature feature,
             @RequestParam(defaultValue = "0")  int page,
             @RequestParam(defaultValue = "20") int size) {
+        checkTenantPermission();
         return ResponseEntity.ok(aiService.listConversations(feature,
                 PageRequest.of(page, size, Sort.by("createdAt").descending())));
+    }
+
+    // SALES_MANAGER (platform staff, no CustomRole) also uses AI chat per its
+    // @PreAuthorize - only gate the tenant caller branch here.
+    private void checkTenantPermission() {
+        User current = securityUtil.getCurrentUser();
+        if (current != null && !current.isPlatformUser()) {
+            authorizationService.checkPermission(PermissionCode.AI_CHAT);
+        }
     }
 
     @GetMapping("/usage")
@@ -66,6 +80,26 @@ public class AiController {
     public ResponseEntity<AiProviderConfigResponse> getConfig() {
         authorizationService.checkPermission(PermissionCode.AI_ADMIN);
         return ResponseEntity.ok(aiService.getProviderConfig());
+    }
+
+    /** Every provider the company has saved (one per provider type, at most one active). */
+    @GetMapping("/configs")
+    public ResponseEntity<java.util.List<AiProviderConfigResponse>> listConfigs() {
+        authorizationService.checkPermission(PermissionCode.AI_ADMIN);
+        return ResponseEntity.ok(aiService.listProviderConfigs());
+    }
+
+    @PatchMapping("/config/{id}/activate")
+    public ResponseEntity<AiProviderConfigResponse> activateConfig(@PathVariable Long id) {
+        authorizationService.checkPermission(PermissionCode.AI_ADMIN);
+        return ResponseEntity.ok(aiService.activateProviderConfig(id));
+    }
+
+    @DeleteMapping("/config/{id}")
+    public ResponseEntity<Void> deleteConfig(@PathVariable Long id) {
+        authorizationService.checkPermission(PermissionCode.AI_ADMIN);
+        aiService.deleteProviderConfig(id);
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/templates")

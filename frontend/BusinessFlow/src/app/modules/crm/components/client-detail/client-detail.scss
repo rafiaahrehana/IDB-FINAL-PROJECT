@@ -1,0 +1,27 @@
+.table {
+  font-size: 0.8rem !important;
+
+  thead.table-light th {
+    background-color: #F9FAFB !important;
+    font-weight: 600;
+    color: #6B7280;
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    letter-spacing: 0.06em;
+    padding: 0.6rem 0.5rem;
+    border-bottom: 2px solid #E5E7EB;
+  }
+
+  td {
+    padding: 0.5rem 0.5rem !important;
+    vertical-align: middle;
+    color: #334155;
+    border-bottom: 1px solid #F3F4F6;
+  }
+}
+
+.badge {
+  font-size: 0.68rem;
+  padding: 0.25em 0.6em;
+  font-weight: 600;
+}

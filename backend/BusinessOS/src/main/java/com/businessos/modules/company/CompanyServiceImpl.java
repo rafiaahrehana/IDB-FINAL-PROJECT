@@ -1,20 +1,24 @@
 
 package com.businessos.modules.company;
 
+import com.businessos.auth.role.enums.PermissionCode;
 import com.businessos.auth.role.enums.Role;
+import com.businessos.auth.role.service.AuthorizationService;
 import com.businessos.auth.user.User;
 import com.businessos.auth.user.UserRepository;
 import com.businessos.modules.crm.client.ClientRepository;
 import com.businessos.modules.hrm.employee.EmployeeRepository;
 import com.businessos.enums.CompanyStatus;
-import com.businessos.enums.SubscriptionPlan;
 import com.businessos.modules.servicedesk.companyservice.CompanyServiceRepository;
 import com.businessos.modules.servicedesk.servicerequest.ServiceRequestRepository;
 import com.businessos.enums.ServiceRequestStatus;
 import com.businessos.modules.website.WebsiteSettingsRepository;
 import com.businessos.shared.address.AddressMapper;
+import com.businessos.shared.subscription.BillingCycle;
 import com.businessos.shared.subscription.SubscriptionHistory;
 import com.businessos.shared.subscription.SubscriptionHistoryRepository;
+import com.businessos.shared.subscription.SubscriptionPlanDefinition;
+import com.businessos.shared.subscription.SubscriptionPlanDefinitionRepository;
 import com.businessos.security.SecurityUtil;
 import com.businessos.shared.exception.BadRequestException;
 import com.businessos.shared.exception.ResourceNotFoundException;
@@ -27,6 +31,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -43,10 +48,12 @@ public class CompanyServiceImpl implements CompanyService {
     private final ServiceRequestRepository serviceRequestRepository;
     private final CompanyServiceRepository hubServiceRepository;
     private final SubscriptionHistoryRepository subscriptionHistoryRepository;
+    private final SubscriptionPlanDefinitionRepository subscriptionPlanDefinitionRepository;
     private final SecurityUtil securityUtil;
     private final WebsiteSettingsRepository websiteSettingsRepository;
     private final AddressMapper addressMapper;
     private final PasswordEncoder passwordEncoder;
+    private final AuthorizationService authorizationService;
 
     @Override
     @Transactional(readOnly = true)
@@ -92,6 +99,9 @@ public class CompanyServiceImpl implements CompanyService {
 
     @Override
     public CompanyResponse update(Long id, UpdateCompanyRequest request) {
+        authorizationService.checkAnyPermission(
+                PermissionCode.COMPANY_UPDATE, PermissionCode.COMPANY_SETTINGS, PermissionCode.COMPANY_BRANDING);
+
         Company company = companyRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Company not found"));
 
@@ -157,7 +167,7 @@ public class CompanyServiceImpl implements CompanyService {
         company.setCompanyEmail(request.getOwnerEmail().toLowerCase().trim());
         company.setOwner(owner);
         company.setStatus(CompanyStatus.ACTIVE);
-        company.setSubscriptionPlan(SubscriptionPlan.FREE);
+        company.setSubscriptionPlan("FREE");
         company.setActive(true);
         company.setEmailVerified(true);
 
@@ -167,25 +177,34 @@ public class CompanyServiceImpl implements CompanyService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<CompanyResponse> listAll(CompanyStatus status, SubscriptionPlan plan, String keyword, Pageable pageable) {
+    public Page<CompanyResponse> listAll(CompanyStatus status, String plan, String keyword, Pageable pageable) {
         return companyRepository
             .findFiltered(status, plan, keyword == null ? null : keyword.trim(), pageable)
             .map(CompanyMapper::toResponse);
     }
 
     @Override
-    public CompanyResponse changePlan(Long id, SubscriptionPlan plan, BigDecimal amountPaid, String transactionRef) {
+    public CompanyResponse changePlan(Long id, String planCode, BigDecimal amountPaid, String transactionRef) {
         Company company = companyRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Company not found"));
+        SubscriptionPlanDefinition planDef = subscriptionPlanDefinitionRepository.findByCode(planCode)
+                .orElseThrow(() -> new ResourceNotFoundException("Unknown plan: " + planCode));
 
-        SubscriptionPlan fromPlan = company.getSubscriptionPlan();
-        company.setSubscriptionPlan(plan);
+        String fromPlan = company.getSubscriptionPlan();
+        LocalDate today = LocalDate.now();
+        company.setSubscriptionPlan(planDef.getCode());
+        // Admin-assigned plan changes previously never set a subscription window at
+        // all (subscriptionEnd stayed whatever it was, often null) - the billing
+        // cycle now drives a real one, same as the self-service paid upgrade does.
+        company.setSubscriptionStart(today);
+        company.setSubscriptionEnd(planDef.getBillingCycle() == BillingCycle.YEARLY
+                ? today.plusYears(1) : today.plusMonths(1));
         Company saved = companyRepository.save(company);
 
         subscriptionHistoryRepository.save(SubscriptionHistory.builder()
                 .company(saved)
                 .fromPlan(fromPlan)
-                .toPlan(plan)
+                .toPlan(planDef.getCode())
                 .subscriptionStart(saved.getSubscriptionStart())
                 .subscriptionEnd(saved.getSubscriptionEnd())
                 .amountPaid(amountPaid)
@@ -195,6 +214,43 @@ public class CompanyServiceImpl implements CompanyService {
                 .build());
 
         return CompanyMapper.toResponse(saved);
+    }
+
+    @Override
+    public void applyPaidPlanUpgrade(Long companyId, SubscriptionPlanDefinition plan, BigDecimal amountPaid,
+                                     String transactionRef, Long changedByUserId) {
+        Company company = companyRepository.findById(companyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Company not found"));
+
+        String fromPlan = company.getSubscriptionPlan();
+        LocalDate today = LocalDate.now();
+        company.setSubscriptionPlan(plan.getCode());
+        company.setSubscriptionStart(today);
+        company.setSubscriptionEnd(plan.getBillingCycle() == BillingCycle.YEARLY
+                ? today.plusYears(1) : today.plusMonths(1));
+        company.setActive(true);
+        // A paid upgrade should lift the company out of TRIAL/SUSPENDED immediately -
+        // ENTERPRISE/PENDING_VERIFICATION-only setups aside, this is the same de-facto
+        // "reactivate on payment" behavior SubscriptionScheduler's suspension implies.
+        if (company.getStatus() == CompanyStatus.TRIAL || company.getStatus() == CompanyStatus.SUSPENDED
+                || company.getStatus() == CompanyStatus.PENDING_VERIFICATION) {
+            company.setStatus(CompanyStatus.ACTIVE);
+        }
+        Company saved = companyRepository.save(company);
+
+        // changedBy comes from the transaction's initiatedByUserId, not SecurityUtil -
+        // this runs from a payment gateway callback, which has no security context.
+        subscriptionHistoryRepository.save(SubscriptionHistory.builder()
+                .company(saved)
+                .fromPlan(fromPlan)
+                .toPlan(plan.getCode())
+                .subscriptionStart(saved.getSubscriptionStart())
+                .subscriptionEnd(saved.getSubscriptionEnd())
+                .amountPaid(amountPaid)
+                .transactionRef(transactionRef)
+                .changedAt(LocalDateTime.now())
+                .changedBy(changedByUserId != null ? userRepository.findById(changedByUserId).orElse(null) : null)
+                .build());
     }
 
     @Override

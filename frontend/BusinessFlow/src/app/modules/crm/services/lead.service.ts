@@ -17,6 +17,10 @@ export class LeadService {
     return this.api.get<Lead>(`${this.endpoint}/${id}`);
   }
 
+  summarise(id: number): Observable<Lead> {
+    return this.api.get<Lead>(`${this.endpoint}/${id}/summary`);
+  }
+
   create(payload: Partial<Lead>): Observable<Lead> {
     return this.api.post<Lead>(this.endpoint, payload);
   }

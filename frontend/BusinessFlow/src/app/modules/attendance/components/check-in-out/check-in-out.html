@@ -1,5 +1,13 @@
 <div class="container-fluid py-3">
-  <h4 class="mb-3">Attendance â€” Check In / Out</h4>
+  <div class="page-hero">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+      <div>
+        <div class="page-hero-label">ATTENDANCE</div>
+        <h4 class="page-hero-title underline-amber">Attendance — Check In / Out</h4>
+        <div class="page-hero-subtitle">Mark your daily attendance and view today's record.</div>
+      </div>
+    </div>
+  </div>
   @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
   @if (success) { <div class="alert alert-success py-2">{{ success }}</div> }
   @if (loading) { <app-loader /> }
@@ -39,7 +47,7 @@
         <div class="card-header py-2 fw-semibold">Recent Records</div>
         <div class="table-responsive">
           <table class="table table-sm align-middle mb-0">
-            <thead class="table-light"><tr><th>Employee</th><th>Date</th><th>In</th><th>Out</th><th>Hours</th><th>Status</th></tr></thead>
+            <thead><tr><th>Employee</th><th>Date</th><th>In</th><th>Out</th><th>Hours</th><th>Status</th></tr></thead>
             <tbody>
               @for (r of recentRecords; track r.id) {
               <tr>

@@ -8,6 +8,8 @@ import com.businessos.shared.exception.ResourceNotFoundException;
 import com.businessos.shared.email.EmailBranding;
 import com.businessos.shared.email.EmailService;
 import com.businessos.modules.company.CompanyRepository;
+import com.businessos.auth.role.enums.PermissionCode;
+import com.businessos.auth.role.service.AuthorizationService;
 import com.businessos.security.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 
@@ -30,10 +32,12 @@ public class SalaryStructureServiceImpl implements SalaryStructureService {
     private final SecurityUtil securityUtil;
     private final EmailService emailService;
     private final EmailBranding emailBranding;
+    private final AuthorizationService authorizationService;
 
     @Override
     @Transactional
     public SalaryStructureResponse create(SalaryStructureRequest request) {
+        authorizationService.checkPermission(PermissionCode.SALARY_STRUCTURE_CREATE);
         Long companyId = requireCompanyId();
         Employee employee = employeeRepository.findByIdAndCompanyId(request.getEmployeeId(), companyId)
             .orElseThrow(() -> new ResourceNotFoundException("Employee not found: " + request.getEmployeeId()));
@@ -104,6 +108,7 @@ public class SalaryStructureServiceImpl implements SalaryStructureService {
     @Override
     @Transactional(readOnly = true)
     public Page<SalaryStructureResponse> listForEmployee(Long employeeId, Pageable pageable) {
+        authorizationService.checkPermission(PermissionCode.SALARY_STRUCTURE_VIEW);
         return salaryStructureRepository.findByCompanyIdAndEmployeeId(requireCompanyId(), employeeId, pageable)
             .map(SalaryStructureMapper::toSalaryStructureResponse);
     }
@@ -118,6 +123,7 @@ public class SalaryStructureServiceImpl implements SalaryStructureService {
     @Override
     @Transactional
     public void delete(Long id) {
+        authorizationService.checkPermission(PermissionCode.SALARY_STRUCTURE_DELETE);
         SalaryStructure s = findInTenant(id);
         if (s.getEffectiveTo() == null) {
             throw new BadRequestException("Cannot delete the currently active salary structure. Supersede it by creating a new one.");

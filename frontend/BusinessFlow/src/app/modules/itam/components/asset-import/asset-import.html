@@ -1,6 +1,16 @@
 <div class="container-fluid py-3">
-  <h4 class="mb-1">Bulk Asset Import</h4>
-  <p class="text-muted small mb-3">Upload a CSV of assets to create them all at once. Each row is imported independently, so one bad row won't block the rest.</p>
+  <div class="page-hero">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+      <div>
+        <div class="page-hero-label">IT ASSETS</div>
+        <h4 class="page-hero-title underline-cyan">Bulk Asset Import</h4>
+        <div class="page-hero-subtitle">Upload a CSV of assets to create them all at once.</div>
+      </div>
+      <div class="page-hero-actions">
+        <button class="btn-hero-secondary" (click)="downloadTemplate()"><i class="bi bi-download"></i> Download Template</button>
+      </div>
+    </div>
+  </div>
 
   @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
 
@@ -33,7 +43,7 @@
       <h6 class="small fw-semibold">Row Errors</h6>
       <div class="table-responsive">
         <table class="table table-sm table-hover mb-0">
-          <thead class="table-light"><tr><th style="width:80px">Row</th><th>Reason</th></tr></thead>
+          <thead><tr><th style="width:80px">Row</th><th>Reason</th></tr></thead>
           <tbody>
             @for (e of result.errors; track e.row) {
             <tr><td>{{ e.row }}</td><td class="small text-danger">{{ e.reason }}</td></tr>

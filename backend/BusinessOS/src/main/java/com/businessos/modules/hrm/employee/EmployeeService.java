@@ -14,8 +14,16 @@ public interface EmployeeService {
     /** EMPLOYEE: get own profile */
     EmployeeResponse getMyProfile();
 
-    /** ADMIN / OWNER: list all employees, optionally filtered by department */
-    Page<EmployeeResponse> listAll(Long departmentId, Pageable pageable);
+    /** EMPLOYEE: self-edit a narrow subset of own profile fields - see SelfUpdateEmployeeRequest */
+    EmployeeResponse updateMyProfile(SelfUpdateEmployeeRequest request);
+
+    /**
+     * ADMIN / OWNER: list all employees, optionally filtered by department.
+     * excludeOwner=true drops the company owner's own auto-created Employee record -
+     * used by the HRM Employees admin page; other callers (asset assignment, payroll,
+     * offboarding pickers) pass false to keep including the owner as before.
+     */
+    Page<EmployeeResponse> listAll(Long departmentId, boolean excludeOwner, Pageable pageable);
 
     /** ADMIN / OWNER: update employee profile fields and relationships */
     EmployeeResponse update(Long id, UpdateEmployeeRequest request);

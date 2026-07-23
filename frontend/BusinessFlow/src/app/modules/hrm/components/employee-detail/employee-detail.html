@@ -1,12 +1,17 @@
 <div class="container-fluid py-3">
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <div>
-      <a routerLink="/hrm/employees" class="small text-decoration-none"><i class="bi bi-arrow-left me-1"></i>Employees</a>
-      <h4 class="mb-0">{{ employee ? employee.firstName + ' ' + employee.lastName : 'Employee' }}</h4>
+  <div class="page-hero">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+      <div>
+        <div class="page-hero-label">HRM</div>
+        <h4 class="page-hero-title mb-0">{{ employee ? employee.firstName + ' ' + employee.lastName : 'Employee' }}</h4>
+        <div class="page-hero-subtitle mt-1"><a routerLink="/hrm/employees" class="text-decoration-none" style="color: rgba(255,255,255,0.7);">Employees</a></div>
+      </div>
+      @if (employee && !editing) {
+      <div class="page-hero-actions">
+        <button *appHasPermission="'EMPLOYEE_UPDATE'" class="btn-hero-secondary" (click)="startEdit()"><i class="bi bi-pencil"></i> Edit</button>
+      </div>
+      }
     </div>
-    @if (employee && !editing) {
-    <button class="btn btn-outline-primary btn-sm" (click)="startEdit()"><i class="bi bi-pencil me-1"></i>Edit</button>
-    }
   </div>
 
   @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
@@ -50,8 +55,7 @@
             <dt class="col-5">Location</dt>
             <dd class="col-7">
               @if (employee.location) {
-                {{ employee.location.level3 }}, {{ employee.location.level1 }}<br>
-                <small class="text-muted">{{ employee.location.country }}</small>
+                {{ getFormattedAddress(employee.location) }}
               } @else {
                 -
               }
@@ -98,6 +102,84 @@
             </button>
           </div>
           <a routerLink="/roles-permissions" class="small d-inline-block mt-2">Manage roles &amp; permissions <i class="bi bi-box-arrow-up-right"></i></a>
+        </div>
+      </div>
+    </div>
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header py-2 d-flex justify-content-between align-items-center">
+          <span class="fw-semibold small text-uppercase">Education Qualifications</span>
+          @if (!addingQualification) {
+            <button class="btn btn-outline-primary btn-sm" (click)="startAddQualification()"><i class="bi bi-plus-lg me-1"></i>Add</button>
+          }
+        </div>
+        <div class="card-body py-2">
+          @if (qualifications.length) {
+            <div class="table-responsive">
+              <table class="table table-sm align-middle mb-0">
+                <thead>
+                  <tr class="small text-muted">
+                    <th>Degree</th>
+                    <th>Institution</th>
+                    <th>Field of Study</th>
+                    <th>Passing Year</th>
+                    <th>Result</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (q of qualifications; track q.id) {
+                    <tr class="small">
+                      <td>{{ q.degree }}</td>
+                      <td>{{ q.institution }}</td>
+                      <td>{{ q.fieldOfStudy || '-' }}</td>
+                      <td>{{ q.passingYear || '-' }}</td>
+                      <td>{{ q.result || '-' }}</td>
+                      <td class="text-end">
+                        <button class="btn btn-link btn-sm text-danger p-0" (click)="deleteQualification(q)"><i class="bi bi-trash"></i></button>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          } @else if (!addingQualification) {
+            <p class="small text-muted mb-0">No education qualifications added yet.</p>
+          }
+
+          @if (addingQualification) {
+            <div class="border rounded p-3 mt-2 bg-light">
+              <div class="row g-2">
+                <div class="col-md-3">
+                  <label class="form-label small mb-1">Degree *</label>
+                  <input class="form-control form-control-sm" [(ngModel)]="qualificationForm.degree" name="qDegree" placeholder="e.g. Bachelor of Science" maxlength="100">
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label small mb-1">Institution *</label>
+                  <input class="form-control form-control-sm" [(ngModel)]="qualificationForm.institution" name="qInstitution" maxlength="200">
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label small mb-1">Field of Study</label>
+                  <input class="form-control form-control-sm" [(ngModel)]="qualificationForm.fieldOfStudy" name="qFieldOfStudy" maxlength="150">
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label small mb-1">Passing Year</label>
+                  <input type="number" class="form-control form-control-sm" [(ngModel)]="qualificationForm.passingYear" name="qPassingYear" min="1950" max="2100">
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label small mb-1">Result</label>
+                  <input class="form-control form-control-sm" [(ngModel)]="qualificationForm.result" name="qResult" placeholder="e.g. 3.85" maxlength="50">
+                </div>
+              </div>
+              <div class="d-flex justify-content-end gap-2 mt-2">
+                <button type="button" class="btn btn-secondary btn-sm" (click)="cancelAddQualification()">Cancel</button>
+                <button type="button" class="btn btn-primary btn-sm" [disabled]="savingQualification || !qualificationForm.degree || !qualificationForm.institution" (click)="saveQualification()">
+                  @if (savingQualification) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                  Save
+                </button>
+              </div>
+            </div>
+          }
         </div>
       </div>
     </div>
@@ -206,12 +288,7 @@
           <div class="col-12 mt-4">
             <label class="form-label fw-bold">Location Details</label>
             <div class="border rounded p-3 bg-light">
-              <app-location (formSubmit)="onLocationChange($event)"></app-location>
-              @if (form.location) {
-                <div class="alert alert-success mt-2 mb-0 py-1 px-2 small">
-                  <i class="bi bi-check-circle me-1"></i> Location captured: {{ form.location.country }}, {{ form.location.level1 }}
-                </div>
-              }
+              <app-location [showActions]="false"></app-location>
             </div>
           </div>
         </div>

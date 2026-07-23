@@ -1,6 +1,8 @@
 package com.businessos.modules.hrm.attendance.shift;
 
 import com.businessos.modules.company.Company;
+import com.businessos.auth.role.enums.PermissionCode;
+import com.businessos.auth.role.service.AuthorizationService;
 import com.businessos.shared.exception.BadRequestException;
 import com.businessos.shared.exception.ResourceNotFoundException;
 import com.businessos.security.SecurityUtil;
@@ -20,10 +22,12 @@ public class ShiftServiceImpl implements ShiftService {
 
     private final ShiftRepository shiftRepository;
     private final SecurityUtil    securityUtil;
+    private final AuthorizationService authorizationService;
 
     @Override
     @Transactional
     public ShiftResponse create(ShiftRequest request) {
+        authorizationService.checkPermission(PermissionCode.SHIFT_CREATE);
         Long companyId = requireCompanyId();
         if (shiftRepository.existsByCompanyIdAndName(companyId, request.getName())) {
             throw new BadRequestException("Shift '" + request.getName() + "' already exists");
@@ -55,10 +59,14 @@ public class ShiftServiceImpl implements ShiftService {
     @Override
     @Transactional(readOnly = true)
     public Page<ShiftResponse> listAll(Pageable pageable) {
+        authorizationService.checkPermission(PermissionCode.SHIFT_VIEW);
         return shiftRepository.findByCompanyId(requireCompanyId(), pageable)
             .map(ShiftMapper::toShiftResponse);
     }
 
+    // Deliberately NOT gated by SHIFT_VIEW: this is the active-shift picker consumed by
+    // the Employees form and Attendance Shift Assignments page - users with
+    // EMPLOYEE_UPDATE/SHIFT_ASSIGNMENT_VIEW but not SHIFT_VIEW still need it.
     @Override
     @Transactional(readOnly = true)
     public List<ShiftResponse> listActive() {
@@ -69,6 +77,7 @@ public class ShiftServiceImpl implements ShiftService {
     @Override
     @Transactional
     public ShiftResponse update(Long id, ShiftRequest request) {
+        authorizationService.checkPermission(PermissionCode.SHIFT_UPDATE);
         Shift s = findInTenant(id);
         s.setName(request.getName());
         s.setShiftType(request.getShiftType());
@@ -87,6 +96,7 @@ public class ShiftServiceImpl implements ShiftService {
     @Override
     @Transactional
     public ShiftResponse toggleActive(Long id) {
+        authorizationService.checkPermission(PermissionCode.SHIFT_UPDATE);
         Shift s = findInTenant(id);
         s.setActive(!s.isActive());
         return ShiftMapper.toShiftResponse(s);
@@ -95,6 +105,7 @@ public class ShiftServiceImpl implements ShiftService {
     @Override
     @Transactional
     public void delete(Long id) {
+        authorizationService.checkPermission(PermissionCode.SHIFT_DELETE);
         findInTenant(id).softDelete();
     }
 

@@ -17,4 +17,5 @@ public class UserProfileResponse {
     private Role role;
     private String languagePreference;
     private AddressResponse location;
+    private String companyEmail;
 }

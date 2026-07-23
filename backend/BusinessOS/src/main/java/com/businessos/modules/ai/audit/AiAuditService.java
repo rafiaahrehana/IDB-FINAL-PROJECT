@@ -35,7 +35,16 @@ public class AiAuditService {
                          User user, Company company) {
         String uuid = UUID.randomUUID().toString();
 
-        AiConversation conversation = new AiConversation() { { setConversationUuid(uuid); setFeature(feature); setProvider(provider); setModel(model); setRequestPayload(prompt); setResponsePayload(response); setExecutionTimeMs(executionTimeMs); setCompany(company); } };
+        AiConversation conversation = AiConversation.builder()
+                .conversationUuid(uuid)
+                .feature(feature)
+                .provider(provider)
+                .model(model)
+                .requestPayload(prompt)
+                .responsePayload(response)
+                .executionTimeMs(executionTimeMs)
+                .company(company)
+                .build();
         conversationRepository.save(conversation);
 
         AiUsageLog usageLog = AiUsageLog.builder()

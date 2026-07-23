@@ -5,7 +5,14 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-@Data @NoArgsConstructor @AllArgsConstructor @Builder
+// AllArgsConstructor access is package-private (not public): Jackson picks a visible
+// all-args constructor as its deserialization "creator" over the no-args+setters path,
+// and a creator must supply every parameter - a JSON body omitting a primitive
+// int/boolean field (e.g. autoRenew, never sent by the frontend form) then fails with
+// "Cannot map null into type int/boolean" before @Valid even runs. Restricting
+// visibility stops Jackson from seeing it, so it falls back to no-args+setters, which
+// correctly leaves missing primitives at their Java default (0/false).
+@Data @NoArgsConstructor @AllArgsConstructor(access = AccessLevel.PACKAGE) @Builder
 public class SoftwareLicenseRequest {
 
     @NotBlank(message = "License key is required")
@@ -53,6 +60,15 @@ public class SoftwareLicenseRequest {
     private String notes;
     private String renewalNotes;
 
-    @Builder.Default
-    private boolean autoRenew = true;
+    // Boolean (not boolean) - the frontend "Add License" form has no auto-renew
+    // control, so this key is simply absent from the JSON body. Jackson binds
+    // SoftwareLicenseRequest via its all-args constructor (Lombok @AllArgsConstructor
+    // + parameter-names), and for a *primitive* constructor parameter that's missing
+    // from the payload, it fails with "Cannot map `null` into type `boolean`" instead
+    // of defaulting - only wrapper types tolerate a missing/null value here.
+    private Boolean autoRenew;
+
+    public boolean isAutoRenewOrDefault() {
+        return autoRenew == null || autoRenew;
+    }
 }

@@ -27,6 +27,12 @@ public class AnnouncementController {
         return new ResponseEntity<>(announcementService.create(request), HttpStatus.CREATED);
     }
 
+    /** Ask AI to draft a title/body for review - not persisted until the user saves it via POST above. */
+    @PostMapping("/ai-draft")
+    public ResponseEntity<AnnouncementDraftResponse> draftWithAi(@Valid @RequestBody AnnouncementDraftRequest request) {
+        return ResponseEntity.ok(announcementService.draftWithAi(request));
+    }
+
     @GetMapping
     public ResponseEntity<Page<AnnouncementResponse>> listAll(
             @RequestParam(defaultValue = "0") int page,

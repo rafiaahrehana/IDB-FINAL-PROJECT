@@ -40,6 +40,7 @@ export interface Lead {
   updatedAt?: string;
   createdByName?: string;
   updatedByName?: string;
+  aiSummary?: string;
 }
 
 export interface Client {

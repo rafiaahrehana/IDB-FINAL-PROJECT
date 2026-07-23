@@ -1,13 +1,14 @@
 import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { RouterLink, ActivatedRoute } from '@angular/router';
 import { CompanyService, PackageSubscription, ServiceFormField, ServiceRequest, SERVICE_REQUEST_PRIORITIES } from '../../models/servicedesk.model';
 import { CreateServiceRequestRequest, ServiceRequestService } from '../../services/service-request.service';
 import { CompanyServiceService } from '../../services/company-service.service';
 import { ServiceFormFieldService } from '../../services/service-form-field.service';
 import { ServicePackageService } from '../../services/service-package.service';
 import { AuthService } from '../../../../core/services/auth.service';
+import { GatewayPaymentService } from '../../../../core/services/gateway-payment.service';
 import { Pagination } from '../../../../shared/components/pagination/pagination';
 import { Loader } from '../../../../shared/components/loader/loader';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
@@ -64,6 +65,8 @@ export class Requests implements OnInit {
     private packageService: ServicePackageService,
     private formFieldService: ServiceFormFieldService,
     private auth: AuthService,
+    private gatewayPayment: GatewayPaymentService,
+    private route: ActivatedRoute,
     private cdr: ChangeDetectorRef,
   ) {}
 
@@ -78,6 +81,13 @@ export class Requests implements OnInit {
         ];
     this.tab = this.isClient ? 'my' : 'all';
     this.load();
+
+    this.route.queryParams.subscribe(params => {
+      if (params['create'] === 'true') {
+        const serviceId = params['serviceId'] ? +params['serviceId'] : null;
+        this.openCreate(serviceId);
+      }
+    });
   }
 
   setTab(tab: Tab): void {
@@ -125,17 +135,31 @@ export class Requests implements OnInit {
     };
   }
 
-  openCreate(): void {
+  openCreate(serviceId?: number | null): void {
     this.form = this.emptyForm();
+    if (serviceId) {
+      this.form.hubServiceId = serviceId;
+    }
     this.formFields = [];
     this.fieldAnswers = {};
     this.showForm = true;
-    if (!this.services.length) {
-      this.companyServiceService.listActive().subscribe({
-        next: (res) => { this.services = res; this.cdr.markForCheck(); },
-        error: () => { this.services = []; this.cdr.markForCheck(); },
-      });
-    }
+    this.saving = false;
+    this.success = '';
+    this.error = '';
+    
+    // We need to load services and subscriptions first so the dropdowns populate.
+    // If a serviceId was provided, trigger onServiceChange() after loading services.
+    this.companyServiceService.listActive().subscribe({
+      next: (res) => {
+        this.services = res;
+        this.cdr.markForCheck();
+        if (this.form.hubServiceId) {
+          this.onServiceChange();
+        }
+      },
+      error: () => { this.services = []; this.cdr.markForCheck(); },
+    });
+    
     if (!this.subscriptions.length) {
       // Requests raised under an ACTIVE subscription consume its quota and cost zero
       this.packageService.mySubscriptions(0, 50).subscribe({
@@ -201,7 +225,17 @@ export class Requests implements OnInit {
       formData: Object.keys(answered).length ? answered : undefined,
     };
     this.requestService.create(payload).subscribe({
-      next: () => {
+      next: (res) => {
+        // A paid, invoiced request sends the client straight to checkout instead of
+        // just closing the modal - they came here specifically to pay for this.
+        if (this.form.paymentChoice === 'PAY_NOW' && res.invoiceId) {
+          this.gatewayPayment.redirectToGateway('INVOICE', res.invoiceId, res.agreedPrice ?? 0, (msg) => {
+            this.error = msg;
+            this.saving = false;
+            this.cdr.markForCheck();
+          });
+          return;
+        }
         this.success = 'Request submitted';
         this.showForm = false;
         this.saving = false;

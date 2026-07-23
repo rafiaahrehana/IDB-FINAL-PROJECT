@@ -1,7 +1,6 @@
 package com.businessos.modules.company;
 
 import com.businessos.enums.CompanyStatus;
-import com.businessos.enums.SubscriptionPlan;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -25,7 +24,7 @@ public interface CompanyRepository extends JpaRepository<Company, Long> {
     /** Companies a prospective client can register under (public registration picker). */
     List<Company> findByStatusInOrderByCompanyNameAsc(List<CompanyStatus> statuses);
 
-    Page<Company> findBySubscriptionPlan(SubscriptionPlan plan, Pageable pageable);
+    Page<Company> findBySubscriptionPlan(String plan, Pageable pageable);
 
     /**
      * Combined, null-safe filtering for the platform companies list:
@@ -43,7 +42,7 @@ public interface CompanyRepository extends JpaRepository<Company, Long> {
         """)
     Page<Company> findFiltered(
         @Param("status") CompanyStatus status,
-        @Param("plan") SubscriptionPlan plan,
+        @Param("plan") String plan,
         @Param("keyword") String keyword,
         Pageable pageable);
 
@@ -81,7 +80,7 @@ public interface CompanyRepository extends JpaRepository<Company, Long> {
 
     long countByStatus(CompanyStatus status);
 
-    long countBySubscriptionPlan(SubscriptionPlan plan);
+    long countBySubscriptionPlan(String plan);
 
     long countByStatusAndSubscriptionEndBetween(CompanyStatus status, LocalDate from, LocalDate to);
 }

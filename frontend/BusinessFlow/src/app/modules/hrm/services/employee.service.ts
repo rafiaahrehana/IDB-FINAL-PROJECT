@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService, PagedResponse } from '../../../core/services/api.service';
-import { Employee, CreateEmployeeRequest, UpdateEmployeeRequest, EmploymentStatus } from '../models/hrm.model';
+import { Employee, CreateEmployeeRequest, UpdateEmployeeRequest, SelfUpdateEmployeeRequest, EmploymentStatus } from '../models/hrm.model';
 
 @Injectable({ providedIn: 'root' })
 export class EmployeeService {
@@ -10,10 +10,11 @@ export class EmployeeService {
 
   constructor(private api: ApiService) {}
 
-  list(page = 0, size = 20, departmentId?: number, status?: EmploymentStatus): Observable<PagedResponse<Employee>> {
+  list(page = 0, size = 20, departmentId?: number, status?: EmploymentStatus, excludeOwner = true): Observable<PagedResponse<Employee>> {
     const params: any = {};
     if (departmentId) params.departmentId = departmentId;
     if (status) params.status = status;
+    if (excludeOwner) params.excludeOwner = true;
     return this.api.getPaged<Employee>(this.endpoint, page, size, params);
   }
 
@@ -23,6 +24,10 @@ export class EmployeeService {
 
   getMyProfile(): Observable<Employee> {
     return this.api.get<Employee>(`${this.endpoint}/me`);
+  }
+
+  updateMyProfile(payload: SelfUpdateEmployeeRequest): Observable<Employee> {
+    return this.api.patch<Employee>(`${this.endpoint}/me`, payload);
   }
 
   create(payload: CreateEmployeeRequest): Observable<Employee> {

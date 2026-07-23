@@ -9,6 +9,8 @@ import com.businessos.modules.servicedesk.workflow.template.WorkflowTemplateRepo
 import com.businessos.modules.servicedesk.workflow.template.WorkflowTemplateRequest;
 import com.businessos.modules.servicedesk.workflow.template.WorkflowTemplateResponse;
 import com.businessos.modules.company.Company;
+import com.businessos.auth.role.enums.PermissionCode;
+import com.businessos.auth.role.service.AuthorizationService;
 import com.businessos.shared.exception.BadRequestException;
 import com.businessos.shared.exception.ResourceNotFoundException;
 import com.businessos.security.SecurityUtil;
@@ -29,12 +31,14 @@ public class WorkflowServiceImpl implements WorkflowService {
     private final WorkflowTemplateRepository templateRepository;
     private final WorkflowStageRepository stageRepository;
     private final SecurityUtil               securityUtil;
+    private final AuthorizationService       authorizationService;
 
     // ── Templates ─────────────────────────────────────────────────
 
     @Override
     @Transactional
     public WorkflowTemplateResponse createTemplate(WorkflowTemplateRequest request) {
+        authorizationService.checkPermission(PermissionCode.WORKFLOW_CREATE);
         Long companyId = requireCompanyId();
         if (templateRepository.existsByCompanyIdAndName(companyId, request.getName())) {
             throw new BadRequestException(
@@ -62,6 +66,7 @@ public class WorkflowServiceImpl implements WorkflowService {
     @Override
     @Transactional(readOnly = true)
     public Page<WorkflowTemplateResponse> listTemplates(Pageable pageable) {
+        authorizationService.checkPermission(PermissionCode.WORKFLOW_VIEW);
         Long companyId = requireCompanyId();
         /*
          * BUG-FIX: was templateRepository.findAll(pageable) — leaked ALL tenants' templates.
@@ -71,6 +76,9 @@ public class WorkflowServiceImpl implements WorkflowService {
                 .map(WorkflowMapper::toResponse);
     }
 
+    // Deliberately NOT gated by WORKFLOW_VIEW here: this is the active-workflow picker
+    // consumed by the Services admin page when attaching a workflow template to a
+    // service - users with SERVICE_CATALOG_VIEW but not WORKFLOW_VIEW still need it.
     @Override
     @Transactional(readOnly = true)
     public List<WorkflowTemplateResponse> listActiveTemplates() {
@@ -88,6 +96,7 @@ public class WorkflowServiceImpl implements WorkflowService {
     @Override
     @Transactional
     public WorkflowTemplateResponse updateTemplate(Long id, WorkflowTemplateRequest request) {
+        authorizationService.checkPermission(PermissionCode.WORKFLOW_UPDATE);
         Long companyId = requireCompanyId();
         WorkflowTemplate template = findTemplate(id);
 
@@ -109,6 +118,7 @@ public class WorkflowServiceImpl implements WorkflowService {
     @Override
     @Transactional
     public WorkflowTemplateResponse toggleTemplate(Long id) {
+        authorizationService.checkPermission(PermissionCode.WORKFLOW_UPDATE);
         WorkflowTemplate template = findTemplate(id);
 
         if (template.isActive()) {
@@ -129,6 +139,7 @@ public class WorkflowServiceImpl implements WorkflowService {
     @Override
     @Transactional
     public void deleteTemplate(Long id) {
+        authorizationService.checkPermission(PermissionCode.WORKFLOW_DELETE);
         WorkflowTemplate template = findTemplate(id);
 
         if (!template.getStages().isEmpty()) {
@@ -146,6 +157,7 @@ public class WorkflowServiceImpl implements WorkflowService {
     @Override
     @Transactional
     public WorkflowStageResponse addStage(Long templateId, WorkflowStageRequest request) {
+        authorizationService.checkPermission(PermissionCode.WORKFLOW_UPDATE);
         Long companyId = requireCompanyId();
         WorkflowTemplate template = findTemplate(templateId);
 
@@ -179,6 +191,7 @@ public class WorkflowServiceImpl implements WorkflowService {
     @Transactional
     public WorkflowStageResponse updateStage(Long templateId, Long stageId,
                                              WorkflowStageRequest request) {
+        authorizationService.checkPermission(PermissionCode.WORKFLOW_UPDATE);
         findTemplate(templateId);
 
         WorkflowStage stage = stageRepository.findById(stageId)
@@ -213,6 +226,7 @@ public class WorkflowServiceImpl implements WorkflowService {
     @Override
     @Transactional
     public void deleteStage(Long templateId, Long stageId) {
+        authorizationService.checkPermission(PermissionCode.WORKFLOW_UPDATE);
         WorkflowTemplate template = findTemplate(templateId);
 
         WorkflowStage stage = stageRepository.findById(stageId)

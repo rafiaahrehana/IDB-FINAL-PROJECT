@@ -70,7 +70,7 @@ public class SupportTicketController {
     }
 
     @GetMapping("/status/{status}")
-    @PreAuthorize("hasRole('SUPPORT_AGENT') or hasRole('SUPPORT_MANAGER') or hasAnyRole('SUPER_ADMIN', 'SYSTEM_ADMIN')")
+    @PreAuthorize("hasRole('SUPPORT_AGENT') or hasRole('SUPPORT_MANAGER') or hasRole('COMPANY_OWNER') or hasAnyRole('SUPER_ADMIN', 'SYSTEM_ADMIN')")
     @Operation(summary = "Get Tickets by Status")
     public ResponseEntity<Page<SupportTicketResponse>> getByStatus(
             @PathVariable TicketStatus status,

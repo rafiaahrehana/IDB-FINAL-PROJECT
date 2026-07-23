@@ -1,15 +1,20 @@
 <div class="container-fluid py-3">
-  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-    <div class="d-flex align-items-center gap-3">
-      <h4 class="mb-0">Packages</h4>
-      <div class="btn-group btn-group-sm" role="group">
-        <button class="btn" [class.btn-primary]="tab === 'packages'" [class.btn-outline-secondary]="tab !== 'packages'" (click)="setTab('packages')">Packages</button>
-        <button class="btn" [class.btn-primary]="tab === 'subscriptions'" [class.btn-outline-secondary]="tab !== 'subscriptions'" (click)="setTab('subscriptions')">Subscriptions</button>
+  <div class="page-hero">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+      <div>
+        <div class="page-hero-label">SERVICE DESK</div>
+        <h4 class="page-hero-title underline-rose">Packages</h4>
+      </div>
+      <div class="page-hero-actions">
+        <div class="btn-group btn-group-sm" role="group">
+          <button class="btn" [class.btn-primary]="tab === 'packages'" [class.btn-outline-secondary]="tab !== 'packages'" (click)="setTab('packages')">Packages</button>
+          <button class="btn" [class.btn-primary]="tab === 'subscriptions'" [class.btn-outline-secondary]="tab !== 'subscriptions'" (click)="setTab('subscriptions')">Subscriptions</button>
+        </div>
+        @if (tab === 'packages') {
+        <button class="btn btn-hero-primary" (click)="openCreate()"><i class="bi bi-plus-circle"></i> New Package</button>
+        }
       </div>
     </div>
-    @if (tab === 'packages') {
-    <button class="btn btn-primary btn-sm" (click)="openCreate()"><i class="bi bi-plus"></i> New Package</button>
-    }
   </div>
   @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
   @if (success) { <div class="alert alert-success py-2">{{ success }}</div> }
@@ -22,7 +27,7 @@
       <div class="row g-2">
         <div class="col-md-4"><input class="form-control form-control-sm" placeholder="Name *" [(ngModel)]="form.name" /></div>
         <div class="col-md-4"><input class="form-control form-control-sm" placeholder="Name (Bangla)" [(ngModel)]="form.nameBn" /></div>
-        <div class="col-md-2"><input class="form-control form-control-sm" type="number" placeholder="Price *" [(ngModel)]="form.packagePrice" /></div>
+        <div class="col-md-2"><input class="form-control form-control-sm" type="number" placeholder="Manual price (optional)" [(ngModel)]="form.packagePrice" /></div>
         <div class="col-md-2"><input class="form-control form-control-sm" type="number" step="0.01" placeholder="Discount %" [(ngModel)]="form.discountPercent" /></div>
         <div class="col-md-2">
           <select class="form-select form-select-sm" [(ngModel)]="form.billingCycle">
@@ -52,8 +57,26 @@
             }
           </div>
         </div>
+        <div class="col-12">
+          <div class="alert alert-light border py-2 px-3 mb-0 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div class="small">
+              Services total: <strong>{{ computedTotalPrice | currency }}</strong>
+              @if (form.discountPercent) {
+                <span class="text-muted"> &middot; after {{ form.discountPercent }}% discount:</span> <strong>{{ computedEffectivePrice | currency }}</strong>
+              }
+              @if (form.packagePrice != null) {
+                <span class="text-warning ms-1"><i class="bi bi-exclamation-triangle"></i> Manual price override is set - it will be used instead of the auto-calculated total.</span>
+              } @else {
+                <span class="text-muted"> - this auto-calculated amount will be used as the package price.</span>
+              }
+            </div>
+            @if (form.packagePrice != null) {
+              <button type="button" class="btn btn-outline-secondary btn-xs" (click)="useAutoPrice()">Use auto price</button>
+            }
+          </div>
+        </div>
         <div class="col-12 d-flex gap-2">
-          <button class="btn btn-primary btn-sm" [disabled]="!form.name || form.packagePrice == null" (click)="save()">{{ editingId ? 'Update' : 'Save' }}</button>
+          <button class="btn btn-primary btn-sm" [disabled]="!form.name" (click)="save()">{{ editingId ? 'Update' : 'Save' }}</button>
           <button class="btn btn-secondary btn-sm" (click)="showForm = false; editingId = null">Cancel</button>
         </div>
       </div>
@@ -62,38 +85,97 @@
   }
 
   @if (tab === 'packages' && !loading && packages.length) {
-  <div class="card">
-    <div class="table-responsive">
-      <table class="table table-hover table-sm align-middle mb-0">
-        <thead class="table-light">
-          <tr><th>Name</th><th>Billing</th><th class="text-end">Price</th><th class="text-end">Effective</th><th class="text-center">Quota</th><th>Services</th><th>Status</th><th></th></tr>
-        </thead>
-        <tbody>
-          @for (p of packages; track p.id) {
-          <tr>
-            <td class="fw-medium">{{ p.name }}
-              @if (p.featured) { <span class="badge text-bg-warning ms-1">Featured</span> }
-              @if (p.popular) { <span class="badge text-bg-info ms-1">Popular</span> }
-            </td>
-            <td class="text-muted small">{{ p.billingCycle ? (p.billingCycle | titlecase) : '-' }}</td>
-            <td class="text-end">{{ p.packagePrice | currency }}</td>
-            <td class="text-end fw-medium">{{ p.effectivePrice | currency }}</td>
-            <td class="text-center">{{ p.requestQuota || '-' }}</td>
-            <td class="text-muted small">{{ p.services?.length || 0 }} service(s)</td>
-            <td><span class="badge" [class.text-bg-success]="p.active" [class.text-bg-secondary]="!p.active">{{ p.active ? 'Active' : 'Inactive' }}</span></td>
-            <td class="text-end text-nowrap">
-              <button class="btn btn-outline-secondary btn-sm me-1" (click)="toggle(p)">{{ p.active ? 'Disable' : 'Enable' }}</button>
-              <button class="btn btn-outline-secondary btn-sm me-1" (click)="openEdit(p)"><i class="bi bi-pencil"></i></button>
-              <button class="btn btn-outline-danger btn-sm" (click)="deleteTarget = p"><i class="bi bi-trash"></i></button>
-            </td>
-          </tr>
+  <div class="row g-3">
+    @for (p of packages; track p.id; let i = $index) {
+    <div class="col-md-6 col-lg-4 col-xl-3">
+      <div class="package-card rounded-4 p-4 h-100 d-flex flex-column position-relative"
+           [style.--card-border-color]="getPackageBorderColor(i)"
+           [style.--card-hover-border-color]="getPackageHoverBorderColor(i)">
+        
+        <!-- Status & Badges -->
+        <div class="position-absolute top-0 end-0 p-3 d-flex gap-1 flex-wrap justify-content-end" style="max-width: 70%;">
+          @if (p.featured) {
+            <span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill" style="font-size: 0.7rem;">Featured</span>
           }
-        </tbody>
-      </table>
+          @if (p.popular) {
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill" style="font-size: 0.7rem;">Popular</span>
+          }
+          <span class="badge rounded-pill" 
+                [class.bg-success-subtle]="p.active" [class.text-success]="p.active" 
+                [class.bg-secondary-subtle]="!p.active" [class.text-secondary]="!p.active"
+                style="font-size: 0.7rem;">
+            {{ p.active ? 'Active' : 'Inactive' }}
+          </span>
+        </div>
+
+        <!-- Icon Wrapper -->
+        <div class="icon-wrapper rounded-3 d-inline-flex align-items-center justify-content-center mb-3 flex-shrink-0"
+             [style.background]="getIconBg(i)"
+             [style.color]="getIconColor(i)"
+             style="width: 48px; height: 48px;">
+          <i class="bi fs-5" [ngClass]="p.iconUrl || (p.popular ? 'bi-stars' : (p.featured ? 'bi-award' : 'bi-box-seam'))"></i>
+        </div>
+
+        <!-- Card Content -->
+        <div class="flex-grow-1">
+          <h5 class="fw-bold mb-1 fs-6 text-dark">{{ p.name }}</h5>
+          <div class="text-primary fw-semibold small mb-2" style="font-size: 0.8rem;">
+            {{ p.billingCycle ? (p.billingCycle | titlecase) : 'One-time' }} Billing
+          </div>
+          @if (p.description) {
+            <p class="text-muted small mb-3 package-desc">{{ p.description }}</p>
+          }
+
+          <!-- Included Services list -->
+          <div class="mb-3">
+            <div class="small fw-semibold text-secondary mb-1">
+              <i class="bi bi-grid-3x3-gap me-1"></i>{{ p.services?.length || 0 }} Included Service(s)
+            </div>
+            @if (p.services?.length) {
+              <ul class="list-unstyled small text-muted mb-0 ps-3" style="font-size: 0.75rem; max-height: 80px; overflow-y: auto;">
+                @for (s of p.services; track s.id) {
+                  <li><i class="bi bi-check2 text-success me-1"></i>{{ s.name }}</li>
+                }
+              </ul>
+            }
+          </div>
+        </div>
+
+        <!-- Meta info & Actions -->
+        <div class="mt-auto pt-3 border-top border-light-subtle">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+              <div class="small text-muted" style="font-size: 0.75rem;">Price</div>
+              <div class="fw-bold text-dark fs-5">{{ (p.effectivePrice ?? p.packagePrice) | currency }}</div>
+            </div>
+            <div>
+              <div class="small text-muted text-end" style="font-size: 0.75rem;">Quota Limit</div>
+              <div class="text-dark small fw-semibold text-end">
+                <i class="bi bi-ticket-perforated me-1"></i>{{ p.requestQuota || 'Unlimited' }} Requests
+              </div>
+            </div>
+          </div>
+
+          <!-- Admin Actions -->
+          <div class="d-flex gap-1 pt-2 border-top border-light-subtle">
+            <button class="btn btn-outline-secondary btn-xs flex-grow-1" (click)="toggle(p)">
+              {{ p.active ? 'Disable' : 'Enable' }}
+            </button>
+            <button class="btn btn-outline-secondary btn-xs" (click)="openEdit(p)">
+              <i class="bi bi-pencil"></i>
+            </button>
+            <button class="btn btn-outline-danger btn-xs" (click)="deleteTarget = p">
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
+        </div>
+
+      </div>
     </div>
-    <div class="card-footer d-flex justify-content-end">
-      <app-pagination [page]="page" [totalPages]="totalPages" (pageChange)="goToPage($event)" />
-    </div>
+    }
+  </div>
+  <div class="d-flex justify-content-end mt-3">
+    <app-pagination [page]="page" [totalPages]="totalPages" (pageChange)="goToPage($event)" />
   </div>
   }
   @if (tab === 'packages' && !loading && !packages.length && !showForm) { <app-empty-state icon="bi-box-seam" message="No packages yet. Bundle services into a package to offer them together." /> }
@@ -102,7 +184,7 @@
   <div class="card">
     <div class="table-responsive">
       <table class="table table-hover table-sm align-middle mb-0">
-        <thead class="table-light">
+        <thead>
           <tr><th>Client</th><th>Package</th><th>Status</th><th>Start</th><th>End</th><th>Next Billing</th><th class="text-end">Paid</th><th class="text-center">Quota</th><th></th></tr>
         </thead>
         <tbody>
@@ -149,7 +231,7 @@
   <div class="modal d-block" style="background: rgba(0,0,0,.4)">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
-        <div class="modal-header py-2">
+        <div class="modal-header py-2" style="background: linear-gradient(135deg, #111827, #4C1D95); color: #fff;">
           <h5 class="modal-title fs-6 fw-semibold">Cancel Subscription</h5>
           <button class="btn-close" (click)="cancelTarget = null"></button>
         </div>

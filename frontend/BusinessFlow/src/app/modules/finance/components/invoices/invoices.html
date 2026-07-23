@@ -1,12 +1,18 @@
 <div class="container-fluid py-3">
-  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-    <h4 class="mb-0">Invoices</h4>
-    <div class="d-flex gap-2">
-      <select class="form-select form-select-sm" style="width:180px" [(ngModel)]="statusFilter" (change)="page=0;load()">
-        <option value="">All statuses</option>
-        @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
-      </select>
-      <button class="btn btn-primary btn-sm" (click)="openCreate()"><i class="bi bi-plus-lg me-1"></i>New Invoice</button>
+  <div class="page-hero">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+      <div>
+        <div class="page-hero-label">FINANCE</div>
+        <h4 class="page-hero-title underline-peach">Invoices</h4>
+        <div class="page-hero-subtitle">Create, manage and track client invoices.</div>
+      </div>
+      <div class="page-hero-actions">
+        <select class="form-select form-select-sm" style="width:180px" [(ngModel)]="statusFilter" (change)="page=0;load()">
+          <option value="">All statuses</option>
+          @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
+        </select>
+        <button *appHasPermission="'INVOICE_CREATE'" class="btn-hero-primary" (click)="openCreate()"><i class="bi bi-plus-circle"></i> New Invoice</button>
+      </div>
     </div>
   </div>
   @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
@@ -14,9 +20,9 @@
   @if (loading) { <app-loader /> }
 
   <div class="row g-3">
-    <div class="col-lg-7">
+    <div [class]="selected ? 'col-lg-7' : 'col-12'">
       @if (!loading && invoices.length) {
-      <div class="card">
+      <div class="card border-0 shadow-sm">
         <div class="table-responsive">
           <table class="table table-hover table-sm align-middle mb-0">
             <thead class="table-light">
@@ -25,21 +31,22 @@
             <tbody>
               @for (inv of invoices; track inv.id) {
               <tr [class.table-warning]="inv.status === 'OVERDUE'" role="button" (click)="view(inv)">
-                <td class="small">{{ inv.invoiceNumber }}</td>
-                <td>{{ inv.clientName }}</td>
-                <td class="text-end">{{ inv.totalAmount | currency }}</td>
-                <td class="text-end">{{ inv.balanceAmount | currency }}</td>
-                <td class="small">{{ inv.dueDate | date:'mediumDate' }}</td>
+                <td class="invoice-number-col small">{{ inv.invoiceNumber }}</td>
+                <td class="client-col text-truncate" [title]="inv.clientName || ''">{{ inv.clientName }}</td>
+                <td class="text-end amount-col">{{ inv.totalAmount | currency }}</td>
+                <td class="text-end amount-col">{{ inv.balanceAmount | currency }}</td>
+                <td class="small text-nowrap">{{ inv.dueDate | date:'mediumDate' }}</td>
                 <td><span class="badge {{ statusClass(inv.status) }}">{{ inv.status }}</span></td>
                 <td class="text-end text-nowrap" (click)="$event.stopPropagation()">
+                  <button class="btn btn-outline-secondary btn-sm py-1 px-2" (click)="downloadPdf(inv)" title="Download PDF"><i class="bi bi-download"></i></button>
                   @if (inv.status === 'DRAFT') {
-                    <button class="btn btn-outline-secondary btn-sm" (click)="openEdit(inv)" title="Edit"><i class="bi bi-pencil"></i></button>
-                    <button class="btn btn-outline-primary btn-sm" (click)="send(inv)">Send</button>
-                    <button class="btn btn-outline-danger btn-sm" (click)="deleteTarget = inv" title="Delete"><i class="bi bi-trash"></i></button>
+                    <button *appHasPermission="'INVOICE_UPDATE'" class="btn btn-outline-secondary btn-sm py-1 px-2" (click)="openEdit(inv)" title="Edit"><i class="bi bi-pencil"></i></button>
+                    <button *appHasPermission="'INVOICE_SEND'" class="btn btn-outline-primary btn-sm py-1 px-2" (click)="send(inv)">Send</button>
+                    <button *appHasPermission="'INVOICE_DELETE'" class="btn btn-outline-danger btn-sm py-1 px-2" (click)="deleteTarget = inv" title="Delete"><i class="bi bi-trash"></i></button>
                   }
-                  @if (inv.status === 'ISSUED' || inv.status === 'OVERDUE') { <button class="btn btn-outline-success btn-sm" (click)="markPaid(inv)">Mark Paid</button> }
+                  @if (inv.status === 'ISSUED' || inv.status === 'OVERDUE') { <button *appHasPermission="'INVOICE_PAYMENT'" class="btn btn-outline-success btn-sm py-1 px-2" (click)="markPaid(inv)">Mark Paid</button> }
                   @if (inv.status === 'ISSUED' || inv.status === 'PARTIALLY_PAID' || inv.status === 'OVERDUE') {
-                    <button class="btn btn-outline-danger btn-sm" (click)="cancelTarget = inv" title="Cancel invoice (reverses ledger entries)"><i class="bi bi-x-circle"></i></button>
+                    <button *appHasPermission="'INVOICE_CANCEL'" class="btn btn-outline-danger btn-sm py-1 px-2" (click)="cancelTarget = inv" title="Cancel invoice (reverses ledger entries)"><i class="bi bi-x-circle"></i></button>
                   }
                 </td>
               </tr>
@@ -47,7 +54,7 @@
             </tbody>
           </table>
         </div>
-        <div class="card-footer d-flex justify-content-end">
+        <div class="card-footer bg-white d-flex justify-content-end">
           <app-pagination [page]="page" [totalPages]="totalPages" (pageChange)="goToPage($event)" />
         </div>
       </div>
@@ -57,9 +64,12 @@
 
     @if (selected) {
     <div class="col-lg-5">
-      <div class="card">
-        <div class="card-header py-2 d-flex justify-content-between align-items-center">
-          <span class="fw-semibold">{{ selected.invoiceNumber }}</span>
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center">
+          <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn-close" style="font-size: 0.75rem;" (click)="selected = null" aria-label="Close"></button>
+            <span class="fw-semibold invoice-number-col">{{ selected.invoiceNumber }}</span>
+          </div>
           <span class="badge {{ statusClass(selected.status) }}">{{ selected.status }}</span>
         </div>
         @if (selected.items?.length) {
@@ -93,7 +103,7 @@
           </table>
         </div>
         @if (selected.status === 'ISSUED' || selected.status === 'PARTIALLY_PAID' || selected.status === 'OVERDUE') {
-        <div class="card-footer">
+        <div class="card-footer bg-white">
           <div class="input-group input-group-sm">
             <input type="number" class="form-control" placeholder="Amount" [(ngModel)]="paymentAmount" />
             <select class="form-select" [(ngModel)]="paymentMethod">
@@ -102,8 +112,8 @@
               <option value="CARD">Card</option>
               <option value="MOBILE_BANKING">Mobile Banking</option>
             </select>
-            <button class="btn btn-primary" (click)="recordPayment()">Record Payment</button>
-            <button class="btn btn-success" (click)="payOnline()" title="Pay via SSLCommerz">
+            <button *appHasPermission="'INVOICE_PAYMENT'" class="btn btn-primary px-3 fw-semibold" (click)="recordPayment()">Record Payment</button>
+            <button *appHasPermission="'INVOICE_PAYMENT'" class="btn btn-success" (click)="payOnline()" title="Pay via SSLCommerz">
               <i class="bi bi-credit-card me-1"></i>Pay Online
             </button>
           </div>
@@ -119,72 +129,76 @@
 <div class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,.5)">
   <div class="modal-dialog modal-lg modal-dialog-scrollable">
     <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">{{ editing ? 'Edit Invoice' : 'New Invoice' }}</h5>
-        <button type="button" class="btn-close" (click)="showForm = false"></button>
+      <div class="modal-header py-2" style="background: #4F46E5; color: #fff; border-radius: 0;">
+        <h5 class="modal-title fs-6 fw-semibold" style="color: #fff;">{{ editing ? 'Edit Invoice' : 'New Invoice' }}</h5>
+        <button type="button" class="btn-close btn-close-white" (click)="showForm = false"></button>
       </div>
       <form #f="ngForm" (ngSubmit)="save()">
         <div class="modal-body">
           @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
+          <div class="section-label">Invoice Details</div>
           <div class="row g-3">
             <div class="col-md-6">
-              <label class="form-label">Client</label>
+              <label class="form-label small text-secondary mb-1">Client</label>
               <select class="form-select form-select-sm" name="clientId" [(ngModel)]="form.clientId" required [disabled]="editing">
                 <option [ngValue]="0" disabled>Select a client</option>
                 @for (c of clients; track c.id) { <option [ngValue]="c.id">{{ c.clientCompanyName || (c.firstName + ' ' + c.lastName) }}</option> }
               </select>
             </div>
             <div class="col-md-3">
-              <label class="form-label">Invoice Date</label>
+              <label class="form-label small text-secondary mb-1">Invoice Date</label>
               <input type="date" class="form-control form-control-sm" name="invoiceDate" [(ngModel)]="form.invoiceDate" (change)="onPaymentTermsOrDateChange()" required>
             </div>
             <div class="col-md-3">
-              <label class="form-label">Due Date</label>
+              <label class="form-label small text-secondary mb-1">Due Date</label>
               <input type="date" class="form-control form-control-sm" name="dueDate" [(ngModel)]="form.dueDate" required>
               <div class="form-text">Auto-filled from payment terms; edit freely if needed.</div>
             </div>
             <div class="col-md-4">
-              <label class="form-label">Payment Terms</label>
+              <label class="form-label small text-secondary mb-1">Payment Terms</label>
               <select class="form-select form-select-sm" name="paymentTerms" [(ngModel)]="form.paymentTerms" (change)="onPaymentTermsOrDateChange()">
                 @for (t of paymentTerms; track t) { <option [value]="t">{{ t }}</option> }
               </select>
             </div>
             <div class="col-md-8">
-              <label class="form-label">Description</label>
+              <label class="form-label small text-secondary mb-1">Description</label>
               <input class="form-control form-control-sm" name="description" [(ngModel)]="form.description" maxlength="255">
             </div>
+          </div>
 
-            <div class="col-12">
-              <label class="form-label fw-bold">Line Items</label>
-              <div class="table-responsive">
-                <table class="table table-sm align-middle mb-1">
-                  <thead class="table-light"><tr><th>Description</th><th style="width:100px">Qty</th><th style="width:130px">Unit Price</th><th style="width:110px" class="text-end">Total</th><th style="width:40px"></th></tr></thead>
-                  <tbody>
-                    @for (item of form.items; track $index; let i = $index) {
-                    <tr>
-                      <td><input class="form-control form-control-sm" name="itemDesc{{i}}" [(ngModel)]="item.description" required placeholder="Item description"></td>
-                      <td><input type="number" min="0.01" step="0.01" class="form-control form-control-sm" name="itemQty{{i}}" [(ngModel)]="item.quantity" required></td>
-                      <td><input type="number" min="0" step="0.01" class="form-control form-control-sm" name="itemPrice{{i}}" [(ngModel)]="item.unitPrice" required></td>
-                      <td class="text-end small">{{ (item.quantity || 0) * (item.unitPrice || 0) | currency }}</td>
-                      <td>
-                        @if (form.items.length > 1) {
-                        <button type="button" class="btn btn-sm btn-outline-danger" (click)="removeItem(i)"><i class="bi bi-x"></i></button>
-                        }
-                      </td>
-                    </tr>
-                    }
-                  </tbody>
-                </table>
-              </div>
-              <button type="button" class="btn btn-sm btn-outline-secondary" (click)="addItem()"><i class="bi bi-plus-lg me-1"></i>Add Item</button>
+          <div class="section-label">Line Items</div>
+          <div class="col-12">
+            <div class="table-responsive">
+              <table class="table table-sm align-middle mb-1">
+                <thead class="table-light"><tr><th>Description</th><th style="width:100px">Qty</th><th style="width:130px">Unit Price</th><th style="width:110px" class="text-end">Total</th><th style="width:40px"></th></tr></thead>
+                <tbody>
+                  @for (item of form.items; track $index; let i = $index) {
+                  <tr>
+                    <td><input class="form-control form-control-sm" name="itemDesc{{i}}" [(ngModel)]="item.description" required placeholder="Item description"></td>
+                    <td><input type="number" min="0.01" step="0.01" class="form-control form-control-sm" name="itemQty{{i}}" [(ngModel)]="item.quantity" required></td>
+                    <td><input type="number" min="0" step="0.01" class="form-control form-control-sm" name="itemPrice{{i}}" [(ngModel)]="item.unitPrice" required></td>
+                    <td class="text-end small">{{ (item.quantity || 0) * (item.unitPrice || 0) | currency }}</td>
+                    <td>
+                      @if (form.items.length > 1) {
+                      <button type="button" class="btn btn-sm btn-outline-danger" (click)="removeItem(i)"><i class="bi bi-x"></i></button>
+                      }
+                    </td>
+                  </tr>
+                  }
+                </tbody>
+              </table>
             </div>
+            <button type="button" class="btn btn-sm btn-outline-secondary" (click)="addItem()"><i class="bi bi-plus-lg me-1"></i>Add Item</button>
+          </div>
 
+          <div class="section-label">Additional</div>
+          <div class="row g-3">
             <div class="col-md-4">
-              <label class="form-label">Tax Amount</label>
+              <label class="form-label small text-secondary mb-1">Tax Amount</label>
               <input type="number" min="0" step="0.01" class="form-control form-control-sm" name="taxAmount" [(ngModel)]="form.taxAmount">
             </div>
             <div class="col-md-8">
-              <label class="form-label">Notes</label>
+              <label class="form-label small text-secondary mb-1">Notes</label>
               <input class="form-control form-control-sm" name="notes" [(ngModel)]="form.notes" maxlength="500">
             </div>
 
@@ -194,9 +208,9 @@
             </div>
           </div>
         </div>
-        <div class="modal-footer">
+        <div class="modal-footer py-2">
           <button type="button" class="btn btn-secondary btn-sm" (click)="showForm = false">Cancel</button>
-          <button type="submit" class="btn btn-primary btn-sm" [disabled]="f.invalid || saving || !form.clientId">
+          <button type="submit" class="btn btn-primary btn-sm px-3 fw-semibold" [disabled]="f.invalid || saving || !form.clientId">
             @if (saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
             {{ editing ? 'Save Changes' : 'Create Invoice' }}
           </button>

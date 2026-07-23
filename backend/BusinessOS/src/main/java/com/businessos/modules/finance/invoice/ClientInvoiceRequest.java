@@ -30,4 +30,8 @@ public class ClientInvoiceRequest {
     private PaymentTerms paymentTerms;
     private String description;
     private String notes;
+
+    // Set internally when an invoice is auto-generated for a paid service request
+    // (see ClientInvoiceServiceImpl#createForServiceRequest) - not user-supplied.
+    private Long serviceRequestId;
 }

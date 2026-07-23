@@ -3,11 +3,11 @@
   background: transparent;
   
   canvas {
-    display: block; // removes trailing baseline gap
+    display: block; 
     width: 100% !important;
     height: 100% !important;
     outline: none;
-    border-radius: 12px; // slightly round the canvas edges if wanted
+    border-radius: 12px;
   }
 }
 

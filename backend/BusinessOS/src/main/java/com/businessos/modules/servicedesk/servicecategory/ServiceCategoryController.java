@@ -1,5 +1,7 @@
 package com.businessos.modules.servicedesk.servicecategory;
 
+import com.businessos.auth.role.enums.PermissionCode;
+import com.businessos.auth.role.service.AuthorizationService;
 import com.businessos.security.SecurityUtil;
 import com.businessos.shared.exception.BadRequestException;
 import com.businessos.shared.exception.ResourceNotFoundException;
@@ -31,6 +33,7 @@ public class ServiceCategoryController {
 
     private final ServiceCategoryRepository categoryRepository;
     private final SecurityUtil securityUtil;
+    private final AuthorizationService authorizationService;
 
     private Long requireCompanyId() {
         Long companyId = securityUtil.getCurrentCompanyId();
@@ -40,9 +43,12 @@ public class ServiceCategoryController {
         return companyId;
     }
 
-    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE', 'CLIENT')")
     @GetMapping
     public ResponseEntity<List<ServiceCategoryResponse>> getAll() {
+        if (!"CLIENT".equals(securityUtil.getCurrentUser().getRole().name())) {
+            authorizationService.checkPermission(PermissionCode.SERVICE_CATEGORY_VIEW);
+        }
         return ResponseEntity.ok(
             categoryRepository.findByCompanyIdAndActiveTrueOrderBySortOrderAsc(requireCompanyId())
                 .stream()
@@ -57,6 +63,7 @@ public class ServiceCategoryController {
     @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     @GetMapping("/all")
     public ResponseEntity<List<ServiceCategoryResponse>> getAllIncludingInactive() {
+        authorizationService.checkPermission(PermissionCode.SERVICE_CATEGORY_VIEW);
         return ResponseEntity.ok(
             categoryRepository.findByCompanyIdOrderBySortOrderAsc(requireCompanyId())
                 .stream()
@@ -64,7 +71,7 @@ public class ServiceCategoryController {
                 .collect(Collectors.toList()));
     }
 
-    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE', 'CLIENT')")
     @GetMapping("/{id}")
     public ResponseEntity<ServiceCategoryResponse> getById(@PathVariable Long id) {
         ServiceCategory category = categoryRepository.findByIdAndCompanyId(id, requireCompanyId())
@@ -78,6 +85,7 @@ public class ServiceCategoryController {
     @Transactional
     public ResponseEntity<ServiceCategoryResponse> create(
             @Valid @RequestBody ServiceCategoryRequest request) {
+        authorizationService.checkPermission(PermissionCode.SERVICE_CATEGORY_CREATE);
         Long companyId = requireCompanyId();
         if (categoryRepository.existsByCompanyIdAndName(companyId, request.getName()))
             throw new BadRequestException(
@@ -102,6 +110,7 @@ public class ServiceCategoryController {
     public ResponseEntity<ServiceCategoryResponse> update(
             @PathVariable Long id,
             @Valid @RequestBody ServiceCategoryRequest request) {
+        authorizationService.checkPermission(PermissionCode.SERVICE_CATEGORY_UPDATE);
         Long companyId = requireCompanyId();
         ServiceCategory category = categoryRepository.findByIdAndCompanyId(id, companyId)
             .orElseThrow(() -> new ResourceNotFoundException(
@@ -123,6 +132,7 @@ public class ServiceCategoryController {
     @PatchMapping("/{id}/toggle")
     @Transactional
     public ResponseEntity<ServiceCategoryResponse> toggle(@PathVariable Long id) {
+        authorizationService.checkPermission(PermissionCode.SERVICE_CATEGORY_UPDATE);
         ServiceCategory category = categoryRepository.findByIdAndCompanyId(id, requireCompanyId())
             .orElseThrow(() -> new ResourceNotFoundException(
                 "Service category not found: " + id));

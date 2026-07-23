@@ -36,7 +36,7 @@ import { BreadcrumbComponent } from '../../components/breadcrumb/breadcrumb.comp
           </div>
           <div class="blog-body" [innerHTML]="post.body"></div>
           <hr class="my-5">
-          <a routerLink="/blog" class="btn btn-outline-dark" style="border-radius: var(--site-btn-radius)">
+          <a [routerLink]="basePath + '/blog'" class="btn btn-outline-dark" style="border-radius: var(--site-btn-radius)">
             <i class="bi bi-arrow-left me-2"></i>Back to Blog
           </a>
         </div>
@@ -52,6 +52,7 @@ import { BreadcrumbComponent } from '../../components/breadcrumb/breadcrumb.comp
 export class SiteBlogDetailPage implements OnInit {
   private route = inject(ActivatedRoute);
   private siteService = inject(SiteService);
+  basePath = this.siteService.getBasePath();
   constructor(private cdr: ChangeDetectorRef) {}
   post: BlogPost | null = null;
   loading = true;

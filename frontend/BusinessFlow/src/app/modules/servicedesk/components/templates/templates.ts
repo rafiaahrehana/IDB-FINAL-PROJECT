@@ -17,12 +17,13 @@ import { Pagination } from '../../../../shared/components/pagination/pagination'
 import { Loader } from '../../../../shared/components/loader/loader';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
 import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/confirm-dialog';
+import { HasPermissionDirective } from '../../../../shared/directives/has-permission.directive';
 
 type EditorTab = 'basics' | 'fields' | 'documents' | 'stages';
 
 @Component({
   selector: 'app-service-templates',
-  imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState, ConfirmDialog],
+  imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState, ConfirmDialog, HasPermissionDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './templates.html',
 })

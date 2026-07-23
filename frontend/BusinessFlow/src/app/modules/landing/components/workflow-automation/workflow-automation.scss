@@ -15,7 +15,7 @@
 .blob-left {
   width: 500px;
   height: 500px;
-  background: radial-gradient(circle, #e6d8fa 0%, transparent 70%);
+  background: radial-gradient(circle, #c7d2fe 0%, transparent 70%);
   top: -100px;
   left: -200px;
 }
@@ -23,7 +23,7 @@
 .blob-right {
   width: 600px;
   height: 600px;
-  background: radial-gradient(circle, #f0e6f9 0%, transparent 70%);
+  background: radial-gradient(circle, #eef2ff 0%, transparent 70%);
   bottom: -200px;
   right: -250px;
 }
@@ -36,23 +36,23 @@
   color: #9d8db3;
 }
 .bg-purple-dark {
-  background-color: #4a287c;
+  background-color: #3730A3;
 }
 .bg-light-purple {
-  background-color: #f7f3fd;
+  background-color: #eef2ff;
 }
 .bg-purple-light {
-  background-color: #d1bdf2;
+  background-color: #a5b4fc;
 }
 .border-purple {
-  border: 2px solid #4a287c;
+  border: 2px solid #3730A3;
 }
 .border-purple-light {
-  border: 2px solid #d1bdf2;
+  border: 2px solid #a5b4fc;
 }
 
 .bg-purple-accent {
-  background-color: #9b7bfb;
+  background-color: #818cf8;
 }
 
 .tracking-wide {
@@ -71,7 +71,7 @@
 
 /* Carousel hint (decorative) */
 .carousel-hint {
-  border: 1.5px dashed #d1bdf2;
+  border: 1.5px dashed #a5b4fc;
   border-radius: 999px;
   padding: 0.35rem 0.6rem;
 }
@@ -86,7 +86,7 @@
   font-size: 0.7rem;
 }
 .carousel-arrow-active {
-  background-color: #4a287c;
+  background-color: #3730A3;
   color: #fff;
 }
 .carousel-icon {
@@ -97,16 +97,27 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #4a287c;
+  color: #3730A3;
   font-size: 0.75rem;
 }
 
 /* Step cards */
 .workflow-card {
-  width: 150px;
-  background-color: #f7f3fd;
-  border-radius: 1rem;
-  padding: 1.5rem 1rem;
+  width: 160px;
+  aspect-ratio: 4 / 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1.25rem;
+  padding: 1rem;
+  border: 1px solid transparent;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+  }
 }
 
 .card-icon {
@@ -121,6 +132,85 @@
 }
 .workflow-card:hover .card-icon {
   transform: scale(1.08);
+}
+
+/* Step Themes */
+.step-request {
+  background-color: rgba(99, 102, 241, 0.05);
+  border-color: rgba(99, 102, 241, 0.2);
+  
+  .card-icon {
+    background: linear-gradient(135deg, #6366f1, #4f46e5);
+    color: #fff;
+  }
+  &:hover {
+    border-color: rgba(99, 102, 241, 0.6);
+  }
+}
+
+.step-approval {
+  background-color: rgba(16, 185, 129, 0.05);
+  border-color: rgba(16, 185, 129, 0.2);
+  
+  .card-icon {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: #fff;
+  }
+  &:hover {
+    border-color: rgba(16, 185, 129, 0.6);
+  }
+}
+
+.step-task {
+  background-color: rgba(59, 130, 246, 0.05);
+  border-color: rgba(59, 130, 246, 0.2);
+  
+  .card-icon {
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    color: #fff;
+  }
+  &:hover {
+    border-color: rgba(59, 130, 246, 0.6);
+  }
+}
+
+.step-review {
+  background-color: rgba(99, 102, 241, 0.05);
+  border-color: rgba(99, 102, 241, 0.2);
+  
+  .card-icon {
+    background: linear-gradient(135deg, #818cf8, #6366f1);
+    color: #fff;
+  }
+  &:hover {
+    border-color: rgba(99, 102, 241, 0.6);
+  }
+}
+
+.step-invoice {
+  background-color: rgba(245, 158, 11, 0.05);
+  border-color: rgba(245, 158, 11, 0.2);
+  
+  .card-icon {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #fff;
+  }
+  &:hover {
+    border-color: rgba(245, 158, 11, 0.6);
+  }
+}
+
+.step-completed {
+  background-color: rgba(6, 182, 212, 0.05);
+  border-color: rgba(6, 182, 212, 0.2);
+  
+  .card-icon {
+    background: linear-gradient(135deg, #06b6d4, #0891b2);
+    color: #fff;
+  }
+  &:hover {
+    border-color: rgba(6, 182, 212, 0.6);
+  }
 }
 
 /* Arrow connector between cards */

@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Getter @Setter @Builder
 public class PlatformSummaryResponse {
@@ -19,11 +20,10 @@ public class PlatformSummaryResponse {
     // Trials whose subscription window ends within the next 7 days
     long trialsExpiringWithin7Days;
 
-    // Companies by subscription plan
-    long freePlanCompanies;
-    long starterPlanCompanies;
-    long proPlanCompanies;
-    long enterprisePlanCompanies;
+    // Companies per catalog plan - dynamic, since Super Admin can add/remove plans
+    // at runtime (see SubscriptionPlanDefinition). Replaces the old fixed
+    // freePlanCompanies/starterPlanCompanies/proPlanCompanies/enterprisePlanCompanies fields.
+    List<PlanCompanyCount> companiesByPlan;
 
     // SaaS staff accounts (all platform roles)
     long totalPlatformUsers;

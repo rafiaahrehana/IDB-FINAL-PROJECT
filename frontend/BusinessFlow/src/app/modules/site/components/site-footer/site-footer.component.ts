@@ -1,7 +1,8 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, inject } from '@angular/core';
 import { NgClass } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { SiteSettings } from '../../models/site.model';
+import { SiteService } from '../../services/site.service';
 
 @Component({
   selector: 'app-site-footer',
@@ -33,21 +34,21 @@ import { SiteSettings } from '../../models/site.model';
           <div class="col-lg-2 col-md-6">
             <h6 class="fw-bold mb-3 text-uppercase small">Company</h6>
             <ul class="list-unstyled">
-              <li><a routerLink="/about">About</a></li>
-              <li><a routerLink="/services">Services</a></li>
-              <li><a routerLink="/portfolio">Portfolio</a></li>
-              <li><a routerLink="/careers">Careers</a></li>
-              <li><a routerLink="/contact">Contact</a></li>
+              <li><a [routerLink]="basePath + '/about'">About</a></li>
+              <li><a [routerLink]="basePath + '/services'">Services</a></li>
+              <li><a [routerLink]="basePath + '/portfolio'">Portfolio</a></li>
+              <li><a [routerLink]="basePath + '/careers'">Careers</a></li>
+              <li><a [routerLink]="basePath + '/contact'">Contact</a></li>
             </ul>
           </div>
           <div class="col-lg-2 col-md-6">
             <h6 class="fw-bold mb-3 text-uppercase small">Resources</h6>
             <ul class="list-unstyled">
-              <li><a routerLink="/blog">Blog</a></li>
-              <li><a routerLink="/pricing">Pricing</a></li>
-              <li><a routerLink="/faq">FAQ</a></li>
-              <li><a routerLink="/team">Team</a></li>
-              <li><a routerLink="/book-consultation">Book Consultation</a></li>
+              <li><a [routerLink]="basePath + '/blog'">Blog</a></li>
+              <li><a [routerLink]="basePath + '/pricing'">Pricing</a></li>
+              <li><a [routerLink]="basePath + '/faq'">FAQ</a></li>
+              <li><a [routerLink]="basePath + '/team'">Team</a></li>
+              <li><a [routerLink]="basePath + '/book-consultation'">Book Consultation</a></li>
             </ul>
           </div>
           <div class="col-lg-4 col-md-6">
@@ -63,8 +64,8 @@ import { SiteSettings } from '../../models/site.model';
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
           <small class="opacity-75">&copy; {{ settings?.copyright || currentYear + ' All rights reserved.' }}</small>
           <div class="d-flex gap-3">
-            <a routerLink="/privacy" class="small">Privacy</a>
-            <a routerLink="/terms" class="small">Terms</a>
+            <a [routerLink]="basePath + '/privacy'" class="small">Privacy</a>
+            <a [routerLink]="basePath + '/terms'" class="small">Terms</a>
           </div>
         </div>
       </div>
@@ -85,4 +86,7 @@ import { SiteSettings } from '../../models/site.model';
 export class SiteFooterComponent {
   @Input() settings: SiteSettings | null = null;
   currentYear = new Date().getFullYear();
+
+  private siteService = inject(SiteService);
+  basePath = this.siteService.getBasePath();
 }

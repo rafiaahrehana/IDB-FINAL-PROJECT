@@ -15,6 +15,11 @@ export class JobPostingService {
     return this.api.getPaged<JobPosting>(this.endpoint, page, size, params);
   }
 
+  // Lightweight, ungated - use this for pickers/dropdowns outside the Job Postings admin page.
+  listOpen(): Observable<JobPosting[]> {
+    return this.api.get<JobPosting[]>(`${this.endpoint}/open`);
+  }
+
   getById(id: number): Observable<JobPosting> {
     return this.api.get<JobPosting>(`${this.endpoint}/${id}`);
   }

@@ -14,7 +14,7 @@
 .blob-t-left {
   width: 400px;
   height: 200px;
-  background: #dac1fa;
+  background: #c7d2fe;
   top: 0;
   left: 0;
   transform: translate(-30%, -30%) rotate(-15deg);
@@ -24,7 +24,7 @@
 .blob-t-right {
   width: 500px;
   height: 300px;
-  background: #efe4fd;
+  background: #e0e7ff;
   top: 0;
   right: 0;
   transform: translate(30%, -40%) rotate(20deg);
@@ -34,7 +34,7 @@
 .blob-b-left {
   width: 500px;
   height: 250px;
-  background: #e2d1fc;
+  background: #c7d2fe;
   bottom: 0;
   left: 0;
   transform: translate(-10%, 40%) rotate(15deg);
@@ -44,7 +44,7 @@
 .blob-b-right {
   width: 450px;
   height: 250px;
-  background: #cfb1fa;
+  background: #a5b4fc;
   bottom: 0;
   right: 0;
   transform: translate(20%, 30%) rotate(-10deg);
@@ -55,7 +55,7 @@
   position: absolute;
   width: 100px;
   height: 100px;
-  background-image: radial-gradient(#d3c1eb 2px, transparent 2px);
+  background-image: radial-gradient(#c7d2fe 2px, transparent 2px);
   background-size: 15px 15px;
   z-index: 0;
   opacity: 0.8;
@@ -75,16 +75,16 @@
 
 /* Card Styling */
 .testi-card {
-  border: 1px solid #e2d6fb;
+  border: 1px solid #c7d2fe;
   border-radius: 12px !important;
-  box-shadow: 0 8px 24px rgba(210, 190, 240, 0.2);
+  box-shadow: 0 8px 24px rgba(199, 210, 254, 0.2);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
   z-index: 2;
 }
 
 .hover-card-lift:hover {
   transform: translateY(-4px);
-  box-shadow: 0 12px 30px rgba(180, 150, 230, 0.3);
+  box-shadow: 0 12px 30px rgba(165, 180, 252, 0.3);
 }
 
 .text-star {

@@ -1,7 +1,6 @@
 package com.businessos.modules.company;
 
 import com.businessos.enums.CompanyStatus;
-import com.businessos.enums.SubscriptionPlan;
 import com.businessos.shared.exception.UnauthorizedException;
 import com.businessos.security.SecurityUtil;
 import jakarta.validation.Valid;
@@ -67,7 +66,7 @@ public class CompanyController {
     @GetMapping
     public ResponseEntity<Page<CompanyResponse>> listAll(
             @RequestParam(required = false) CompanyStatus status,
-            @RequestParam(required = false) SubscriptionPlan plan,
+            @RequestParam(required = false) String plan,
             @RequestParam(required = false) String keyword,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
@@ -85,7 +84,7 @@ public class CompanyController {
     @PatchMapping("/{id}/plan")
     public ResponseEntity<CompanyResponse> changePlan(
             @PathVariable Long id,
-            @RequestParam SubscriptionPlan plan,
+            @RequestParam String plan,
             @RequestParam(required = false) java.math.BigDecimal amountPaid,
             @RequestParam(required = false) String transactionRef) {
         return ResponseEntity.ok(companyService.changePlan(id, plan, amountPaid, transactionRef));

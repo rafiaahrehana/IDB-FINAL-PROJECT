@@ -3,7 +3,6 @@ package com.businessos.modules.company;
 import com.businessos.core.base.BaseEntity;
 import com.businessos.auth.user.User;
 import com.businessos.enums.CompanyStatus;
-import com.businessos.enums.SubscriptionPlan;
 import com.businessos.shared.address.Address;
 import jakarta.persistence.*;
 import lombok.*;
@@ -46,10 +45,14 @@ public class Company extends BaseEntity {
     @Builder.Default
     private CompanyStatus status = CompanyStatus.PENDING_VERIFICATION;
 
-    @Enumerated(EnumType.STRING)
+    // References SubscriptionPlanDefinition.code (shared/subscription package) -
+    // a plain String rather than a FK/enum so Super Admin can add new plan codes
+    // at runtime without a schema or code change. Existing rows already store
+    // "FREE"/"STARTER"/"PRO"/"ENTERPRISE" from when this was a Java enum, and
+    // those codes are seeded as real catalog rows by SubscriptionPlanCatalogSeeder.
     @Column(nullable = false)
     @Builder.Default
-    private SubscriptionPlan subscriptionPlan = SubscriptionPlan.FREE;
+    private String subscriptionPlan = "FREE";
 
     @Builder.Default
     private boolean active = false;

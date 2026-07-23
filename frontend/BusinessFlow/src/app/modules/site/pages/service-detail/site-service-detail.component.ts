@@ -62,10 +62,10 @@ import { BreadcrumbComponent } from '../../components/breadcrumb/breadcrumb.comp
                     <strong>{{ service.estimatedTime }}</strong>
                   </div>
                 }
-                <a routerLink="/request-service" class="btn btn-primary w-100 mt-4" style="border-radius: var(--site-btn-radius)">
+                <a [routerLink]="basePath + '/request-service'" class="btn btn-primary w-100 mt-4" style="border-radius: var(--site-btn-radius)">
                   Request This Service <i class="bi bi-arrow-right ms-2"></i>
                 </a>
-                <a routerLink="/contact" class="btn btn-outline-dark w-100 mt-2" style="border-radius: var(--site-btn-radius)">
+                <a [routerLink]="basePath + '/contact'" class="btn btn-outline-dark w-100 mt-2" style="border-radius: var(--site-btn-radius)">
                   Contact Us
                 </a>
               </div>
@@ -85,6 +85,7 @@ import { BreadcrumbComponent } from '../../components/breadcrumb/breadcrumb.comp
 export class SiteServiceDetailPage implements OnInit {
   private route = inject(ActivatedRoute);
   private siteService = inject(SiteService);
+  basePath = this.siteService.getBasePath();
   constructor(private cdr: ChangeDetectorRef) {}
   service: Service | null = null;
   loading = true;

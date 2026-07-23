@@ -4,6 +4,9 @@ import com.businessos.auth.user.User;
 import com.businessos.auth.user.UserRepository;
 import com.businessos.modules.support.ticket.SupportTicket;
 import com.businessos.modules.support.ticket.SupportTicketRepository;
+import com.businessos.auth.role.enums.PermissionCode;
+import com.businessos.auth.role.service.AuthorizationService;
+import com.businessos.security.SecurityUtil;
 import com.businessos.shared.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -21,6 +24,8 @@ public class SupportMessageServiceImpl implements SupportMessageService {
     private final SupportMessageRepository messageRepository;
     private final SupportTicketRepository ticketRepository;
     private final UserRepository userRepository;
+    private final SecurityUtil securityUtil;
+    private final AuthorizationService authorizationService;
 
     @Override
     @Transactional
@@ -56,6 +61,7 @@ public class SupportMessageServiceImpl implements SupportMessageService {
     @Override
     @Transactional(readOnly = true)
     public Page<SupportMessageResponse> getByTicket(Long ticketId, Pageable pageable) {
+        checkTenantPermission();
         return messageRepository.findByTicketId(ticketId, pageable)
                 .map(SupportMessageMapper::toResponse);
     }
@@ -63,6 +69,7 @@ public class SupportMessageServiceImpl implements SupportMessageService {
     @Override
     @Transactional(readOnly = true)
     public List<SupportMessageResponse> getExternalMessages(Long ticketId) {
+        checkTenantPermission();
         return messageRepository.findByTicketIdAndIsInternalFalse(ticketId)
                 .stream()
                 .map(SupportMessageMapper::toResponse)
@@ -72,6 +79,7 @@ public class SupportMessageServiceImpl implements SupportMessageService {
     @Override
     @Transactional(readOnly = true)
     public List<SupportMessageResponse> getInternalNotes(Long ticketId) {
+        checkTenantPermission();
         return messageRepository.findByTicketIdAndIsInternalTrue(ticketId)
                 .stream()
                 .map(SupportMessageMapper::toResponse)
@@ -99,5 +107,14 @@ public class SupportMessageServiceImpl implements SupportMessageService {
         message.softDelete();
         messageRepository.save(message);
         return SupportMessageMapper.toResponse(message);
+    }
+
+    // Both endpoints also allow SUPPORT_AGENT/SUPPORT_MANAGER (platform staff with no
+    // CustomRole) per their @PreAuthorize - only gate the tenant caller branch here.
+    private void checkTenantPermission() {
+        com.businessos.auth.user.User current = securityUtil.getCurrentUser();
+        if (current != null && !current.isPlatformUser()) {
+            authorizationService.checkPermission(PermissionCode.SUPPORT_MESSAGE_VIEW);
+        }
     }
 }

@@ -1,14 +1,20 @@
 <div class="container-fluid py-3">
-  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-    <h4 class="mb-0">Salary Structures</h4>
-    <div class="d-flex gap-2">
-      <select class="form-select form-select-sm" style="width: 240px" [(ngModel)]="selectedEmployeeId" (change)="load()">
-        <option [ngValue]="null" disabled>Select employee</option>
-        @for (e of employees; track e.id) { <option [ngValue]="e.id">{{ e.firstName }} {{ e.lastName }}</option> }
-      </select>
-      <button class="btn btn-primary btn-sm text-nowrap" [disabled]="!selectedEmployeeId" (click)="openCreate()">
-        <i class="bi bi-plus-lg me-1"></i>New Structure
-      </button>
+  <div class="page-hero">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+      <div>
+        <div class="page-hero-label">HRM</div>
+        <h4 class="page-hero-title underline-mint">Salary Structures</h4>
+        <div class="page-hero-subtitle">Configure compensation and salary history</div>
+      </div>
+      <div class="page-hero-actions">
+        <select class="form-select form-select-sm" style="width: 240px" [(ngModel)]="selectedEmployeeId" (change)="load()">
+          <option [ngValue]="null" disabled>Select employee</option>
+          @for (e of employees; track e.id) { <option [ngValue]="e.id">{{ e.firstName }} {{ e.lastName }}</option> }
+        </select>
+        <button *appHasPermission="'SALARY_STRUCTURE_CREATE'" class="btn btn-hero-primary" [disabled]="!selectedEmployeeId" (click)="openCreate()">
+          <i class="bi bi-plus-circle"></i> New Structure
+        </button>
+      </div>
     </div>
   </div>
 
@@ -20,7 +26,7 @@
   <div class="card">
     <div class="table-responsive">
       <table class="table table-hover table-sm align-middle mb-0">
-        <thead class="table-light">
+        <thead>
           <tr>
             <th>Effective From</th><th>Effective To</th>
             <th class="text-end">Gross</th><th class="text-end">Basic</th>
@@ -45,7 +51,7 @@
             <td class="text-end fw-semibold">{{ s.netSalary | number:'1.2-2' }}</td>
             <td>{{ s.approvedByName || '-' }}</td>
             <td class="text-end">
-              <button class="btn btn-outline-danger btn-sm py-0" title="Delete" (click)="deleteTarget = s"><i class="bi bi-trash"></i></button>
+              <button *appHasPermission="'SALARY_STRUCTURE_DELETE'" class="btn btn-outline-danger btn-sm py-0" title="Delete" (click)="deleteTarget = s"><i class="bi bi-trash"></i></button>
             </td>
           </tr>
           }
@@ -68,9 +74,9 @@
   <div class="modal-dialog modal-lg modal-dialog-centered">
     <div class="modal-content">
       <form #f="ngForm" (ngSubmit)="f.valid && save()">
-        <div class="modal-header">
-          <h5 class="modal-title">New Salary Structure</h5>
-          <button type="button" class="btn-close" (click)="showForm = false"></button>
+        <div class="modal-header" style="background: #4F46E5; color:#fff;">
+          <h5 class="modal-title" style="color:#fff;">New Salary Structure</h5>
+          <button type="button" class="btn-close btn-close-white" (click)="showForm = false"></button>
         </div>
         <div class="modal-body">
           <div class="row g-3">

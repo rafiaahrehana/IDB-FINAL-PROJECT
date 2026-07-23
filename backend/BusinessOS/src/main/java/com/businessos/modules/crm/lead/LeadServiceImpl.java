@@ -4,6 +4,8 @@ import com.businessos.modules.ai.enums.AiFeature;
 import com.businessos.modules.ai.prompt.CrmSummaryPromptBuilder;
 import com.businessos.modules.ai.service.AiService;
 import com.businessos.auth.role.enums.Role;
+import com.businessos.auth.role.enums.PermissionCode;
+import com.businessos.auth.role.service.AuthorizationService;
 import com.businessos.modules.crm.client.Client;
 import com.businessos.modules.servicedesk.companyservice.CompanyServiceRepository;
 import com.businessos.modules.company.Company;
@@ -47,6 +49,7 @@ public class LeadServiceImpl implements LeadService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final SecurityUtil securityUtil;
+    private final AuthorizationService authorizationService;
     private final AiService aiService;
     private final LeadRepository leadRepository;
     private final com.businessos.modules.crm.activity.CrmActivityRepository leadActivityRepository;
@@ -56,6 +59,7 @@ public class LeadServiceImpl implements LeadService {
     @Override
     @Transactional
     public LeadResponse createLead(LeadRequest request) {
+        authorizationService.checkPermission(PermissionCode.LEAD_CREATE);
         validateLeadRequest(request);
         Long companyId = requireCompanyId();
 
@@ -109,6 +113,7 @@ public class LeadServiceImpl implements LeadService {
     @Override
     @Transactional(readOnly = true)
     public Page<LeadResponse> listLeads(LeadStatus status, Pageable pageable) {
+        authorizationService.checkPermission(PermissionCode.LEAD_VIEW);
         Long companyId = requireCompanyId();
         return (status != null
                 ? leadRepository.findByCompanyIdAndStatus(companyId, status, pageable)
@@ -119,6 +124,7 @@ public class LeadServiceImpl implements LeadService {
     @Override
     @Transactional(readOnly = true)
     public Page<LeadResponse> listMyLeads(Pageable pageable) {
+        authorizationService.checkPermission(PermissionCode.LEAD_VIEW);
         Long companyId = requireCompanyId();
         Employee emp = employeeRepository.findByUserId(securityUtil.getCurrentUser().getId())
                 .orElseThrow(() -> new BadRequestException("Employee profile not found"));
@@ -129,6 +135,7 @@ public class LeadServiceImpl implements LeadService {
     @Override
     @Transactional
     public LeadResponse updateLead(Long id, LeadRequest request) {
+        authorizationService.checkPermission(PermissionCode.LEAD_UPDATE);
         validateLeadRequest(request);
         Long companyId = requireCompanyId();
         Lead lead = findLeadInTenant(id);
@@ -187,6 +194,7 @@ public class LeadServiceImpl implements LeadService {
     @Override
     @Transactional
     public void deleteLead(Long id) {
+        authorizationService.checkPermission(PermissionCode.LEAD_DELETE);
         Lead lead = findLeadInTenant(id);
         lead.setDeleted(true);
         lead.setDeletedAt(LocalDateTime.now());
@@ -306,6 +314,7 @@ public class LeadServiceImpl implements LeadService {
     @Override
     @Transactional
     public LeadResponse convertLead(Long id) {
+        authorizationService.checkPermission(PermissionCode.LEAD_UPDATE);
         Long companyId = requireCompanyId();
         Lead lead = findLeadInTenant(id);
 
@@ -444,21 +453,23 @@ public class LeadServiceImpl implements LeadService {
     @Transactional(readOnly = true)
     public LeadResponse summariseLead(Long id) {
         Lead lead = findLeadInTenant(id);
+        LeadResponse response = leadMapper.toLeadResponse(lead);
 
-        // Use AI to summarize if available
         try {
-            String prompt = new CrmSummaryPromptBuilder()
+            String prompt = CrmSummaryPromptBuilder.builder()
                     .setContactName(lead.getContactName())
+                    .setCompanyName(lead.getCompanyName())
                     .setCurrentStatus(lead.getStatus().name())
+                    .setInterestedService(lead.getInterestedService() != null ? lead.getInterestedService().getName() : null)
                     .setActivityHistory("Activities count: " + lead.getActivities().size())
                     .build();
-            String summary = aiService.generateFromPrompt(AiFeature.CRM_LEAD_SUMMARY, prompt);
-            // Store summary (optional: add to lead description)
+            response.setAiSummary(aiService.generateFromPrompt(AiFeature.CRM_LEAD_SUMMARY, prompt));
         } catch (Exception e) {
             log.error("Failed to generate AI summary for lead with ID {}: {}", id, e.getMessage(), e);
+            throw new BadRequestException("Failed to generate AI summary: " + e.getMessage());
         }
 
-        return leadMapper.toLeadResponse(lead);
+        return response;
     }
 
     private void notifyAssignee(Lead lead) {

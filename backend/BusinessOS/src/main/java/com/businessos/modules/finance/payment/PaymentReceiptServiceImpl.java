@@ -145,6 +145,7 @@ public class PaymentReceiptServiceImpl implements PaymentReceiptService {
     @Override
     @Transactional
     public void delete(Long id) {
+        authorizationService.checkPermission(PermissionCode.PAYMENT_RECEIPT_DELETE);
         PaymentReceipt receipt = findInTenant(id);
         receipt.softDelete();
         receiptRepository.save(receipt);

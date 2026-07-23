@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpContext, HttpParams } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
  
@@ -29,7 +29,7 @@ export class ApiService {
   /**
    * GET request
    */
-  get<T>(endpoint: string, params?: any): Observable<T> {
+  get<T>(endpoint: string, params?: any, context?: HttpContext): Observable<T> {
     let httpParams = new HttpParams();
     if (params) {
       Object.keys(params).forEach(key => {
@@ -38,14 +38,14 @@ export class ApiService {
         }
       });
     }
-    return this.http.get<T>(`${this.baseUrl}${endpoint}`, { params: httpParams });
+    return this.http.get<T>(`${this.baseUrl}${endpoint}`, { params: httpParams, ...(context ? { context } : {}) });
   }
  
   /**
    * POST request
    */
-  post<T>(endpoint: string, data: any): Observable<T> {
-    return this.http.post<T>(`${this.baseUrl}${endpoint}`, data);
+  post<T>(endpoint: string, data: any, context?: HttpContext): Observable<T> {
+    return this.http.post<T>(`${this.baseUrl}${endpoint}`, data, context ? { context } : undefined);
   }
  
   /**
@@ -97,6 +97,14 @@ export class ApiService {
     return this.http.delete(`${this.baseUrl}${endpoint}`, { responseType: 'text' });
   }
  
+  /**
+   * GET request expecting a binary response (e.g. a generated PDF) - used to
+   * trigger a browser download via a Blob URL rather than parsing JSON.
+   */
+  getBlob(endpoint: string): Observable<Blob> {
+    return this.http.get(`${this.baseUrl}${endpoint}`, { responseType: 'blob' });
+  }
+
   /**
    * Get paginated data
    */

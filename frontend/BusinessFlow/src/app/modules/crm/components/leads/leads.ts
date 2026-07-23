@@ -10,6 +10,7 @@ import { Pagination } from '../../../../shared/components/pagination/pagination'
 import { Loader } from '../../../../shared/components/loader/loader';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
 import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/confirm-dialog';
+import { HasPermissionDirective } from '../../../../shared/directives/has-permission.directive';
 
 // Mirror of backend LeadStatus / LeadSource / Priority enums
 const LEAD_STATUSES = ['NEW', 'CONTACTED', 'QUALIFIED', 'PROPOSAL_SENT', 'NEGOTIATING', 'WON', 'LOST', 'UNQUALIFIED'] as const;
@@ -18,7 +19,7 @@ const PRIORITIES = ['LOW', 'NORMAL', 'HIGH', 'URGENT'] as const;
 
 @Component({
   selector: 'app-leads',
-  imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState, ConfirmDialog],
+  imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState, ConfirmDialog, HasPermissionDirective],
   templateUrl: './leads.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './leads.scss',
@@ -61,6 +62,7 @@ export class Leads implements OnInit {
   form: any = this.emptyForm();
 
   deleteTarget: Lead | null = null;
+  convertTarget: Lead | null = null;
 
   // Lead activities modal state
   activityTarget: Lead | null = null;
@@ -68,6 +70,10 @@ export class Leads implements OnInit {
   activitiesLoading = false;
   newLeadActivity: Partial<CrmActivity> = { type: 'NOTE' };
   activityTypes: CrmActivityType[] = ['CALL', 'EMAIL', 'MEETING', 'NOTE', 'TASK', 'FOLLOW_UP'];
+
+  aiSummary = '';
+  summarising = false;
+  aiSummaryError = '';
 
   constructor(
     private leadService: LeadService,
@@ -214,17 +220,21 @@ export class Leads implements OnInit {
     });
   }
 
-  convert(lead: Lead): void {
+  confirmConvert(): void {
+    if (!this.convertTarget) return;
+    const lead = this.convertTarget;
     this.leadService.convert(lead.id).subscribe({
       next: () => {
         this.success = `Lead "${lead.contactName}" converted to client`;
         this.error = '';
+        this.convertTarget = null;
         this.load();
         this.loadStats();
         this.cdr.markForCheck();
       },
       error: (err) => {
         this.error = err?.error?.message || 'Failed to convert lead';
+        this.convertTarget = null;
         this.cdr.markForCheck();
       },
     });
@@ -259,8 +269,28 @@ export class Leads implements OnInit {
   openActivities(lead: Lead): void {
     this.activityTarget = lead;
     this.newLeadActivity = { type: 'NOTE' };
+    this.aiSummary = '';
+    this.aiSummaryError = '';
     this.cdr.markForCheck();
     this.loadLeadActivities();
+  }
+
+  summariseLead(): void {
+    if (!this.activityTarget || this.summarising) return;
+    this.summarising = true;
+    this.aiSummaryError = '';
+    this.leadService.summarise(this.activityTarget.id).subscribe({
+      next: (lead) => {
+        this.aiSummary = lead.aiSummary || '';
+        this.summarising = false;
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        this.aiSummaryError = err?.error?.message || 'Failed to generate summary';
+        this.summarising = false;
+        this.cdr.markForCheck();
+      },
+    });
   }
 
   loadLeadActivities(): void {

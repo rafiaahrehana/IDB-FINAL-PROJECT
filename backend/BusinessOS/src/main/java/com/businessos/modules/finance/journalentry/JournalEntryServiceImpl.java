@@ -138,6 +138,7 @@ public class JournalEntryServiceImpl implements JournalEntryService {
     @Override
     @Transactional
     public JournalEntryResponse delete(Long id) {
+        authorizationService.checkPermission(PermissionCode.JOURNAL_ENTRY_DELETE);
         JournalEntry je = findInTenant(id);
 
         if (je.isPosted()) {

@@ -25,6 +25,7 @@ type Tab = 'packages' | 'subscriptions';
   imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState, ConfirmDialog],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './packages.html',
+  styleUrls: ['./packages.scss']
 })
 export class Packages implements OnInit {
   // VARIABLES
@@ -42,7 +43,7 @@ export class Packages implements OnInit {
 
   showForm = false;
   editingId: number | null = null;
-  form: ServicePackageRequest = { name: '', packagePrice: 0 };
+  form: ServicePackageRequest = { name: '' };
 
   deleteTarget: ServicePackage | null = null;
   cancelTarget: PackageSubscription | null = null;
@@ -99,7 +100,7 @@ export class Packages implements OnInit {
   // OPEN CREATE / EDIT PACKAGE FORM
   openCreate(): void {
     this.editingId = null;
-    this.form = { name: '', packagePrice: 0, serviceIds: [] };
+    this.form = { name: '', serviceIds: [] };
     this.showForm = true;
     this.loadServices();
   }
@@ -153,6 +154,25 @@ export class Packages implements OnInit {
 
   isServiceSelected(serviceId: number): boolean {
     return (this.form.serviceIds || []).indexOf(serviceId) > -1;
+  }
+
+  // SUM OF SELECTED SERVICES' PRICES (used as the auto price when no manual override is set)
+  get computedTotalPrice(): number {
+    const ids = this.form.serviceIds || [];
+    return this.availableServices
+      .filter(s => ids.includes(s.id))
+      .reduce((sum, s) => sum + (s.price || 0), 0);
+  }
+
+  // TOTAL AFTER APPLYING THE DISCOUNT %
+  get computedEffectivePrice(): number {
+    const discount = this.form.discountPercent || 0;
+    return Math.max(0, this.computedTotalPrice * (1 - discount / 100));
+  }
+
+  // CLEAR MANUAL PRICE OVERRIDE SO THE PACKAGE USES THE AUTO-CALCULATED PRICE
+  useAutoPrice(): void {
+    this.form.packagePrice = undefined;
   }
 
   // TOGGLE ACTIVE
@@ -230,5 +250,34 @@ export class Packages implements OnInit {
       EXPIRED: 'text-bg-secondary',
       CANCELLED: 'text-bg-danger',
     }[status] || 'text-bg-secondary';
+  }
+
+  // COLOR PALETTES FOR SERVICE PACKAGES
+  private colorPalettes = [
+    { border: 'rgba(99, 102, 241, 0.2)', hover: 'rgba(99, 102, 241, 0.8)', bg: 'rgba(99, 102, 241, 0.08)', text: '#6366f1' }, // Indigo
+    { border: 'rgba(59, 130, 246, 0.2)', hover: 'rgba(59, 130, 246, 0.8)', bg: 'rgba(59, 130, 246, 0.08)', text: '#3b82f6' }, // Blue
+    { border: 'rgba(16, 185, 129, 0.2)', hover: 'rgba(16, 185, 129, 0.8)', bg: 'rgba(16, 185, 129, 0.08)', text: '#10b981' }, // Green
+    { border: 'rgba(139, 92, 246, 0.2)', hover: 'rgba(139, 92, 246, 0.8)', bg: 'rgba(139, 92, 246, 0.08)', text: '#8b5cf6' }, // Purple
+    { border: 'rgba(244, 63, 94, 0.2)', hover: 'rgba(244, 63, 94, 0.8)', bg: 'rgba(244, 63, 94, 0.08)', text: '#f43f5e' }, // Rose
+  ];
+
+  getPalette(index: number) {
+    return this.colorPalettes[index % this.colorPalettes.length];
+  }
+
+  getPackageBorderColor(index: number): string {
+    return this.getPalette(index).border;
+  }
+
+  getPackageHoverBorderColor(index: number): string {
+    return this.getPalette(index).hover;
+  }
+
+  getIconBg(index: number): string {
+    return this.getPalette(index).bg;
+  }
+
+  getIconColor(index: number): string {
+    return this.getPalette(index).text;
   }
 }

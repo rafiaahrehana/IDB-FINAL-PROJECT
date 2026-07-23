@@ -17,8 +17,12 @@
     <!-- Bottom Grid -->
     <div class="row g-4 justify-content-center">
       <div class="col-md-6 col-lg-4 slide-up" *ngFor="let feat of features(); let i = index" [style.animation-delay]="(i * 0.1) + 's'">
-        <div class="security-card d-flex align-items-center gap-3 p-3 rounded-4 bg-lavender-light hover-card-lift">
-          <div class="icon-box bg-purple-dark text-lavender rounded-3 d-flex align-items-center justify-content-center flex-shrink-0">
+        <div class="security-card d-flex align-items-center gap-3 p-3 rounded-4 hover-card-lift"
+             [style.background]="feat.bg"
+             [style.--card-border-color]="feat.border"
+             [style.--card-hover-border-color]="feat.hover">
+          <div class="icon-box rounded-3 d-flex align-items-center justify-content-center flex-shrink-0 text-white"
+               [style.background]="feat.iconBg">
             <i class="bi fs-5" [ngClass]="feat.icon"></i>
           </div>
           <span class="fw-bold text-dark small">{{ feat.title }}</span>

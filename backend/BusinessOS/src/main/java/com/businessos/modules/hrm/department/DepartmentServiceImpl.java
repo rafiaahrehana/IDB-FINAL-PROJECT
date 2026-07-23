@@ -1,5 +1,7 @@
 package com.businessos.modules.hrm.department;
 
+import com.businessos.auth.role.enums.PermissionCode;
+import com.businessos.auth.role.service.AuthorizationService;
 import com.businessos.modules.hrm.employee.Employee;
 import com.businessos.modules.hrm.employee.EmployeeRepository;
 import com.businessos.modules.company.Company;
@@ -23,10 +25,12 @@ public class DepartmentServiceImpl implements DepartmentService {
     private final DepartmentRepository departmentRepository;
     private final EmployeeRepository employeeRepository;
     private final SecurityUtil         securityUtil;
+    private final AuthorizationService authorizationService;
 
     @Override
     @Transactional
     public DepartmentResponse create(DepartmentRequest request) {
+        authorizationService.checkPermission(PermissionCode.DEPARTMENT_CREATE);
         Long companyId = requireCompanyId();
 
         if (departmentRepository.existsByCompanyIdAndName(companyId, request.getName())) {
@@ -66,6 +70,12 @@ public class DepartmentServiceImpl implements DepartmentService {
     @Override
     @Transactional(readOnly = true)
     public Page<DepartmentResponse> listAll(Pageable pageable) {
+        // Deliberately NOT gated by DEPARTMENT_VIEW: this endpoint doubles as a
+        // cross-module picker (Announcements, Holidays, Job Postings all use it to
+        // populate a department dropdown) for users who may lack DEPARTMENT_VIEW but
+        // hold whatever permission actually governs that other module. The HRM
+        // "Departments" admin page is gated at the frontend sidebar/route level only,
+        // until this endpoint is split into a full admin view vs a lightweight picker.
         return departmentRepository.findByCompanyId(requireCompanyId(), pageable)
             .map(DepartmentMapper::toResponse);
     }
@@ -80,6 +90,7 @@ public class DepartmentServiceImpl implements DepartmentService {
     @Override
     @Transactional
     public DepartmentResponse update(Long id, DepartmentRequest request) {
+        authorizationService.checkPermission(PermissionCode.DEPARTMENT_UPDATE);
         Long companyId = requireCompanyId();
         Department dept = findInTenant(id);
 
@@ -117,6 +128,7 @@ public class DepartmentServiceImpl implements DepartmentService {
     @Override
     @Transactional
     public DepartmentResponse toggleActive(Long id) {
+        authorizationService.checkPermission(PermissionCode.DEPARTMENT_UPDATE);
         Department dept = findInTenant(id);
         dept.setActive(!dept.isActive());
         return DepartmentMapper.toResponse(dept);
@@ -125,6 +137,7 @@ public class DepartmentServiceImpl implements DepartmentService {
     @Override
     @Transactional
     public void delete(Long id) {
+        authorizationService.checkPermission(PermissionCode.DEPARTMENT_DELETE);
         Department dept = findInTenant(id);
         if (!dept.getEmployees().isEmpty()) {
             throw new BadRequestException(

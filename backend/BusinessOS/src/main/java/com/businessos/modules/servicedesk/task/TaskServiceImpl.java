@@ -54,6 +54,7 @@ public class TaskServiceImpl implements TaskService {
             .serviceRequest(sr)
             .company(companyRef(companyId))
             .createdBy(currentUser)
+            .estimatedHours(request.getEstimatedHours())
             .build();
 
         if (request.getAssignedEmployeeId() != null) {
@@ -106,6 +107,7 @@ public class TaskServiceImpl implements TaskService {
         if (request.getPriority()    != null) task.setPriority(request.getPriority());
         if (request.getDueDate()     != null) task.setDueDate(request.getDueDate());
         if (request.getSlaDeadline() != null) task.setSlaDeadline(request.getSlaDeadline());
+        if (request.getEstimatedHours() != null) task.setEstimatedHours(request.getEstimatedHours());
         if (request.getStatus()      != null) {
             task.setStatus(request.getStatus());
             if (request.getStatus() == TaskStatus.COMPLETED && task.getCompletedAt() == null)

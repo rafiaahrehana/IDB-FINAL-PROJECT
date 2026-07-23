@@ -204,7 +204,7 @@ export interface ServicePackage {
   description?: string;
   descriptionBn?: string;
   iconUrl?: string;
-  packagePrice: number;
+  packagePrice?: number;
   discountPercent?: number;
   billingCycle?: BillingCycle;
   requestQuota?: number;
@@ -227,7 +227,7 @@ export interface ServicePackageRequest {
   description?: string;
   descriptionBn?: string;
   iconUrl?: string;
-  packagePrice: number;
+  packagePrice?: number;
   discountPercent?: number;
   billingCycle?: BillingCycle;
   requestQuota?: number;

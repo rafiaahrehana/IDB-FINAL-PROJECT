@@ -2,6 +2,8 @@ package com.businessos.modules.servicedesk.servicetemplate;
 
 import com.businessos.modules.servicedesk.servicecategory.ServiceCategory;
 import com.businessos.modules.servicedesk.servicecategory.ServiceCategoryRepository;
+import com.businessos.auth.role.enums.PermissionCode;
+import com.businessos.auth.role.service.AuthorizationService;
 import com.businessos.shared.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -18,10 +20,12 @@ public class ServiceTemplateServiceImpl implements ServiceTemplateService {
 
     private final ServiceTemplateRepository templateRepository;
     private final ServiceCategoryRepository categoryRepository;
+    private final AuthorizationService authorizationService;
 
     @Override
     @Transactional
     public ServiceTemplateResponse create(ServiceTemplateRequest request) {
+        authorizationService.checkPermission(PermissionCode.SERVICE_TEMPLATE_CREATE);
         ServiceCategory category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
 
@@ -83,6 +87,7 @@ public class ServiceTemplateServiceImpl implements ServiceTemplateService {
     @Override
     @Transactional
     public ServiceTemplateResponse update(Long id, ServiceTemplateRequest request) {
+        authorizationService.checkPermission(PermissionCode.SERVICE_TEMPLATE_UPDATE);
         ServiceTemplate template = templateRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Template not found"));
 
@@ -113,6 +118,7 @@ public class ServiceTemplateServiceImpl implements ServiceTemplateService {
     @Override
     @Transactional(readOnly = true)
     public Page<ServiceTemplateResponse> listAll(boolean activeOnly, Pageable pageable) {
+        authorizationService.checkPermission(PermissionCode.SERVICE_TEMPLATE_VIEW);
         if (activeOnly) {
             return templateRepository.findByActive(true, pageable).map(ServiceTemplateMapper::toResponse);
         }
@@ -130,6 +136,7 @@ public class ServiceTemplateServiceImpl implements ServiceTemplateService {
     @Override
     @Transactional
     public void delete(Long id) {
+        authorizationService.checkPermission(PermissionCode.SERVICE_TEMPLATE_DELETE);
         ServiceTemplate template = templateRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Template not found"));
         template.softDelete();

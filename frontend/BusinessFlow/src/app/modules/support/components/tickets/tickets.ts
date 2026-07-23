@@ -35,6 +35,10 @@ export class Tickets implements OnInit {
   isEmployee = false;
   isManager = false;
   isAgent = false;
+  // Platform staff (Super/System Admin, Support Agent/Manager) triage tickets raised
+  // by companies - they can never create one themselves (backend's create() endpoint
+  // is COMPANY_OWNER/EMPLOYEE only), so "New Ticket" must not show for them.
+  isPlatformStaff = false;
   myAgentId: number | null = null;
 
   // Escalate / reassign / satisfaction state
@@ -65,6 +69,8 @@ export class Tickets implements OnInit {
     this.isManager = roles.includes('SUPPORT_MANAGER');
     this.isAgent = roles.includes('SUPPORT_AGENT');
     this.isEmployee = roles.includes('EMPLOYEE') && !this.isManager && !this.isAgent;
+    this.isPlatformStaff = this.isManager || this.isAgent
+      || roles.includes('SUPER_ADMIN') || roles.includes('SYSTEM_ADMIN');
     if (this.isAgent) {
       // Resolve the agent record for /assigned-to-me
       const userId = this.auth.getCurrentUser()?.id;

@@ -5,6 +5,8 @@ import com.businessos.modules.hrm.employee.Employee;
 import com.businessos.shared.exception.BadRequestException;
 import com.businessos.shared.exception.ResourceNotFoundException;
 import com.businessos.modules.hrm.employee.EmployeeRepository;
+import com.businessos.auth.role.enums.PermissionCode;
+import com.businessos.auth.role.service.AuthorizationService;
 import com.businessos.security.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 
@@ -25,10 +27,12 @@ public class OfferLetterServiceImpl implements OfferLetterService {
     private final EmployeeRepository         employeeRepository;
     private final SecurityUtil               securityUtil;
     private final AiService                  aiService;
+    private final AuthorizationService       authorizationService;
 
     @Override
     @Transactional
     public OfferLetterResponse create(OfferLetterRequest request) {
+        authorizationService.checkPermission(PermissionCode.LETTER_CREATE);
         Long companyId = requireCompanyId();
         Employee employee = employeeRepository.findByIdAndCompanyId(request.getEmployeeId(), companyId)
             .orElseThrow(() -> new ResourceNotFoundException("Employee not found: " + request.getEmployeeId()));
@@ -71,6 +75,7 @@ public class OfferLetterServiceImpl implements OfferLetterService {
     @Override
     @Transactional(readOnly = true)
     public Page<OfferLetterResponse> listAll(Pageable pageable) {
+        authorizationService.checkPermission(PermissionCode.LETTER_VIEW);
         return letterRepository.findByCompanyId(requireCompanyId(), pageable)
             .map(OfferletterMapper::toLetterResponse);
     }
@@ -85,6 +90,7 @@ public class OfferLetterServiceImpl implements OfferLetterService {
     @Override
     @Transactional
     public OfferLetterResponse issue(Long id) {
+        authorizationService.checkPermission(PermissionCode.LETTER_UPDATE);
         OfferLetter letter = findInTenant(id);
         if (letter.isIssued()) throw new BadRequestException("Letter is already issued");
         letter.setIssued(true);
@@ -94,6 +100,7 @@ public class OfferLetterServiceImpl implements OfferLetterService {
     @Override
     @Transactional
     public void delete(Long id) {
+        authorizationService.checkPermission(PermissionCode.LETTER_DELETE);
         OfferLetter letter = findInTenant(id);
         if (letter.isIssued()) throw new BadRequestException("Cannot delete an issued letter");
         letter.softDelete();

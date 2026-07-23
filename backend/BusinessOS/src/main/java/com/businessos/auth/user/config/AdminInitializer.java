@@ -9,7 +9,6 @@ import lombok.extern.slf4j.Slf4j;
 import com.businessos.modules.company.Company;
 import com.businessos.modules.company.CompanyRepository;
 import com.businessos.enums.CompanyStatus;
-import com.businessos.enums.SubscriptionPlan;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -70,7 +69,7 @@ public class AdminInitializer implements CommandLineRunner {
                         .website("businessos.com")
                         .owner(owner)
                         .status(CompanyStatus.ACTIVE)
-                        .subscriptionPlan(SubscriptionPlan.ENTERPRISE)
+                        .subscriptionPlan("ENTERPRISE")
                         .active(true)
                         .isPlatformTenant(true)
                         .build();

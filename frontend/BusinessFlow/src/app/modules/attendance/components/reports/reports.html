@@ -1,5 +1,13 @@
 <div class="container-fluid py-3">
-  <h4 class="mb-3">Attendance Reports</h4>
+  <div class="page-hero">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+      <div>
+        <div class="page-hero-label">ATTENDANCE</div>
+        <h4 class="page-hero-title underline-amber">Attendance Reports</h4>
+        <div class="page-hero-subtitle">Daily and monthly attendance reports and analytics.</div>
+      </div>
+    </div>
+  </div>
   @if (error) { <div class="alert alert-warning py-2">{{ error }}</div> }
   @if (loading) { <app-loader /> }
 

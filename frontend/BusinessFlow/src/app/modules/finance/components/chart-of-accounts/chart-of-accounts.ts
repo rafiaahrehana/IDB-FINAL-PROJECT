@@ -7,10 +7,11 @@ import { Pagination } from '../../../../shared/components/pagination/pagination'
 import { Loader } from '../../../../shared/components/loader/loader';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
 import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/confirm-dialog';
+import { HasPermissionDirective } from '../../../../shared/directives/has-permission.directive';
 
 @Component({
   selector: 'app-chart-of-accounts',
-  imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState, ConfirmDialog],
+  imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState, ConfirmDialog, HasPermissionDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './chart-of-accounts.html',
 })
@@ -74,6 +75,11 @@ export class ChartOfAccounts implements OnInit {
   }
 
   save(): void {
+    if (!this.form.accountCode?.trim() || !this.form.accountName?.trim() || !this.form.type) {
+      this.error = 'Code, Name, and Type are required.';
+      this.cdr.markForCheck();
+      return;
+    }
     const op = this.editId
       ? this.coaService.update(this.editId, this.form)
       : this.coaService.create(this.form);

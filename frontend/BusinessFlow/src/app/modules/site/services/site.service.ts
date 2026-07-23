@@ -22,12 +22,34 @@ export class SiteService {
     const host = window.location.hostname;
     const parts = host.split('.');
     if (parts.length > 2) return parts[0];
-    return '';
+    // window.location.pathname (not router.url) - on initial load, sibling components
+    // under the portal route can fire their API calls before the Router has finished
+    // updating router.url, which would otherwise still read '/' and silently drop the
+    // subdomain param on every request, causing the backend to reject them as
+    // "Tenant not identified" (Host is a bare host:port in dev, no real subdomain).
+    const match = window.location.pathname.match(/^\/portal\/([^/?]+)/);
+    return match ? match[1] : '';
   }
 
   private params(subdomain?: string): Record<string, string> {
     const s = subdomain || this.subdomain;
     return s ? { subdomain: s } : {};
+  }
+
+  /**
+   * Prefix for internal site routerLinks. On a real subdomain deployment
+   * (company.businessos.com/services) the site is mounted at the app root, so an
+   * absolute link like "/services" is already correct and this returns ''. When
+   * previewed path-based (localhost:4200/portal/{subdomain}/services, e.g. inside the
+   * Website View iframe), site routes are nested under /portal/{subdomain} - an
+   * absolute "/services" link would break out of that nesting and hit the admin app's
+   * own top-level routes instead, so this returns "/portal/{subdomain}" to prefix with.
+   */
+  getBasePath(): string {
+    const host = window.location.hostname;
+    if (host.split('.').length > 2) return '';
+    const match = window.location.pathname.match(/^\/portal\/([^/?]+)/);
+    return match ? `/portal/${match[1]}` : '';
   }
 
   getSettings(): Observable<SiteSettings> {

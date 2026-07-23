@@ -5,6 +5,8 @@ import com.businessos.modules.hrm.department.Department;
 import com.businessos.shared.exception.BadRequestException;
 import com.businessos.shared.exception.ResourceNotFoundException;
 import com.businessos.modules.hrm.department.DepartmentRepository;
+import com.businessos.auth.role.enums.PermissionCode;
+import com.businessos.auth.role.service.AuthorizationService;
 import com.businessos.security.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 
@@ -24,10 +26,12 @@ public class HolidayServiceImpl implements HolidayService {
     private final HolidayRepository holidayRepository;
     private final DepartmentRepository departmentRepository;
     private final SecurityUtil         securityUtil;
+    private final AuthorizationService authorizationService;
 
     @Override
     @Transactional
     public HolidayResponse create(HolidayRequest request) {
+        authorizationService.checkPermission(PermissionCode.HOLIDAY_CREATE);
         Long companyId = requireCompanyId();
         if (holidayRepository.existsByCompanyIdAndDate(companyId, request.getHolidayDate())) {
             throw new BadRequestException("A holiday already exists on " + request.getHolidayDate());
@@ -54,6 +58,7 @@ public class HolidayServiceImpl implements HolidayService {
     @Override
     @Transactional(readOnly = true)
     public Page<HolidayResponse> listAll(Pageable pageable) {
+        authorizationService.checkPermission(PermissionCode.HOLIDAY_VIEW);
         return holidayRepository.findByCompanyId(requireCompanyId(), pageable)
             .map(HolidayMapper::toHolidayResponse);
     }
@@ -61,6 +66,7 @@ public class HolidayServiceImpl implements HolidayService {
     @Override
     @Transactional(readOnly = true)
     public List<HolidayResponse> listByYear(int year) {
+        authorizationService.checkPermission(PermissionCode.HOLIDAY_VIEW);
         Long companyId = requireCompanyId();
         LocalDate from = LocalDate.of(year, 1, 1);
         LocalDate to   = LocalDate.of(year, 12, 31);
@@ -71,6 +77,7 @@ public class HolidayServiceImpl implements HolidayService {
     @Override
     @Transactional(readOnly = true)
     public List<HolidayResponse> listByRange(LocalDate from, LocalDate to, Long departmentId) {
+        authorizationService.checkPermission(PermissionCode.HOLIDAY_VIEW);
         Long companyId = requireCompanyId();
         List<Holiday> holidays = holidayRepository.findByCompanyAndDateRange(companyId, from, to);
         return holidays.stream().map(HolidayMapper::toHolidayResponse).toList();
@@ -79,6 +86,7 @@ public class HolidayServiceImpl implements HolidayService {
     @Override
     @Transactional
     public HolidayResponse update(Long id, HolidayRequest request) {
+        authorizationService.checkPermission(PermissionCode.HOLIDAY_UPDATE);
         Long companyId = requireCompanyId();
         Holiday holiday = findInTenant(id);
         holiday.setName(request.getName());
@@ -98,6 +106,7 @@ public class HolidayServiceImpl implements HolidayService {
     @Override
     @Transactional
     public void delete(Long id) {
+        authorizationService.checkPermission(PermissionCode.HOLIDAY_DELETE);
         findInTenant(id).softDelete();
     }
 

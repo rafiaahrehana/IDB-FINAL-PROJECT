@@ -46,6 +46,8 @@ public class Task extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String notes;
 
+    private Double estimatedHours;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "service_request_id", nullable = false)
     private ServiceRequest serviceRequest;

@@ -1,5 +1,6 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { SiteService } from '../../services/site.service';
 
 @Component({
   selector: 'app-breadcrumb',
@@ -8,12 +9,12 @@ import { RouterLink } from '@angular/router';
   template: `
     <nav aria-label="breadcrumb" class="py-3">
       <ol class="breadcrumb mb-0">
-        <li class="breadcrumb-item"><a routerLink="/" class="text-decoration-none">Home</a></li>
+        <li class="breadcrumb-item"><a [routerLink]="basePath || '/'" class="text-decoration-none">Home</a></li>
         @for (item of items; track item.label; let last = $last) {
           @if (last) {
             <li class="breadcrumb-item active" aria-current="page">{{ item.label }}</li>
           } @else {
-            <li class="breadcrumb-item"><a [href]="item.url" class="text-decoration-none">{{ item.label }}</a></li>
+            <li class="breadcrumb-item"><a [routerLink]="basePath + (item.url || '')" class="text-decoration-none">{{ item.label }}</a></li>
           }
         }
       </ol>
@@ -26,4 +27,7 @@ import { RouterLink } from '@angular/router';
 })
 export class BreadcrumbComponent {
   @Input() items: { label: string; url?: string }[] = [];
+
+  private siteService = inject(SiteService);
+  basePath = this.siteService.getBasePath();
 }

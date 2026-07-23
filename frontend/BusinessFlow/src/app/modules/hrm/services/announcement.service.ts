@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService, PagedResponse } from '../../../core/services/api.service';
-import { Announcement, AnnouncementRequest } from '../models/hrm.model';
+import { Announcement, AnnouncementRequest, AnnouncementDraftResponse } from '../models/hrm.model';
 
 @Injectable({ providedIn: 'root' })
 export class AnnouncementService {
@@ -23,6 +23,10 @@ export class AnnouncementService {
 
   create(payload: AnnouncementRequest): Observable<Announcement> {
     return this.api.post<Announcement>(this.endpoint, payload);
+  }
+
+  draftWithAi(instructions: string): Observable<AnnouncementDraftResponse> {
+    return this.api.post<AnnouncementDraftResponse>(`${this.endpoint}/ai-draft`, { instructions });
   }
 
   update(id: number, payload: AnnouncementRequest): Observable<Announcement> {

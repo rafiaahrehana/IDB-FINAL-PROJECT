@@ -1,17 +1,22 @@
 <div class="container-fluid py-3">
-  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-    <div>
-      <h4 class="mb-1">Platform Users</h4>
-      <div class="text-muted small">Platform-side administrative users (support, sales, ops) - not tenant employees.</div>
+  <div class="page-hero">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+      <div>
+        <div class="page-hero-label">PLATFORM</div>
+        <h4 class="page-hero-title underline-lime">Platform Users</h4>
+        <div class="page-hero-subtitle">Platform-side administrative users (support, sales, ops) - not tenant employees.</div>
+      </div>
+      <div class="page-hero-actions">
+        <button class="btn btn-hero-primary btn-sm" (click)="openCreate()"><i class="bi bi-plus-circle"></i> Add Platform User</button>
+      </div>
     </div>
-    <button class="btn btn-primary btn-sm" (click)="openCreate()"><i class="bi bi-plus"></i> Add Platform User</button>
   </div>
   @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
   @if (success) { <div class="alert alert-success py-2">{{ success }}</div> }
   @if (loading) { <app-loader /> }
 
   @if (showForm) {
-  <div class="card border-0 shadow-sm mb-3">
+  <div class="card mb-3">
     <div class="card-body p-4">
       <h6 class="fw-semibold mb-3">{{ editingId ? 'Edit' : 'New' }} Platform User</h6>
       <div class="row g-3">
@@ -58,7 +63,7 @@
   @if (!loading && users.length) {
   <div class="card"><div class="table-responsive">
     <table class="table table-hover table-sm align-middle mb-0">
-      <thead class="table-light"><tr><th>Name</th><th>Email</th><th>Role</th><th>Phone</th><th>Status</th><th></th></tr></thead>
+      <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Phone</th><th>Status</th><th></th></tr></thead>
       <tbody>
         @for (u of users; track u.id) {
         <tr>

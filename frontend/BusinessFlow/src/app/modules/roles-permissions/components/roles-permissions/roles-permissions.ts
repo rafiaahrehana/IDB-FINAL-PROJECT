@@ -38,6 +38,8 @@ export class RolesPermissions implements OnInit {
   permissionCatalog: Permission[] = [];
   permissionGroups: PermissionGroup[] = [];
   selectedCodes = new Set<string>();
+  private originalCodes = new Set<string>();
+  editingPermissions = false;
   savingPermissions = false;
   loadingDetail = false;
 
@@ -153,16 +155,27 @@ export class RolesPermissions implements OnInit {
   selectRole(role: CustomRole): void {
     this.selected = role;
     this.loadingDetail = true;
+    this.editingPermissions = false;
     this.error = '';
     this.cdr.markForCheck();
     this.roleService.getPermissions(role.id).subscribe({
       next: (codes) => {
         this.selectedCodes = new Set(codes);
+        this.originalCodes = new Set(codes);
         this.loadingDetail = false;
         this.cdr.markForCheck();
       },
       error: () => { this.loadingDetail = false; this.cdr.markForCheck(); },
     });
+  }
+
+  editPermissions(): void {
+    this.editingPermissions = true;
+  }
+
+  cancelEditPermissions(): void {
+    this.selectedCodes = new Set(this.originalCodes);
+    this.editingPermissions = false;
   }
 
   togglePermission(code: string): void {
@@ -196,8 +209,10 @@ export class RolesPermissions implements OnInit {
     this.roleService.setPermissions(this.selected.id, Array.from(this.selectedCodes)).subscribe({
       next: (codes) => {
         this.selectedCodes = new Set(codes);
+        this.originalCodes = new Set(codes);
         this.success = 'Permissions saved';
         this.savingPermissions = false;
+        this.editingPermissions = false;
         this.cdr.markForCheck();
       },
       error: (err) => {

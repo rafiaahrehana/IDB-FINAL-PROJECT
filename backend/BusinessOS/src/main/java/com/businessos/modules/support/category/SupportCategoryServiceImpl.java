@@ -1,5 +1,9 @@
 package com.businessos.modules.support.category;
 
+import com.businessos.auth.role.enums.PermissionCode;
+import com.businessos.auth.role.service.AuthorizationService;
+import com.businessos.auth.user.User;
+import com.businessos.security.SecurityUtil;
 import com.businessos.shared.exception.ResourceNotFoundException;
 import com.businessos.shared.exception.BadRequestException;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +19,8 @@ import java.util.stream.Collectors;
 public class SupportCategoryServiceImpl implements SupportCategoryService {
 
     private final SupportCategoryRepository categoryRepository;
+    private final SecurityUtil securityUtil;
+    private final AuthorizationService authorizationService;
 
     @Override
     @Transactional
@@ -53,6 +59,7 @@ public class SupportCategoryServiceImpl implements SupportCategoryService {
     @Override
     @Transactional(readOnly = true)
     public Page<SupportCategoryResponse> getAll(Pageable pageable) {
+        checkTenantPermission();
         return categoryRepository.findAll(pageable)
                 .map(SupportCategoryMapper::toResponse);
     }
@@ -60,6 +67,7 @@ public class SupportCategoryServiceImpl implements SupportCategoryService {
     @Override
     @Transactional(readOnly = true)
     public List<SupportCategoryResponse> getActive() {
+        checkTenantPermission();
         return categoryRepository.findByActiveTrue()
                 .stream()
                 .map(SupportCategoryMapper::toResponse)
@@ -103,5 +111,15 @@ public class SupportCategoryServiceImpl implements SupportCategoryService {
         category.softDelete();
         categoryRepository.save(category);
         return SupportCategoryMapper.toResponse(category);
+    }
+
+    // Categories are a shared platform-wide taxonomy - SUPPORT_AGENT/SUPPORT_MANAGER
+    // (platform staff with no CustomRole) triage tickets across every company and must
+    // not be blocked here; their existing role-based @PreAuthorize already gates access.
+    private void checkTenantPermission() {
+        User current = securityUtil.getCurrentUser();
+        if (current != null && !current.isPlatformUser()) {
+            authorizationService.checkPermission(PermissionCode.SUPPORT_CATEGORY_VIEW);
+        }
     }
 }

@@ -30,11 +30,19 @@ public class GeneralLedgerServiceImpl implements GeneralLedgerService {
     public void recordTransaction(Long accountId, BigDecimal debitAmount, BigDecimal creditAmount,
                                   String description, GlReferenceType referenceType, Long referenceId,
                                   String referenceNumber) {
-        Long companyId = securityUtil.getCurrentCompanyId();
+        recordTransaction(securityUtil.getCurrentCompanyId(), accountId, debitAmount, creditAmount,
+                description, referenceType, referenceId, referenceNumber);
+    }
 
+    @Override
+    @Transactional
+    public void recordTransaction(Long companyId, Long accountId, BigDecimal debitAmount, BigDecimal creditAmount,
+                                  String description, GlReferenceType referenceType, Long referenceId,
+                                  String referenceNumber) {
         ChartOfAccount account = coaRepository.findByIdAndCompanyId(accountId, companyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Chart of Account not found"));
 
+        var currentUser = securityUtil.getCurrentUser();
         GeneralLedger entry = GeneralLedger.builder()
                 .companyId(companyId)
                 .transactionDate(LocalDate.now())
@@ -46,7 +54,8 @@ public class GeneralLedgerServiceImpl implements GeneralLedgerService {
                 .referenceId(referenceId)
                 .referenceNumber(referenceNumber)
                 .posted(true)
-                .postedBy(securityUtil.getCurrentUser().getUsername())
+                // No authenticated user for system entry points (e.g. payment gateway callbacks).
+                .postedBy(currentUser != null ? currentUser.getUsername() : "System")
                 .postedDate(LocalDate.now())
                 .build();
 

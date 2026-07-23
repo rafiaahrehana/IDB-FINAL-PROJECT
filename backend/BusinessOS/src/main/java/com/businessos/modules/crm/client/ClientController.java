@@ -11,6 +11,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/clients")
@@ -38,6 +40,12 @@ public class ClientController {
             @RequestParam(defaultValue = "20") int size) {
         return ResponseEntity.ok(clientService.listAll(status,
                 PageRequest.of(page, size, Sort.by("createdAt").descending())));
+    }
+
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
+    @GetMapping("/active")
+    public ResponseEntity<List<ClientResponse>> listActive() {
+        return ResponseEntity.ok(clientService.listActive());
     }
 
     @GetMapping("/me")

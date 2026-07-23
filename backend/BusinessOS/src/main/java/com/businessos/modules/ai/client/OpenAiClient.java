@@ -36,7 +36,7 @@ public class OpenAiClient implements AiHttpClient {
             "model",       model,
             "temperature", temperature,
             "max_tokens",  maxTokens,
-            "messages",    List.of(Map.of("role", "platformuser", "content", prompt))
+            "messages",    List.of(Map.of("role", "user", "content", prompt))
         );
 
         try {

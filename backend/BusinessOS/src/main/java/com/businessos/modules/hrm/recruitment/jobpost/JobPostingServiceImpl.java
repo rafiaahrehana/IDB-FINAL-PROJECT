@@ -9,6 +9,8 @@ import com.businessos.shared.exception.BadRequestException;
 import com.businessos.shared.exception.ResourceNotFoundException;
 import com.businessos.modules.hrm.department.DepartmentRepository;
 import com.businessos.modules.hrm.employee.EmployeeRepository;
+import com.businessos.auth.role.enums.PermissionCode;
+import com.businessos.auth.role.service.AuthorizationService;
 import com.businessos.security.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 
@@ -16,6 +18,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -26,10 +30,12 @@ public class JobPostingServiceImpl implements JobPostingService {
     private final EmployeeRepository   employeeRepository;
     private final DepartmentRepository departmentRepository;
     private final SecurityUtil         securityUtil;
+    private final AuthorizationService authorizationService;
 
     @Override
     @Transactional
     public JobPostingResponse create(JobPostingRequest request) {
+        authorizationService.checkPermission(PermissionCode.JOB_POSTING_CREATE);
         Long companyId = requireCompanyId();
         User currentUser = securityUtil.getCurrentUser();
 
@@ -77,6 +83,7 @@ public class JobPostingServiceImpl implements JobPostingService {
     @Override
     @Transactional(readOnly = true)
     public Page<JobPostingResponse> listAll(JobPostingStatus status, Pageable pageable) {
+        authorizationService.checkPermission(PermissionCode.JOB_POSTING_VIEW);
         Long companyId = requireCompanyId();
         Page<JobPosting> page = status != null
             ? jobPostingRepository.findByCompanyIdAndStatus(companyId, status, pageable)
@@ -84,9 +91,20 @@ public class JobPostingServiceImpl implements JobPostingService {
         return page.map(JobPostingMapper::toResponse);
     }
 
+    // Deliberately NOT gated by JOB_POSTING_VIEW: this is the open-posting picker
+    // consumed by the Applications page - users with APPLICATION_VIEW but not
+    // JOB_POSTING_VIEW still need it to populate that dropdown.
+    @Override
+    @Transactional(readOnly = true)
+    public List<JobPostingResponse> listOpen() {
+        return jobPostingRepository.findByCompanyIdAndStatus(requireCompanyId(), JobPostingStatus.OPEN)
+            .stream().map(JobPostingMapper::toResponse).toList();
+    }
+
     @Override
     @Transactional
     public JobPostingResponse update(Long id, JobPostingRequest request) {
+        authorizationService.checkPermission(PermissionCode.JOB_POSTING_UPDATE);
         Long companyId = requireCompanyId();
         JobPosting posting = findInTenant(id);
 
@@ -118,30 +136,33 @@ public class JobPostingServiceImpl implements JobPostingService {
     @Override
     @Transactional
     public JobPostingResponse publish(Long id) {
+        authorizationService.checkPermission(PermissionCode.JOB_POSTING_UPDATE);
         JobPosting posting = findInTenant(id);
         if (posting.getStatus() == JobPostingStatus.CLOSED) {
             throw new BadRequestException("Cannot publish a closed job posting");
         }
         posting.setStatus(JobPostingStatus.OPEN);
-        
+
         return JobPostingMapper.toResponse(posting);
     }
 
     @Override
     @Transactional
     public JobPostingResponse close(Long id) {
+        authorizationService.checkPermission(PermissionCode.JOB_POSTING_UPDATE);
         JobPosting posting = findInTenant(id);
         posting.setStatus(JobPostingStatus.CLOSED);
-        
+
         return JobPostingMapper.toResponse(posting);
     }
 
     @Override
     @Transactional
     public void delete(Long id) {
+        authorizationService.checkPermission(PermissionCode.JOB_POSTING_DELETE);
         JobPosting posting = findInTenant(id);
         posting.softDelete();
-        
+
     }
 
     // ── Private helpers ───────────────────────────────────────────

@@ -43,8 +43,6 @@ export class Login {
         const user = this.authService.getCurrentUser();
         if (user?.roles.includes('CLIENT')) {
           this.router.navigate(['/client/dashboard']);
-        } else if (user?.roles.includes('COMPANY_OWNER')) {
-          this.router.navigate(['/website-view']);
         } else {
           this.router.navigate(['/']);
         }

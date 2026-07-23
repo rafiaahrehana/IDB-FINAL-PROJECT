@@ -1,6 +1,7 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, OnInit, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { SiteSettings } from '../../models/site.model';
+import { SiteService } from '../../services/site.service';
 
 @Component({
   selector: 'app-site-hero',
@@ -17,11 +18,11 @@ import { SiteSettings } from '../../models/site.model';
             <h1 class="display-4 fw-bold mb-4">{{ settings?.heroHeading || 'Welcome' }}</h1>
             <p class="lead mb-4" [style.max-width]="'540px'">{{ settings?.heroSubheading }}</p>
             <div class="d-flex gap-3 flex-wrap">
-              <a routerLink="/request-service" class="btn btn-primary btn-lg px-5"
+              <a [routerLink]="basePath + '/request-service'" class="btn btn-primary btn-lg px-5"
                  style="border-radius: var(--site-btn-radius)">
                 Get Started <i class="bi bi-arrow-right ms-2"></i>
               </a>
-              <a routerLink="/about" class="btn btn-outline-dark btn-lg px-5"
+              <a [routerLink]="basePath + '/about'" class="btn btn-outline-dark btn-lg px-5"
                  style="border-radius: var(--site-btn-radius)">
                 Learn More
               </a>
@@ -66,6 +67,9 @@ export class SiteHeroComponent implements OnInit {
   @Input() settings: SiteSettings | null = null;
   currentSlide = 0;
   private interval: any;
+
+  private siteService = inject(SiteService);
+  basePath = this.siteService.getBasePath();
 
   ngOnInit(): void {
     if ((this.settings?.heroImages?.length || 0) > 1) {

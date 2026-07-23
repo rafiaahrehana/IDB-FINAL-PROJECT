@@ -1,7 +1,15 @@
 <div class="container-fluid py-3">
-  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-    <h4 class="mb-0">Wallet</h4>
-    <button class="btn btn-primary btn-sm" (click)="openTopUp()"><i class="bi bi-plus-circle"></i> Top Up</button>
+  <div class="page-hero">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+      <div>
+        <div class="page-hero-label">FINANCE</div>
+        <h4 class="page-hero-title underline-peach">Wallet</h4>
+        <div class="page-hero-subtitle">Manage wallet balance and transaction history.</div>
+      </div>
+      <div class="page-hero-actions">
+        <button class="btn-hero-primary" (click)="openTopUp()"><i class="bi bi-plus-circle"></i> Top Up</button>
+      </div>
+    </div>
   </div>
   @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
   @if (success) { <div class="alert alert-success py-2">{{ success }}</div> }
@@ -10,19 +18,19 @@
   @if (!loadingWallet && wallet) {
   <div class="row g-3 mb-3">
     <div class="col-sm-4">
-      <div class="card"><div class="card-body py-3">
+      <div class="card border-0 shadow-sm"><div class="card-body py-3">
         <div class="text-muted small">Balance</div>
         <div class="fw-bold fs-5">{{ wallet.balance | currency:wallet.currency }}</div>
       </div></div>
     </div>
     <div class="col-sm-4">
-      <div class="card"><div class="card-body py-3">
+      <div class="card border-0 shadow-sm"><div class="card-body py-3">
         <div class="text-muted small">Credit Balance</div>
         <div class="fw-bold fs-5">{{ wallet.creditBalance | currency:wallet.currency }}</div>
       </div></div>
     </div>
     <div class="col-sm-4">
-      <div class="card border-primary"><div class="card-body py-3">
+      <div class="card border-0 shadow-sm border-primary"><div class="card-body py-3">
         <div class="text-muted small">Total Available</div>
         <div class="fw-bold fs-5 text-primary">{{ wallet.totalAvailable | currency:wallet.currency }}</div>
       </div></div>
@@ -31,15 +39,15 @@
   }
 
   @if (showTopUp) {
-  <div class="card mb-3"><div class="card-body">
-    <h6 class="fw-semibold mb-3">Top Up Wallet</h6>
+  <div class="card border-0 shadow-sm mb-3"><div class="card-body">
+    <div class="section-label">Top Up Wallet</div>
     <div class="row g-2">
       <div class="col-md-4">
         <label class="form-label small text-muted mb-1">Amount *</label>
         <input type="number" class="form-control form-control-sm" [(ngModel)]="topUpForm.amount" />
       </div>
       <div class="col-12 d-flex gap-2">
-        <button class="btn btn-success" [disabled]="!topUpForm.amount || topUpForm.amount <= 0" (click)="topUpOnline()">
+        <button class="btn btn-success btn-sm px-3 fw-semibold" [disabled]="!topUpForm.amount || topUpForm.amount <= 0" (click)="topUpOnline()">
           <i class="bi bi-credit-card me-1"></i>Pay Online
         </button>
         <button class="btn btn-secondary btn-sm" (click)="showTopUp = false">Cancel</button>
@@ -48,8 +56,8 @@
   </div></div>
   }
 
-  <div class="card">
-    <div class="card-header py-2 d-flex justify-content-between align-items-center">
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center">
       <span class="fw-semibold">Transaction History</span>
       <select class="form-select form-select-sm" style="width:180px" [(ngModel)]="typeFilter" (change)="page=0;loadTransactions()">
         <option value="">All types</option>
@@ -75,7 +83,7 @@
         </tbody>
       </table>
     </div>
-    <div class="card-footer d-flex justify-content-end"><app-pagination [page]="page" [totalPages]="totalPages" (pageChange)="goToPage($event)" /></div>
+    <div class="card-footer bg-white d-flex justify-content-end"><app-pagination [page]="page" [totalPages]="totalPages" (pageChange)="goToPage($event)" /></div>
     }
     @if (!loading && !transactions.length) { <app-empty-state icon="bi-wallet2" message="No transactions yet." /> }
   </div>

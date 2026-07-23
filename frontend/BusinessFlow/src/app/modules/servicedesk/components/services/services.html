@@ -1,7 +1,15 @@
 <div class="container-fluid py-3">
-  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-    <h4 class="mb-0">Services</h4>
-    <button class="btn btn-primary btn-sm" (click)="openCreate()"><i class="bi bi-plus"></i> New Service</button>
+  <div class="page-hero">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+      <div>
+        <div class="page-hero-label">SERVICE DESK</div>
+        <h4 class="page-hero-title underline-rose">Services</h4>
+        <div class="page-hero-subtitle">Explore all available services and request the one you need.</div>
+      </div>
+      <div class="page-hero-actions">
+        <button *appHasPermission="'SERVICE_CATALOG_CREATE'" class="btn btn-hero-primary" (click)="openCreate()"><i class="bi bi-plus-circle"></i> New Service</button>
+      </div>
+    </div>
   </div>
   @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
   @if (success) { <div class="alert alert-success py-2">{{ success }}</div> }
@@ -68,42 +76,90 @@
   }
 
   @if (!loading && services.length) {
-  <div class="card">
-    <div class="table-responsive">
-      <table class="table table-hover table-sm align-middle mb-0">
-        <thead class="table-light">
-          <tr><th>Name</th><th>Category</th><th>Workflow</th><th class="text-end">Price</th><th>Type</th><th class="text-center">Days</th><th>Flags</th><th>Status</th><th></th></tr>
-        </thead>
-        <tbody>
-          @for (s of services; track s.id) {
-          <tr>
-            <td class="fw-medium">{{ s.name }}</td>
-            <td>{{ s.categoryName || '-' }}</td>
-            <td class="text-muted small">{{ s.workflowTemplateName || '-' }}</td>
-            <td class="text-end">{{ s.price | currency:s.currency }}</td>
-            <td class="text-muted small">{{ priceTypeLabel(s.priceType) }}</td>
-            <td class="text-center">{{ s.estimatedDays || '-' }}</td>
-            <td class="small">
-              @if (s.featured) { <span class="badge text-bg-warning me-1">Featured</span> }
-              @if (s.remote) { <span class="badge text-bg-light border me-1">Remote</span> }
-              @if (s.onSite) { <span class="badge text-bg-light border me-1">On-site</span> }
-              @if (s.online) { <span class="badge text-bg-light border me-1">Online</span> }
-            </td>
-            <td><span class="badge" [class.text-bg-success]="s.active" [class.text-bg-secondary]="!s.active">{{ s.active ? 'Active' : 'Inactive' }}</span></td>
-            <td class="text-end text-nowrap">
-              <button class="btn btn-outline-secondary btn-sm me-1" (click)="toggle(s)">{{ s.active ? 'Disable' : 'Enable' }}</button>
-              <a class="btn btn-outline-secondary btn-sm me-1" [routerLink]="['/servicedesk/services', s.id, 'form-fields']" title="Form fields"><i class="bi bi-input-cursor-text"></i></a>
-              <button class="btn btn-outline-secondary btn-sm me-1" (click)="openEdit(s)"><i class="bi bi-pencil"></i></button>
-              <button class="btn btn-outline-danger btn-sm" (click)="deleteTarget = s"><i class="bi bi-trash"></i></button>
-            </td>
-          </tr>
+  <div class="row g-3">
+    @for (s of services; track s.id; let i = $index) {
+    <div class="col-md-6 col-lg-4 col-xl-3">
+      <div class="service-card rounded-4 p-4 h-100 d-flex flex-column position-relative"
+           [style.--card-border-color]="getServiceBorderColor(s, i)"
+           [style.--card-hover-border-color]="getServiceHoverBorderColor(s, i)">
+        
+        <!-- Status & Featured Badges -->
+        <div class="position-absolute top-0 end-0 p-3 d-flex gap-2">
+          @if (s.featured) {
+            <span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill" style="font-size: 0.7rem;">Featured</span>
           }
-        </tbody>
-      </table>
+          <span class="badge rounded-pill" 
+                [class.bg-success-subtle]="s.active" [class.text-success]="s.active" 
+                [class.bg-secondary-subtle]="!s.active" [class.text-secondary]="!s.active"
+                style="font-size: 0.7rem;">
+            {{ s.active ? 'Active' : 'Inactive' }}
+          </span>
+        </div>
+
+        <!-- Icon Wrapper -->
+        <div class="icon-wrapper rounded-3 d-inline-flex align-items-center justify-content-center mb-3 flex-shrink-0"
+             [style.background]="getIconBg(s, i)"
+             [style.color]="getIconColor(s, i)"
+             style="width: 48px; height: 48px;">
+          <i class="bi fs-5" [ngClass]="getServiceIcon(s.name)"></i>
+        </div>
+
+        <!-- Card Content -->
+        <div class="flex-grow-1">
+          <h5 class="fw-bold mb-1 fs-6 text-dark">{{ s.name }}</h5>
+          @if (s.categoryName) {
+            <div class="text-primary fw-semibold small mb-2" style="font-size: 0.8rem;">{{ s.categoryName }}</div>
+          }
+          @if (s.description) {
+            <p class="text-muted small mb-3 service-desc">{{ s.description }}</p>
+          }
+        </div>
+
+        <!-- Meta info (Price, Days, and Location Tags) -->
+        <div class="mt-auto pt-3 border-top border-light-subtle">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="fw-bold text-dark">
+              @if (s.price != null && !s.requiresQuotation) {
+                {{ s.price | currency: (s.currency || 'BDT ') : 'symbol' : '1.0-0' }}
+              } @else {
+                <span class="text-muted small fw-medium">Quoted per request</span>
+              }
+            </div>
+            @if (s.estimatedDays) {
+              <div class="text-muted small fw-semibold"><i class="bi bi-clock me-1"></i>{{ s.estimatedDays }} Days</div>
+            }
+          </div>
+
+          <!-- Tags -->
+          <div class="d-flex flex-wrap gap-1 mb-3">
+            @if (s.onSite) { <span class="badge bg-light text-secondary border rounded-pill" style="font-size: 0.7rem;">On-site</span> }
+            @if (s.online) { <span class="badge bg-light text-secondary border rounded-pill" style="font-size: 0.7rem;">Online</span> }
+            @if (s.remote) { <span class="badge bg-light text-secondary border rounded-pill" style="font-size: 0.7rem;">Remote</span> }
+          </div>
+
+          <!-- Admin Actions -->
+          <div class="d-flex gap-1 pt-2 border-top border-light-subtle">
+            <button *appHasPermission="'SERVICE_CATALOG_UPDATE'" class="btn btn-outline-secondary btn-xs flex-grow-1" (click)="toggle(s)">
+              {{ s.active ? 'Disable' : 'Enable' }}
+            </button>
+            <a *appHasPermission="'SERVICE_CATALOG_UPDATE'" class="btn btn-outline-secondary btn-xs" [routerLink]="['/servicedesk/services', s.id, 'form-fields']" title="Form fields">
+              <i class="bi bi-input-cursor-text"></i>
+            </a>
+            <button *appHasPermission="'SERVICE_CATALOG_UPDATE'" class="btn btn-outline-secondary btn-xs" (click)="openEdit(s)">
+              <i class="bi bi-pencil"></i>
+            </button>
+            <button *appHasPermission="'SERVICE_CATALOG_DELETE'" class="btn btn-outline-danger btn-xs" (click)="deleteTarget = s">
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
+        </div>
+
+      </div>
     </div>
-    <div class="card-footer d-flex justify-content-end">
-      <app-pagination [page]="page" [totalPages]="totalPages" (pageChange)="goToPage($event)" />
-    </div>
+    }
+  </div>
+  <div class="d-flex justify-content-end mt-3">
+    <app-pagination [page]="page" [totalPages]="totalPages" (pageChange)="goToPage($event)" />
   </div>
   }
   @if (!loading && !services.length && !showForm) { <app-empty-state icon="bi-grid" message="No services in the catalog yet." /> }

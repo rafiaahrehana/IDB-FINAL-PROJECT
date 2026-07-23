@@ -1,6 +1,7 @@
-import { Component, Input, HostListener } from '@angular/core';
+import { Component, Input, HostListener, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { SiteSettings, NavItem } from '../../models/site.model';
+import { SiteService } from '../../services/site.service';
 
 @Component({
   selector: 'app-site-navbar',
@@ -12,7 +13,7 @@ import { SiteSettings, NavItem } from '../../models/site.model';
          [class.navbar-dark]="isDark"
          [class.navbar-light]="!isDark">
       <div class="container">
-        <a class="navbar-brand d-flex align-items-center gap-2" routerLink="/">
+        <a class="navbar-brand d-flex align-items-center gap-2" [routerLink]="basePath || '/'">
           @if (settings?.logoUrl) {
             <img [src]="settings!.logoUrl" [alt]="settings!.companyName" height="36" class="rounded">
           } @else {
@@ -40,7 +41,7 @@ import { SiteSettings, NavItem } from '../../models/site.model';
                         @if (child.external) {
                           <a class="dropdown-item" [href]="child.url" target="_blank">{{ child.label }}</a>
                         } @else {
-                          <a class="dropdown-item" [routerLink]="child.url">{{ child.label }}</a>
+                          <a class="dropdown-item" [routerLink]="basePath + child.url">{{ child.label }}</a>
                         }
                       </li>
                     }
@@ -51,14 +52,14 @@ import { SiteSettings, NavItem } from '../../models/site.model';
                   @if (item.external) {
                     <a class="nav-link" [href]="item.url" target="_blank">{{ item.label }}</a>
                   } @else {
-                    <a class="nav-link" [routerLink]="item.url">{{ item.label }}</a>
+                    <a class="nav-link" [routerLink]="basePath + item.url">{{ item.label }}</a>
                   }
                 </li>
               }
             }
             <li class="nav-item">
               <a class="btn btn-primary ms-lg-3 px-4" style="border-radius: var(--site-btn-radius)"
-                 routerLink="/request-service">
+                 [routerLink]="basePath + '/request-service'">
                 Get a Quote
               </a>
             </li>
@@ -81,6 +82,9 @@ import { SiteSettings, NavItem } from '../../models/site.model';
 export class SiteNavbarComponent {
   @Input() settings: SiteSettings | null = null;
   @Input() nav: NavItem[] = [];
+
+  private siteService = inject(SiteService);
+  basePath = this.siteService.getBasePath();
 
   collapsed = true;
   scrolled = false;

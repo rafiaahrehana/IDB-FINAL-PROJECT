@@ -6,6 +6,8 @@ import com.businessos.modules.servicedesk.servicecategory.ServiceCategory;
 import com.businessos.modules.servicedesk.servicecategory.ServiceCategoryRepository;
 import com.businessos.modules.servicedesk.servicetemplate.ServiceTemplate;
 import com.businessos.modules.servicedesk.servicetemplate.ServiceTemplateRepository;
+import com.businessos.auth.role.enums.PermissionCode;
+import com.businessos.auth.role.service.AuthorizationService;
 import com.businessos.security.SecurityUtil;
 import com.businessos.shared.exception.BadRequestException;
 import com.businessos.shared.exception.ResourceNotFoundException;
@@ -25,11 +27,14 @@ public class KbArticleServiceImpl implements KbArticleService {
     private final ServiceCategoryRepository categoryRepository;
     private final ServiceTemplateRepository templateRepository;
     private final SecurityUtil securityUtil;
+    private final AuthorizationService authorizationService;
 
     @Override
     @Transactional
     public KbArticleResponse create(KbArticleRequest request) {
+        authorizationService.checkPermission(PermissionCode.KNOWLEDGE_BASE_CREATE);
         KbArticle article = KbArticle.builder()
+                .companyId(securityUtil.getCurrentCompanyId())
                 .title(request.getTitle())
                 .summary(request.getSummary())
                 .content(request.getContent())
@@ -46,6 +51,7 @@ public class KbArticleServiceImpl implements KbArticleService {
     @Override
     @Transactional
     public KbArticleResponse update(Long id, KbArticleRequest request) {
+        authorizationService.checkPermission(PermissionCode.KNOWLEDGE_BASE_UPDATE);
         KbArticle article = getByIdOrThrow(id);
 
         article.setTitle(request.getTitle());
@@ -72,7 +78,13 @@ public class KbArticleServiceImpl implements KbArticleService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<KbArticleResponse> list(String keyword, String status, Pageable pageable) {
+        // Only gated for tenant staff - CLIENT users (no CustomRole) browse published,
+        // client-visible articles from the portal via this same endpoint.
+        if (!isClient()) {
+            authorizationService.checkPermission(PermissionCode.KNOWLEDGE_BASE_VIEW);
+        }
         KbArticleStatus statusFilter;
         try {
             statusFilter = (status == null || status.isBlank()) ? null : KbArticleStatus.valueOf(status.toUpperCase());
@@ -81,13 +93,14 @@ public class KbArticleServiceImpl implements KbArticleService {
         }
         String keywordFilter = (keyword == null || keyword.isBlank()) ? null : keyword.trim();
 
-        return articleRepository.search(keywordFilter, statusFilter, isClient(), pageable)
+        return articleRepository.search(securityUtil.getCurrentCompanyId(), keywordFilter, statusFilter, isClient(), pageable)
                 .map(KbArticleMapper::toResponse);
     }
 
     @Override
     @Transactional
     public KbArticleResponse publish(Long id) {
+        authorizationService.checkPermission(PermissionCode.KNOWLEDGE_BASE_UPDATE);
         KbArticle article = getByIdOrThrow(id);
         article.setStatus(KbArticleStatus.PUBLISHED);
         article.setPublishedAt(LocalDateTime.now());
@@ -97,6 +110,7 @@ public class KbArticleServiceImpl implements KbArticleService {
     @Override
     @Transactional
     public KbArticleResponse archive(Long id) {
+        authorizationService.checkPermission(PermissionCode.KNOWLEDGE_BASE_UPDATE);
         KbArticle article = getByIdOrThrow(id);
         article.setStatus(KbArticleStatus.ARCHIVED);
         return KbArticleMapper.toResponse(articleRepository.save(article));
@@ -116,7 +130,7 @@ public class KbArticleServiceImpl implements KbArticleService {
     }
 
     private KbArticle getByIdOrThrow(Long id) {
-        return articleRepository.findById(id)
+        return articleRepository.findByIdAndCompanyId(id, securityUtil.getCurrentCompanyId())
                 .orElseThrow(() -> new ResourceNotFoundException("Article not found"));
     }
 

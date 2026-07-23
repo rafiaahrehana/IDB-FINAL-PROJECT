@@ -5,7 +5,7 @@
 
 /* Gradient heading accent */
 .text-gradient {
-  background: linear-gradient(90deg, #7d55fa 0%, #b48af9 100%);
+  background: linear-gradient(90deg, #4F46E5 0%, #818cf8 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -41,15 +41,15 @@
 }
 
 .border-purple {
-  border: 1.5px solid #a484f4 !important;
+  border: 1.5px solid #818cf8 !important;
 }
 
 .border-purple-light {
-  border: 1px solid #c9b4f7;
+  border: 1px solid #c7d2fe;
 }
 
 .bg-lavender {
-  background-color: #efe9fd !important;
+  background-color: #EEF2FF !important;
 }
 
 .text-purple {
@@ -58,18 +58,18 @@
 
 /* Buttons */
 .btn-outline-purple {
-  border: 1.5px solid #7d55fa;
-  color: #6a42e5;
+  border: 1.5px solid #4F46E5;
+  color: #4F46E5;
   background: transparent;
   transition: all 0.2s;
 }
 .btn-outline-purple:hover {
-  background: #7d55fa;
+  background: #4F46E5;
   color: #fff;
 }
 
 .btn-purple-solid {
-  background: linear-gradient(90deg, #7d55fa 0%, #9b7bfb 100%);
+  background: linear-gradient(90deg, #4F46E5 0%, #818cf8 100%);
   color: #fff;
   border: none;
   transition: all 0.2s;

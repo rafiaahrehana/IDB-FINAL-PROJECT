@@ -1,7 +1,15 @@
 <div class="container-fluid py-3">
-  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-    <h4 class="mb-0">Bank Reconciliation</h4>
-    <button class="btn btn-primary btn-sm" (click)="openCreate()"><i class="bi bi-plus"></i> New Reconciliation</button>
+  <div class="page-hero">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+      <div>
+        <div class="page-hero-label">FINANCE</div>
+        <h4 class="page-hero-title underline-peach">Bank Reconciliation</h4>
+        <div class="page-hero-subtitle">Reconcile bank statements with general ledger entries.</div>
+      </div>
+      <div class="page-hero-actions">
+        <button *appHasPermission="'BANK_RECONCILIATION_CREATE'" class="btn-hero-primary" (click)="openCreate()"><i class="bi bi-plus-circle"></i> New Reconciliation</button>
+      </div>
+    </div>
   </div>
   @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
   @if (success) { <div class="alert alert-success py-2">{{ success }}</div> }
@@ -13,7 +21,8 @@
   }
 
   @if (showForm) {
-  <div class="card mb-3"><div class="card-body">
+  <div class="card border-0 shadow-sm mb-3"><div class="card-body">
+    <div class="section-label">Reconciliation Details</div>
     <div class="row g-2">
       <div class="col-md-4">
         <label class="form-label small text-muted mb-1">Bank Account *</label>
@@ -35,7 +44,7 @@
         <input type="text" class="form-control form-control-sm" [(ngModel)]="form.outstandingChecks" placeholder='JSON e.g. ["500","1200"]' />
       </div>
       <div class="col-12 d-flex gap-2">
-        <button class="btn btn-primary btn-sm" [disabled]="!form.bankAccountId || !form.bankStatementBalance" (click)="save()">Save</button>
+        <button class="btn btn-primary btn-sm px-3 fw-semibold" [disabled]="!form.bankAccountId || !form.bankStatementBalance" (click)="save()">Save</button>
         <button class="btn btn-secondary btn-sm" (click)="showForm = false">Cancel</button>
       </div>
     </div>
@@ -44,7 +53,7 @@
 
   @if (loading) { <app-loader /> }
   @if (!loading && items.length) {
-  <div class="card"><div class="table-responsive">
+  <div class="card border-0 shadow-sm"><div class="table-responsive">
     <table class="table table-hover table-sm align-middle mb-0">
       <thead class="table-light"><tr><th>Account</th><th>Date</th><th class="text-end">GL Balance</th><th class="text-end">Bank Balance</th><th class="text-end">Difference</th><th>Status</th><th></th></tr></thead>
       <tbody>
@@ -63,14 +72,14 @@
             @if (!item.reconciled) { <span class="badge text-bg-warning">Pending</span> }
           </td>
           <td class="text-end">
-            @if (!item.reconciled) { <button class="btn btn-outline-primary btn-sm" (click)="openReconcile(item)">Reconcile</button> }
+            @if (!item.reconciled) { <button *appHasPermission="'BANK_RECONCILIATION_RECONCILE'" class="btn btn-outline-primary btn-sm" (click)="openReconcile(item)">Reconcile</button> }
           </td>
         </tr>
         }
       </tbody>
     </table>
   </div>
-  <div class="card-footer d-flex justify-content-end"><app-pagination [page]="page" [totalPages]="totalPages" (pageChange)="goToPage($event)" /></div>
+  <div class="card-footer bg-white d-flex justify-content-end"><app-pagination [page]="page" [totalPages]="totalPages" (pageChange)="goToPage($event)" /></div>
   </div>
   }
   @if (!loading && !items.length && !showForm) { <app-empty-state icon="bi-bank" message="No bank reconciliations yet." /> }
@@ -79,11 +88,11 @@
   <div class="modal d-block" style="background: rgba(0,0,0,.4)">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
-        <div class="modal-header"><h5 class="modal-title">Mark as Reconciled</h5><button class="btn-close" (click)="reconcileTarget = null"></button></div>
-        <div class="modal-body"><input class="form-control" placeholder="Discrepancy notes (optional)" [(ngModel)]="reconcileNotes" /></div>
-        <div class="modal-footer">
+        <div class="modal-header py-2" style="background: #4F46E5; color: #fff; border-radius: 0;"><h5 class="modal-title fs-6 fw-semibold" style="color: #fff;">Mark as Reconciled</h5><button class="btn-close btn-close-white" (click)="reconcileTarget = null"></button></div>
+        <div class="modal-body"><input class="form-control form-control-sm" placeholder="Discrepancy notes (optional)" [(ngModel)]="reconcileNotes" /></div>
+        <div class="modal-footer py-2">
           <button class="btn btn-secondary btn-sm" (click)="reconcileTarget = null">Cancel</button>
-          <button class="btn btn-primary btn-sm" (click)="doReconcile()">Confirm</button>
+          <button class="btn btn-primary btn-sm px-3 fw-semibold" (click)="doReconcile()">Confirm</button>
         </div>
       </div>
     </div>

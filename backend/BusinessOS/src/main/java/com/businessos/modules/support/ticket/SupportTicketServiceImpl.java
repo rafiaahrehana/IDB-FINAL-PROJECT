@@ -12,6 +12,8 @@ import com.businessos.modules.company.Company;
 import com.businessos.modules.company.CompanyRepository;
 import com.businessos.auth.user.User;
 import com.businessos.auth.user.UserRepository;
+import com.businessos.auth.role.enums.PermissionCode;
+import com.businessos.auth.role.service.AuthorizationService;
 import com.businessos.security.SecurityUtil;
 import com.businessos.shared.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +38,7 @@ public class SupportTicketServiceImpl implements SupportTicketService {
     private final CompanyRepository companyRepository;
     private final UserRepository userRepository;
     private final SecurityUtil securityUtil;
+    private final AuthorizationService authorizationService;
 
     @Override
     @Transactional
@@ -113,6 +116,20 @@ public class SupportTicketServiceImpl implements SupportTicketService {
     @Override
     @Transactional(readOnly = true)
     public Page<SupportTicketResponse> getAll(Pageable pageable) {
+        // Platform support staff (SUPPORT_MANAGER/SUPER_ADMIN/SYSTEM_ADMIN) triage
+        // tickets across every company - only a tenant caller (COMPANY_OWNER) gets
+        // scoped to their own company. findAll() here was previously unscoped for
+        // everyone, letting a company owner see every other tenant's tickets.
+        User current = securityUtil.getCurrentUser();
+        if (current != null && !current.isPlatformUser()) {
+            // Fine-grained permission only applies to tenant users - platform staff
+            // (SUPPORT_MANAGER etc.) have no CustomRole, so checkPermission() would
+            // always deny them; their existing role-based @PreAuthorize already gates
+            // this endpoint for that branch.
+            authorizationService.checkPermission(PermissionCode.TICKET_VIEW);
+            return ticketRepository.findByCompanyId(securityUtil.getCurrentCompanyId(), pageable)
+                    .map(SupportTicketMapper::toResponse);
+        }
         return ticketRepository.findAll(pageable)
                 .map(SupportTicketMapper::toResponse);
     }
@@ -127,6 +144,12 @@ public class SupportTicketServiceImpl implements SupportTicketService {
     @Override
     @Transactional(readOnly = true)
     public Page<SupportTicketResponse> getByStatus(TicketStatus status, Pageable pageable) {
+        User current = securityUtil.getCurrentUser();
+        if (current != null && !current.isPlatformUser()) {
+            authorizationService.checkPermission(PermissionCode.TICKET_VIEW);
+            return ticketRepository.findByCompanyIdAndStatus(securityUtil.getCurrentCompanyId(), status, pageable)
+                    .map(SupportTicketMapper::toResponse);
+        }
         return ticketRepository.findByStatus(status, pageable)
                 .map(SupportTicketMapper::toResponse);
     }
@@ -141,6 +164,7 @@ public class SupportTicketServiceImpl implements SupportTicketService {
     @Override
     @Transactional(readOnly = true)
     public Page<SupportTicketResponse> getMyTickets(Long userId, Pageable pageable) {
+        authorizationService.checkPermission(PermissionCode.TICKET_VIEW);
         return ticketRepository.findByCreatedById(userId, pageable)
                 .map(SupportTicketMapper::toResponse);
     }

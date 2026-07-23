@@ -2,8 +2,34 @@
 export type CompanyStatus = 'PENDING_VERIFICATION' | 'TRIAL' | 'ACTIVE' | 'SUSPENDED' | 'DEACTIVATED';
 export const COMPANY_STATUSES: CompanyStatus[] = ['PENDING_VERIFICATION', 'TRIAL', 'ACTIVE', 'SUSPENDED', 'DEACTIVATED'];
 
-export type SubscriptionPlan = 'FREE' | 'STARTER' | 'PRO' | 'ENTERPRISE';
-export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = ['FREE', 'STARTER', 'PRO', 'ENTERPRISE'];
+// A plan "code" is now a Super-Admin-managed catalog entry (see
+// SubscriptionPlanDefinition below), not a fixed set - kept as a type alias
+// (rather than touching every import site) so existing Company.subscriptionPlan
+// usages keep compiling.
+export type SubscriptionPlan = string;
+
+export type BillingCycle = 'MONTHLY' | 'YEARLY';
+
+// Mirrors backend SubscriptionPlanDefinition (GET/POST/PATCH /api/subscription-plans)
+export interface SubscriptionPlanDefinition {
+  id: number;
+  code: string;
+  name: string;
+  description?: string;
+  billingCycle: BillingCycle;
+  price: number;
+  active: boolean;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface SubscriptionPlanRequest {
+  code: string;
+  name: string;
+  description?: string;
+  billingCycle: BillingCycle;
+  price: number;
+}
 
 export type PlatformRole =
   | 'SUPER_ADMIN' | 'SYSTEM_ADMIN' | 'SUPPORT_AGENT' | 'SUPPORT_MANAGER'

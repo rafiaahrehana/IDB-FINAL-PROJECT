@@ -21,4 +21,5 @@ public class CreateTaskRequest {
     private LocalDateTime slaDeadline;
     private Long assignedEmployeeId;
     private Long workflowStageId;
+    private Double estimatedHours;
 }

@@ -1,0 +1,475 @@
+// =============================================
+// Design System Variables
+// =============================================
+$primary: #4F46E5;
+$primary-light: #EEF2FF;
+$success: #16A34A;
+$success-light: #DCFCE7;
+$danger: #DC2626;
+$danger-light: #FEE2E2;
+$info: #0EA5E9;
+$info-light: #E0F2FE;
+$warning: #F97316;
+$warning-light: #FFF7ED;
+$amber: #D97706;
+$amber-light: #FEF3C7;
+$bg: #F5F6F8;
+$bg-white: #ffffff;
+$text-primary: #111827;
+$text-secondary: #6B7280;
+$border-color: #E5E7EB;
+$border-radius: 10px;
+$border-radius-lg: 12px;
+
+// =============================================
+// Global Utilities
+// =============================================
+.container-fluid {
+  background-color: $bg;
+  min-height: 100vh;
+}
+
+// =============================================
+// Page Header
+// =============================================
+.workspace-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: $primary;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 4px;
+}
+
+.page-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: $text-primary;
+  margin-bottom: 4px;
+  line-height: 1.3;
+}
+
+.page-subtitle {
+  font-size: 0.875rem;
+  color: $text-secondary;
+  font-weight: 500;
+}
+
+// =============================================
+// Filter Buttons
+// =============================================
+.filter-chip {
+  background: $bg-white;
+  border: 1px solid $border-color;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: $text-primary;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  i {
+    color: $text-secondary;
+  }
+}
+
+.filter-btn-group {
+  background: $bg-white;
+  border: 1px solid $border-color;
+  border-radius: 8px;
+  padding: 4px;
+  display: flex;
+  gap: 2px;
+}
+
+.filter-btn {
+  border: none;
+  background: transparent;
+  color: $text-secondary;
+  font-weight: 600;
+  font-size: 0.8125rem;
+  padding: 6px 14px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: $bg;
+    color: $text-primary;
+  }
+
+  &.active {
+    background: $primary;
+    color: #ffffff;
+  }
+}
+
+// =============================================
+// Section Labels
+// =============================================
+.section-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: $text-secondary;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 8px;
+}
+
+// =============================================
+// Stat Cards
+// =============================================
+.stat-card {
+  background: $bg-white;
+  border: 1px solid $border-color;
+  border-radius: $border-radius;
+  min-height: 110px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  }
+}
+
+.stat-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: $text-secondary;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.stat-value {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: $text-primary;
+  line-height: 1.2;
+  margin-bottom: 4px;
+}
+
+.stat-icon-wrap {
+  width: 36px;
+  height: 36px;
+  background: $primary-light;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  i {
+    font-size: 1rem;
+  }
+}
+
+.stat-icon-wrap-sm {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.stat-icon-wrap-xs {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.stat-trend {
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+// =============================================
+// Module Cards (Bottom Row)
+// =============================================
+.module-card {
+  background: $bg-white;
+  border: 1px solid $border-color;
+  border-radius: $border-radius;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  }
+}
+
+.card-title-sm {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: $text-primary;
+}
+
+.mini-stat-card {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid $border-color;
+  border-radius: 6px;
+  padding: 8px;
+  text-align: center;
+}
+
+.announcement-icon-wrap {
+  width: 32px;
+  height: 32px;
+  background: $bg-white;
+  border: 1px solid $border-color;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+// =============================================
+// Chart Cards
+// =============================================
+.chart-card {
+  background: $bg-white;
+  border: 1px solid $border-color;
+  border-radius: $border-radius-lg;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  }
+}
+
+.card-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: $text-primary;
+  margin-bottom: 0;
+}
+
+// Donut Center
+.donut-center-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.donut-center-label {
+  font-size: 0.6875rem;
+  color: $text-secondary;
+  font-weight: 600;
+}
+
+// Task Icons
+.task-icon-wrap {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: $bg;
+
+  i {
+    font-size: 1.1rem;
+  }
+}
+
+.bg-indigo-light {
+  background: $primary-light;
+}
+
+.bg-success-light {
+  background: $success-light;
+}
+
+.bg-danger-light {
+  background: $danger-light;
+}
+
+.bg-info-light {
+  background: $info-light;
+}
+
+.bg-warning-light {
+  background: $warning-light;
+}
+
+// =============================================
+// Platform KPI Cards
+// =============================================
+.platform-kpi-card {
+  border: 1px solid $border-color !important;
+  border-radius: $border-radius !important;
+  background: $bg-white;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  }
+}
+
+.plan-card {
+  border: 1px solid $border-color;
+  border-radius: 8px;
+  padding: 8px;
+  height: 100%;
+  display: block;
+  text-decoration: none;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: $bg;
+    border-color: darken($border-color, 5%);
+  }
+}
+
+// =============================================
+// Progress Bars
+// =============================================
+.progress {
+  background-color: #F3F4F6;
+  border-radius: 9999px;
+  height: 6px;
+}
+
+.progress-bar-indigo {
+  background-color: $primary;
+}
+
+.progress-bar-teal {
+  background-color: #14b8a6;
+}
+
+// =============================================
+// Lists & Dividers
+// =============================================
+.list-group-item {
+  border: none;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #F3F4F6;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+// =============================================
+// View All Links
+// =============================================
+.view-all-link {
+  color: $primary;
+  font-weight: 600;
+  font-size: 0.78rem;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+// =============================================
+// Badge Variants
+// =============================================
+.bg-danger-light {
+  background-color: $danger-light !important;
+  color: $danger !important;
+}
+
+.bg-success-light {
+  background-color: $success-light !important;
+}
+
+// =============================================
+// Color Utilities
+// =============================================
+.text-indigo {
+  color: $primary;
+}
+
+.text-success {
+  color: $success;
+}
+
+.text-danger {
+  color: $danger;
+}
+
+.text-info {
+  color: $info;
+}
+
+.text-warning {
+  color: $warning;
+}
+
+.text-amber {
+  color: $amber;
+}
+
+.text-dark {
+  color: $text-primary;
+}
+
+.text-secondary {
+  color: $text-secondary;
+}
+
+.text-muted {
+  color: #9CA3AF;
+}
+
+// =============================================
+// SVG & Charts
+// =============================================
+svg path {
+  transition: stroke-dashoffset 0.5s ease-in-out;
+}
+
+// =============================================
+// Transitions
+// =============================================
+.transition-hover {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border: 1px solid $border-color;
+  border-radius: $border-radius;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  }
+}
+
+// =============================================
+// Card Header Override
+// =============================================
+.card-header {
+  background-color: transparent !important;
+}
+
+// =============================================
+// Text Utilities
+// =============================================
+.fw-extrabold {
+  font-weight: 800;
+}
+
+.tracking-wider {
+  letter-spacing: 0.04em;
+}

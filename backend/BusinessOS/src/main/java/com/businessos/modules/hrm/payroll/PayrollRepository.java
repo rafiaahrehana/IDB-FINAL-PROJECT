@@ -22,6 +22,9 @@ public interface PayrollRepository extends JpaRepository<Payroll, Long> {
     Page<Payroll> findByCompanyIdAndPayMonthAndPayYear(
         Long companyId, int payMonth, int payYear, Pageable pageable);
 
+    long countByCompanyIdAndPayMonthAndPayYearAndStatusIn(
+        Long companyId, int payMonth, int payYear, java.util.List<PayrollStatus> statuses);
+
     Page<Payroll> findByCompanyIdAndEmployeeId(
         Long companyId, Long employeeId, Pageable pageable);
 

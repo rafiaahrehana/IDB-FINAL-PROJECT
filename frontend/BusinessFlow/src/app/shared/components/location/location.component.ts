@@ -17,6 +17,13 @@ export class LocationComponent implements OnInit {
 
   @Output() formSubmit = new EventEmitter<LocationRequest>();
 
+  // Off by default so every other usage of this component (registration, employee
+  // create/edit forms) keeps its current always-editable behavior. Callers that want
+  // the view-then-edit pattern (e.g. the account settings page) opt in explicitly.
+  @Input() readOnlyUntilEdit = false;
+  @Input() showActions = true;
+  editing = signal(true);
+
   locationForm!: FormGroup;
   
   countries = signal<GeoNodeDto[]>([]);
@@ -55,6 +62,8 @@ export class LocationComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.editing.set(!this.readOnlyUntilEdit);
+
     // Listen for Country changes
     this.locationForm.get('country')?.valueChanges.subscribe(val => {
       this.selectedCountryCode.set(val);
@@ -108,7 +117,9 @@ export class LocationComponent implements OnInit {
       level1: [null, [Validators.required, LocationValidators.noWhitespaceValidator()]],
       level2: [null, [Validators.required, LocationValidators.noWhitespaceValidator()]],
       level3: [null, [Validators.required, LocationValidators.noWhitespaceValidator()]],
-      level4: [null, [Validators.required, LocationValidators.noWhitespaceValidator()]],
+      // Not required: Bangladesh's seeded hierarchy has no police-station/precinct
+      // level, so this dropdown is legitimately empty for every BD address.
+      level4: [null, [LocationValidators.noWhitespaceValidator()]],
       streetAddress: [null, [Validators.required, LocationValidators.noWhitespaceValidator()]],
       postalCode: [null], // Optional
       apartment: [null]
@@ -213,6 +224,16 @@ export class LocationComponent implements OnInit {
   reset(): void {
     this.locationForm.reset();
     this.selectedCountryCode.set(null);
+  }
+
+  enterEditMode(): void {
+    this.editing.set(true);
+  }
+
+  // Called by the parent after a successful save, or by Cancel/Reset in
+  // read-only-until-edit mode - drops back to the disabled, view-only state.
+  enterViewMode(): void {
+    this.editing.set(false);
   }
 
   // Pattern: save()

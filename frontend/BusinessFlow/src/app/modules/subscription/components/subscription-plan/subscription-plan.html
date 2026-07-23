@@ -1,0 +1,52 @@
+<section id="pricing" class="py-3 pricing-section position-relative overflow-hidden">
+  <div class="container py-5 position-relative z-1">
+    <div class="text-center mx-auto mb-4">
+      <h2 class="display-5 fw-bold section-title mb-4">Choose Your Plan</h2>
+      <p class="text-muted fs-5 mb-4">Upgrade to unlock more features and grow your business.</p>
+
+      <div class="d-flex flex-wrap justify-content-center gap-4 pt-1">
+        <span class="text-muted small fw-medium" *ngFor="let badge of trustBadges">{{ badge }}</span>
+      </div>
+    </div>
+
+    @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
+    @if (loading) { <app-loader /> }
+
+    @if (!loading) {
+    <div class="row g-4 align-items-stretch justify-content-center pt-4">
+      <div class="col-md-6 col-lg-3" *ngFor="let plan of plans">
+
+        <div class="card h-100 rounded-4 p-4 p-xl-4 transition-all pricing-card text-center bg-white border-light shadow-sm">
+
+          <h4 class="fw-bold mb-3 mt-2 text-dark">{{ plan.name }}</h4>
+
+          <div class="mb-4">
+            <h2 class="display-5 fw-bold mb-1 text-dark">BDT {{ plan.price }}</h2>
+            <span class="small text-muted">/{{ plan.billingCycle === 'YEARLY' ? 'yr' : 'mo' }}</span>
+          </div>
+
+          @if (isCurrent(plan)) {
+          <button class="btn w-100 rounded-pill py-2 mb-4 fw-medium btn-outline-purple" disabled>Current Plan</button>
+          } @else if (isUpgrade(plan)) {
+          <button class="btn w-100 rounded-pill py-2 mb-4 fw-medium btn-purple-solid"
+            [disabled]="!!upgradingPlanId"
+            (click)="upgrade(plan)">
+            @if (upgradingPlanId === plan.id) { <span class="spinner-border spinner-border-sm me-1"></span> }
+            Upgrade &amp; Pay
+          </button>
+          } @else {
+          <button class="btn w-100 rounded-pill py-2 mb-4 fw-medium btn-outline-purple" disabled>Included</button>
+          }
+
+          <hr class="pricing-divider mb-4" />
+
+          @if (plan.description) {
+          <p class="small text-dark text-start mb-0">{{ plan.description }}</p>
+          }
+
+        </div>
+      </div>
+    </div>
+    }
+  </div>
+</section>

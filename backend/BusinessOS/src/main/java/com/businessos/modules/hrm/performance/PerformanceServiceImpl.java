@@ -4,6 +4,8 @@ import com.businessos.modules.hrm.employee.Employee;
 import com.businessos.modules.hrm.employee.EmployeeRepository;
 import com.businessos.modules.company.Company;
 import com.businessos.modules.company.CompanyRepository;
+import com.businessos.auth.role.enums.PermissionCode;
+import com.businessos.auth.role.service.AuthorizationService;
 import com.businessos.security.SecurityUtil;
 import com.businessos.shared.email.EmailBranding;
 import com.businessos.shared.email.EmailService;
@@ -31,10 +33,12 @@ public class PerformanceServiceImpl implements PerformanceService {
     private final SecurityUtil securityUtil;
     private final EmailService emailService;
     private final EmailBranding emailBranding;
+    private final AuthorizationService authorizationService;
 
     @Override
     @Transactional
     public PerformanceReviewResponse create(PerformanceReviewRequest request) {
+        authorizationService.checkPermission(PermissionCode.PERFORMANCE_CREATE);
         Long companyId = requireCompanyId();
         Employee employee = employeeRepository.findByIdAndCompanyId(request.getEmployeeId(), companyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Employee not found: " + request.getEmployeeId()));
@@ -90,6 +94,7 @@ public class PerformanceServiceImpl implements PerformanceService {
     @Override
     @Transactional(readOnly = true)
     public Page<PerformanceReviewResponse> listAll(Pageable pageable) {
+        authorizationService.checkPermission(PermissionCode.PERFORMANCE_VIEW);
         return reviewRepository.findByCompanyId(requireCompanyId(), pageable)
                 .map(PerformanceMapper::toPerformanceReviewResponse);
     }
@@ -104,6 +109,7 @@ public class PerformanceServiceImpl implements PerformanceService {
     @Override
     @Transactional
     public PerformanceReviewResponse update(Long id, PerformanceReviewRequest request) {
+        authorizationService.checkPermission(PermissionCode.PERFORMANCE_UPDATE);
         PerformanceReview review = findInTenant(id);
         if (review.isFinalised()) throw new BadRequestException("Cannot edit a finalised review");
 
@@ -131,6 +137,7 @@ public class PerformanceServiceImpl implements PerformanceService {
     @Override
     @Transactional
     public PerformanceReviewResponse finalise(Long id) {
+        authorizationService.checkPermission(PermissionCode.PERFORMANCE_UPDATE);
         PerformanceReview review = findInTenant(id);
         if (review.isFinalised()) throw new BadRequestException("Review is already finalised");
         review.setFinalised(true);
@@ -140,6 +147,7 @@ public class PerformanceServiceImpl implements PerformanceService {
     @Override
     @Transactional
     public void delete(Long id) {
+        authorizationService.checkPermission(PermissionCode.PERFORMANCE_DELETE);
         PerformanceReview review = findInTenant(id);
         if (review.isFinalised()) throw new BadRequestException("Cannot delete a finalised review");
         review.softDelete();

@@ -27,7 +27,27 @@ public class CorsConfig {
         config.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+
+        // SSLCommerz's payment page redirects the payer's browser here with a cross-origin
+        // POST (Origin: sandbox.sslcommerz.com) - the strict frontend-only rule below
+        // rejected that as "Invalid CORS request" before the request ever reached the
+        // controller, so the wallet/invoice was never credited even on a successful charge.
+        // This endpoint is already permitAll() in SecurityConfig and sends no credentials,
+        // so a permissive rule here is safe. Must be registered BEFORE "/**":
+        // UrlBasedCorsConfigurationSource returns the config for the FIRST matching
+        // pattern in registration order (not the most specific one), so registering
+        // "/**" first would always win and this rule would never be reached.
+        CorsConfiguration gatewayCallbackConfig = new CorsConfiguration();
+        gatewayCallbackConfig.setAllowedOriginPatterns(List.of("*"));
+        gatewayCallbackConfig.setAllowedMethods(List.of("GET", "POST", "OPTIONS"));
+        gatewayCallbackConfig.setAllowedHeaders(List.of("*"));
+        gatewayCallbackConfig.setAllowCredentials(false);
+        gatewayCallbackConfig.setMaxAge(3600L);
+        source.registerCorsConfiguration("/api/payments/sslcommerz/callback/**", gatewayCallbackConfig);
+        source.registerCorsConfiguration("/api/payments/sslcommerz/ipn", gatewayCallbackConfig);
+
         source.registerCorsConfiguration("/**", config);
+
         return source;
     }
 }

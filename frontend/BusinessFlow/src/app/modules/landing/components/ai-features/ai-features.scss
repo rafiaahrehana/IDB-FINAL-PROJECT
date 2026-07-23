@@ -15,7 +15,7 @@
 .blob-top-right {
   width: 600px;
   height: 600px;
-  background: radial-gradient(circle, #e2d3fc 0%, transparent 70%);
+  background: radial-gradient(circle, #c7d2fe 0%, transparent 70%);
   top: -150px;
   right: -200px;
 }
@@ -23,7 +23,7 @@
 .blob-bottom-left {
   width: 700px;
   height: 700px;
-  background: radial-gradient(circle, #f0e6f9 0%, transparent 70%);
+  background: radial-gradient(circle, #eef2ff 0%, transparent 70%);
   bottom: -300px;
   left: -250px;
 }
@@ -32,7 +32,7 @@
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  border: 3px solid #d4c5f9;
+  border: 3px solid #c7d2fe;
   background-color: transparent;
 }
 
@@ -52,7 +52,7 @@
   bottom: 0px;
   width: 100%;
   height: 10px;
-  background-color: #d8b4e2;
+  background-color: #c7d2fe;
   border-radius: 4px;
   z-index: -1;
   opacity: 0.7;
@@ -78,7 +78,7 @@
   color: #5b3fa8;
 }
 .bg-light-purple {
-  background-color: #e5d9f7;
+  background-color: #c7d2fe;
 }
 
 .chat-ui-mockup {
@@ -98,7 +98,7 @@
   border-bottom-left-radius: 2px;
 }
 .ai-bubble {
-  background-color: #6a4cdd;
+  background-color: #818cf8;
   border-bottom-right-radius: 2px;
 }
 
@@ -106,7 +106,7 @@
 .bento-item {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.5);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
   backdrop-filter: blur(10px);
 }
 
@@ -116,26 +116,46 @@
 }
 
 .card-chat {
-  background-color: #efeafa;
+  background-color: #eef2ff;
   color: #2b2b2b;
+  border-color: rgba(99, 102, 241, 0.35) !important;
+
+  &:hover {
+    border-color: rgba(99, 102, 241, 0.7) !important;
+  }
 }
 
 .card-docs {
-  background-color: #b7a6f2;
+  background-color: #a5b4fc;
   color: #ffffff;
+  border-color: rgba(79, 70, 229, 0.5) !important;
+
+  &:hover {
+    border-color: rgba(79, 70, 229, 0.9) !important;
+  }
 }
 .card-docs .text-muted {
   color: rgba(255, 255, 255, 0.8) !important;
 }
 
 .card-reports {
-  background-color: #f7eefa;
+  background-color: #eef2ff;
   color: #2b2b2b;
+  border-color: rgba(236, 72, 153, 0.35) !important;
+
+  &:hover {
+    border-color: rgba(236, 72, 153, 0.7) !important;
+  }
 }
 
 .card-smart {
-  background-color: #eff1fc;
+  background-color: #eef2ff;
   color: #2b2b2b;
+  border-color: rgba(59, 130, 246, 0.35) !important;
+
+  &:hover {
+    border-color: rgba(59, 130, 246, 0.7) !important;
+  }
 }
 
 

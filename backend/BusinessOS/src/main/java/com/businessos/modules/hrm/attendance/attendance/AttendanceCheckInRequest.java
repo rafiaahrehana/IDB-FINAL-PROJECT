@@ -4,7 +4,10 @@ import jakarta.validation.constraints.*;
 import lombok.*;
 import java.time.LocalTime;
 
-@Data @NoArgsConstructor @AllArgsConstructor @Builder
+// AllArgsConstructor access is package-private: see ChartOfAccountRequest for why -
+// a public one is picked up by Jackson as a deserialization creator, which fails on
+// any missing primitive field instead of defaulting it.
+@Data @NoArgsConstructor @AllArgsConstructor(access = AccessLevel.PACKAGE) @Builder
 public class AttendanceCheckInRequest {
 
     @NotNull(message = "Employee ID is required")

@@ -32,7 +32,7 @@ public class HolidayController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "50") int size) {
         return ResponseEntity.ok(holidayService.listAll(
-                PageRequest.of(page, size, Sort.by("holidayDate").ascending())));
+                PageRequest.of(page, size, Sort.by("date").ascending())));
     }
 
     @GetMapping("/year/{year}")

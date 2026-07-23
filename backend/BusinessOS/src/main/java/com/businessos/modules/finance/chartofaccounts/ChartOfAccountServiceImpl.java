@@ -118,6 +118,7 @@ public class ChartOfAccountServiceImpl implements ChartOfAccountService {
     @Override
     @Transactional
     public void delete(Long id) {
+        authorizationService.checkPermission(PermissionCode.CHART_OF_ACCOUNT_DELETE);
         Long companyId = securityUtil.getCurrentCompanyId();
         ChartOfAccount account = coaRepository.findByIdAndCompanyId(id, companyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Chart of Account not found"));

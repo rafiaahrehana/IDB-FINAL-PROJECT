@@ -1,8 +1,9 @@
 <div class="notification-bell position-relative">
-  <a class="text-white text-decoration-none position-relative" role="button" (click)="toggle()" aria-label="Notifications">
+  <a class="btn-nav-action text-decoration-none position-relative" role="button" (click)="toggle()" aria-label="Notifications">
     <i class="bi bi-bell fs-5"></i>
     @if (unread > 0) {
-    <span class="badge rounded-pill text-bg-danger position-absolute top-0 start-100 translate-middle" style="font-size: 0.65rem">
+    <span class="badge rounded-pill position-absolute top-0 start-100 translate-middle" 
+      style="font-size: 0.65rem; background-color: #6366f1; color: #ffffff;">
       {{ unread > 99 ? '99+' : unread }}
     </span>
     }

@@ -21,6 +21,8 @@ public interface JobPostingRepository extends JpaRepository <JobPosting, Long> {
 
     Page<JobPosting> findByCompanyIdAndStatus(Long companyId, JobPostingStatus status, Pageable pageable);
 
+    List<JobPosting> findByCompanyIdAndStatus(Long companyId, JobPostingStatus status);
+
     Optional<JobPosting> findByIdAndCompanyId(Long id, Long companyId);
 
     @Modifying

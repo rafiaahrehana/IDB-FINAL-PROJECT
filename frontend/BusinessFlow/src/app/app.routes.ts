@@ -2,7 +2,9 @@ import { Routes } from '@angular/router';
 import { AuthGuard } from './core/guards/auth.guard';
 import { RoleGuard } from './core/guards/role.guard';
 import { ClientHomeRedirectGuard } from './core/guards/client-home-redirect.guard';
+import { DashboardAccessGuard } from './core/guards/dashboard-access.guard';
 import { DashboardComponent } from './modules/dashboard/components/dashboard.component';
+import { Welcome } from './shared/components/welcome/welcome';
 import { Login } from './modules/auth/login/login';
 import { Register } from './modules/auth/register/register';
 import { ClientRegister } from './modules/auth/client-register/client-register';
@@ -20,13 +22,13 @@ import { Preferences as NotificationPreferences } from './modules/preferences/pr
 // Portal (public landing + per-company public portal + owner settings)
 import { Landing } from './modules/landing/landing';
 import { ContactSales } from './modules/landing/components/contact-sales/contact-sales';
-import { WebsiteView } from './modules/portal/website-view/website-view';
 import { PaymentResult } from './modules/portal/payment-result/payment-result';
 
 // Finance
 import { ChartOfAccounts } from './modules/finance/components/chart-of-accounts/chart-of-accounts';
 import { Expenses } from './modules/finance/components/expenses/expenses';
 import { Invoices } from './modules/finance/components/invoices/invoices';
+import { Refunds } from './modules/finance/components/refunds/refunds';
 import { Reports as FinanceReports } from './modules/finance/components/reports/reports';
 import { WalletPage } from './modules/finance/components/wallet/wallet';
 import { PaymentReceipts } from './modules/finance/components/payment-receipts/payment-receipts';
@@ -60,26 +62,15 @@ import { ShiftAssignments } from './modules/attendance/components/shift-assignme
 import { Timesheets } from './modules/attendance/components/timesheets/timesheets';
 
 export const routes: Routes = [
-  { path: '', component: DashboardComponent, canActivate: [AuthGuard, ClientHomeRedirectGuard] },
+  { path: '', component: DashboardComponent, canActivate: [AuthGuard, ClientHomeRedirectGuard, DashboardAccessGuard] },
   { path: 'dashboard', redirectTo: '', pathMatch: 'full' },
+  { path: 'my-profile', component: Welcome, canActivate: [AuthGuard] },
   // Public pages - no auth
   { path: 'home', component: Landing },
   { path: 'contact', component: ContactSales },
   { path: 'portal/:subdomain', loadChildren: () => import('./modules/site/site.routes').then(m => m.SITE_ROUTES) },
   { path: 'payment-result', component: PaymentResult },
-  // Owner-editable portal settings
-  {
-    path: 'website-view',
-    component: WebsiteView,
-    canActivate: [AuthGuard, RoleGuard],
-    data: { roles: ['COMPANY_OWNER'] },
-  },
-  {
-    path: 'website-management',
-    loadComponent: () => import('./modules/website-admin/components/website-management/website-management').then(m => m.WebsiteManagement),
-    canActivate: [AuthGuard, RoleGuard],
-    data: { roles: ['COMPANY_OWNER', 'EMPLOYEE'] },
-  },
+
   {
     path: 'roles-permissions',
     loadComponent: () => import('./modules/roles-permissions/components/roles-permissions/roles-permissions').then(m => m.RolesPermissions),
@@ -97,10 +88,17 @@ export const routes: Routes = [
   { path: 'ai', component: AiAssistant, canActivate: [AuthGuard] },
   { path: 'ai/settings', loadComponent: () => import('./modules/ai/components/ai-settings/ai-settings').then(m => m.AiSettings), canActivate: [AuthGuard] },
   { path: 'notifications', component: Notifications, canActivate: [AuthGuard] },
-  { path: 'notifications/preferences', component: NotificationPreferences, canActivate: [AuthGuard] },
+  { path: 'profile', component: NotificationPreferences, canActivate: [AuthGuard] },
+  { path: 'notifications/preferences', redirectTo: 'profile', pathMatch: 'full' },
+  { path: 'settings/billing', redirectTo: 'finance/wallet', pathMatch: 'full' },
   {
     path: 'crm',
-    canActivate: [AuthGuard],
+    canActivate: [AuthGuard, RoleGuard],
+    // canActivateChild (not just canActivate) so RoleGuard re-checks each individual
+    // child's own requiredPermission - without it, moving between two children of an
+    // already-active parent (e.g. /crm/leads -> /crm/pipeline) skips guard evaluation
+    // entirely, since the parent node itself doesn't get reactivated on lateral moves.
+    canActivateChild: [AuthGuard, RoleGuard],
     loadChildren: () => import('./modules/crm/crm.routes').then(m => m.CRM_ROUTES)
   },
   {
@@ -111,54 +109,57 @@ export const routes: Routes = [
   },
   {
     path: 'servicedesk',
-    canActivate: [AuthGuard],
+    canActivate: [AuthGuard, RoleGuard],
+    canActivateChild: [AuthGuard, RoleGuard],
     loadChildren: () => import('./modules/servicedesk/servicedesk.routes').then(m => m.SERVICEDESK_ROUTES)
   },
   {
     path: 'hrm',
-    canActivate: [AuthGuard],
+    canActivate: [AuthGuard, RoleGuard],
+    canActivateChild: [AuthGuard, RoleGuard],
     loadChildren: () => import('./modules/hrm/hrm.routes').then(m => m.HRM_ROUTES)
   },
   {
     path: 'platform',
     canActivate: [AuthGuard, RoleGuard],
-    // SUPPORT_AGENT/SUPPORT_MANAGER are admitted only for the Companies page (Access
-    // Company impersonation) - the platform-sidebar menu hides the other pages from them,
-    // and each individual endpoint still enforces its own narrower @PreAuthorize.
     data: { roles: ['SUPER_ADMIN', 'SYSTEM_ADMIN', 'PLATFORM_ACCOUNTANT', 'SALES_MANAGER', 'SUPPORT_AGENT', 'SUPPORT_MANAGER'] },
     loadChildren: () => import('./modules/platform-admin/platform-admin.routes').then(m => m.PLATFORM_ADMIN_ROUTES)
   },
   {
+    path: 'subscriptionPlan',
+    canActivate: [AuthGuard],
+    loadComponent: () => import('./modules/subscription/components/subscription-plan/subscription-plan').then(m => m.SubscriptionPlan)
+  },
+  {
     path: 'finance',
     canActivate: [AuthGuard, RoleGuard],
+    canActivateChild: [AuthGuard, RoleGuard],
     children: [
-      { path: 'coa', component: ChartOfAccounts },
-      { path: 'expenses', component: Expenses },
-      { path: 'invoices', component: Invoices },
-      // 'vendors' and 'vendor-payments' routes/pages/services were removed entirely
-      // (not just unrouted): there is no separate Vendor entity in the backend - vendor
-      // identity is a free-text 'vendorName' field on Expense. Vendor payments are now
-      // handled entirely through the Expenses page (submit with vendorName -> approve/
-      // reject -> mark as paid). See ExpenseService.getByVendor for filtering by vendor.
-      { path: 'journal-entries', component: JournalEntries },
-      { path: 'reports', component: FinanceReports },
-      { path: 'wallet', component: WalletPage },
-      { path: 'payment-receipts', component: PaymentReceipts },
-      { path: 'general-ledger', component: GeneralLedger },
-      { path: 'bank-reconciliation', component: BankReconciliationPage },
+      { path: 'coa', component: ChartOfAccounts, data: { requiredPermission: 'CHART_OF_ACCOUNT_VIEW' } },
+      { path: 'expenses', component: Expenses, data: { requiredPermission: 'EXPENSE_VIEW' } },
+      { path: 'invoices', component: Invoices, data: { requiredPermission: 'INVOICE_VIEW' } },
+      { path: 'refunds', component: Refunds, data: { requiredPermission: 'INVOICE_VIEW' } },
+      { path: 'journal-entries', component: JournalEntries, data: { requiredPermission: 'JOURNAL_ENTRY_VIEW' } },
+      { path: 'reports', component: FinanceReports, data: { requiredPermission: 'FINANCIAL_REPORT_VIEW' } },
+      { path: 'wallet', component: WalletPage, data: { requiredPermission: 'WALLET_VIEW' } },
+      { path: 'payment-receipts', component: PaymentReceipts, data: { requiredPermission: 'PAYMENT_RECEIPT_VIEW' } },
+      { path: 'general-ledger', component: GeneralLedger, data: { requiredPermission: 'GENERAL_LEDGER_VIEW' } },
+      { path: 'bank-reconciliation', component: BankReconciliationPage, data: { requiredPermission: 'BANK_RECONCILIATION_VIEW' } },
       { path: '', redirectTo: 'invoices', pathMatch: 'full' }
     ]
   },
   {
     path: 'support',
-    canActivate: [AuthGuard],
+    canActivate: [AuthGuard, RoleGuard],
+    canActivateChild: [AuthGuard, RoleGuard],
     children: [
-      { path: 'tickets', component: Tickets },
+      { path: 'tickets', component: Tickets, data: { requiredPermission: 'TICKET_VIEW' } },
+      { path: 'categories', component: Categories, data: { requiredPermission: 'SUPPORT_CATEGORY_VIEW' } },
+      { path: 'messages', component: Messages, data: { requiredPermission: 'SUPPORT_MESSAGE_VIEW' } },
+      { path: 'sla-policies', component: SlaPolicies, data: { requiredPermission: 'SLA_POLICY_VIEW' } },
+      { path: 'audit-logs', component: AuditLogs, data: { requiredPermission: 'AUDIT_LOG_VIEW' } },
+      // No dedicated PermissionCode yet for these - not surfaced in the sidebar either.
       { path: 'agents', component: Agents },
-      { path: 'categories', component: Categories },
-      { path: 'messages', component: Messages },
-      { path: 'sla-policies', component: SlaPolicies },
-      { path: 'audit-logs', component: AuditLogs },
       { path: 'context-switches', component: ContextSwitches },
       { path: '', redirectTo: 'tickets', pathMatch: 'full' }
     ]
@@ -166,28 +167,28 @@ export const routes: Routes = [
   {
     path: 'itam',
     canActivate: [AuthGuard, RoleGuard],
+    canActivateChild: [AuthGuard, RoleGuard],
     children: [
-      // 'hardware' now reuses the shared hrm/asset backend (AssetController /api/hr/assets)
-      // rather than a dedicated ITAM controller - see components/hardware/hardware.ts note.
-      { path: 'hardware', component: Hardware },
-      { path: 'software', component: Software },
-      { path: 'assignments', component: Assignments },
-      { path: 'offboarding', component: Offboarding },
-      { path: 'import', component: AssetImport },
+      { path: 'hardware', component: Hardware, data: { requiredPermission: 'HARDWARE_VIEW' } },
+      { path: 'software', component: Software, data: { requiredPermission: 'SOFTWARE_LICENSE_VIEW' } },
+      { path: 'assignments', component: Assignments, data: { requiredPermission: 'ASSET_ASSIGNMENT_VIEW' } },
+      { path: 'offboarding', component: Offboarding, data: { requiredPermission: 'OFFBOARDING_VIEW' } },
+      { path: 'import', component: AssetImport, data: { requiredPermission: 'ASSET_IMPORT_VIEW' } },
       { path: '', redirectTo: 'hardware', pathMatch: 'full' }
     ]
   },
   {
     path: 'attendance',
-    canActivate: [AuthGuard],
+    canActivate: [AuthGuard, RoleGuard],
+    canActivateChild: [AuthGuard, RoleGuard],
     children: [
-      { path: 'check-in', component: CheckInOut },
-      { path: 'records', component: AttendanceList },
-      { path: 'leaves', component: LeaveManagement },
-      { path: 'timesheets', component: Timesheets },
-      { path: 'shift-assignments', component: ShiftAssignments },
-      { path: 'biometric-data', component: BiometricDataPage },
-      { path: 'reports', component: AttendanceReports },
+      { path: 'check-in', component: CheckInOut, data: { requiredPermission: 'ATTENDANCE_MARK' } },
+      { path: 'records', component: AttendanceList, data: { requiredPermission: 'ATTENDANCE_VIEW' } },
+      { path: 'timesheets', component: Timesheets, data: { requiredPermission: 'TIMESHEET_VIEW' } },
+      { path: 'shift-assignments', component: ShiftAssignments, data: { requiredPermission: 'SHIFT_ASSIGNMENT_VIEW' } },
+      { path: 'leaves', component: LeaveManagement, data: { requiredPermission: 'LEAVE_VIEW' } },
+      { path: 'biometric-data', component: BiometricDataPage, data: { requiredPermission: 'BIOMETRIC_VIEW' } },
+      { path: 'reports', component: AttendanceReports, data: { requiredPermission: 'ATTENDANCE_VIEW' } },
       { path: '', redirectTo: 'check-in', pathMatch: 'full' }
     ]
   },

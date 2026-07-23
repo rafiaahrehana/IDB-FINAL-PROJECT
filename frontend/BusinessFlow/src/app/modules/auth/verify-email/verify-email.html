@@ -2,7 +2,7 @@
   <div class="brand-panel d-none d-lg-flex flex-column justify-content-between p-5 text-white col-lg-6">
     <div class="brand-pattern"></div>
     <div class="d-flex align-items-center gap-2 position-relative z-1">
-      <div class="d-flex align-items-center justify-content-center bg-white rounded-3 text-primary shadow-sm" style="width: 36px; height: 36px;">
+      <div class="d-flex align-items-center justify-content-center bg-white rounded-3 shadow-sm" style="width: 36px; height: 36px; color: #4F46E5;">
         <i class="bi bi-intersect fs-5"></i>
       </div>
       <span class="h4 mb-0 fw-bold tracking-tight" style="font-family: 'Outfit', sans-serif;">BusinessOS</span>
@@ -24,7 +24,7 @@
 
         @switch (state) {
           @case ('verifying') {
-            <div class="spinner-border text-primary mb-3" role="status"></div>
+            <div class="spinner-border mb-3" role="status" style="color: #4F46E5;"></div>
             <h3 class="fw-bold text-slate-800" style="font-family: 'Outfit', sans-serif;">Verifying your email...</h3>
             <p class="text-secondary">This will only take a moment.</p>
           }
@@ -35,7 +35,7 @@
             </div>
             <h3 class="fw-bold text-slate-800" style="font-family: 'Outfit', sans-serif;">Email verified</h3>
             <p class="text-secondary">Your company workspace is now active. You're all set to sign in.</p>
-            <a routerLink="/auth/login" class="btn btn-primary rounded-3 fw-bold px-4 mt-2">Sign In</a>
+            <a routerLink="/auth/login" class="btn rounded-3 fw-bold px-4 mt-2" style="background: linear-gradient(135deg, #4F46E5, #4338CA); color: #fff; border: none;">Sign In</a>
           }
 
           @case ('missing-token') {
@@ -73,7 +73,7 @@
                        [class.is-invalid]="resendForm.controls.email.touched && resendForm.controls.email.invalid" />
                 <div class="invalid-feedback">A valid email address is required</div>
               </div>
-              <button class="btn btn-outline-primary w-100 rounded-3 fw-bold" [disabled]="resendLoading">
+              <button class="btn w-100 rounded-3 fw-bold" style="border: 1.5px solid #4F46E5; color: #4F46E5; background: transparent;" [disabled]="resendLoading">
                 @if (resendLoading) {
                   <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
                   Sending...

@@ -1,5 +1,7 @@
 package com.businessos.modules.hrm.designation;
 
+import com.businessos.auth.role.enums.PermissionCode;
+import com.businessos.auth.role.service.AuthorizationService;
 import com.businessos.modules.company.Company;
 import com.businessos.shared.exception.BadRequestException;
 import com.businessos.shared.exception.ResourceNotFoundException;
@@ -20,10 +22,12 @@ public class DesignationServiceImpl implements DesignationService {
 
     private final DesignationRepository designationRepository;
     private final SecurityUtil securityUtil;
+    private final AuthorizationService authorizationService;
 
     @Override
     @Transactional
     public DesignationResponse create(DesignationRequest request) {
+        authorizationService.checkPermission(PermissionCode.DESIGNATION_CREATE);
         Long companyId = requireCompanyId();
         if (designationRepository.existsByCompanyIdAndCode(companyId, request.getCode().toUpperCase())) {
             throw new BadRequestException("Designation code '" + request.getCode() + "' already exists");
@@ -48,6 +52,9 @@ public class DesignationServiceImpl implements DesignationService {
     @Override
     @Transactional(readOnly = true)
     public Page<DesignationResponse> listAll(Pageable pageable) {
+        // Deliberately NOT gated by DESIGNATION_VIEW: same reasoning as
+        // DepartmentServiceImpl.listAll() - this endpoint doubles as a cross-module
+        // picker. Frontend sidebar/route gating only, until the endpoint is split.
         return designationRepository.findByCompanyId(requireCompanyId(), pageable)
             .map(DesignationMapper::toDesignationResponse);
     }
@@ -62,6 +69,7 @@ public class DesignationServiceImpl implements DesignationService {
     @Override
     @Transactional
     public DesignationResponse update(Long id, DesignationRequest request) {
+        authorizationService.checkPermission(PermissionCode.DESIGNATION_UPDATE);
         Long companyId = requireCompanyId();
         Designation d = findInTenant(id);
         if (!d.getCode().equals(request.getCode().toUpperCase())
@@ -79,6 +87,7 @@ public class DesignationServiceImpl implements DesignationService {
     @Override
     @Transactional
     public DesignationResponse toggleActive(Long id) {
+        authorizationService.checkPermission(PermissionCode.DESIGNATION_UPDATE);
         Designation d = findInTenant(id);
         d.setActive(!d.isActive());
         return DesignationMapper.toDesignationResponse(d);
@@ -87,6 +96,7 @@ public class DesignationServiceImpl implements DesignationService {
     @Override
     @Transactional
     public void delete(Long id) {
+        authorizationService.checkPermission(PermissionCode.DESIGNATION_DELETE);
         findInTenant(id).softDelete();
     }
 

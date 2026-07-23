@@ -7,11 +7,13 @@ import {
   COMPANY_STATUSES,
   CompanyStatus,
   RegisterCompanyRequest,
-  SUBSCRIPTION_PLANS,
   SubscriptionPlan,
+  SubscriptionPlanDefinition,
 } from '../../models/platform-admin.model';
 import { CompanyService } from '../../services/company.service';
+import { SubscriptionPlanDefinitionService } from '../../services/subscription-plan-definition.service';
 import { AuthService } from '../../../../core/services/auth.service';
+import { extractErrorMessage } from '../../../../core/utils/http-error.util';
 import { Pagination } from '../../../../shared/components/pagination/pagination';
 import { Loader } from '../../../../shared/components/loader/loader';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
@@ -65,10 +67,11 @@ export class Companies implements OnInit {
   impersonating = false;
 
   statuses = COMPANY_STATUSES;
-  plans = SUBSCRIPTION_PLANS;
+  plans: SubscriptionPlanDefinition[] = [];
 
   constructor(
     private companyService: CompanyService,
+    private planDefinitionService: SubscriptionPlanDefinitionService,
     private auth: AuthService,
     private route: ActivatedRoute,
     private cdr: ChangeDetectorRef,
@@ -83,6 +86,12 @@ export class Companies implements OnInit {
     this.keyword = qp.get('keyword') || '';
     this.load();
     this.loadKpi();
+    // Includes inactive plans - a company can already be on a plan Super Admin
+    // has since disabled, and it still needs to show correctly in the filter/badges.
+    this.planDefinitionService.list(false).subscribe({
+      next: (plans) => { this.plans = plans; this.cdr.markForCheck(); },
+      error: () => {},
+    });
   }
 
   // LOAD COMPANIES (RESPECTS STATUS FILTER)
@@ -153,16 +162,10 @@ export class Companies implements OnInit {
     this.planTransactionRef = '';
   }
 
-  onPlanChange(plan: SubscriptionPlan): void {
-    if (plan === 'FREE') {
-      this.planAmountPaid = 0;
-    } else if (plan === 'STARTER') {
-      this.planAmountPaid = 4900;
-    } else if (plan === 'PRO') {
-      this.planAmountPaid = 9900;
-    } else if (plan === 'ENTERPRISE') {
-      this.planAmountPaid = 0;
-    }
+  // Defaults the amount-paid field to the plan's catalog price - still freely
+  // editable, e.g. for a negotiated discount.
+  onPlanChange(planCode: SubscriptionPlan): void {
+    this.planAmountPaid = this.plans.find(p => p.code === planCode)?.price ?? 0;
   }
 
   doChangePlan(): void {
@@ -196,7 +199,7 @@ export class Companies implements OnInit {
     if (!this.deactivateTarget) return;
     this.companyService.deactivate(this.deactivateTarget.id).subscribe({
       next: () => { this.deactivateTarget = null; this.success = 'Company deactivated'; this.cdr.markForCheck(); this.load(); this.kpiReady = 0; this.loadKpi(); },
-      error: () => { this.deactivateTarget = null; this.error = 'Cannot deactivate company'; this.cdr.markForCheck(); }
+      error: (err) => { this.deactivateTarget = null; this.error = extractErrorMessage(err, 'Cannot deactivate company'); this.cdr.markForCheck(); }
     });
   }
 
@@ -240,12 +243,15 @@ export class Companies implements OnInit {
     }[status];
   }
 
+  // Fixed styling for the four legacy codes; any plan Super Admin adds later
+  // (a code this map doesn't know) falls back to a neutral badge.
   planClass(plan: SubscriptionPlan): string {
-    return {
+    const classes: Record<string, string> = {
       FREE: 'text-bg-light border',
       STARTER: 'text-bg-info',
       PRO: 'text-bg-primary',
       ENTERPRISE: 'text-bg-dark',
-    }[plan];
+    };
+    return classes[plan] || 'text-bg-secondary';
   }
 }

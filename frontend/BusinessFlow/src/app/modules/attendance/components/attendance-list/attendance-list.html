@@ -1,12 +1,17 @@
 <div class="container-fluid py-3">
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h4 class="mb-0">Attendance Records</h4>
-    <div class="d-flex gap-2">
-      <select class="form-select form-select-sm" style="width:160px" [(ngModel)]="statusFilter" (change)="page=0;load()">
-        <option value="">All statuses</option>
-        @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
-      </select>
-      <button class="btn btn-primary btn-sm" (click)="openAdd()"><i class="bi bi-plus-lg me-1"></i>Add Attendance</button>
+  <div class="page-hero">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+      <div>
+        <div class="page-hero-label">ATTENDANCE</div>
+        <h4 class="page-hero-title underline-amber">Attendance Records</h4>
+      </div>
+      <div class="page-hero-actions">
+        <select class="form-select form-select-sm" style="width:160px" [(ngModel)]="statusFilter" (change)="page=0;load()">
+          <option value="">All statuses</option>
+          @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
+        </select>
+        <button *appHasPermission="'ATTENDANCE_MARK'" class="btn-hero-primary" (click)="openAdd()"><i class="bi bi-plus-circle"></i> Add Attendance</button>
+      </div>
     </div>
   </div>
   @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
@@ -15,7 +20,7 @@
   @if (!loading && records.length) {
   <div class="card"><div class="table-responsive">
     <table class="table table-hover table-sm align-middle mb-0">
-      <thead class="table-light"><tr><th>Employee</th><th>Date</th><th>In</th><th>Out</th><th>Hours</th><th>Status</th><th>Late</th><th>Approved</th><th></th></tr></thead>
+      <thead><tr><th>Employee</th><th>Date</th><th>In</th><th>Out</th><th>Hours</th><th>Status</th><th>Late</th><th>Approved</th><th></th></tr></thead>
       <tbody>
         @for (r of records; track r.id) {
         <tr>
@@ -27,7 +32,7 @@
           <td><span class="badge {{ statusClass(r.status) }}">{{ r.status }}</span></td>
           <td>@if (r.isLate) { <span class="badge text-bg-warning">+{{ r.lateMinutes }}m</span> }</td>
           <td><span class="badge" [class.text-bg-success]="r.approved" [class.text-bg-light]="!r.approved">{{ r.approved ? 'Yes' : 'No' }}</span></td>
-          <td>@if (!r.approved) { <button class="btn btn-outline-success btn-sm" (click)="approve(r)">Approve</button> }</td>
+          <td>@if (!r.approved) { <button *appHasPermission="'ATTENDANCE_APPROVE'" class="btn btn-outline-success btn-sm" (click)="approve(r)">Approve</button> }</td>
         </tr>
         }
       </tbody>
@@ -43,7 +48,7 @@
 <div class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,.5)">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
-      <div class="modal-header">
+      <div class="modal-header py-2" style="background: linear-gradient(135deg, #111827, #4C1D95); color: #fff;">
         <h5 class="modal-title">Add Attendance</h5>
         <button type="button" class="btn-close" (click)="showForm = false"></button>
       </div>
@@ -70,12 +75,18 @@
             </div>
             <div class="col-md-3">
               <label class="form-label">Check In</label>
-              <input type="time" class="form-control form-control-sm" name="checkInTime" [(ngModel)]="form.checkInTime">
+              <div class="input-group input-group-sm">
+                <input type="time" class="form-control form-control-sm" name="checkInTime" [(ngModel)]="form.checkInTime">
+                <button type="button" class="btn btn-outline-secondary" (click)="setNow('checkInTime')">Now</button>
+              </div>
               <div class="form-text">If the employee has an assigned shift, late is detected automatically from this time.</div>
             </div>
             <div class="col-md-3">
               <label class="form-label">Check Out</label>
-              <input type="time" class="form-control form-control-sm" name="checkOutTime" [(ngModel)]="form.checkOutTime">
+              <div class="input-group input-group-sm">
+                <input type="time" class="form-control form-control-sm" name="checkOutTime" [(ngModel)]="form.checkOutTime">
+                <button type="button" class="btn btn-outline-secondary" (click)="setNow('checkOutTime')">Now</button>
+              </div>
             </div>
             <div class="col-md-3 d-flex align-items-end">
               <div class="form-check">

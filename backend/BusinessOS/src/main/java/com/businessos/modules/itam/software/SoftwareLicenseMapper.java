@@ -64,7 +64,7 @@ public class SoftwareLicenseMapper {
                 .installationLocation(request.getInstallationLocation())
                 .estimatedUserCount(request.getEstimatedUserCount())
                 .complianceNotes(request.getComplianceNotes())
-                .autoRenew(request.isAutoRenew())
+                .autoRenew(request.isAutoRenewOrDefault())
                 .notes(request.getNotes())
                 .renewalNotes(request.getRenewalNotes())
                 .build();

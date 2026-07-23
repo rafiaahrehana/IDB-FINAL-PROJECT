@@ -4,15 +4,15 @@
 export interface ThemeSettings {
   primary: string;
   secondary: string;
-  gradient: string;        // CSS gradient used for hero/branding accents
-  font: string;            // font-family stack
-  radius: number;          // border radius in px
+  gradient: string;
+  font: string;  
+  radius: number;
   buttonStyle: 'rounded' | 'pill' | 'square';
   darkMode: boolean;
   navbarStyle: 'solid' | 'transparent' | 'glass';
   footerStyle: 'dark' | 'light';
   animations: boolean;
-  spacing: number;         // base spacing scale multiplier
+  spacing: number;
 }
 
 export interface SiteSettings {

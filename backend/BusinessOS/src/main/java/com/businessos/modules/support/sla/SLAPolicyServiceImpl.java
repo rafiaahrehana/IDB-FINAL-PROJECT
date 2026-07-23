@@ -1,6 +1,10 @@
 package com.businessos.modules.support.sla;
 
 import com.businessos.modules.support.ticket.TicketPriority;
+import com.businessos.auth.role.enums.PermissionCode;
+import com.businessos.auth.role.service.AuthorizationService;
+import com.businessos.auth.user.User;
+import com.businessos.security.SecurityUtil;
 import com.businessos.shared.exception.ResourceNotFoundException;
 import com.businessos.shared.exception.BadRequestException;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +20,8 @@ import java.util.stream.Collectors;
 public class SLAPolicyServiceImpl implements SLAPolicyService {
 
     private final SLAPolicyRepository slaPolicyRepository;
+    private final SecurityUtil securityUtil;
+    private final AuthorizationService authorizationService;
 
     @Override
     @Transactional
@@ -48,6 +54,7 @@ public class SLAPolicyServiceImpl implements SLAPolicyService {
     @Override
     @Transactional(readOnly = true)
     public Page<SLAPolicyResponse> getAll(Pageable pageable) {
+        checkTenantPermission();
         return slaPolicyRepository.findAll(pageable)
                 .map(SLAPolicyMapper::toResponse);
     }
@@ -55,6 +62,7 @@ public class SLAPolicyServiceImpl implements SLAPolicyService {
     @Override
     @Transactional(readOnly = true)
     public List<SLAPolicyResponse> getActive() {
+        checkTenantPermission();
         return slaPolicyRepository.findByActiveTrue()
                 .stream()
                 .map(SLAPolicyMapper::toResponse)
@@ -95,5 +103,15 @@ public class SLAPolicyServiceImpl implements SLAPolicyService {
         policy.softDelete();
         slaPolicyRepository.save(policy);
         return SLAPolicyMapper.toResponse(policy);
+    }
+
+    // SLA policies are a shared platform-wide catalog - SUPPORT_AGENT/SUPPORT_MANAGER
+    // (platform staff with no CustomRole) triage tickets across every company and must
+    // not be blocked here; their existing role-based @PreAuthorize already gates access.
+    private void checkTenantPermission() {
+        User current = securityUtil.getCurrentUser();
+        if (current != null && !current.isPlatformUser()) {
+            authorizationService.checkPermission(PermissionCode.SLA_POLICY_VIEW);
+        }
     }
 }

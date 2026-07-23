@@ -99,6 +99,20 @@ public class GlobalExceptionHandler {
             .body(ApiResponse.error("This action conflicts with existing data (e.g. a duplicate name or code). Please use a different value."));
     }
 
+    /**
+     * A blank/invalid value for an enum-typed field (e.g. a <select> left on its
+     * placeholder option) fails Jackson deserialization before @Valid even runs,
+     * so it never reaches MethodArgumentNotValidException - without this it fell
+     * through to the generic 500 handler with no indication of which field was wrong.
+     */
+    @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiResponse<Void>> handleUnreadableMessage(
+            org.springframework.http.converter.HttpMessageNotReadableException ex) {
+        log.warn("Malformed request body: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+            .body(ApiResponse.error("Please check that all required fields have a valid value."));
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<Map<String, String>>> handleValidation(
             MethodArgumentNotValidException ex) {

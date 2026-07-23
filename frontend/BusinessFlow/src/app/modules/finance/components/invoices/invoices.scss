@@ -1,0 +1,66 @@
+.table-responsive {
+  scrollbar-width: thin;
+  &::-webkit-scrollbar {
+    height: 6px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.15);
+    border-radius: 3px;
+  }
+}
+
+.table {
+  font-size: 0.8rem !important;
+
+  thead.table-light th {
+    background-color: #F9FAFB !important;
+    font-weight: 600;
+    color: #6B7280;
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    letter-spacing: 0.06em;
+    padding: 0.6rem 0.5rem;
+    border-bottom: 2px solid #E5E7EB;
+  }
+
+  td {
+    padding: 0.5rem 0.5rem !important;
+    vertical-align: middle;
+    color: #334155;
+    border-bottom: 1px solid #F3F4F6;
+  }
+}
+
+.invoice-number-col {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-weight: 500;
+  color: #4F46E5;
+  white-space: nowrap;
+}
+
+.client-col {
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.amount-col {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge {
+  font-size: 0.68rem;
+  padding: 0.25em 0.6em;
+  font-weight: 600;
+}
+
+tr[role="button"] {
+  transition: background-color 0.15s ease;
+  &:hover {
+    background-color: #f8fafc !important;
+  }
+}

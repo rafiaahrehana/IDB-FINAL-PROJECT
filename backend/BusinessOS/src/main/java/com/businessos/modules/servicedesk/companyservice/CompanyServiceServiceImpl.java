@@ -9,6 +9,8 @@ import com.businessos.shared.exception.BadRequestException;
 import com.businessos.shared.exception.ResourceNotFoundException;
 import com.businessos.modules.servicedesk.servicecategory.ServiceCategoryRepository;
 import com.businessos.modules.servicedesk.workflow.template.WorkflowTemplateRepository;
+import com.businessos.auth.role.enums.PermissionCode;
+import com.businessos.auth.role.service.AuthorizationService;
 import com.businessos.security.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 
@@ -30,10 +32,12 @@ public class CompanyServiceServiceImpl implements CompanyServiceService {
     private final WorkflowTemplateRepository templateRepository;
     private final com.businessos.modules.servicedesk.servicetemplate.ServiceTemplateRepository serviceTemplateRepository;
     private final SecurityUtil               securityUtil;
+    private final AuthorizationService       authorizationService;
 
     @Override
     @Transactional
     public CompanyServiceResponse create(CompanyServiceRequest request) {
+        authorizationService.checkPermission(PermissionCode.SERVICE_CATALOG_CREATE);
         Long companyId = requireCompanyId();
 
         ServiceCategory category = null;
@@ -100,6 +104,7 @@ public class CompanyServiceServiceImpl implements CompanyServiceService {
     @Override
     @Transactional(readOnly = true)
     public Page<CompanyServiceResponse> listAll(Long categoryId, Pageable pageable) {
+        authorizationService.checkPermission(PermissionCode.SERVICE_CATALOG_VIEW);
         Long companyId = requireCompanyId();
         Page<CompanyService> page = categoryId != null
             ? companyServiceRepository.findByCompanyIdAndCategoryId(companyId, categoryId, pageable)
@@ -107,6 +112,10 @@ public class CompanyServiceServiceImpl implements CompanyServiceService {
         return page.map(CompanyServiceMapper::toResponse);
     }
 
+    // Deliberately NOT gated by SERVICE_CATALOG_VIEW here: this is the active-service
+    // picker consumed by Requests (creating a service request) and Packages (attaching
+    // services to a package) - users with SERVICE_REQUEST_VIEW/SERVICE_PACKAGE_VIEW but
+    // not SERVICE_CATALOG_VIEW still need it to populate that dropdown.
     @Override
     @Transactional(readOnly = true)
     public List<CompanyServiceResponse> listActive() {
@@ -117,6 +126,7 @@ public class CompanyServiceServiceImpl implements CompanyServiceService {
     @Override
     @Transactional
     public CompanyServiceResponse update(Long id, CompanyServiceRequest request) {
+        authorizationService.checkPermission(PermissionCode.SERVICE_CATALOG_UPDATE);
         Long companyId = requireCompanyId();
         CompanyService service = findInTenant(id);
 
@@ -159,6 +169,7 @@ public class CompanyServiceServiceImpl implements CompanyServiceService {
     @Override
     @Transactional
     public CompanyServiceResponse toggleActive(Long id) {
+        authorizationService.checkPermission(PermissionCode.SERVICE_CATALOG_UPDATE);
         CompanyService service = findInTenant(id);
         service.setActive(!service.isActive());
         return CompanyServiceMapper.toResponse(service);
@@ -167,6 +178,7 @@ public class CompanyServiceServiceImpl implements CompanyServiceService {
     @Override
     @Transactional
     public void delete(Long id) {
+        authorizationService.checkPermission(PermissionCode.SERVICE_CATALOG_DELETE);
         CompanyService service = findInTenant(id);
         service.softDelete();
         companyServiceRepository.save(service);

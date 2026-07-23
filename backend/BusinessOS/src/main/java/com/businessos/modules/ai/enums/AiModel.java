@@ -2,8 +2,11 @@ package com.businessos.modules.ai.enums;
 
 public enum AiModel {
 
-    GEMINI_2_5_FLASH("gemini-2.5-flash"),
-    GEMINI_2_5_PRO("gemini-2.5-pro"),
+    // Google's "-latest" aliases auto-track the current available model
+    // (2-week deprecation notice before the underlying version changes),
+    // instead of pinning to a dated version that Google eventually retires.
+    GEMINI_2_5_FLASH("gemini-flash-latest"),
+    GEMINI_2_5_PRO("gemini-pro-latest"),
     GPT_4O("gpt-4o"),
     GPT_4O_MINI("gpt-4o-mini"),
     CLAUDE_SONNET("claude-sonnet-4-6"),

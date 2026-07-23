@@ -24,7 +24,9 @@ public class AddressRequest {
     @NotBlank(message = "Level 3 is required")
     private String level3;
 
-    @NotBlank(message = "Level 4 is required")
+    // Not @NotBlank: Bangladesh's seeded location hierarchy only goes to LEVEL3
+    // (upazila) - no police-station/precinct data exists, so requiring this would
+    // make every BD address form permanently unsubmittable.
     private String level4;
 
     @NotBlank(message = "Street Address is required")

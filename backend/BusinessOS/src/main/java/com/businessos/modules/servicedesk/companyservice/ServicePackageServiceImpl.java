@@ -5,7 +5,10 @@ import com.businessos.modules.crm.client.Client;
 import com.businessos.modules.crm.client.ClientRepository;
 import com.businessos.modules.company.Company;
 import com.businessos.auth.user.User;
+import com.businessos.auth.role.enums.PermissionCode;
+import com.businessos.auth.role.service.AuthorizationService;
 import com.businessos.shared.exception.BadRequestException;
+import com.businessos.shared.exception.ForbiddenException;
 import com.businessos.shared.exception.ResourceNotFoundException;
 import com.businessos.security.SecurityUtil;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +34,7 @@ public class ServicePackageServiceImpl implements ServicePackageService {
     private final CompanyServiceRepository     companyServiceRepository;
     private final ClientRepository             clientRepository;
     private final SecurityUtil                 securityUtil;
+    private final AuthorizationService         authorizationService;
 
     // ── Package catalog ───────────────────────────────────────────
 
@@ -86,10 +90,14 @@ public class ServicePackageServiceImpl implements ServicePackageService {
     @Override
     @Transactional(readOnly = true)
     public Page<ServicePackageResponse> listAll(Pageable pageable) {
+        authorizationService.checkPermission(PermissionCode.SERVICE_PACKAGE_VIEW);
         return packageRepository.findByCompanyId(requireCompanyId(), pageable)
             .map(ServicePackageMapper::toResponse);
     }
 
+    // Deliberately NOT gated by SERVICE_PACKAGE_VIEW here: the controller has no
+    // @PreAuthorize on this endpoint on purpose - CLIENT-role users (who have no
+    // CustomRole) browse the active package catalog from the client portal to subscribe.
     @Override
     @Transactional(readOnly = true)
     public List<ServicePackageResponse> listActive() {
@@ -115,8 +123,12 @@ public class ServicePackageServiceImpl implements ServicePackageService {
         if (request.getDescription()     != null) pkg.setDescription(request.getDescription());
         if (request.getDescriptionBn()   != null) pkg.setDescriptionBn(request.getDescriptionBn());
         if (request.getIconUrl()         != null) pkg.setIconUrl(request.getIconUrl());
-        if (request.getPackagePrice()    != null) pkg.setPackagePrice(request.getPackagePrice());
-        if (request.getDiscountPercent() != null) pkg.setDiscountPercent(request.getDiscountPercent());
+        // Always applied (not guarded by != null): the frontend always resends the
+        // full form, and a null packagePrice means "switch back to auto-calculated
+        // price" - it must be allowed to clear a previously-set manual override.
+        pkg.setPackagePrice(request.getPackagePrice());
+        pkg.setDiscountPercent(request.getDiscountPercent() != null
+            ? request.getDiscountPercent() : BigDecimal.ZERO);
         if (request.getBillingCycle()    != null) pkg.setBillingCycle(request.getBillingCycle());
         if (request.getRequestQuota()    != null) pkg.setRequestQuota(request.getRequestQuota());
         if (request.getAutoRenew()       != null) pkg.setAutoRenew(request.getAutoRenew());
@@ -388,9 +400,27 @@ public class ServicePackageServiceImpl implements ServicePackageService {
     }
 
     private PackageSubscription findSubscriptionInTenant(Long id) {
-        return subscriptionRepository.findByIdAndCompanyId(id, requireCompanyId())
+        PackageSubscription sub = subscriptionRepository.findByIdAndCompanyId(id, requireCompanyId())
             .orElseThrow(() -> new ResourceNotFoundException(
                 "Subscription not found: " + id));
+        guardSubscriptionAccess(sub);
+        return sub;
+    }
+
+    // Staff (COMPANY_OWNER/EMPLOYEE) can reach any subscription in their company -
+    // getById/cancel are intentionally open to CLIENT too, but a client may only
+    // reach their own subscription, not one belonging to another client.
+    private void guardSubscriptionAccess(PackageSubscription sub) {
+        User user = securityUtil.getCurrentUser();
+        if (user == null || user.getRole() == null || !user.getRole().name().equals("CLIENT")) return;
+
+        boolean isOwner = sub.getClient() != null
+                && sub.getClient().getUser() != null
+                && sub.getClient().getUser().getId().equals(user.getId());
+
+        if (!isOwner) {
+            throw new ForbiddenException("You do not have permission to access this subscription");
+        }
     }
 
     private Client resolveClient(Long requestedClientId, Long companyId) {

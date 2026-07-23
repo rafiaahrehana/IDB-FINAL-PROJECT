@@ -5,6 +5,7 @@ import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
@@ -56,7 +57,7 @@ public class WebsiteSettings extends BaseEntity {
     private String heroSubheading;
     private String heroImageUrl;
 
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "website_hero_images", joinColumns = @JoinColumn(name = "settings_id"))
     @Column(name = "image_url")
     @Builder.Default
@@ -79,12 +80,12 @@ public class WebsiteSettings extends BaseEntity {
     private String mapEmbedUrl;
     private String whatsapp;
 
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "website_social_links", joinColumns = @JoinColumn(name = "settings_id"))
     @Builder.Default
     private List<SocialLink> socialLinks = new ArrayList<>();
 
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "website_settings_stats", joinColumns = @JoinColumn(name = "settings_id"))
     @Builder.Default
     private List<Stat> stats = new ArrayList<>();

@@ -37,4 +37,18 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
     List<Expense> findByCompanyIdAndExpenseDateBetween(Long companyId, LocalDate start, LocalDate end);
 
     Page<Expense> findByCompanyIdAndVendorName(Long companyId, String vendorName, Pageable pageable);
+
+    // Platform expenses (SaaS provider's own operating costs) are Expense rows with
+    // no owning company - `company_id = :companyId` never matches NULL rows in SQL,
+    // so these need their own IS NULL variants rather than reusing the tenant queries.
+    Optional<Expense> findByIdAndCompanyIdIsNull(Long id);
+
+    Page<Expense> findByCompanyIdIsNull(Pageable pageable);
+
+    Page<Expense> findByCompanyIdIsNullAndStatus(ExpenseStatus status, Pageable pageable);
+
+    Page<Expense> findByCompanyIdIsNullAndVendorName(String vendorName, Pageable pageable);
+
+    @Query("SELECT MAX(e.expenseNumber) FROM FinanceExpense e WHERE e.companyId IS NULL AND e.expenseNumber LIKE CONCAT(:prefix, '%')")
+    Optional<String> findMaxExpenseNumberByPlatformAndPrefix(@Param("prefix") String prefix);
 }

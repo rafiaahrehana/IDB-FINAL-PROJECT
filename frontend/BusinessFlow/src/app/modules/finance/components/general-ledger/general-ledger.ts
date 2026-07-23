@@ -8,10 +8,11 @@ import { CoaService } from '../../services/coa.service';
 import { Pagination } from '../../../../shared/components/pagination/pagination';
 import { Loader } from '../../../../shared/components/loader/loader';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
+import { HasPermissionDirective } from '../../../../shared/directives/has-permission.directive';
 
 @Component({
   selector: 'app-general-ledger',
-  imports: [CommonModule, FormsModule, RouterLink, Pagination, Loader, EmptyState],
+  imports: [CommonModule, FormsModule, RouterLink, Pagination, Loader, EmptyState, HasPermissionDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './general-ledger.html',
 })

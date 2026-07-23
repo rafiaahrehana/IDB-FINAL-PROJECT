@@ -13,6 +13,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDate;
+import java.util.List;
 
 public interface AiService {
 
@@ -29,6 +30,15 @@ public interface AiService {
 
     /** OWNER / ADMIN: get the company's active provider config */
     AiProviderConfigResponse getProviderConfig();
+
+    /** OWNER / ADMIN: every provider the company has saved (one per provider type, at most one active) */
+    List<AiProviderConfigResponse> listProviderConfigs();
+
+    /** OWNER / ADMIN: switch which saved config is used for generation - deactivates all others */
+    AiProviderConfigResponse activateProviderConfig(Long id);
+
+    /** OWNER / ADMIN: remove a saved config - the active one can't be deleted, activate another first */
+    void deleteProviderConfig(Long id);
 
     /** OWNER / ADMIN: list conversation history */
     Page<AiGenerateResponse> listConversations(AiFeature feature, Pageable pageable);

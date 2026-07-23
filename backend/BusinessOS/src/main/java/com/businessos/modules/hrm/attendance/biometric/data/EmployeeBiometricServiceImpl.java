@@ -27,7 +27,12 @@ public class EmployeeBiometricServiceImpl implements EmployeeBiometricService {
     private final SecurityUtil securityUtil;
 
     private void requireViewOrOwn(Long employeeId) {
-        if (authorizationService.hasPermission(PermissionCode.BIOMETRIC_VIEW)) {
+        // employeeRepository.findById is scoped by the request-level Hibernate tenant
+        // filter, so this only succeeds for an employeeId in the caller's own company -
+        // needed because hasPermission() alone only reflects the caller's own role, not
+        // which company the target employeeId belongs to.
+        boolean sameTenantEmployee = employeeId != null && employeeRepository.findById(employeeId).isPresent();
+        if (sameTenantEmployee && authorizationService.hasPermission(PermissionCode.BIOMETRIC_VIEW)) {
             return;
         }
         User currentUser = securityUtil.getCurrentUser();
@@ -36,6 +41,19 @@ public class EmployeeBiometricServiceImpl implements EmployeeBiometricService {
                 : null;
         if (currentEmployee == null || employeeId == null || !currentEmployee.getId().equals(employeeId)) {
             throw new ForbiddenException("Access denied: you can only access your own biometric enrollment");
+        }
+    }
+
+    // EmployeeBiometricData has no company_id column/tenant filter of its own (unlike
+    // Employee), so every lookup by the enrollment record's own id must explicitly verify
+    // it belongs to the caller's company - otherwise any authenticated user could read or
+    // mutate another company's biometric templates by guessing an id.
+    private void requireSameTenant(EmployeeBiometricData data) {
+        Long companyId = securityUtil.getCurrentCompanyId();
+        Employee employee = data.getEmployee();
+        if (companyId == null || employee == null || employee.getCompany() == null
+                || !companyId.equals(employee.getCompany().getId())) {
+            throw new ForbiddenException("Access denied: biometric enrollment belongs to a different company");
         }
     }
 
@@ -81,6 +99,8 @@ public class EmployeeBiometricServiceImpl implements EmployeeBiometricService {
         EmployeeBiometricData data = biometricDataRepository
                 .findByEmployeeIdAndDeviceIdAndBiometricType(employeeId, deviceId, "FINGERPRINT")
                 .orElseThrow(() -> new ResourceNotFoundException("Enrollment not found"));
+        requireSameTenant(data);
+        requireViewOrOwn(employeeId);
         return BiometricDataMapper.toResponse(data);
     }
 
@@ -89,6 +109,7 @@ public class EmployeeBiometricServiceImpl implements EmployeeBiometricService {
     public BiometricDataResponse getById(Long id) {
         EmployeeBiometricData data = biometricDataRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Enrollment not found"));
+        requireSameTenant(data);
         requireViewOrOwn(data.getEmployee() != null ? data.getEmployee().getId() : null);
         return BiometricDataMapper.toResponse(data);
     }
@@ -126,6 +147,7 @@ public class EmployeeBiometricServiceImpl implements EmployeeBiometricService {
     public boolean verifyBiometric(Long id, String template, double threshold) {
         EmployeeBiometricData data = biometricDataRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Enrollment not found"));
+        requireSameTenant(data);
 
         double matchScore = calculateMatch(data.getBiometricTemplate(), template);
 
@@ -141,8 +163,10 @@ public class EmployeeBiometricServiceImpl implements EmployeeBiometricService {
     @Override
     @Transactional
     public void updateEnrollmentStatus(Long id, boolean enrolled) {
+        authorizationService.checkPermission(PermissionCode.BIOMETRIC_MANAGE);
         EmployeeBiometricData data = biometricDataRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Enrollment not found"));
+        requireSameTenant(data);
         data.setEnrolled(enrolled);
         biometricDataRepository.save(data);
     }
@@ -152,6 +176,7 @@ public class EmployeeBiometricServiceImpl implements EmployeeBiometricService {
     public void updateLastVerified(Long id) {
         EmployeeBiometricData data = biometricDataRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Enrollment not found"));
+        requireSameTenant(data);
         data.setLastVerifiedTime(LocalDateTime.now());
         biometricDataRepository.save(data);
     }
@@ -161,6 +186,7 @@ public class EmployeeBiometricServiceImpl implements EmployeeBiometricService {
     public void recordSuccessfulMatch(Long id) {
         EmployeeBiometricData data = biometricDataRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Enrollment not found"));
+        requireSameTenant(data);
         data.setSuccessfulMatches(data.getSuccessfulMatches() + 1);
         biometricDataRepository.save(data);
     }
@@ -170,6 +196,7 @@ public class EmployeeBiometricServiceImpl implements EmployeeBiometricService {
     public void recordFailedMatch(Long id) {
         EmployeeBiometricData data = biometricDataRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Enrollment not found"));
+        requireSameTenant(data);
         data.setFailedMatches(data.getFailedMatches() + 1);
         biometricDataRepository.save(data);
     }
@@ -180,6 +207,7 @@ public class EmployeeBiometricServiceImpl implements EmployeeBiometricService {
         authorizationService.checkPermission(PermissionCode.BIOMETRIC_MANAGE);
         EmployeeBiometricData data = biometricDataRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Enrollment not found"));
+        requireSameTenant(data);
         data.softDelete();
         biometricDataRepository.save(data);
         return BiometricDataMapper.toResponse(data);

@@ -28,10 +28,6 @@ public class ImpersonationServiceImpl implements ImpersonationService {
     public ImpersonationResponse startImpersonation(Long companyId, ImpersonateRequest request) {
         User admin = securityUtil.getCurrentUser();
 
-        // Deliberately NOT checked against CompanyStatus - impersonation must work even for
-        // a suspended/deactivated company, since that's exactly when platform staff need to
-        // get in and fix the account. The suspension gate only blocks the company's own
-        // users at normal login (see AuthServiceImpl.login).
         Company company = companyRepository.findById(companyId)
             .orElseThrow(() -> new ResourceNotFoundException("Company not found"));
 

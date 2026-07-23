@@ -14,10 +14,11 @@ import { Pagination } from '../../../../shared/components/pagination/pagination'
 import { Loader } from '../../../../shared/components/loader/loader';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
 import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/confirm-dialog';
+import { HasPermissionDirective } from '../../../../shared/directives/has-permission.directive';
 
 @Component({
   selector: 'app-applications',
-  imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState, ConfirmDialog],
+  imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState, ConfirmDialog, HasPermissionDirective],
   templateUrl: './applications.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -66,8 +67,8 @@ export class Applications implements OnInit {
   // LOAD OPEN JOB POSTINGS FOR THE APPLY DROPDOWN
   loadJobs(): void {
     if (this.jobs.length) return;
-    this.jobPostingService.list(0, 100, 'OPEN').subscribe({
-      next: (res) => { this.jobs = res.content; this.cdr.markForCheck(); },
+    this.jobPostingService.listOpen().subscribe({
+      next: (res) => { this.jobs = res; this.cdr.markForCheck(); },
       error: () => { this.jobs = []; this.cdr.markForCheck(); }
     });
   }

@@ -1,10 +1,12 @@
 package com.businessos.modules.servicedesk.document;
 
+import com.businessos.auth.user.User;
 import com.businessos.modules.company.Company;
 import com.businessos.modules.servicedesk.servicerequest.ServiceRequest;
 import com.businessos.modules.servicedesk.servicerequest.ServiceRequestRepository;
 import com.businessos.security.SecurityUtil;
 import com.businessos.shared.exception.BadRequestException;
+import com.businessos.shared.exception.ForbiddenException;
 import com.businessos.shared.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -87,8 +89,25 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     private ServiceRequest findRequestInTenant(Long serviceRequestId) {
-        return serviceRequestRepository.findByIdAndCompanyId(serviceRequestId, requireCompanyId())
+        ServiceRequest sr = serviceRequestRepository.findByIdAndCompanyId(serviceRequestId, requireCompanyId())
                 .orElseThrow(() -> new ResourceNotFoundException("Service request not found: " + serviceRequestId));
+        guardAccess(sr);
+        return sr;
+    }
+
+    // Mirrors ServiceRequestServiceImpl.guardAccess(): staff can reach any request
+    // in their company, but a CLIENT may only touch documents on their own requests.
+    private void guardAccess(ServiceRequest sr) {
+        User user = securityUtil.getCurrentUser();
+        if (user == null || user.getRole() == null || !user.getRole().name().equals("CLIENT")) return;
+
+        boolean isOwner = sr.getClient() != null
+                && sr.getClient().getUser() != null
+                && sr.getClient().getUser().getId().equals(user.getId());
+
+        if (!isOwner) {
+            throw new ForbiddenException("You do not have permission to access this service request");
+        }
     }
 
     private Long requireCompanyId() {

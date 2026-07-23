@@ -1,16 +1,27 @@
 <div class="container-fluid py-3">
-  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-    <h4 class="mb-0">Sales Pipeline</h4>
-    <div class="d-flex gap-2 align-items-center flex-wrap">
-      @if (summary) {
-      <span class="badge text-bg-light border">Open: <strong>{{ summary.openPipelineValue | currency }}</strong></span>
-      <span class="badge text-bg-light border">Forecast: <strong>{{ summary.weightedForecast | currency }}</strong></span>
-      <span class="badge text-bg-success">Won: {{ summary.wonValue | currency }}</span>
-      <span class="badge text-bg-light border">Open deals: {{ summary.totalOpenDeals }}</span>
-      }
-      <button class="btn btn-primary btn-sm" (click)="openCreate()">
-        <i class="bi bi-plus-lg me-1"></i>New Opportunity
-      </button>
+  <div class="page-hero">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+      <div>
+        <div class="page-hero-label">CRM</div>
+        <h4 class="page-hero-title underline-lavender">Pipeline</h4>
+        <div class="page-hero-subtitle">Track and manage opportunities across your sales process.</div>
+      </div>
+      <div class="page-hero-actions">
+        @if (summary) {
+        <div class="d-flex gap-3 flex-wrap">
+          <span>Open: <strong>{{ summary.openPipelineValue | currency }}</strong></span>
+          <span>Forecast: <strong>{{ summary.weightedForecast | currency }}</strong></span>
+          <span class="text-success">Won: <strong>{{ summary.wonValue | currency }}</strong></span>
+          <span class="text-danger">Lost: <strong>{{ lostValue | currency }}</strong></span>
+        </div>
+        }
+        <button *appHasPermission="'OPPORTUNITY_CREATE'" class="btn-hero-primary" (click)="openCreate()">
+          <i class="bi bi-plus-circle"></i> New Opportunity
+        </button>
+        <button class="btn-hero-secondary" (click)="viewReports()">
+          <i class="bi bi-bar-chart-line"></i> View Reports
+        </button>
+      </div>
     </div>
   </div>
 
@@ -18,21 +29,25 @@
   @if (loading) { <app-loader /> }
 
   @if (!loading) {
-  <div class="d-flex gap-2 overflow-auto align-items-start pb-2">
+  <div class="d-flex gap-3 overflow-auto align-items-start pb-2">
     @for (stage of stages; track stage) {
-    <div class="card flex-shrink-0" style="width: 240px">
-      <div class="card-header py-2 d-flex justify-content-between small fw-semibold"
-           [class.text-success]="stage === 'CLOSED_WON'" [class.text-danger]="stage === 'CLOSED_LOST'">
-        <span>{{ stageLabel(stage) }}</span>
-        <span>{{ columnTotal(stage) | currency }}</span>
+    <div class="card border-0 shadow-sm flex-shrink-0" style="width: 260px; border-top: 3px solid {{ stageColor(stage) }} !important">
+      <div class="card-header bg-white py-3 border-0">
+        <div class="d-flex justify-content-between align-items-start">
+          <span class="small fw-bold text-uppercase" style="letter-spacing:.04em">{{ stageLabel(stage) }}</span>
+          <span class="badge rounded-pill text-bg-light border">{{ (columns[stage] || []).length }}</span>
+        </div>
+        <div class="fw-semibold mt-1" [class.text-success]="stage === 'CLOSED_WON'" [class.text-danger]="stage === 'CLOSED_LOST'">
+          {{ columnTotal(stage) | currency }}
+        </div>
       </div>
-      <div class="card-body p-2">
+      <div class="card-body p-2 pt-0">
         @for (deal of columns[stage]; track deal.id) {
-        <div class="card mb-2">
+        <div class="card border mb-2">
           <div class="card-body p-2">
             <div class="d-flex justify-content-between align-items-start">
             <div class="fw-semibold small">{{ deal.name }}</div>
-            <button class="btn btn-link btn-sm p-0 text-secondary" (click)="openEdit(deal)" title="Edit">
+            <button *appHasPermission="'OPPORTUNITY_UPDATE'" class="btn btn-link btn-sm p-0 text-secondary" (click)="openEdit(deal)" title="Edit">
               <i class="bi bi-pencil small"></i>
             </button>
           </div>
@@ -42,13 +57,19 @@
               <span class="text-muted">{{ deal.probability }}%</span>
             </div>
             @if (deal.nextStep) { <div class="small text-primary mt-1">Next: {{ deal.nextStep }}</div> }
-            <select class="form-select form-select-sm mt-2" [ngModel]="deal.stage" (ngModelChange)="move(deal, $event)">
+            <select *appHasPermission="'OPPORTUNITY_UPDATE'" class="form-select form-select-sm mt-2" [ngModel]="deal.stage" (ngModelChange)="move(deal, $event)">
               @for (s of stages; track s) { <option [value]="s">{{ stageLabel(s) }}</option> }
             </select>
           </div>
         </div>
         }
-        @if (!columns[stage]?.length) { <div class="text-muted small text-center py-2">Empty</div> }
+        @if (!columns[stage]?.length) {
+        <div class="text-center py-4">
+          <i class="bi bi-envelope text-muted" style="font-size:1.75rem"></i>
+          <div class="fw-semibold small mt-2">No opportunities</div>
+          <div class="text-muted small">Drag and drop opportunities here</div>
+        </div>
+        }
       </div>
     </div>
     }
@@ -59,16 +80,16 @@
   <div class="modal d-block" tabindex="-1" style="background: rgba(0,0,0,.4)">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Close "{{ lostReasonFor.name }}" as Lost</h5>
-          <button type="button" class="btn-close" (click)="cancelLost()"></button>
+        <div class="modal-header py-2" style="background: #4F46E5; color: #fff; border-radius: 0;">
+          <h5 class="modal-title fs-6 fw-semibold" style="color: #fff;">Close "{{ lostReasonFor.name }}" as Lost</h5>
+          <button type="button" class="btn-close btn-close-white" (click)="cancelLost()"></button>
         </div>
         <div class="modal-body">
           <textarea class="form-control" rows="3" placeholder="Why was this deal lost?" [(ngModel)]="lostReason"></textarea>
         </div>
         <div class="modal-footer">
           <button class="btn btn-secondary btn-sm" (click)="cancelLost()">Cancel</button>
-          <button class="btn btn-danger btn-sm" [disabled]="!lostReason.trim()" (click)="confirmLost()">Close as Lost</button>
+          <button class="btn btn-danger btn-sm px-3 fw-semibold" [disabled]="!lostReason.trim()" (click)="confirmLost()">Close as Lost</button>
         </div>
       </div>
     </div>
@@ -77,11 +98,17 @@
   <div class="modal d-block" tabindex="-1" style="background: rgba(0,0,0,.4)">
     <div class="modal-dialog modal-lg modal-dialog-centered">
       <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title fs-6 fw-semibold">{{ editing ? 'Edit Opportunity' : 'New Opportunity' }}</h5>
-          <button type="button" class="btn-close" (click)="showForm = false"></button>
+        <div class="modal-header py-2" style="background: #4F46E5; color: #fff; border-radius: 0;">
+          <h5 class="modal-title fs-6 fw-semibold d-flex align-items-center gap-2" style="color: #fff;">
+            <span class="rounded-2 d-flex align-items-center justify-content-center" style="width:32px;height:32px;background-color:rgba(255,255,255,0.2)">
+              <i class="bi {{ editing ? 'bi-pencil' : 'bi-plus-lg' }}" style="color:#fff"></i>
+            </span>
+            {{ editing ? 'Edit Opportunity' : 'New Opportunity' }}
+          </h5>
+          <button type="button" class="btn-close btn-close-white" (click)="showForm = false"></button>
         </div>
         <div class="modal-body">
+          <div class="section-label">Opportunity Details</div>
           <div class="row g-2">
             <div class="col-md-6">
               <label class="form-label small text-secondary mb-1">Name *</label>
@@ -116,17 +143,17 @@
             </div>
             <div class="col-md-6">
               <label class="form-label small text-secondary mb-1">Next Step</label>
-              <input class="form-control form-control-sm" [(ngModel)]="form.nextStep" maxlength="255" />
+              <input class="form-control form-control-sm" [(ngModel)]="form.nextStep" maxlength="255" placeholder="e.g. Follow up call, Send proposal..." />
             </div>
             <div class="col-12">
               <label class="form-label small text-secondary mb-1">Description</label>
-              <textarea class="form-control form-control-sm" rows="2" [(ngModel)]="form.description"></textarea>
+              <textarea class="form-control form-control-sm" rows="3" [(ngModel)]="form.description" placeholder="Add a brief description about this opportunity..."></textarea>
             </div>
           </div>
         </div>
         <div class="modal-footer py-2">
           <button class="btn btn-secondary btn-sm" (click)="showForm = false">Cancel</button>
-          <button class="btn btn-primary btn-sm" [disabled]="saving" (click)="save()">
+          <button class="btn btn-primary btn-sm px-3 fw-semibold" [disabled]="saving" (click)="save()">
             @if (saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
             {{ editing ? 'Save Changes' : 'Create' }}
           </button>

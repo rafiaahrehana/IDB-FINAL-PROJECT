@@ -8,10 +8,11 @@ import { Pagination } from '../../../../shared/components/pagination/pagination'
 import { Loader } from '../../../../shared/components/loader/loader';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
 import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/confirm-dialog';
+import { HasPermissionDirective } from '../../../../shared/directives/has-permission.directive';
 
 @Component({
   selector: 'app-announcements',
-  imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState, ConfirmDialog],
+  imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState, ConfirmDialog, HasPermissionDirective],
   templateUrl: './announcements.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -27,6 +28,10 @@ export class Announcements implements OnInit {
 
   showForm = false;
   form: AnnouncementRequest = this.emptyForm();
+
+  aiInstructions = '';
+  draftingAi = false;
+  aiDraftError = '';
 
   deleteTarget: Announcement | null = null;
 
@@ -70,7 +75,28 @@ export class Announcements implements OnInit {
 
   openCreate(): void {
     this.form = this.emptyForm();
+    this.aiInstructions = '';
+    this.aiDraftError = '';
     this.showForm = true;
+  }
+
+  draftWithAi(): void {
+    if (!this.aiInstructions.trim() || this.draftingAi) return;
+    this.draftingAi = true;
+    this.aiDraftError = '';
+    this.announcementService.draftWithAi(this.aiInstructions.trim()).subscribe({
+      next: (draft) => {
+        this.form.title = draft.title;
+        this.form.body = draft.body;
+        this.draftingAi = false;
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        this.aiDraftError = err?.error?.message || 'Failed to generate draft';
+        this.draftingAi = false;
+        this.cdr.markForCheck();
+      }
+    });
   }
 
   save(): void {
@@ -141,8 +167,14 @@ export class Announcements implements OnInit {
 
   private cleanPayload(): AnnouncementRequest {
     const payload: any = { ...this.form };
-    if (!payload.targetDepartmentId) delete payload.targetDepartmentId;
-    if (!payload.expiresAt) delete payload.expiresAt;
+    if (!payload.targetDepartmentId || payload.targetDepartmentId === 'undefined' || payload.targetDepartmentId === 'null') {
+      delete payload.targetDepartmentId;
+    }
+    if (!payload.expiresAt) {
+      delete payload.expiresAt;
+    } else if (typeof payload.expiresAt === 'string' && !payload.expiresAt.includes('T')) {
+      payload.expiresAt = `${payload.expiresAt}T23:59:59`;
+    }
     if (!payload.attachmentUrl) delete payload.attachmentUrl;
     return payload;
   }

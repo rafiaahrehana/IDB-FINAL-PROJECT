@@ -29,9 +29,28 @@
         @if (formAnswers.length) {
         <div class="card-footer">
           <div class="small fw-semibold text-secondary mb-1"><i class="bi bi-ui-checks me-1"></i>Service Details</div>
-          <div class="row g-1">
+          <div class="row g-2 mt-2">
             @for (a of formAnswers; track a.label) {
-            <div class="col-md-6 small"><span class="text-muted">{{ a.label }}:</span> <span class="fw-medium">{{ a.value }}</span></div>
+            <div class="col-md-12 small mb-2">
+              <span class="text-muted d-block mb-1">{{ a.label }}</span>
+              @if (isUrl(a.value)) {
+              <div class="d-flex align-items-center gap-3 p-2 border rounded bg-light">
+                @if (isImageUrl(a.value)) {
+                <img [src]="a.value" alt="Preview" class="rounded border bg-white" style="height: 48px; width: 48px; object-fit: cover;" />
+                } @else {
+                <div class="bg-white border rounded d-flex align-items-center justify-content-center" style="height: 48px; width: 48px;">
+                  <i class="bi bi-file-earmark fs-4 text-secondary"></i>
+                </div>
+                }
+                <div>
+                  <a [href]="a.value" target="_blank" class="btn btn-sm btn-outline-primary me-2"><i class="bi bi-eye me-1"></i>Preview</a>
+                  <a [href]="a.value" target="_blank" download class="btn btn-sm btn-outline-secondary"><i class="bi bi-download me-1"></i>Download</a>
+                </div>
+              </div>
+              } @else {
+              <span class="fw-medium">{{ a.value }}</span>
+              }
+            </div>
             }
           </div>
         </div>
@@ -79,26 +98,36 @@
               <input class="form-control form-control-sm" [(ngModel)]="statusReason" />
             </div>
             <div class="col-md-3">
-              <button class="btn btn-primary btn-sm w-100" [disabled]="newStatus === request.status" (click)="changeStatus()">Update</button>
-            </div>
-          </div>
-          <div class="row g-2 align-items-end mb-3">
-            <div class="col-md-9">
-              <label class="form-label small text-secondary mb-1">Assign To</label>
-              <select class="form-select form-select-sm" [(ngModel)]="assignEmployeeId">
-                <option [ngValue]="null">— Select employee —</option>
-                @for (e of employees; track e.id) { <option [ngValue]="e.id">{{ e.firstName }} {{ e.lastName || '' }}</option> }
-              </select>
-            </div>
-            <div class="col-md-3">
-              <button class="btn btn-outline-primary btn-sm w-100" [disabled]="!assignEmployeeId" (click)="assign()">Assign</button>
+              <button *appHasPermission="['SERVICE_REQUEST_APPROVE', 'SERVICE_REQUEST_CLOSE']" class="btn btn-primary btn-sm w-100" [disabled]="newStatus === request.status" (click)="changeStatus()">Update</button>
             </div>
           </div>
           }
-          @if (request.status !== 'COMPLETED' && request.status !== 'CANCELLED' && request.status !== 'REJECTED') {
-          <button class="btn btn-outline-danger btn-sm" (click)="cancel()">
-            <i class="bi bi-x-circle me-1"></i>Cancel Request
-          </button>
+
+          <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+            @if (isStaff) {
+            <div class="d-flex align-items-center gap-2 flex-grow-1" *appHasPermission="'SERVICE_REQUEST_ASSIGN'">
+              <label class="form-label small text-secondary mb-0 text-nowrap">Assign To</label>
+              <select class="form-select form-select-sm" style="max-width: 250px;" [(ngModel)]="assignEmployeeId">
+                <option [ngValue]="null">— Select employee —</option>
+                @for (e of employees; track e.id) { <option [ngValue]="e.id">{{ e.firstName }} {{ e.lastName || '' }}</option> }
+              </select>
+              <button class="btn btn-outline-primary btn-sm px-3" [disabled]="!assignEmployeeId || assignEmployeeId === request.assignedEmployeeId" (click)="assign()">Assign</button>
+            </div>
+            }
+
+            @if (request.status !== 'COMPLETED' && request.status !== 'CANCELLED' && request.status !== 'REJECTED' && (isStaff || !request.assignedEmployeeId)) {
+            <div class="ms-auto">
+              <button class="btn btn-outline-danger btn-sm px-4 text-nowrap" (click)="cancel()">
+                <i class="bi bi-x-circle me-1"></i> Cancel Request
+              </button>
+            </div>
+            }
+          </div>
+          
+          @if (isClient && request.assignedEmployeeId && request.status !== 'COMPLETED' && request.status !== 'CANCELLED' && request.status !== 'REJECTED') {
+          <div class="mt-2">
+            <p class="text-muted small mb-0">A team member has already been assigned. Please contact support to cancel.</p>
+          </div>
           }
         </div>
       </div>
@@ -116,24 +145,98 @@
         </div>
         <div class="card-body">
           @if (showTaskForm) {
-          <div class="row g-2 mb-3">
-            <div class="col-md-8"><input class="form-control form-control-sm" placeholder="Task title *" [(ngModel)]="newTask.title" (keyup.enter)="addTask()" /></div>
-            <div class="col-md-4"><input type="date" class="form-control form-control-sm" [(ngModel)]="newTask.dueDate" /></div>
-            <div class="col-12"><input class="form-control form-control-sm" placeholder="Description (optional)" [(ngModel)]="newTask.description" /></div>
-            <div class="col-12"><button class="btn btn-primary btn-sm" [disabled]="!newTask.title?.trim()" (click)="addTask()">Add Task</button></div>
+          <div class="row g-2 mb-3 bg-light p-3 rounded border">
+            <div class="col-md-12 fw-semibold text-secondary mb-1">New Task</div>
+            
+            <div class="col-md-6">
+              <label class="form-label small text-secondary mb-1">Task Name *</label>
+              <input class="form-control form-control-sm" placeholder="Task Name *" [(ngModel)]="newTask.title" />
+            </div>
+            
+            <div class="col-md-6">
+              <label class="form-label small text-secondary mb-1">Assign To *</label>
+              <select class="form-select form-select-sm" [(ngModel)]="newTask.assignedEmployeeId">
+                <option [ngValue]="null">— Select employee —</option>
+                @for (e of employees; track e.id) { <option [ngValue]="e.id">{{ e.firstName }} {{ e.lastName || '' }}</option> }
+              </select>
+            </div>
+            
+            <div class="col-md-4">
+              <label class="form-label small text-secondary mb-1">Due Date *</label>
+              <input type="date" class="form-control form-control-sm" [(ngModel)]="newTask.dueDate" />
+            </div>
+            
+            <div class="col-md-4">
+              <label class="form-label small text-secondary mb-1">Priority</label>
+              <select class="form-select form-select-sm" [(ngModel)]="newTask.priority">
+                <option value="LOW">Low</option>
+                <option value="NORMAL">Normal</option>
+                <option value="HIGH">High</option>
+                <option value="URGENT">Urgent</option>
+              </select>
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label small text-secondary mb-1">Estimated Hours</label>
+              <input type="number" class="form-control form-control-sm" placeholder="e.g. 5.5" [(ngModel)]="newTask.estimatedHours" />
+            </div>
+            
+            <div class="col-12">
+              <label class="form-label small text-secondary mb-1">Description</label>
+              <textarea class="form-control form-control-sm" rows="2" placeholder="Task description..." [(ngModel)]="newTask.description"></textarea>
+            </div>
+            
+            <div class="col-12 text-end mt-2">
+              <button class="btn btn-primary btn-sm px-4" [disabled]="!newTask.title?.trim() || !newTask.assignedEmployeeId || !newTask.dueDate" (click)="addTask()">Add Task</button>
+            </div>
           </div>
           }
           @for (task of tasks; track task.id) {
-          <div class="d-flex gap-2 align-items-center border-bottom py-2 small">
-            <div class="flex-grow-1">
-              <span [class.text-decoration-line-through]="task.status === 'COMPLETED'" class="fw-medium">{{ task.title }}</span>
-              @if (task.assignedEmployeeName) { <span class="text-muted ms-1">· {{ task.assignedEmployeeName }}</span> }
-              @if (task.dueDate) { <span class="text-muted ms-1">· due {{ task.dueDate | date:'mediumDate' }}</span> }
+          <div class="d-flex flex-column border-bottom py-3">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <div class="fw-semibold d-flex align-items-center gap-2" style="font-size: 0.95rem;">
+                @if (task.status === 'COMPLETED') {
+                  <i class="bi bi-check-square-fill text-success fs-6"></i>
+                } @else if (task.status === 'IN_PROGRESS') {
+                  <i class="bi bi-circle-fill text-warning" style="font-size: 0.6rem; margin-left: 0.2rem; margin-right: 0.2rem;"></i>
+                } @else {
+                  <i class="bi bi-square text-muted fs-6"></i>
+                }
+                <span [class.text-decoration-line-through]="task.status === 'COMPLETED'">{{ task.title }}</span>
+              </div>
+              <div class="d-flex align-items-center gap-2">
+                <select class="form-select form-select-sm" style="width: auto; min-width: 120px; padding: 0.1rem 1.5rem 0.1rem 0.5rem; font-size: 0.75rem;" [ngModel]="task.status" (ngModelChange)="setTaskStatus(task, $event)">
+                  @for (s of taskStatuses; track s) { <option [value]="s">{{ s.replaceAll('_', ' ') }}</option> }
+                </select>
+                <button class="btn btn-outline-danger btn-sm p-1 d-flex align-items-center justify-content-center border-0" style="width: 24px; height: 24px;" (click)="deleteTask(task)" title="Delete"><i class="bi bi-trash"></i></button>
+              </div>
             </div>
-            <select class="form-select form-select-sm" style="width: 140px" [ngModel]="task.status" (ngModelChange)="setTaskStatus(task, $event)">
-              @for (s of taskStatuses; track s) { <option [value]="s">{{ s.replaceAll('_', ' ') }}</option> }
-            </select>
-            <button class="btn btn-outline-danger btn-sm" (click)="deleteTask(task)" title="Delete"><i class="bi bi-trash"></i></button>
+            
+            <div class="d-flex flex-column gap-1 text-muted small ms-4">
+              @if (task.assignedEmployeeName) {
+                <div class="d-flex align-items-center gap-2">
+                  <i class="bi bi-person-fill"></i> <span class="text-dark fw-medium">{{ task.assignedEmployeeName }}</span>
+                </div>
+              }
+              <div class="d-flex align-items-center gap-2">
+                @if (task.status === 'COMPLETED') {
+                  <span class="text-success fw-medium">Completed</span>
+                } @else if (task.dueDate) {
+                  <span>Due {{ task.dueDate | date:'mediumDate' }}</span>
+                } @else {
+                  <span class="text-muted">Waiting</span>
+                }
+                @if (task.estimatedHours) { 
+                  <span class="ms-2">· {{ task.estimatedHours }} hrs</span>
+                }
+                @if (task.priority) {
+                  <span class="ms-2">· {{ task.priority }} Priority</span>
+                }
+              </div>
+              @if (task.description) {
+                <div class="mt-1 text-secondary fst-italic">{{ task.description }}</div>
+              }
+            </div>
           </div>
           }
           @if (!tasks.length) { <p class="text-muted small mb-0">No tasks yet.</p> }
@@ -245,14 +348,20 @@
       <div class="card h-100">
         <div class="card-header py-2 fw-semibold">Status History</div>
         <div class="card-body">
-          @for (event of history; track $index) {
-          <div class="d-flex gap-3 border-bottom py-1 small">
-            <span class="text-muted">{{ event.createdAt | date:'medium' }}</span>
-            <span>{{ event.fromStatus || event.oldStatus || '' }} → {{ event.toStatus || event.newStatus || '' }}</span>
-            <span class="text-muted">{{ event.changedByName || '' }}</span>
+          @for (group of groupedHistory; track group.actorName + $index) {
+          <div class="mb-3 pb-2 border-bottom">
+            <div class="fw-semibold small text-primary mb-1">
+              <i class="bi bi-person me-1"></i> {{ group.actorName || 'System' }}
+            </div>
+            @for (event of group.items; track $index) {
+            <div class="d-flex justify-content-between py-1 small">
+              <span class="text-muted"><i class="bi bi-arrow-right-short"></i> {{ event.fromStatus || event.oldStatus || 'NONE' }} → {{ event.toStatus || event.newStatus || 'NONE' }}</span>
+              <span class="text-secondary" style="font-size: 0.75rem;">{{ event.createdAt | date:'short' }}</span>
+            </div>
+            }
           </div>
           }
-          @if (!history.length) { <p class="text-muted small mb-0">No history.</p> }
+          @if (!groupedHistory.length) { <p class="text-muted small mb-0">No history.</p> }
         </div>
       </div>
     </div>

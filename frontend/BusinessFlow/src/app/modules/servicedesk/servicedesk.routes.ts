@@ -20,16 +20,16 @@ import { ServiceFormFields } from './components/service-form-fields/service-form
 // (components/quotations, quotation.service.ts, Quotation/QuotationRequest interfaces)
 // called dead endpoints and have been deleted.
 export const SERVICEDESK_ROUTES: Routes = [
-  { path: 'requests', component: Requests },
-  { path: 'requests/:id', component: RequestDetail },
-  { path: 'approvals', component: Approvals },
-  { path: 'kb', component: KnowledgeBase },
-  { path: 'categories', component: Categories },
-  { path: 'services', component: Services },
-  { path: 'services/:id/form-fields', component: ServiceFormFields },
-  { path: 'packages', component: Packages },
-  { path: 'workflows', component: Workflows },
-  { path: 'templates', component: Templates },
-  { path: 'reviews', component: Reviews },
+  { path: 'requests', component: Requests, data: { requiredPermission: 'SERVICE_REQUEST_VIEW' } },
+  { path: 'requests/:id', component: RequestDetail, data: { requiredPermission: 'SERVICE_REQUEST_VIEW' } },
+  { path: 'approvals', component: Approvals, data: { requiredPermission: 'SERVICE_REQUEST_APPROVE' } },
+  { path: 'kb', component: KnowledgeBase, data: { requiredPermission: 'KNOWLEDGE_BASE_VIEW' } },
+  { path: 'categories', component: Categories, data: { requiredPermission: 'SERVICE_CATEGORY_VIEW' } },
+  { path: 'services', component: Services, data: { requiredPermission: 'SERVICE_CATALOG_VIEW' } },
+  { path: 'services/:id/form-fields', component: ServiceFormFields, data: { requiredPermission: 'SERVICE_CATALOG_VIEW' } },
+  { path: 'packages', component: Packages, data: { requiredPermission: 'SERVICE_PACKAGE_VIEW' } },
+  { path: 'workflows', component: Workflows, data: { requiredPermission: 'WORKFLOW_VIEW' } },
+  { path: 'templates', component: Templates, data: { requiredPermission: 'SERVICE_TEMPLATE_VIEW' } },
+  { path: 'reviews', component: Reviews, data: { requiredPermission: 'REVIEW_VIEW' } },
   { path: '', redirectTo: 'requests', pathMatch: 'full' }
 ];

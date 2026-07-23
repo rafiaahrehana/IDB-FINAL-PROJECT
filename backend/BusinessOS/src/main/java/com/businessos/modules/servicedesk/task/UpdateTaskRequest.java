@@ -19,4 +19,5 @@ public class UpdateTaskRequest {
     private LocalDate dueDate;              // fixed: was LocalDateTime
     private LocalDateTime slaDeadline;
     private Long assignedEmployeeId;
+    private Double estimatedHours;
 }

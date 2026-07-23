@@ -1,5 +1,6 @@
 import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { InvoiceService } from '../../../finance/services/invoice.service';
 import { PaymentReceiptService } from '../../../finance/services/payment-receipt.service';
 import { Loader } from '../../../../shared/components/loader/loader';
@@ -19,6 +20,11 @@ interface MyInvoice {
   balanceAmount: number;
   status: string;
   description?: string;
+  serviceRequestId?: number;
+  serviceRequestTitle?: string;
+  // Only set while a refund is REQUESTED/REJECTED - once PROCESSED, status above
+  // already reads REFUNDED so this is left unset to avoid a redundant badge.
+  refundStatus?: string;
 }
 
 interface MyReceipt {
@@ -35,7 +41,7 @@ type Tab = 'invoices' | 'receipts';
 
 @Component({
   selector: 'app-client-payments',
-  imports: [CommonModule, Loader, EmptyState],
+  imports: [CommonModule, RouterLink, Loader, EmptyState],
   templateUrl: './client-payments.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -98,6 +104,20 @@ export class ClientPayments implements OnInit {
     });
   }
 
+  downloadInvoice(inv: MyInvoice): void {
+    this.invoiceService.downloadPdf(inv.id).subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${inv.invoiceNumber}.pdf`;
+        a.click();
+        URL.revokeObjectURL(url);
+      },
+      error: () => { this.error = 'Failed to download invoice'; this.cdr.markForCheck(); },
+    });
+  }
+
   statusClass(status: string): string {
     return {
       PAID: 'text-bg-success',
@@ -105,9 +125,19 @@ export class ClientPayments implements OnInit {
       OVERDUE: 'text-bg-danger',
       DRAFT: 'text-bg-secondary',
       CANCELLED: 'text-bg-dark',
+      REFUNDED: 'text-bg-warning',
       CONFIRMED: 'text-bg-success',
       PENDING: 'text-bg-warning',
       DEPOSITED: 'text-bg-info',
     }[status] || 'text-bg-secondary';
+  }
+
+  refundStatusClass(status: string): string {
+    return (
+      {
+        REQUESTED: 'text-bg-warning',
+        REJECTED: 'text-bg-danger',
+      }[status] || 'text-bg-secondary'
+    );
   }
 }

@@ -6,6 +6,7 @@ import com.businessos.security.SubscriptionEnforcementFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -21,7 +22,9 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.cors.CorsConfigurationSource;
 
 
@@ -53,12 +56,40 @@ public class SecurityConfig {
         "/api/locations/**"
     };
 
+    /**
+     * Uploaded files (avatars, documents) - permitAll like the rest of PUBLIC_ENDPOINTS,
+     * but on its own chain so it can opt out of the main chain's default Cache-Control:
+     * no-store header. Without this, every uploaded image is re-downloaded in full on
+     * every render (no browser caching at all) - fine for a small icon, but a multi-MB
+     * avatar effectively never finishes loading in time, showing blank.
+     * Filenames are content-hashed/unique per upload, so aggressive caching is safe.
+     */
     @Bean
+    @Order(1)
+    public SecurityFilterChain uploadsFilterChain(HttpSecurity http) throws Exception {
+        http
+            .securityMatcher("/uploads/**")
+            .cors(cors -> cors.configurationSource(corsConfigurationSource))
+            .csrf(AbstractHttpConfigurer::disable)
+            .headers(headers -> headers.cacheControl(cache -> cache.disable()))
+            .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+
+        return http.build();
+    }
+
+    @Bean
+    @Order(2)
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource))
             .csrf(AbstractHttpConfigurer::disable)
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            // Without this, Spring Security's default entry point returns 403 for a
+            // missing/expired/invalid token, indistinguishable from a real "no permission"
+            // 403 - the frontend's silent-refresh-on-401 logic never fires and every
+            // module 403s once the access token expires. Return 401 so the interceptor
+            // can refresh and retry instead.
+            .exceptionHandling(ex -> ex.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
             .authorizeHttpRequests(auth -> auth
                     .requestMatchers("/swagger-ui/**",
                             "/v3/api-docs/**",

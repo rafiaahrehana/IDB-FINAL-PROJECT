@@ -11,6 +11,8 @@ import com.businessos.modules.hrm.recruitment.jobapplication.JobApplicationRespo
 import com.businessos.modules.hrm.recruitment.jobpost.JobPosting;
 import com.businessos.modules.company.Company;
 import com.businessos.modules.company.CompanyRepository;
+import com.businessos.auth.role.enums.PermissionCode;
+import com.businessos.auth.role.service.AuthorizationService;
 import com.businessos.security.SecurityUtil;
 import com.businessos.shared.email.EmailBranding;
 import com.businessos.shared.email.EmailService;
@@ -34,10 +36,12 @@ public class RecruitmentServiceImpl implements RecruitmentService {
     private final SecurityUtil             securityUtil;
     private final EmailService             emailService;
     private final EmailBranding            emailBranding;
+    private final AuthorizationService     authorizationService;
 
     @Override
     @Transactional
     public JobApplicationResponse apply(Long jobPostingId, JobApplicationRequest request) {
+        authorizationService.checkPermission(PermissionCode.APPLICATION_CREATE);
         Long companyId = requireCompanyId();
         JobPosting posting = jobPostingRepository.findByIdAndCompanyId(jobPostingId, companyId)
             .orElseThrow(() -> new ResourceNotFoundException("Job posting not found: " + jobPostingId));
@@ -75,6 +79,7 @@ public class RecruitmentServiceImpl implements RecruitmentService {
     @Override
     @Transactional(readOnly = true)
     public Page<JobApplicationResponse> listByPosting(Long jobPostingId, Pageable pageable) {
+        authorizationService.checkPermission(PermissionCode.APPLICATION_VIEW);
         return applicationRepository.findByCompanyIdAndJobPostingId(
                 requireCompanyId(), jobPostingId, pageable)
             .map(RecruitmentMapper::toJobApplicationResponse);
@@ -83,6 +88,7 @@ public class RecruitmentServiceImpl implements RecruitmentService {
     @Override
     @Transactional(readOnly = true)
     public Page<JobApplicationResponse> listAll(ApplicationStatus status, Pageable pageable) {
+        authorizationService.checkPermission(PermissionCode.APPLICATION_VIEW);
         Long companyId = requireCompanyId();
         return (status != null
             ? applicationRepository.findByCompanyIdAndStatus(companyId, status, pageable)
@@ -93,6 +99,7 @@ public class RecruitmentServiceImpl implements RecruitmentService {
     @Override
     @Transactional
     public JobApplicationResponse updateStatus(Long id, ApplicationStatus status, String notes) {
+        authorizationService.checkPermission(PermissionCode.APPLICATION_UPDATE);
         Long companyId = requireCompanyId();
         JobApplication application = findInTenant(id);
         Employee reviewer = employeeRepository.findByUserId(securityUtil.getCurrentUser().getId())
@@ -119,6 +126,7 @@ public class RecruitmentServiceImpl implements RecruitmentService {
     @Override
     @Transactional
     public void delete(Long id) {
+        authorizationService.checkPermission(PermissionCode.APPLICATION_DELETE);
         findInTenant(id).softDelete();
     }
 

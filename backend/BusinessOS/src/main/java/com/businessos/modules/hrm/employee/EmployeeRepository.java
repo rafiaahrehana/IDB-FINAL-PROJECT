@@ -25,7 +25,17 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
 
     Page<Employee> findByCompanyIdAndDepartmentId(Long companyId, Long departmentId, Pageable pageable);
 
+    // excludeOwner support - the company owner gets an auto-created Employee record
+    // (so leave/timesheet/expense/payroll "my work" lookups don't 404 for them), but
+    // the HRM Employees admin page shouldn't list the owner as a manageable employee.
+    Page<Employee> findByCompanyIdAndUserIdNot(Long companyId, Long excludedUserId, Pageable pageable);
+
+    Page<Employee> findByCompanyIdAndDepartmentIdAndUserIdNot(
+            Long companyId, Long departmentId, Long excludedUserId, Pageable pageable);
+
     long countByCompanyId(Long companyId);
+
+    long countByCompanyIdAndUserIdNot(Long companyId, Long excludedUserId);
 
     @Query("SELECT e FROM Employee e WHERE e.department.name = :departmentName AND e.active = true")
     List<Employee> findByDepartment(@Param("departmentName") String departmentName);

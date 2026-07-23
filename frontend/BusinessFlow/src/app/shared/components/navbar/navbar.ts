@@ -48,4 +48,28 @@ export class Navbar {
       this.router.navigate(['/ai']);
     }
   }
+
+  roleLabel(roles: string[] | undefined | null): string {
+    const role = roles?.[0];
+    if (!role) return '';
+    return role
+      .toLowerCase()
+      .split('_')
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(' ');
+  }
+
+  // The client portal has its own profile page (sidebar "Profile Settings" ->
+  // /client/profile) - sending clients to the generic /profile
+  // page instead would drop them outside the client portal shell entirely.
+  // Platform staff (SUPER_ADMIN etc.) have no Employee HR record, so /my-profile
+  // (which reads GET /api/employees/me) would just error for them - keep them on
+  // the generic /profile page. Tenant users (COMPANY_OWNER/EMPLOYEE) go to
+  // /my-profile instead, which now covers everything /profile did plus their HR
+  // details (address, education) and stays consistent with the Welcome landing page.
+  settingsLink(): string {
+    if (this.auth.hasRole('CLIENT')) return '/client/profile';
+    if (this.auth.isPlatformUser()) return '/profile';
+    return '/my-profile';
+  }
 }

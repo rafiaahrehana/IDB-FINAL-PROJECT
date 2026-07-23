@@ -1,37 +1,47 @@
 import { Injectable } from '@angular/core';
 import { CanActivate, CanActivateChild, ActivatedRouteSnapshot, RouterStateSnapshot, Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
+import { PermissionService } from '../services/permission.service';
 import { NotificationService } from '../../shared/services/notification.service';
- 
+
 @Injectable({
   providedIn: 'root'
 })
 export class RoleGuard implements CanActivate, CanActivateChild {
   constructor(
     private authService: AuthService,
+    private permissionService: PermissionService,
     private router: Router,
     private notificationService: NotificationService
   ) {}
- 
+
   canActivate(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): boolean {
-    return this.checkRole(route);
+    return this.checkAccess(route);
   }
- 
+
   canActivateChild(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): boolean {
-    return this.checkRole(route);
+    return this.checkAccess(route);
   }
- 
-  private checkRole(route: ActivatedRouteSnapshot): boolean {
-    const requiredRoles = route.data['roles'] as string[];
- 
-    if (!requiredRoles || requiredRoles.length === 0) {
-      return true;
+
+  // Checks both dimensions independently - a route can specify either, both, or
+  // neither. This exists so a permission-less employee can't reach a module by typing
+  // its URL directly even if it's hidden from their sidebar; the sidebar filter is a
+  // UX convenience, this is the actual gate.
+  private checkAccess(route: ActivatedRouteSnapshot): boolean {
+    const requiredRoles = route.data['roles'] as string[] | undefined;
+    if (requiredRoles && requiredRoles.length > 0 && !this.authService.hasAnyRole(requiredRoles)) {
+      return this.deny();
     }
- 
-    if (this.authService.hasAnyRole(requiredRoles)) {
-      return true;
+
+    const requiredPermission = route.data['requiredPermission'] as string | undefined;
+    if (requiredPermission && !this.permissionService.hasPermission(requiredPermission)) {
+      return this.deny();
     }
- 
+
+    return true;
+  }
+
+  private deny(): boolean {
     this.notificationService.error('Insufficient permissions');
     this.router.navigate(['/forbidden']);
     return false;

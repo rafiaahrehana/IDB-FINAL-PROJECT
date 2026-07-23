@@ -9,10 +9,11 @@ import { Pagination } from '../../../../shared/components/pagination/pagination'
 import { Loader } from '../../../../shared/components/loader/loader';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
 import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/confirm-dialog';
+import { HasPermissionDirective } from '../../../../shared/directives/has-permission.directive';
 
 @Component({
   selector: 'app-payment-receipts',
-  imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState, ConfirmDialog],
+  imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState, ConfirmDialog, HasPermissionDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './payment-receipts.html',
 })
@@ -63,7 +64,7 @@ export class PaymentReceipts implements OnInit {
 
   loadClients(): void {
     if (this.clients.length) return;
-    this.clientService.list(0, 200).subscribe({ next: (res) => { this.clients = res.content; this.cdr.markForCheck(); }, error: () => { this.clients = []; this.cdr.markForCheck(); } });
+    this.clientService.listActive().subscribe({ next: (res) => { this.clients = res; this.cdr.markForCheck(); }, error: () => { this.clients = []; this.cdr.markForCheck(); } });
   }
 
   openCreate(): void {

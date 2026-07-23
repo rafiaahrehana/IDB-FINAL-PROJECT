@@ -11,5 +11,11 @@ public interface DashboardService {
 
     PlatformSummaryResponse getPlatformSummary();
 
+    /** Daily history for the platform dashboard's sparklines/revenue chart - see PlatformMetricsSnapshot. */
+    java.util.List<PlatformMetricsPoint> getPlatformMetricsHistory(int days);
+
+    /** Upserts today's PlatformMetricsSnapshot - called by PlatformMetricsScheduler (daily cron + on startup). */
+    void recordTodaysPlatformSnapshot();
+
     ClientSummaryResponse getClientSummary();
 }

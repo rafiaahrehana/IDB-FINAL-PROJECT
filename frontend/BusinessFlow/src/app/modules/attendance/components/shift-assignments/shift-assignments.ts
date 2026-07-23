@@ -1,23 +1,26 @@
 import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { EmployeeShiftAssignment, EmployeeShiftAssignmentRequest, Shift } from '../../../hrm/models/hrm.model';
+import { EmployeeShiftAssignment, EmployeeShiftAssignmentRequest, Shift, Employee } from '../../../hrm/models/hrm.model';
 import { ShiftAssignmentService } from '../../services/shift-assignment.service';
 import { ShiftService } from '../../../hrm/services/shift.service';
+import { EmployeeService } from '../../../hrm/services/employee.service';
 import { Pagination } from '../../../../shared/components/pagination/pagination';
 import { Loader } from '../../../../shared/components/loader/loader';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
 import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/confirm-dialog';
+import { HasPermissionDirective } from '../../../../shared/directives/has-permission.directive';
 
 @Component({
   selector: 'app-shift-assignments',
-  imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState, ConfirmDialog],
+  imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState, ConfirmDialog, HasPermissionDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './shift-assignments.html',
 })
 export class ShiftAssignments implements OnInit {
   assignments: EmployeeShiftAssignment[] = [];
   shifts: Shift[] = [];
+  employees: Employee[] = [];
   totalPages = 0;
   page = 0;
   loading = false;
@@ -32,10 +35,22 @@ export class ShiftAssignments implements OnInit {
   employeeIdLookup?: number;
   lookedUpAssignment: EmployeeShiftAssignment | null = null;
 
-  constructor(private assignmentService: ShiftAssignmentService, private shiftService: ShiftService, private cdr: ChangeDetectorRef) {}
+  constructor(
+    private assignmentService: ShiftAssignmentService,
+    private shiftService: ShiftService,
+    private employeeService: EmployeeService,
+    private cdr: ChangeDetectorRef,
+  ) {}
 
   ngOnInit(): void {
-    this.shiftService.listActive().subscribe({ next: (res) => { this.shifts = res; this.cdr.markForCheck(); } });
+    this.shiftService.listActive().subscribe({
+      next: (res) => { this.shifts = res; this.cdr.markForCheck(); },
+      error: () => { this.error = 'Failed to load shifts'; this.cdr.markForCheck(); },
+    });
+    this.employeeService.list(0, 500).subscribe({
+      next: (res) => { this.employees = res.content; this.cdr.markForCheck(); },
+      error: () => { this.error = 'Failed to load employees'; this.cdr.markForCheck(); },
+    });
     this.load();
   }
 

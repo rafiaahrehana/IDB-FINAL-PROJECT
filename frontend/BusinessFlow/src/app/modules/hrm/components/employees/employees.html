@@ -1,19 +1,20 @@
 <div class="container-fluid py-3">
-  <!-- Page Header -->
-  <div class="page-header mb-4">
-    <div>
-      <h4 class="page-title mb-0">Employees</h4>
-      <div class="page-subtitle mt-1">Manage your workforce</div>
-    </div>
-    
-    <div class="d-flex gap-2">
-      <div class="input-search me-2">
-        <i class="bi bi-search"></i>
-        <input type="text" class="form-control form-control-sm rounded-3 shadow-sm border-0" placeholder="Search employee..." style="width: 200px;">
+  <div class="page-hero">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+      <div>
+        <div class="page-hero-label">HRM</div>
+        <h4 class="page-hero-title underline-mint">Employees</h4>
+        <div class="page-hero-subtitle">Manage your workforce</div>
       </div>
-      <button class="btn btn-primary-bos btn-sm px-3 fw-semibold text-nowrap" (click)="showForm = true">
-        <i class="bi bi-plus-lg me-2"></i>Add Employee
-      </button>
+      <div class="page-hero-actions">
+        <div class="input-search">
+          <i class="bi bi-search"></i>
+          <input type="text" class="form-control form-control-sm" placeholder="Search employee..." style="width: 200px;">
+        </div>
+        <button *appHasPermission="'EMPLOYEE_CREATE'" class="btn-hero-primary" (click)="showForm = true">
+          <i class="bi bi-plus-circle"></i> Add Employee
+        </button>
+      </div>
     </div>
   </div>
 
@@ -35,14 +36,18 @@
             <div class="card-body p-4">
               <!-- Avatar & Name -->
               <div class="d-flex align-items-center mb-4">
-                <div class="rounded-circle bg-primary-bos bg-opacity-10 text-primary d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px;">
-                  <span class="fw-bold fs-5">{{ emp.firstName.charAt(0) }}{{ (emp.lastName || '').charAt(0) }}</span>
-                </div>
+                @if (emp.profileImageUrl) {
+                  <img [src]="emp.profileImageUrl" alt="Profile picture" class="rounded-circle me-3" style="width: 48px; height: 48px; object-fit: cover; border: 2px solid #e2e8f0;" />
+                } @else {
+                  <div class="rounded-circle bg-primary-bos bg-opacity-10 text-primary d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px;">
+                    <span class="fw-bold fs-5">{{ emp.firstName.charAt(0) }}{{ (emp.lastName || '').charAt(0) }}</span>
+                  </div>
+                }
                 <div>
                   <a [routerLink]="['/hrm/employees', emp.id]" class="text-decoration-none">
                     <h6 class="mb-1 fw-bold text-dark fs-6">{{ emp.firstName }} {{ emp.lastName }}</h6>
                   </a>
-                  <div class="text-muted small fw-medium">{{ emp.designationName || emp.jobTitle || 'Unassigned' }}</div>
+                  <div class="designation-text small fw-medium">{{ emp.designationName || emp.jobTitle || 'Unassigned' }}</div>
                 </div>
                 
                 <div class="ms-auto dropdown">
@@ -52,7 +57,7 @@
                   <ul class="dropdown-menu dropdown-menu-end shadow border-0">
                     <li><a class="dropdown-item" [routerLink]="['/hrm/employees', emp.id]"><i class="bi bi-person me-2"></i>Profile</a></li>
                     @if (emp.employmentStatus !== 'TERMINATED') {
-                      <li><a class="dropdown-item text-danger" href="javascript:void(0)" (click)="terminateTarget = emp"><i class="bi bi-person-x me-2"></i>Terminate</a></li>
+                      <li *appHasPermission="'EMPLOYEE_DELETE'"><a class="dropdown-item text-danger" href="javascript:void(0)" (click)="terminateTarget = emp"><i class="bi bi-person-x me-2"></i>Terminate</a></li>
                     }
                   </ul>
                 </div>
@@ -60,21 +65,32 @@
 
               <!-- Details List -->
               <div class="d-flex flex-column gap-2 small text-muted fw-medium">
-                <div class="d-flex align-items-center">
+                <div class="d-flex align-items-center" title="Official Email">
+                  <i class="bi bi-envelope-check text-primary opacity-50 me-2" style="width: 16px;"></i>
+                  <span class="text-truncate">{{ emp.officialEmail || 'No official email' }}</span>
+                </div>
+                <div class="d-flex align-items-center" title="Personal (Login) Email">
                   <i class="bi bi-envelope text-primary opacity-50 me-2" style="width: 16px;"></i>
-                  <span class="text-truncate">{{ emp.officialEmail || emp.email }}</span>
+                  <span class="text-truncate">{{ emp.email }}</span>
                 </div>
                 <div class="d-flex align-items-center">
-                  <i class="bi bi-telephone text-primary opacity-50 me-2" style="width: 16px;"></i>
+                  <i class="bi bi-hash text-primary opacity-50 me-2" style="width: 16px;" title="Employee ID"></i>
                   <span>{{ emp.employeeNumber || '-' }}</span>
                 </div>
-                <div class="d-flex align-items-center">
+                <div class="d-flex align-items-center" title="Phone Number">
+                  <i class="bi bi-telephone text-primary opacity-50 me-2" style="width: 16px;"></i>
+                  <span>{{ emp.workPhone || 'No phone number' }}</span>
+                </div>
+                <div class="d-flex align-items-center" title="System Role">
+                  <i class="bi bi-shield-check text-primary opacity-50 me-2" style="width: 16px;"></i>
+                  <span>{{ emp.customRoleName || 'No system role' }}</span>
+                </div>
+                <div class="d-flex align-items-center" title="Hire Date">
                   <i class="bi bi-calendar3 text-primary opacity-50 me-2" style="width: 16px;"></i>
                   <span>{{ emp.hireDate ? (emp.hireDate | date: 'MMM d, y') : '-' }}</span>
                 </div>
                 <div class="d-flex align-items-center mt-2 pt-2 border-top">
-                  <i class="bi bi-cash-stack text-success opacity-75 me-2" style="width: 16px;"></i>
-                  <span class="fw-bold text-success">{{ (emp.basicSalary || 2000) | currency:'SAR ':'symbol':'1.0-0' }}</span>
+                  <span class="fw-bold text-success">{{ (emp.basicSalary || 15000) | currency:'BDT ':'symbol':'1.0-0' }}</span>
                   <span class="badge badge-soft-success ms-auto">{{ emp.employmentStatus }}</span>
                 </div>
               </div>
@@ -98,10 +114,10 @@
 <!-- Create employee modal -->
 @if (showForm) {
   <div class="modal d-block" tabindex="-1" style="background: rgba(0, 0, 0, 0.45); overflow-y: auto; overflow-x: hidden;">
-    <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 900px;">
       <div class="modal-content">
-        <form #f="ngForm" (ngSubmit)="f.valid && save()">
-          <div class="modal-header" style="background: linear-gradient(135deg, #1E1B4B, #4C1D95); color:#fff;">
+        <form #f="ngForm" (ngSubmit)="f.valid && form.password === confirmPassword && save()">
+          <div class="modal-header" style="background: linear-gradient(135deg, #111827, #4C1D95); color:#fff;">
             <h5 class="modal-title" style="color:#fff;">
               <i class="bi bi-person-plus me-2"></i>Add Employee
             </h5>
@@ -114,11 +130,11 @@
             <div class="row g-3">
               <div class="col-md-4">
                 <label class="form-label">First Name *</label>
-                <input class="form-control form-control-sm" name="firstName" [(ngModel)]="form.firstName" required minlength="2" maxlength="50" placeholder="Jane"/>
+                <input class="form-control form-control-sm" name="firstName" [(ngModel)]="form.firstName" required minlength="2" maxlength="50" placeholder="Enter First name."/>
               </div>
               <div class="col-md-4">
                 <label class="form-label">Last Name *</label>
-                <input class="form-control form-control-sm" name="lastName" [(ngModel)]="form.lastName" required minlength="2" maxlength="50" placeholder="Doe"/>
+                <input class="form-control form-control-sm" name="lastName" [(ngModel)]="form.lastName" required minlength="2" maxlength="50" placeholder="Enter Last name."/>
               </div>
               <div class="col-md-4">
                 <label class="form-label">Gender</label>
@@ -157,19 +173,36 @@
             <div class="row g-3">
               <div class="col-md-4">
                 <label class="form-label">Login Email *</label>
-                <input type="email" class="form-control form-control-sm" name="email" [(ngModel)]="form.email" required email placeholder="jane@company.com"/>
+                <input type="email" class="form-control form-control-sm" name="email" [(ngModel)]="form.email" required email placeholder="name@email.com"/>
               </div>
               <div class="col-md-4">
                 <label class="form-label">Official Email</label>
-                <input type="email" class="form-control form-control-sm" name="officialEmail" [(ngModel)]="form.officialEmail" email placeholder="jane&#64;acme.com"/>
+                <input type="email" class="form-control form-control-sm" name="officialEmail" [(ngModel)]="form.officialEmail" email placeholder="name@email.com"/>
               </div>
               <div class="col-md-4">
                 <label class="form-label">Work Phone</label>
-                <input class="form-control form-control-sm" name="workPhone" [(ngModel)]="form.workPhone" maxlength="30" placeholder="+1 555 0000"/>
+                <input class="form-control form-control-sm" name="workPhone" [(ngModel)]="form.workPhone" maxlength="30" placeholder="+880 1XXX XXXXXX"/>
               </div>
               <div class="col-md-6">
                 <label class="form-label">Password *</label>
-                <input type="password" class="form-control form-control-sm" name="password" [(ngModel)]="form.password" required minlength="8" placeholder="Min 8 chars"/>
+                <div class="input-group input-group-sm">
+                  <input [type]="showPassword ? 'text' : 'password'" class="form-control" name="password" [(ngModel)]="form.password" required minlength="8" placeholder="Min 8 chars"/>
+                  <button class="btn btn-outline-secondary" type="button" (click)="showPassword = !showPassword">
+                    <i class="bi" [class.bi-eye]="!showPassword" [class.bi-eye-slash]="showPassword"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Confirm Password *</label>
+                <div class="input-group input-group-sm">
+                  <input [type]="showConfirmPassword ? 'text' : 'password'" class="form-control" name="confirmPassword" [(ngModel)]="confirmPassword" required minlength="8" placeholder="Confirm password"/>
+                  <button class="btn btn-outline-secondary" type="button" (click)="showConfirmPassword = !showConfirmPassword">
+                    <i class="bi" [class.bi-eye]="!showConfirmPassword" [class.bi-eye-slash]="showConfirmPassword"></i>
+                  </button>
+                </div>
+                @if (form.password && confirmPassword && form.password !== confirmPassword) {
+                  <div class="text-danger small mt-1">Passwords do not match</div>
+                }
               </div>
               <div class="col-md-6">
                 <label class="form-label">Profile Picture</label>
@@ -209,6 +242,7 @@
               <div class="col-md-4">
                 <label class="form-label">Employment Status</label>
                 <select class="form-select form-select-sm" name="employmentStatus" [(ngModel)]="form.employmentStatus">
+                  <option [ngValue]="undefined">- Select Employment Status -</option>
                   <option value="PROBATION">Probation</option>
                   <option value="ACTIVE">Active</option>
                   <option value="ON_LEAVE">On Leave</option>
@@ -273,6 +307,47 @@
               </div>
             </div>
 
+            <!-- ── Section: Education Qualifications ────────────── -->
+            <div class="d-flex justify-content-between align-items-center mt-4">
+              <div class="section-label m-0">Education Qualifications</div>
+              <button type="button" class="btn btn-sm btn-light border text-primary" (click)="addQualification()">
+                <i class="bi bi-plus-lg me-1"></i>Add
+              </button>
+            </div>
+            
+            @for (qual of qualifications; track $index) {
+              <div class="border rounded p-3 bg-light mt-3 position-relative">
+                <button type="button" class="btn btn-sm btn-link text-danger position-absolute top-0 end-0 mt-2 me-2" (click)="removeQualification($index)">
+                  <i class="bi bi-x-lg"></i>
+                </button>
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <label class="form-label">Degree / Qualification Level *</label>
+                    <input class="form-control form-control-sm" [name]="'qualDegree'+$index" [(ngModel)]="qual.degree" required placeholder="BSc Computer Science">
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">Institution *</label>
+                    <input class="form-control form-control-sm" [name]="'qualInst'+$index" [(ngModel)]="qual.institution" required placeholder="University Name">
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label">Field of Study</label>
+                    <input class="form-control form-control-sm" [name]="'qualField'+$index" [(ngModel)]="qual.fieldOfStudy" placeholder="Software Engineering">
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label">Passing Year</label>
+                    <input type="number" class="form-control form-control-sm" [name]="'qualYear'+$index" [(ngModel)]="qual.passingYear" placeholder="2020">
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label">Result / Grade</label>
+                    <input class="form-control form-control-sm" [name]="'qualResult'+$index" [(ngModel)]="qual.result" placeholder="CGPA 3.8">
+                  </div>
+                </div>
+              </div>
+            }
+            @if (qualifications.length === 0) {
+              <div class="text-muted small mt-2">No education qualifications added.</div>
+            }
+
             <!-- ── Section: Compensation ──────────────────────── -->
             <div class="section-label mt-4">Compensation</div>
             <div class="row g-3">
@@ -312,11 +387,11 @@
             <div class="row g-3">
               <div class="col-md-4">
                 <label class="form-label">Contact Name</label>
-                <input class="form-control form-control-sm" name="emergencyContactName" [(ngModel)]="form.emergencyContactName" maxlength="100" placeholder="John Smith"/>
+                <input class="form-control form-control-sm" name="emergencyContactName" [(ngModel)]="form.emergencyContactName" maxlength="100" placeholder="Enter Contact Name"/>
               </div>
               <div class="col-md-4">
                 <label class="form-label">Contact Phone</label>
-                <input class="form-control form-control-sm" name="emergencyContactPhone" [(ngModel)]="form.emergencyContactPhone" maxlength="30" placeholder="+1 555 0000"/>
+                <input class="form-control form-control-sm" name="emergencyContactPhone" [(ngModel)]="form.emergencyContactPhone" maxlength="30" placeholder="+880 1XXX XXXXXX"/>
               </div>
               <div class="col-md-4">
                 <label class="form-label">Relation</label>
@@ -325,17 +400,10 @@
             </div>
             
             <!-- ── Section: Location Details ────────────────── -->
-            <div class="section-label mt-4">Location Details</div>
+            <div class="section-label mt-4 mb-3">Address</div>
             <div class="row g-3">
               <div class="col-12 mt-1">
-                <div class="border rounded p-3 bg-light">
-                  <app-location (formSubmit)="onLocationChange($event)"></app-location>
-                  @if (form.location) {
-                    <div class="alert alert-success mt-2 mb-0 py-1 px-2 small">
-                      <i class="bi bi-check-circle me-1"></i> Location captured: {{ form.location.country }}, {{ form.location.level1 }}
-                    </div>
-                  }
-                </div>
+                <app-location [showActions]="false"></app-location>
               </div>
             </div>
 

@@ -4,7 +4,12 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.*;
 import lombok.*;
 
-@Data @NoArgsConstructor @AllArgsConstructor @Builder
+// AllArgsConstructor access is package-private (not public) so Jackson can't use it as
+// a deserialization creator - a creator requires every constructor parameter, so a JSON
+// body omitting a primitive int/boolean field fails with "Cannot map null into type
+// int/boolean" before @Valid runs. Package-private forces the no-args+setters path,
+// which correctly leaves missing primitives at their Java default.
+@Data @NoArgsConstructor @AllArgsConstructor(access = AccessLevel.PACKAGE) @Builder
 public class ChartOfAccountRequest {
 
     @NotBlank(message = "Account code is required")

@@ -10,6 +10,7 @@ import { AuthService } from '../../../../core/services/auth.service';
 import { EmployeeService } from '../../../hrm/services/employee.service';
 import { Employee } from '../../../hrm/models/hrm.model';
 import { ApiService } from '../../../../core/services/api.service';
+import { HasPermissionDirective } from '../../../../shared/directives/has-permission.directive';
 
 // Mirror of backend ServiceRequestStatus / TaskStatus enums
 const REQUEST_STATUSES = ['PENDING', 'QUOTATION_PENDING', 'ASSIGNED', 'IN_PROGRESS',
@@ -18,7 +19,7 @@ const TASK_STATUSES = ['PENDING', 'IN_PROGRESS', 'COMPLETED', 'BLOCKED', 'CANCEL
 
 @Component({
   selector: 'app-request-detail',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, HasPermissionDirective],
   templateUrl: './request-detail.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './request-detail.scss',
@@ -52,11 +53,11 @@ export class RequestDetail implements OnInit {
   // Tasks (staff)
   tasks: any[] = [];
   taskStatuses = TASK_STATUSES;
-  newTask: any = { title: '' };
+  newTask: any = { title: '', assignedEmployeeId: null, dueDate: '', priority: 'NORMAL', estimatedHours: null, description: '' };
   showTaskForm = false;
 
   // Quotation (embedded on the service request - there is no standalone Quotation endpoint)
-  quotationForm = { amount: 0, currency: 'USD', notes: '', validUntil: '' };
+  quotationForm = { amount: 0, currency: 'BDT', notes: '', validUntil: '' };
   rejectReason = '';
 
   // Documents (client or staff can attach files - budget docs, requirements, deliverables)
@@ -99,6 +100,19 @@ export class RequestDetail implements OnInit {
     });
   }
 
+  isUrl(value: string): boolean {
+    if (!value || typeof value !== 'string') return false;
+    return value.startsWith('http://') || value.startsWith('https://');
+  }
+
+  isImageUrl(value: string): boolean {
+    if (!this.isUrl(value)) return false;
+    const lower = value.toLowerCase();
+    return lower.includes('.png') || lower.includes('.jpg') || lower.includes('.jpeg') || 
+           lower.includes('.gif') || lower.includes('.webp') || lower.includes('.svg') || 
+           lower.includes('cloudinary');
+  }
+
   ngOnInit(): void {
     this.requestId = Number(this.route.snapshot.paramMap.get('id'));
     this.isStaff = this.auth.hasAnyRole(['COMPANY_OWNER', 'EMPLOYEE']);
@@ -118,6 +132,7 @@ export class RequestDetail implements OnInit {
       next: (r) => {
         this.request = r;
         this.newStatus = r.status;
+        this.assignEmployeeId = r.assignedEmployeeId || null;
         this.resolveFormAnswers(r);
         this.cdr.markForCheck();
       },
@@ -140,10 +155,29 @@ export class RequestDetail implements OnInit {
     if (this.isStaff) {
       this.requestService.history(this.requestId).subscribe({ next: (h) => {
         this.history = h;
+        this.groupHistory();
         this.cdr.markForCheck();
       } });
       this.loadTasks();
     }
+  }
+
+  groupedHistory: { actorName: string; items: any[] }[] = [];
+  
+  groupHistory(): void {
+    this.groupedHistory = [];
+    if (!this.history?.length) return;
+    let currentGroup = { actorName: this.history[0].actorName, items: [this.history[0]] };
+    for (let i = 1; i < this.history.length; i++) {
+      const item = this.history[i];
+      if (item.actorName === currentGroup.actorName) {
+        currentGroup.items.push(item);
+      } else {
+        this.groupedHistory.push(currentGroup);
+        currentGroup = { actorName: item.actorName, items: [item] };
+      }
+    }
+    this.groupedHistory.push(currentGroup);
   }
 
   loadTasks(): void {
@@ -177,14 +211,15 @@ export class RequestDetail implements OnInit {
 
   assign(): void {
     if (!this.assignEmployeeId) return;
+    if (!confirm('Are you sure you want to assign this request to the selected employee?')) return;
     this.error = '';
     this.info = '';
     this.cdr.markForCheck();
     this.requestService.assign(this.requestId, this.assignEmployeeId).subscribe({
       next: (r) => {
         this.request = r;
-        this.assignEmployeeId = null;
-        this.info = 'Request assigned';
+        this.info = 'Assigned successfully';
+        this.loadAll();
         this.cdr.markForCheck();
       },
       error: (err) => {
@@ -216,10 +251,10 @@ export class RequestDetail implements OnInit {
   // ----- Tasks (staff) -----
 
   addTask(): void {
-    if (!this.newTask.title?.trim()) return;
+    if (!this.newTask.title?.trim() || !this.newTask.assignedEmployeeId || !this.newTask.dueDate) return;
     this.requestService.addTask(this.requestId, this.newTask).subscribe({
       next: () => {
-        this.newTask = { title: '' };
+        this.newTask = { title: '', assignedEmployeeId: null, dueDate: '', priority: 'NORMAL', estimatedHours: null, description: '' };
         this.showTaskForm = false;
         this.loadTasks();
         this.refreshRequestOnly();

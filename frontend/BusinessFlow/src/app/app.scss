@@ -1,0 +1,57 @@
+// ── Floating AI Assistant Button (FAB) ─────────────────────────────────────
+.ai-fab-btn {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: 1050;
+
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  padding: 12px 20px;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+
+  background: linear-gradient(135deg, #4F46E5 0%, #6366f1 60%, #818CF8 100%);
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+
+  box-shadow:
+    0 4px 18px rgba(79, 70, 229, 0.45),
+    0 2px 6px rgba(0, 0, 0, 0.15);
+
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  i {
+    font-size: 1.1rem;
+    animation: star-pulse 2.5s ease-in-out infinite;
+  }
+
+  .ai-fab-label {
+    white-space: nowrap;
+  }
+
+  &:hover {
+    transform: translateY(-3px) scale(1.04);
+    box-shadow:
+      0 8px 28px rgba(79, 70, 229, 0.55),
+      0 4px 10px rgba(0, 0, 0, 0.18);
+    background: linear-gradient(135deg, #4338CA 0%, #4F46E5 60%, #6366f1 100%);
+  }
+
+  &:active {
+    transform: translateY(-1px) scale(0.98);
+    box-shadow:
+      0 4px 12px rgba(79, 70, 229, 0.4),
+      0 2px 4px rgba(0, 0, 0, 0.12);
+  }
+}
+
+@keyframes star-pulse {
+  0%, 100% { opacity: 1; transform: scale(1) rotate(0deg); }
+  50% { opacity: 0.85; transform: scale(1.15) rotate(8deg); }
+}

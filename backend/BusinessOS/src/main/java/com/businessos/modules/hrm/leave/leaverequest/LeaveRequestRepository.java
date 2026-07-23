@@ -20,6 +20,8 @@ public interface LeaveRequestRepository extends JpaRepository<LeaveRequest, Long
     Page<LeaveRequest> findByCompanyIdAndStatus(
         Long companyId, LeaveRequestStatus status, Pageable pageable);
 
+    long countByCompanyIdAndStatus(Long companyId, LeaveRequestStatus status);
+
     Page<LeaveRequest> findByCompanyIdAndEmployeeId(
         Long companyId, Long employeeId, Pageable pageable);
 

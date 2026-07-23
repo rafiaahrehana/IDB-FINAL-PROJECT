@@ -1,48 +1,53 @@
 :host {
+  width: 240px;
+  flex-shrink: 0;
   height: 100%;
 }
 
 .nav-group-label {
   font-size: 0.65rem;
-  letter-spacing: 0.08em;
+  font-weight: 600;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #94a3b8;
-  padding: 0.75rem 1rem 0.25rem;
+  color: #F59E0B;
+  padding: 1.2rem 1rem 0.3rem;
 }
 
 .nav-link {
-  color: #64748b !important;
-  transition: all 0.2s ease-in-out;
+  color: #B4B7BE !important;
+  transition: all 0.15s ease-in-out;
   cursor: pointer;
   text-decoration: none;
-  font-size: 0.88rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 6px;
+  margin: 1px 8px;
+  padding: 0.55rem 0.85rem;
 
   i {
-    transition: transform 0.2s ease-in-out;
-    opacity: 0.75;
-    color: #94a3b8;
+    transition: color 0.15s ease-in-out;
+    color: rgba(180, 183, 190, 0.55);
+    width: 18px;
+    text-align: center;
     margin-right: 0.5rem;
   }
 
   &:hover {
-    background-color: rgba(241, 245, 249, 0.8);
-    color: #0f172a !important;
+    background-color: rgba(255, 255, 255, 0.06);
+    color: #fff !important;
 
     i {
-      transform: scale(1.05);
-      color: var(--bs-primary) !important;
-      opacity: 1;
+      color: rgba(255, 255, 255, 0.85) !important;
     }
   }
 
   &.active {
-    background-color: rgba(13, 110, 253, 0.08) !important;
-    color: var(--bs-primary) !important;
-    font-weight: 600 !important;
+    background-color: #4F46E5 !important;
+    color: #fff !important;
+    font-weight: 600;
 
     i {
-      color: var(--bs-primary) !important;
-      opacity: 1;
+      color: #fff !important;
     }
   }
 }

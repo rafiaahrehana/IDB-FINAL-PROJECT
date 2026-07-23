@@ -5,12 +5,52 @@
     <!-- Provider Config -->
     <div class="col-lg-6">
       <div class="card">
-        <div class="card-header py-2 fw-semibold">Provider Configuration</div>
+        <div class="card-header py-2 d-flex justify-content-between align-items-center">
+          <span class="fw-semibold">Provider Configuration</span>
+          @if (!showForm) {
+          <button class="btn btn-primary btn-sm" (click)="openAddNew()"><i class="bi bi-plus-lg me-1"></i>Configure New Model</button>
+          }
+        </div>
         <div class="card-body">
           @if (configError) { <div class="alert alert-danger py-2">{{ configError }}</div> }
+
+          @if (loadingConfigs) {
+          <div class="text-muted small">Loading…</div>
+          }
+
+          @if (!loadingConfigs && !showForm) {
+            @if (configs.length) {
+            <div class="list-group list-group-flush">
+              @for (c of configs; track c.id) {
+              <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                <div>
+                  <div class="fw-semibold small d-flex align-items-center gap-2">
+                    {{ c.provider }} · {{ c.model }}
+                    @if (c.active) { <span class="badge rounded-pill text-bg-success">Active</span> }
+                  </div>
+                  <div class="text-muted" style="font-size:.75rem">Temp {{ c.temperature }} · Max tokens {{ c.maxTokens }}</div>
+                </div>
+                <div class="d-flex gap-1">
+                  @if (!c.active) {
+                  <button class="btn btn-outline-success btn-sm" (click)="activate(c)" title="Make active"><i class="bi bi-check-lg"></i></button>
+                  }
+                  <button class="btn btn-outline-secondary btn-sm" (click)="openEdit(c)" title="Edit"><i class="bi bi-pencil"></i></button>
+                  @if (!c.active) {
+                  <button class="btn btn-outline-danger btn-sm" (click)="deleteConfig(c)" title="Delete"><i class="bi bi-trash"></i></button>
+                  }
+                </div>
+              </div>
+              }
+            </div>
+            } @else {
+            <div class="text-muted small">No models configured yet — click "Configure New Model" to add one.</div>
+            }
+          }
+
+          @if (showForm) {
           <div class="mb-2">
             <label class="form-label small text-muted">Provider</label>
-            <select class="form-select form-select-sm" [(ngModel)]="config.aiProviderType">
+            <select class="form-select form-select-sm" [(ngModel)]="config.aiProviderType" [disabled]="editingConfigId !== null">
               @for (p of providers; track p) { <option [value]="p">{{ p }}</option> }
             </select>
           </div>
@@ -38,6 +78,8 @@
             @if (savingConfig) { <span class="spinner-border spinner-border-sm me-1"></span> Saving... }
             @else { Save Config }
           </button>
+          <button class="btn btn-secondary btn-sm ms-1" (click)="cancelConfigure()" [disabled]="savingConfig">Cancel</button>
+          }
         </div>
       </div>
     </div>

@@ -1,5 +1,13 @@
 <div class="container-fluid py-3">
-  <h4 class="mb-3">Pending Approvals</h4>
+  <div class="page-hero">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+      <div>
+        <div class="page-hero-label">SERVICE DESK</div>
+        <h4 class="page-hero-title underline-rose">Pending Approvals</h4>
+        <div class="page-hero-subtitle">Review and approve service request workflow stages.</div>
+      </div>
+    </div>
+  </div>
   @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
   @if (loading) { <app-loader /> }
 

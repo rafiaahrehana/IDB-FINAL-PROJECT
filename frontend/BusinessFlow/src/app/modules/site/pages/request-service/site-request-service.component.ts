@@ -26,7 +26,7 @@ import { BreadcrumbComponent } from '../../components/breadcrumb/breadcrumb.comp
             <p class="text-muted">Your tracking code is:</p>
             <div class="code-box mb-3">{{ code }}</div>
             <p class="small text-muted">Save this code to track your request status.</p>
-            <a routerLink="/track-request" class="btn btn-outline-dark mt-2" style="border-radius: var(--site-btn-radius)">Track Request</a>
+            <a [routerLink]="basePath + '/track-request'" class="btn btn-outline-dark mt-2" style="border-radius: var(--site-btn-radius)">Track Request</a>
           </div>
         } @else {
           <div class="card border-0 shadow-sm p-4" style="border-radius: var(--site-radius)">
@@ -78,6 +78,7 @@ import { BreadcrumbComponent } from '../../components/breadcrumb/breadcrumb.comp
 })
 export class SiteRequestServicePage implements OnInit {
   private siteService = inject(SiteService);
+  basePath = this.siteService.getBasePath();
   services: Service[] = [];
   form: { name: string; email: string; phone: string; message: string; serviceId?: number } = { name: '', email: '', phone: '', message: '' };
   submitting = false;

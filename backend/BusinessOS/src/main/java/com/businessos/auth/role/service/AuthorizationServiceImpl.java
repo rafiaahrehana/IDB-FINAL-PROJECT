@@ -9,6 +9,10 @@ import com.businessos.security.SecurityUtil;
 import com.businessos.shared.exception.ForbiddenException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Arrays;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -23,6 +27,16 @@ public class AuthorizationServiceImpl implements AuthorizationService {
         if (!hasPermission(permission)) {
             throw new ForbiddenException("You do not have permission: " + permission);
         }
+    }
+
+    @Override
+    public void checkAnyPermission(PermissionCode... permissions) {
+        for (PermissionCode permission : permissions) {
+            if (hasPermission(permission)) {
+                return;
+            }
+        }
+        throw new ForbiddenException("You do not have any of the required permissions: " + Arrays.toString(permissions));
     }
 
     @Override
@@ -60,9 +74,44 @@ public class AuthorizationServiceImpl implements AuthorizationService {
         return switch (permission) {
             case COMPANY_VIEW, COMPANY_UPDATE,
                     USER_VIEW, USER_CREATE, USER_UPDATE, USER_DELETE,
-                    AI_ADMIN ->
+                    AI_ADMIN,
+                    TICKET_VIEW, SUPPORT_MESSAGE_VIEW, SUPPORT_CATEGORY_VIEW,
+                    SLA_POLICY_VIEW, AUDIT_LOG_VIEW ->
                 true;
             default -> false;
         };
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<String> getMyPermissionCodes() {
+        User user = securityUtil.getCurrentUser();
+        if (user == null) {
+            return List.of();
+        }
+
+        // Mirrors hasPermission() above: impersonation and COMPANY_OWNER both act as
+        // "everything" - enumerate every known code rather than a single wildcard string
+        // so the frontend's hasPermission(code) check stays a plain list-membership test
+        // with no special-casing needed for the owner.
+        if (securityUtil.isImpersonating() || user.getRole() == Role.COMPANY_OWNER) {
+            return Arrays.stream(PermissionCode.values()).map(Enum::name).toList();
+        }
+
+        if (user.getRole() == Role.SUPER_ADMIN || user.getRole() == Role.SYSTEM_ADMIN) {
+            return Arrays.stream(PermissionCode.values())
+                    .filter(this::isPlatformPermission)
+                    .map(Enum::name)
+                    .toList();
+        }
+
+        CustomRole role = user.getCustomRole();
+        if (role == null) {
+            return List.of();
+        }
+
+        return rolePermissionRepository.findByCustomRoleId(role.getId()).stream()
+                .map(rp -> rp.getPermission().getCode())
+                .toList();
     }
 }

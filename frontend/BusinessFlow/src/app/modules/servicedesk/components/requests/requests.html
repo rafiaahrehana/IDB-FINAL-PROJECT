@@ -1,17 +1,24 @@
 <div class="container-fluid py-3">
-  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-    <h4 class="mb-0">Service Requests</h4>
-    <div class="d-flex gap-2 align-items-center">
-      <ul class="nav nav-pills nav-sm">
-        @for (t of tabs; track t.key) {
-        <li class="nav-item"><a class="nav-link py-1" role="button" [class.active]="tab === t.key" (click)="setTab(t.key)">{{ t.label }}</a></li>
+  <div class="page-hero">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+      <div>
+        <div class="page-hero-label">SERVICE DESK</div>
+        <h4 class="page-hero-title underline-rose">Requests</h4>
+      </div>
+      <div class="page-hero-actions">
+        @if (!isClient) {
+        <ul class="nav nav-pills nav-sm">
+          @for (t of tabs; track t.key) {
+          <li class="nav-item"><a class="nav-link py-1" role="button" [class.active]="tab === t.key" (click)="setTab(t.key)">{{ t.label }}</a></li>
+          }
+        </ul>
         }
-      </ul>
-      @if (isClient) {
-      <button class="btn btn-primary btn-sm text-nowrap" (click)="openCreate()">
-        <i class="bi bi-rocket-takeoff me-1"></i>Initialize Project
-      </button>
-      }
+        @if (isClient) {
+        <button class="btn-hero-primary" (click)="openCreate()">
+          <i class="bi bi-plus-circle"></i> Initialize Project
+        </button>
+        }
+      </div>
     </div>
   </div>
 
@@ -24,7 +31,7 @@
   <div class="card">
     <div class="table-responsive">
       <table class="table table-hover table-sm align-middle mb-0">
-        <thead class="table-light">
+        <thead>
           <tr>
             <th>Request</th><th>Service</th><th>Client</th><th>Status</th>
             <th>Priority</th><th>SLA</th><th>Tasks</th><th>Assigned To</th>
@@ -61,7 +68,7 @@
   <div class="modal d-block" tabindex="-1" style="background: rgba(0,0,0,.4)">
     <div class="modal-dialog modal-lg modal-dialog-centered">
       <div class="modal-content">
-        <div class="modal-header">
+        <div class="modal-header py-2" style="background: linear-gradient(135deg, #111827, #4C1D95); color: #fff;">
           <h5 class="modal-title fs-6 fw-semibold">New Service Request</h5>
           <button type="button" class="btn-close" (click)="showForm = false"></button>
         </div>

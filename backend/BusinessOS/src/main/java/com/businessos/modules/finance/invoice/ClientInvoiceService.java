@@ -8,7 +8,20 @@ import com.businessos.enums.InvoiceStatus;
 public interface ClientInvoiceService {
 
     ClientInvoiceResponse create(ClientInvoiceRequest request);
+
+    /**
+     * System entry point for auto-generating an invoice as a side effect of a
+     * client's own authorized action (e.g. submitting a paid service request) -
+     * skips the staff-only INVOICE_CREATE permission check that create() enforces.
+     */
+    ClientInvoiceResponse createForServiceRequest(Long companyId, ClientInvoiceRequest request);
     ClientInvoiceResponse getById(Long id);
+
+    /**
+     * Renders the invoice as a PDF. Staff (INVOICE_VIEW) may download any invoice in
+     * their company; a CLIENT may only download their own.
+     */
+    byte[] generatePdf(Long id);
     ClientInvoiceResponse getByInvoiceNumber(String number);
     Page<ClientInvoiceResponse> getAll(Pageable pageable);
     Page<ClientInvoiceResponse> getByStatus(InvoiceStatus status, Pageable pageable);
@@ -18,6 +31,9 @@ public interface ClientInvoiceService {
     Page<ClientInvoiceResponse> getMyInvoices(Pageable pageable);
     ClientInvoiceResponse update(Long id, ClientInvoiceRequest request);
     void sendInvoice(Long id);
+
+    /** Same system-entry-point exemption as createForServiceRequest() - see its javadoc. */
+    void sendInvoiceForServiceRequest(Long id);
     void recordPayment(Long id, java.math.BigDecimal amount);
 
     /** System entry point (e.g. payment gateway callbacks) - no security context. */
@@ -30,4 +46,21 @@ public interface ClientInvoiceService {
 
     /** DRAFT only - anything already sent/posted must go through cancelInvoice(). */
     void delete(Long id);
+
+    /**
+     * System entry point called when a client cancels their own service request
+     * (see ServiceRequestServiceImpl#cancel). If the invoice was already fully
+     * PAID, files a Refund request for staff review instead of touching the
+     * ledger; otherwise cancels and reverses it immediately, same as cancelInvoice().
+     */
+    void cancelOrRefundForServiceRequest(Long companyId, Long invoiceId);
+
+    /** Pending (or any status) refund requests for staff review - permission INVOICE_VIEW. */
+    Page<RefundResponse> listRefunds(com.businessos.enums.RefundStatus status, Pageable pageable);
+
+    /** Reverses the invoice's GL postings (cash actually leaves the company's books) and marks it REFUNDED. */
+    void processRefund(Long refundId);
+
+    /** Leaves the invoice untouched (still PAID) - no money moves. */
+    void rejectRefund(Long refundId, String reason);
 }

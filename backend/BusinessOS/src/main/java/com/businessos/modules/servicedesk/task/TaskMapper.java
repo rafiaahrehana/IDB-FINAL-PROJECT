@@ -20,6 +20,7 @@ public class TaskMapper {
         r.setDueDate(task.getDueDate());
         r.setSlaDeadline(task.getSlaDeadline());
         r.setCompletedAt(task.getCompletedAt());
+        r.setEstimatedHours(task.getEstimatedHours());
         r.setServiceRequestId(task.getServiceRequest() != null ? task.getServiceRequest().getId() : null);
         r.setAssignedEmployeeId(assigned != null ? assigned.getId() : null);
         r.setAssignedEmployeeName(assigned != null && assigned.getUser() != null

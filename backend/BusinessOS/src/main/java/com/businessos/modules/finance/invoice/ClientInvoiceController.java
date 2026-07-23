@@ -12,6 +12,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import com.businessos.enums.InvoiceStatus;
+import com.businessos.enums.RefundStatus;
 
 @RestController
 @RequestMapping("/api/company/finance/invoices")
@@ -33,6 +34,17 @@ public class ClientInvoiceController {
     @Operation(summary = "Get Invoice by ID")
     public ResponseEntity<ClientInvoiceResponse> getById(@PathVariable Long id) {
         return ResponseEntity.ok(service.getById(id));
+    }
+
+    @GetMapping("/{id}/pdf")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE', 'CLIENT')")
+    @Operation(summary = "Download the invoice as a PDF (staff: any invoice in their company; client: only their own)")
+    public ResponseEntity<byte[]> downloadPdf(@PathVariable Long id) {
+        byte[] pdf = service.generatePdf(id);
+        return ResponseEntity.ok()
+                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=invoice-" + id + ".pdf")
+                .contentType(org.springframework.http.MediaType.APPLICATION_PDF)
+                .body(pdf);
     }
 
     @GetMapping("/me")
@@ -128,5 +140,31 @@ public class ClientInvoiceController {
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         service.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/refunds")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
+    @Operation(summary = "List refund requests (from clients cancelling an already-paid service request)")
+    public ResponseEntity<Page<RefundResponse>> listRefunds(
+            @RequestParam(required = false) RefundStatus status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(service.listRefunds(status, PageRequest.of(page, size)));
+    }
+
+    @PostMapping("/refunds/{id}/process")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
+    @Operation(summary = "Process a refund request (reverses the invoice's GL postings, marks it REFUNDED)")
+    public ResponseEntity<Void> processRefund(@PathVariable Long id) {
+        service.processRefund(id);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/refunds/{id}/reject")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
+    @Operation(summary = "Reject a refund request (invoice stays PAID, no money moves)")
+    public ResponseEntity<Void> rejectRefund(@PathVariable Long id, @RequestParam(required = false) String reason) {
+        service.rejectRefund(id, reason);
+        return ResponseEntity.ok().build();
     }
 }

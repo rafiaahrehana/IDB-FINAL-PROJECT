@@ -7,6 +7,8 @@ import com.businessos.shared.exception.BadRequestException;
 import com.businessos.shared.exception.ResourceNotFoundException;
 
 import com.businessos.modules.hrm.employee.EmployeeRepository;
+import com.businessos.auth.role.enums.PermissionCode;
+import com.businessos.auth.role.service.AuthorizationService;
 import com.businessos.security.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 
@@ -27,10 +29,12 @@ public class AssetServiceImpl implements AssetService {
     private final EmployeeRepository employeeRepository;
     private final AssetAssignmentHistoryRepository historyRepository;
     private final SecurityUtil securityUtil;
+    private final AuthorizationService authorizationService;
 
     @Override
     @Transactional
     public AssetResponse create(AssetRequest request) {
+        authorizationService.checkPermission(PermissionCode.HARDWARE_CREATE);
         Long companyId = requireCompanyId();
         Asset asset = new Asset(); asset.setName(request.getName()); asset.setCategory(request.getCategory()); asset.setSerialNumber(request.getSerialNumber()); asset.setNotes(request.getDescription()); asset.setPurchaseDate(request.getPurchaseDate()); asset.setPurchasePrice(request.getPurchaseCost()); asset.setStatus(AssetStatus.AVAILABLE); asset.setCompany(companyRef(companyId));
         asset.setAssetTag(request.getAssetTag());
@@ -63,9 +67,12 @@ public class AssetServiceImpl implements AssetService {
         return AssetMapper.toAssetResponse(findInTenant(id));
     }
 
+    // This single endpoint backs both the ITAM Hardware admin page and the HRM Assets
+    // page, so either permission unlocks it.
     @Override
     @Transactional(readOnly = true)
     public Page<AssetResponse> listAll(AssetStatus status, Pageable pageable) {
+        authorizationService.checkAnyPermission(PermissionCode.HARDWARE_VIEW, PermissionCode.ASSET_VIEW);
         Long companyId = requireCompanyId();
         Page<Asset> page = status != null
             ? assetRepository.findByCompanyIdAndStatus(companyId, status, pageable)
@@ -83,6 +90,7 @@ public class AssetServiceImpl implements AssetService {
     @Override
     @Transactional
     public AssetResponse update(Long id, AssetRequest request) {
+        authorizationService.checkPermission(PermissionCode.HARDWARE_UPDATE);
         Asset asset = findInTenant(id);
         if (request.getName()         != null) asset.setName(request.getName());
         if (request.getCategory()     != null) asset.setCategory(request.getCategory());
@@ -107,6 +115,7 @@ public class AssetServiceImpl implements AssetService {
     @Override
     @Transactional
     public AssetResponse assign(Long id, Long employeeId) {
+        authorizationService.checkPermission(PermissionCode.HARDWARE_UPDATE);
         Long companyId = requireCompanyId();
         Asset asset = findInTenant(id);
         if (asset.getStatus() == AssetStatus.ASSIGNED) {
@@ -124,6 +133,7 @@ public class AssetServiceImpl implements AssetService {
     @Override
     @Transactional
     public AssetResponse unassign(Long id) {
+        authorizationService.checkPermission(PermissionCode.HARDWARE_UPDATE);
         Long companyId = requireCompanyId();
         Asset asset = findInTenant(id);
         if (asset.getStatus() != AssetStatus.ASSIGNED) {
@@ -144,6 +154,7 @@ public class AssetServiceImpl implements AssetService {
     @Override
     @Transactional
     public void delete(Long id) {
+        authorizationService.checkPermission(PermissionCode.HARDWARE_DELETE);
         Asset asset = findInTenant(id);
         if (asset.getStatus() == AssetStatus.ASSIGNED) {
             throw new BadRequestException("Cannot delete an assigned asset. Unassign it first.");

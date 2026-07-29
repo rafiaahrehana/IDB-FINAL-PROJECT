@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -42,7 +43,7 @@ public class TimesheetServiceImpl implements TimesheetService {
             throw new BadRequestException("Timesheet already logged for " + request.getWorkDate());
         }
 
-        Timesheet ts = new Timesheet(); ts.setEmployee(employee); ts.setCompany(companyRef(companyId)); ts.setWorkDate(request.getWorkDate()); ts.setStartTime(request.getStartTime() != null ? request.getStartTime().toLocalTime() : null); ts.setEndTime(request.getEndTime() != null ? request.getEndTime().toLocalTime() : null); ts.setHoursWorked(request.getHoursWorked()); ts.setBillableHours(request.getBillableHours() != null ? request.getBillableHours() : 0.0); ts.setWorkSummary(request.getDescription());
+        Timesheet ts = new Timesheet(); ts.setEmployee(employee); ts.setCompany(companyRef(companyId)); ts.setWorkDate(request.getWorkDate()); ts.setStartTime(request.getStartTime() != null ? request.getStartTime().toLocalTime() : null); ts.setEndTime(request.getEndTime() != null ? request.getEndTime().toLocalTime() : null); ts.setHoursWorked(request.getHoursWorked()); ts.setBillableHours(request.getBillableHours() != null ? request.getBillableHours() : 0.0); ts.setWorkSummary(request.getDescription()); ts.setProjectName(request.getProjectName()); ts.setTaskDescription(request.getTaskDescription());
 
         if (request.getTaskId() != null) {
             Task task = taskRepository.findByIdAndCompanyId(request.getTaskId(), companyId)
@@ -94,11 +95,16 @@ public class TimesheetServiceImpl implements TimesheetService {
         if (ts.isApproved()) {
             throw new BadRequestException("Cannot edit an approved timesheet");
         }
+        if (ts.isSubmitted()) {
+            throw new BadRequestException("Cannot edit a timesheet that has been submitted for review");
+        }
         if (request.getStartTime()    != null) ts.setStartTime(request.getStartTime().toLocalTime());
         if (request.getEndTime()      != null) ts.setEndTime(request.getEndTime().toLocalTime());
         if (request.getHoursWorked()  != null) ts.setHoursWorked(request.getHoursWorked());
         if (request.getBillableHours()!= null) ts.setBillableHours(request.getBillableHours());
         if (request.getDescription()  != null) ts.setWorkSummary(request.getDescription());
+        if (request.getProjectName()  != null) ts.setProjectName(request.getProjectName());
+        if (request.getTaskDescription() != null) ts.setTaskDescription(request.getTaskDescription());
         if (request.getTaskId() != null) {
             // Task relation removed from timesheet
         }
@@ -107,9 +113,25 @@ public class TimesheetServiceImpl implements TimesheetService {
 
     @Override
     @Transactional
+    public int submitForReview() {
+        Long companyId = requireCompanyId();
+        Employee employee = employeeRepository.findByUserId(securityUtil.getCurrentUser().getId())
+            .orElseThrow(() -> new BadRequestException("Employee profile not found"));
+        List<Timesheet> draft = timesheetRepository.findByCompanyIdAndEmployeeIdAndSubmittedFalseAndApprovedFalse(
+            companyId, employee.getId());
+        LocalDateTime now = LocalDateTime.now();
+        draft.forEach(ts -> { ts.setSubmitted(true); ts.setSubmittedAt(now); });
+        return draft.size();
+    }
+
+    @Override
+    @Transactional
     public TimesheetResponse approve(Long id) {
         authorizationService.checkPermission(PermissionCode.TIMESHEET_APPROVE);
         Timesheet ts = findInTenant(id);
+        if (!ts.isSubmitted()) {
+            throw new BadRequestException("This timesheet has not been submitted for review yet");
+        }
         Employee approver = employeeRepository.findByUserId(securityUtil.getCurrentUser().getId())
             .orElseThrow(() -> new BadRequestException("Employee profile not found"));
         ts.setApproved(true);
@@ -123,6 +145,7 @@ public class TimesheetServiceImpl implements TimesheetService {
     public void delete(Long id) {
         Timesheet ts = findInTenant(id);
         if (ts.isApproved()) throw new BadRequestException("Cannot delete an approved timesheet");
+        if (ts.isSubmitted()) throw new BadRequestException("Cannot delete a timesheet that has been submitted for review");
         ts.softDelete();
     }
 

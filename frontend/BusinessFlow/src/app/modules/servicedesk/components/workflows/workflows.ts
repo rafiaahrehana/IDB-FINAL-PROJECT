@@ -40,6 +40,11 @@ export class Workflows implements OnInit {
   deleteTarget: WorkflowTemplate | null = null;
   deleteStageId: number | null = null;
 
+  suggestGoal = '';
+  suggesting = false;
+  suggestion = '';
+  suggestError = '';
+
   constructor(private workflowService: WorkflowService, private cdr: ChangeDetectorRef) {}
 
   // LIFECYCLE HOOKS
@@ -158,4 +163,24 @@ export class Workflows implements OnInit {
 
   // PAGINATION
   goToPage(p: number): void { this.page = p; this.load(); }
+
+  // AI SUGGESTION
+  suggestWorkflow(): void {
+    if (!this.suggestGoal.trim() || this.suggesting) return;
+    this.suggesting = true;
+    this.suggestError = '';
+    this.cdr.markForCheck();
+    this.workflowService.suggest(this.suggestGoal.trim()).subscribe({
+      next: (res) => {
+        this.suggestion = res.suggestion;
+        this.suggesting = false;
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        this.suggestError = err?.error?.message || 'Failed to generate suggestion';
+        this.suggesting = false;
+        this.cdr.markForCheck();
+      },
+    });
+  }
 }

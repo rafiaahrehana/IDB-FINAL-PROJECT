@@ -1,20 +1,14 @@
 <div class="container-fluid py-3">
-  <div class="page-hero">
-    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
-      <div>
-        <div class="page-hero-label">HRM</div>
-        <h4 class="page-hero-title underline-mint">Salary Structures</h4>
-        <div class="page-hero-subtitle">Configure compensation and salary history</div>
-      </div>
-      <div class="page-hero-actions">
-        <select class="form-select form-select-sm" style="width: 240px" [(ngModel)]="selectedEmployeeId" (change)="load()">
-          <option [ngValue]="null" disabled>Select employee</option>
-          @for (e of employees; track e.id) { <option [ngValue]="e.id">{{ e.firstName }} {{ e.lastName }}</option> }
-        </select>
-        <button *appHasPermission="'SALARY_STRUCTURE_CREATE'" class="btn btn-hero-primary" [disabled]="!selectedEmployeeId" (click)="openCreate()">
-          <i class="bi bi-plus-circle"></i> New Structure
-        </button>
-      </div>
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2 p-3 rounded-3 shadow-sm page-header-bar">
+    <h4 class="mb-0">Salary Structures</h4>
+    <div class="d-flex gap-2">
+      <select class="form-select form-select-sm" style="width: 240px" [(ngModel)]="selectedEmployeeId" (change)="load()">
+        <option [ngValue]="null" disabled>Select employee</option>
+        @for (e of employees; track e.id) { <option [ngValue]="e.id">{{ e.firstName }} {{ e.lastName }}</option> }
+      </select>
+      <button *appHasPermission="'SALARY_STRUCTURE_CREATE'" class="btn btn-primary btn-sm text-nowrap" [disabled]="!selectedEmployeeId" (click)="openCreate()">
+        <i class="bi bi-plus-lg me-1"></i>New Structure
+      </button>
     </div>
   </div>
 
@@ -26,7 +20,7 @@
   <div class="card">
     <div class="table-responsive">
       <table class="table table-hover table-sm align-middle mb-0">
-        <thead>
+        <thead class="table-light">
           <tr>
             <th>Effective From</th><th>Effective To</th>
             <th class="text-end">Gross</th><th class="text-end">Basic</th>
@@ -50,7 +44,10 @@
             <td class="text-end">{{ (s.taxDeduction ?? 0) | number:'1.2-2' }}</td>
             <td class="text-end fw-semibold">{{ s.netSalary | number:'1.2-2' }}</td>
             <td>{{ s.approvedByName || '-' }}</td>
-            <td class="text-end">
+            <td class="text-end text-nowrap">
+              @if (isCurrent(s)) {
+                <button *appHasPermission="'SALARY_STRUCTURE_CREATE'" class="btn btn-outline-secondary btn-sm py-0 me-1" title="Edit current structure" (click)="openEdit(s)"><i class="bi bi-pencil"></i></button>
+              }
               <button *appHasPermission="'SALARY_STRUCTURE_DELETE'" class="btn btn-outline-danger btn-sm py-0" title="Delete" (click)="deleteTarget = s"><i class="bi bi-trash"></i></button>
             </td>
           </tr>
@@ -74,63 +71,97 @@
   <div class="modal-dialog modal-lg modal-dialog-centered">
     <div class="modal-content">
       <form #f="ngForm" (ngSubmit)="f.valid && save()">
-        <div class="modal-header" style="background: #4F46E5; color:#fff;">
-          <h5 class="modal-title" style="color:#fff;">New Salary Structure</h5>
-          <button type="button" class="btn-close btn-close-white" (click)="showForm = false"></button>
+        <div class="modal-header">
+          <h5 class="modal-title">{{ editingId ? 'Edit Salary Structure' : 'New Salary Structure' }}</h5>
+          <button type="button" class="btn-close" (click)="showForm = false"></button>
         </div>
         <div class="modal-body">
           <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label">Auto-breakup <span class="text-muted fw-normal">(optional)</span></label>
+              <div class="d-flex gap-2 align-items-center flex-wrap">
+                <select class="form-select form-select-sm" style="max-width: 260px" name="breakupPreset" [(ngModel)]="selectedPreset" (ngModelChange)="applyBreakup()">
+                  <option value="">Manual entry</option>
+                  @for (p of breakupPresets; track p.key) { <option [value]="p.key">{{ p.label }}</option> }
+                </select>
+                <span class="form-text mb-0">Pick a preset to split Gross into components, or just type the components — Gross updates to their sum automatically.</span>
+              </div>
+            </div>
             <div class="col-md-4">
               <label class="form-label">Effective From *</label>
               <input type="date" class="form-control form-control-sm" name="effectiveFrom" [(ngModel)]="form.effectiveFrom" required>
             </div>
             <div class="col-md-4">
-              <label class="form-label">Gross Salary *</label>
-              <input type="number" class="form-control form-control-sm" name="grossSalary" [(ngModel)]="form.grossSalary" required min="0.01" step="0.01">
+              <label class="form-label">Gross Salary * <span class="text-muted fw-normal">(auto)</span></label>
+              <input type="number" class="form-control form-control-sm" name="grossSalary" [(ngModel)]="form.grossSalary" (ngModelChange)="applyBreakup()" required min="0.01" step="0.01">
             </div>
             <div class="col-md-4">
               <label class="form-label">Basic Salary *</label>
-              <input type="number" class="form-control form-control-sm" name="basicSalary" [(ngModel)]="form.basicSalary" required min="0.01" step="0.01">
+              <input type="number" class="form-control form-control-sm" name="basicSalary" [(ngModel)]="form.basicSalary" (ngModelChange)="syncGross()" [placeholder]="pctHint('basic')" required min="0.01" step="0.01">
             </div>
             <div class="col-md-3">
               <label class="form-label">House Rent</label>
-              <input type="number" class="form-control form-control-sm" name="houseRent" [(ngModel)]="form.houseRent" min="0">
+              <input type="number" class="form-control form-control-sm" name="houseRent" [(ngModel)]="form.houseRent" (ngModelChange)="syncGross()" [placeholder]="pctHint('houseRent')" min="0">
             </div>
             <div class="col-md-3">
               <label class="form-label">Medical</label>
-              <input type="number" class="form-control form-control-sm" name="medicalAllowance" [(ngModel)]="form.medicalAllowance" min="0">
+              <input type="number" class="form-control form-control-sm" name="medicalAllowance" [(ngModel)]="form.medicalAllowance" (ngModelChange)="syncGross()" [placeholder]="pctHint('medical')" min="0">
             </div>
             <div class="col-md-3">
               <label class="form-label">Transport</label>
-              <input type="number" class="form-control form-control-sm" name="transportAllowance" [(ngModel)]="form.transportAllowance" min="0">
+              <input type="number" class="form-control form-control-sm" name="transportAllowance" [(ngModel)]="form.transportAllowance" (ngModelChange)="syncGross()" [placeholder]="pctHint('transport')" min="0">
             </div>
             <div class="col-md-3">
               <label class="form-label">Food</label>
-              <input type="number" class="form-control form-control-sm" name="foodAllowance" [(ngModel)]="form.foodAllowance" min="0">
+              <input type="number" class="form-control form-control-sm" name="foodAllowance" [(ngModel)]="form.foodAllowance" (ngModelChange)="syncGross()" [placeholder]="pctHint('food')" min="0">
             </div>
             <div class="col-md-4">
               <label class="form-label">Special Allowance</label>
-              <input type="number" class="form-control form-control-sm" name="specialAllowance" [(ngModel)]="form.specialAllowance" min="0">
+              <input type="number" class="form-control form-control-sm" name="specialAllowance" [(ngModel)]="form.specialAllowance" (ngModelChange)="syncGross()" placeholder="raises gross" min="0">
             </div>
             <div class="col-md-4">
               <label class="form-label">Provident Fund</label>
-              <input type="number" class="form-control form-control-sm" name="providentFund" [(ngModel)]="form.providentFund" min="0">
+              <input type="number" class="form-control form-control-sm" name="providentFund" [(ngModel)]="form.providentFund" [placeholder]="(pfRate * 100) + '% of basic'" min="0">
             </div>
             <div class="col-md-4">
-              <label class="form-label">Tax Deduction</label>
-              <input type="number" class="form-control form-control-sm" name="taxDeduction" [(ngModel)]="form.taxDeduction" min="0">
+              <label class="form-label">Tax</label>
+              <div class="input-group input-group-sm">
+                <input type="number" class="form-control" name="taxRatePct" [(ngModel)]="taxRatePct" (ngModelChange)="applyTax()" min="0" max="100" step="0.1" placeholder="%" title="Tax as % of Gross">
+                <span class="input-group-text">%</span>
+                <input type="number" class="form-control" name="taxDeduction" [(ngModel)]="form.taxDeduction" min="0" placeholder="Amount" title="Tax amount">
+              </div>
+              <div class="form-text">Enter a % of Gross, or type the amount directly.</div>
             </div>
             <div class="col-12">
               <label class="form-label">Notes</label>
               <textarea class="form-control form-control-sm" name="notes" [(ngModel)]="form.notes" rows="2"></textarea>
             </div>
           </div>
+
+          <!-- Live earnings / net summary -->
+          <div class="mt-3 p-3 rounded-3" style="background: var(--bos-bg-hover); border: 1px solid var(--bos-border);">
+            <div class="d-flex justify-content-between align-items-center small">
+              <span class="text-muted">Total earnings vs Gross</span>
+              <span class="fw-semibold" [class.text-success]="earningsReconcile" [class.text-danger]="!earningsReconcile && (form.grossSalary || 0) > 0">
+                {{ totalEarnings | number:'1.2-2' }} / {{ (form.grossSalary || 0) | number:'1.2-2' }}
+                @if (earningsReconcile) { <i class="bi bi-check-circle-fill ms-1"></i> }
+                @else if ((form.grossSalary || 0) > 0) { <i class="bi bi-exclamation-triangle-fill ms-1"></i> }
+              </span>
+            </div>
+            @if (!earningsReconcile && (form.grossSalary || 0) > 0) {
+              <div class="small text-danger mt-1">Components don't add up to Gross — adjust so earnings equal Gross.</div>
+            }
+            <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top">
+              <span class="small">Net salary <span class="text-muted">(Gross − PF − Tax)</span></span>
+              <span class="fw-bold">{{ netSalary | number:'1.2-2' }}</span>
+            </div>
+          </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary btn-sm" (click)="showForm = false">Cancel</button>
-          <button type="submit" class="btn btn-primary btn-sm" [disabled]="f.invalid || saving">
+          <button type="submit" class="btn btn-primary btn-sm" [disabled]="f.invalid || saving || !earningsReconcile" [title]="!earningsReconcile ? 'Component earnings must equal Gross' : ''">
             @if (saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
-            Create
+            {{ editingId ? 'Update' : 'Create' }}
           </button>
         </div>
       </form>

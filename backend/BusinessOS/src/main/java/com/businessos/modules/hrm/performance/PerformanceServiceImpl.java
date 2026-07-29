@@ -1,5 +1,8 @@
 package com.businessos.modules.hrm.performance;
 
+import com.businessos.modules.ai.enums.AiFeature;
+import com.businessos.modules.ai.prompt.PerformanceReviewPromptBuilder;
+import com.businessos.modules.ai.service.AiService;
 import com.businessos.modules.hrm.employee.Employee;
 import com.businessos.modules.hrm.employee.EmployeeRepository;
 import com.businessos.modules.company.Company;
@@ -12,6 +15,7 @@ import com.businessos.shared.email.EmailService;
 import com.businessos.shared.exception.BadRequestException;
 import com.businessos.shared.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -22,9 +26,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
-
 public class PerformanceServiceImpl implements PerformanceService {
 
     private final PerformanceReviewRepository reviewRepository;
@@ -34,6 +38,7 @@ public class PerformanceServiceImpl implements PerformanceService {
     private final EmailService emailService;
     private final EmailBranding emailBranding;
     private final AuthorizationService authorizationService;
+    private final AiService aiService;
 
     @Override
     @Transactional
@@ -78,7 +83,8 @@ public class PerformanceServiceImpl implements PerformanceService {
                 emailService.sendPerformanceReviewEmail(employee.getUser().getEmail(), employee.getUser().getFirstName(), branding);
                 
             } catch (Exception ex) {
-                throw new com.businessos.shared.exception.BadRequestException("Internal error during operation: " + ex.getMessage());
+                // Best-effort notification — a failed email must not roll back the review.
+                log.warn("Performance review email failed (review still saved): {}", ex.getMessage());
             }
         }
 
@@ -151,6 +157,32 @@ public class PerformanceServiceImpl implements PerformanceService {
         PerformanceReview review = findInTenant(id);
         if (review.isFinalised()) throw new BadRequestException("Cannot delete a finalised review");
         review.softDelete();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PerformanceReviewResponse summarise(Long id) {
+        authorizationService.checkPermission(PermissionCode.PERFORMANCE_VIEW);
+        PerformanceReview review = findInTenant(id);
+        PerformanceReviewResponse response = PerformanceMapper.toPerformanceReviewResponse(review);
+
+        if (review.getOverallScore() == null) {
+            throw new BadRequestException("Fill in at least one KPI score before generating an AI summary");
+        }
+        Employee employee = review.getEmployee();
+
+        String prompt = PerformanceReviewPromptBuilder.builder()
+            .setEmployeeName(employee.getUser().getFullName())
+            .setDesignation(employee.getDesignation() != null ? employee.getDesignation().getName() : employee.getJobTitle())
+            .setReviewPeriod(review.getReviewPeriodStart() + " to " + review.getReviewPeriodEnd())
+            .setOverallScore((int) Math.round(review.getOverallScore()))
+            .setStrengths(review.getStrengths())
+            .setAreasForImprovement(review.getAreasForImprovement())
+            .setGoalsForNextPeriod(review.getGoalsForNextPeriod())
+            .build();
+
+        response.setAiSummary(aiService.generateRaw(AiFeature.PERFORMANCE_REVIEW, prompt));
+        return response;
     }
 
     private PerformanceReview findInTenant(Long id) {

@@ -1,8 +1,10 @@
 import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { PAYMENT_METHODS, PaymentReceipt, PaymentReceiptRequest } from '../../models/finance.model';
+import { RouterLink } from '@angular/router';
+import { PAYMENT_METHODS, PaymentReceipt, PaymentReceiptRequest, ChartOfAccount } from '../../models/finance.model';
 import { PaymentReceiptService } from '../../services/payment-receipt.service';
+import { CoaService } from '../../services/coa.service';
 import { Client } from '../../../crm/models/crm.model';
 import { ClientService } from '../../../crm/services/client.service';
 import { Pagination } from '../../../../shared/components/pagination/pagination';
@@ -11,9 +13,10 @@ import { EmptyState } from '../../../../shared/components/empty-state/empty-stat
 import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/confirm-dialog';
 import { HasPermissionDirective } from '../../../../shared/directives/has-permission.directive';
 
+import { BosCurrencyPipe } from '../../../../shared/pipes/bos-currency.pipe';
 @Component({
   selector: 'app-payment-receipts',
-  imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState, ConfirmDialog, HasPermissionDirective],
+  imports: [BosCurrencyPipe, CommonModule, FormsModule, RouterLink, Pagination, Loader, EmptyState, ConfirmDialog, HasPermissionDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './payment-receipts.html',
 })
@@ -33,11 +36,32 @@ export class PaymentReceipts implements OnInit {
   depositTarget: PaymentReceipt | null = null;
   depositBank = '';
   deleteTarget: PaymentReceipt | null = null;
+  reverseTarget: PaymentReceipt | null = null;
+  reverseReason = '';
 
-  constructor(private receiptService: PaymentReceiptService, private clientService: ClientService, private cdr: ChangeDetectorRef) {}
+  // Bank/cash accounts to deposit into — sourced from the Chart of Accounts (asset accounts).
+  bankAccounts: ChartOfAccount[] = [];
+
+  constructor(
+    private receiptService: PaymentReceiptService,
+    private clientService: ClientService,
+    private coaService: CoaService,
+    private cdr: ChangeDetectorRef,
+  ) {}
 
   ngOnInit(): void {
     this.load();
+    this.loadBankAccounts();
+  }
+
+  loadBankAccounts(): void {
+    this.coaService.list(0, 200).subscribe({
+      next: (res) => {
+        this.bankAccounts = (res.content || []).filter((a) => a.active && a.type === 'ASSET');
+        this.cdr.markForCheck();
+      },
+      error: () => { this.bankAccounts = []; this.cdr.markForCheck(); },
+    });
   }
 
   emptyForm(): PaymentReceiptRequest {
@@ -114,6 +138,23 @@ export class PaymentReceipts implements OnInit {
       error: (err) => {
         this.error = err?.error?.message || 'Failed to mark as deposited';
         this.depositTarget = null;
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  doReverse(): void {
+    if (!this.reverseTarget) return;
+    this.receiptService.reverse(this.reverseTarget.id, this.reverseReason.trim() || undefined).subscribe({
+      next: () => {
+        this.reverseTarget = null;
+        this.success = 'Payment reversed - the invoice balance has been restored';
+        this.cdr.markForCheck();
+        this.load();
+      },
+      error: (err) => {
+        this.error = err?.error?.message || 'Failed to reverse payment';
+        this.reverseTarget = null;
         this.cdr.markForCheck();
       },
     });

@@ -179,6 +179,17 @@ export class JobPostings implements OnInit {
     this.load();
   }
 
+  // Top-accent color per posting status.
+  statusColor(status?: string): string {
+    switch (status) {
+      case 'OPEN': return '#16A34A';
+      case 'DRAFT': return '#D97706';
+      case 'CLOSED': return '#DC2626';
+      case 'ON_HOLD': return '#64748B';
+      default: return '#6B46FF';
+    }
+  }
+
   private emptyForm(): JobPostingRequest {
     return {
       title: '',

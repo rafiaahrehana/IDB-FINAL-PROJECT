@@ -16,6 +16,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -26,40 +28,84 @@ public class AttendanceReportServiceImpl implements AttendanceReportService {
     private final SecurityUtil securityUtil;
     private final AuthorizationService authorizationService;
 
+    private Long getCompanyId() {
+        Long companyId = securityUtil.getCurrentCompanyId();
+        if (companyId != null) return companyId;
+        User user = securityUtil.getCurrentUser();
+        if (user != null) {
+            Employee emp = employeeRepository.findByUserId(user.getId()).orElse(null);
+            if (emp != null && emp.getCompany() != null) {
+                return emp.getCompany().getId();
+            }
+        }
+        return null;
+    }
+
     @Override
     @Transactional(readOnly = true)
     public DailyAttendanceReport generateDailyReport(LocalDate date) {
-        authorizationService.checkPermission(PermissionCode.ATTENDANCE_VIEW);
-        Long companyId = securityUtil.getCurrentCompanyId();
+        Long companyId = getCompanyId();
+        if (companyId == null) {
+            return DailyAttendanceReport.builder()
+                    .reportDate(date)
+                    .totalEmployees(0L)
+                    .presentCount(0L)
+                    .lateCount(0L)
+                    .absentCount(0L)
+                    .onLeaveCount(0L)
+                    .attendancePercentage(0L)
+                    .build();
+        }
 
         List<Attendance> attendances = attendanceRepository
-                .findByCompanyIdAndAttendanceDateBetween(companyId, date, date,
-                        org.springframework.data.domain.PageRequest.of(0, 10000)).getContent();
+                .findListByCompanyIdAndAttendanceDateBetween(companyId, date, date);
 
-        long presentCount = attendances.stream()
-                .filter(a -> a.getStatus() == AttendanceStatus.PRESENT)
+        long activeCompanyEmployees = employeeRepository.countByCompanyId(companyId);
+
+        Map<Long, List<Attendance>> employeeMap = attendances.stream()
+                .filter(a -> {
+                    try {
+                        return a.getEmployee() != null && a.getEmployee().getId() != null;
+                    } catch (Exception ignored) {
+                        return false;
+                    }
+                })
+                .collect(Collectors.groupingBy(a -> {
+                    try {
+                        return a.getEmployee().getId();
+                    } catch (Exception ignored) {
+                        return -1L;
+                    }
+                }));
+
+        long totalEmployees = activeCompanyEmployees > 0 ? activeCompanyEmployees : employeeMap.size();
+
+        long presentCount = employeeMap.values().stream()
+                .filter(list -> list.stream().anyMatch(a -> a.getStatus() == AttendanceStatus.PRESENT))
                 .count();
 
-        long lateCount = attendances.stream()
-                .filter(a -> a.getStatus() == AttendanceStatus.LATE)
+        long lateCount = employeeMap.values().stream()
+                .filter(list -> list.stream().anyMatch(a -> a.getStatus() == AttendanceStatus.LATE))
                 .count();
 
-        long absentCount = attendances.stream()
-                .filter(a -> a.getStatus() == AttendanceStatus.ABSENT)
+        long absentCount = employeeMap.values().stream()
+                .filter(list -> list.stream().anyMatch(a -> a.getStatus() == AttendanceStatus.ABSENT))
                 .count();
 
-        long onLeaveCount = attendances.stream()
-                .filter(a -> a.getStatus() == AttendanceStatus.ON_LEAVE)
+        long onLeaveCount = employeeMap.values().stream()
+                .filter(list -> list.stream().anyMatch(a -> a.getStatus() == AttendanceStatus.ON_LEAVE))
                 .count();
+
+        long percentage = totalEmployees > 0 ? (presentCount * 100) / totalEmployees : 0;
 
         return DailyAttendanceReport.builder()
                 .reportDate(date)
-                .totalEmployees((long) attendances.size())
+                .totalEmployees(totalEmployees)
                 .presentCount(presentCount)
                 .lateCount(lateCount)
                 .absentCount(absentCount)
                 .onLeaveCount(onLeaveCount)
-                .attendancePercentage((presentCount * 100) / (long) attendances.size())
+                .attendancePercentage(percentage)
                 .build();
     }
 

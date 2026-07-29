@@ -1,19 +1,11 @@
 <div class="container-fluid py-3">
-  <div class="page-hero">
-    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
-      <div>
-        <div class="page-hero-label">IT ASSETS</div>
-        <h4 class="page-hero-title underline-cyan">Asset Assignment History</h4>
-        <div class="page-hero-subtitle">Track all asset assignments and returns.</div>
-      </div>
-    </div>
-  </div>
+  <h4 class="mb-3">Asset Assignment History</h4>
   @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
   @if (loading) { <app-loader /> }
   @if (!loading && assignments.length) {
   <div class="card"><div class="table-responsive">
     <table class="table table-hover table-sm align-middle mb-0">
-      <thead><tr><th>Asset</th><th>Employee</th><th>Assigned</th><th>Returned</th><th>Notes</th></tr></thead>
+      <thead class="table-light"><tr><th>Asset</th><th>Employee</th><th>Assigned</th><th>Returned</th><th>Notes</th></tr></thead>
       <tbody>
         @for (a of assignments; track a.id) {
         <tr>

@@ -3,6 +3,7 @@ package com.businessos.modules.crm.lead;
 import com.businessos.enums.LeadSource;
 import com.businessos.enums.LeadStatus;
 import com.businessos.enums.Priority;
+import com.businessos.modules.crm.duplicate.DuplicateMatch;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -41,7 +42,9 @@ public class LeadResponse {
     private LeadStatus status;
     
     private LeadSource source;
-    
+
+    private String sourceOther;
+
     private Priority priority;
     
     private BigDecimal estimatedValue;
@@ -81,4 +84,10 @@ public class LeadResponse {
     private String updatedByName;
 
     private String aiSummary;
+
+    // Set only right after creation, when a possible-duplicate Client was found.
+    // A nudge, not a block - the Lead is created either way.
+    private DuplicateMatch possibleDuplicate;
+
+    private java.util.List<com.businessos.modules.crm.tag.TagResponse> tags;
 }

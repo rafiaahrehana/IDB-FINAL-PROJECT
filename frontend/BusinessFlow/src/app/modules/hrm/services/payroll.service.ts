@@ -43,6 +43,6 @@ export class PayrollService {
   }
 
   delete(id: number): Observable<string> {
-    return this.api.delete<string>(`${this.endpoint}/${id}`);
+    return this.api.deleteText(`${this.endpoint}/${id}`);
   }
 }

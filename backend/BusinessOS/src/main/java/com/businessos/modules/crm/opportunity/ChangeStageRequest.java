@@ -11,7 +11,12 @@ public class ChangeStageRequest {
     @NotNull(message = "Stage is required")
     private OpportunityStage stage;
 
-    // Required when moving to CLOSED_LOST
+    // Required when moving to LOST
     @Size(max = 255)
     private String lostReason;
+
+    // Populated by the frontend's duplicate-detection modal when moving a client-less
+    // Opportunity to WON: either link to an existing Client match, or force-create a new one.
+    private Long linkToExistingClientId;
+    private boolean forceCreateNewClient;
 }

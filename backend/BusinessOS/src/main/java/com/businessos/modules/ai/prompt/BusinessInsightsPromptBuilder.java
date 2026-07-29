@@ -1,6 +1,5 @@
 package com.businessos.modules.ai.prompt;
 
-import com.businessos.modules.ai.exception.AiPromptException;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 
@@ -36,8 +35,6 @@ public class BusinessInsightsPromptBuilder {
     }
 
     private void validateFields() {
-        if (metrics == null || metrics.isBlank()) {
-            throw new AiPromptException("metrics is required for BusinessInsightsPromptBuilder");
-        }
+        PromptSupport.requireNonBlank(metrics, "metrics", "business insights");
     }
 }

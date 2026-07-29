@@ -1,20 +1,15 @@
 <div class="container-fluid py-3">
-  <div class="page-hero">
-    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
-      <div>
-        <div class="page-hero-label">SERVICE DESK</div>
-        <h4 class="page-hero-title underline-rose">Packages</h4>
-      </div>
-      <div class="page-hero-actions">
-        <div class="btn-group btn-group-sm" role="group">
-          <button class="btn" [class.btn-primary]="tab === 'packages'" [class.btn-outline-secondary]="tab !== 'packages'" (click)="setTab('packages')">Packages</button>
-          <button class="btn" [class.btn-primary]="tab === 'subscriptions'" [class.btn-outline-secondary]="tab !== 'subscriptions'" (click)="setTab('subscriptions')">Subscriptions</button>
-        </div>
-        @if (tab === 'packages') {
-        <button class="btn btn-hero-primary" (click)="openCreate()"><i class="bi bi-plus-circle"></i> New Package</button>
-        }
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3 p-3 rounded-3 shadow-sm page-header-bar">
+    <div class="d-flex align-items-center gap-3">
+      <h4 class="mb-0">Packages</h4>
+      <div class="btn-group btn-group-sm" role="group">
+        <button class="btn" [class.btn-primary]="tab === 'packages'" [class.btn-outline-secondary]="tab !== 'packages'" (click)="setTab('packages')">Packages</button>
+        <button class="btn" [class.btn-primary]="tab === 'subscriptions'" [class.btn-outline-secondary]="tab !== 'subscriptions'" (click)="setTab('subscriptions')">Subscriptions</button>
       </div>
     </div>
+    @if (tab === 'packages') {
+    <button class="btn btn-primary btn-sm" (click)="openCreate()"><i class="bi bi-plus"></i> New Package</button>
+    }
   </div>
   @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
   @if (success) { <div class="alert alert-success py-2">{{ success }}</div> }
@@ -52,7 +47,7 @@
             @for (s of availableServices; track s.id) {
             <div class="form-check">
               <input class="form-check-input" type="checkbox" [id]="'pkg-svc-' + s.id" [checked]="isServiceSelected(s.id)" (change)="toggleService(s.id)" />
-              <label class="form-check-label small" [for]="'pkg-svc-' + s.id">{{ s.name }} <span class="text-muted">· {{ s.price | currency:s.currency }}</span></label>
+              <label class="form-check-label small" [for]="'pkg-svc-' + s.id">{{ s.name }} <span class="text-muted">· {{ s.price | bosCurrency:s.currency }}</span></label>
             </div>
             }
           </div>
@@ -60,9 +55,9 @@
         <div class="col-12">
           <div class="alert alert-light border py-2 px-3 mb-0 d-flex justify-content-between align-items-center flex-wrap gap-2">
             <div class="small">
-              Services total: <strong>{{ computedTotalPrice | currency }}</strong>
+              Services total: <strong>{{ computedTotalPrice | bosCurrency }}</strong>
               @if (form.discountPercent) {
-                <span class="text-muted"> &middot; after {{ form.discountPercent }}% discount:</span> <strong>{{ computedEffectivePrice | currency }}</strong>
+                <span class="text-muted"> &middot; after {{ form.discountPercent }}% discount:</span> <strong>{{ computedEffectivePrice | bosCurrency }}</strong>
               }
               @if (form.packagePrice != null) {
                 <span class="text-warning ms-1"><i class="bi bi-exclamation-triangle"></i> Manual price override is set - it will be used instead of the auto-calculated total.</span>
@@ -90,7 +85,8 @@
     <div class="col-md-6 col-lg-4 col-xl-3">
       <div class="package-card rounded-4 p-4 h-100 d-flex flex-column position-relative"
            [style.--card-border-color]="getPackageBorderColor(i)"
-           [style.--card-hover-border-color]="getPackageHoverBorderColor(i)">
+           [style.--card-hover-border-color]="getPackageHoverBorderColor(i)"
+           [style.--card-bg-color]="getIconColor(i)">
         
         <!-- Status & Badges -->
         <div class="position-absolute top-0 end-0 p-3 d-flex gap-1 flex-wrap justify-content-end" style="max-width: 70%;">
@@ -146,7 +142,7 @@
           <div class="d-flex justify-content-between align-items-center mb-3">
             <div>
               <div class="small text-muted" style="font-size: 0.75rem;">Price</div>
-              <div class="fw-bold text-dark fs-5">{{ (p.effectivePrice ?? p.packagePrice) | currency }}</div>
+              <div class="fw-bold text-dark fs-5">{{ (p.effectivePrice ?? p.packagePrice) | bosCurrency }}</div>
             </div>
             <div>
               <div class="small text-muted text-end" style="font-size: 0.75rem;">Quota Limit</div>
@@ -184,7 +180,7 @@
   <div class="card">
     <div class="table-responsive">
       <table class="table table-hover table-sm align-middle mb-0">
-        <thead>
+        <thead class="table-light">
           <tr><th>Client</th><th>Package</th><th>Status</th><th>Start</th><th>End</th><th>Next Billing</th><th class="text-end">Paid</th><th class="text-center">Quota</th><th></th></tr>
         </thead>
         <tbody>
@@ -196,7 +192,7 @@
             <td class="text-muted small">{{ s.startDate ? (s.startDate | date:'mediumDate') : '-' }}</td>
             <td class="text-muted small">{{ s.endDate ? (s.endDate | date:'mediumDate') : '-' }}</td>
             <td class="text-muted small">{{ s.nextBillingDate ? (s.nextBillingDate | date:'mediumDate') : '-' }}</td>
-            <td class="text-end">{{ s.pricePaid | currency }}</td>
+            <td class="text-end">{{ s.pricePaid | bosCurrency }}</td>
             <td class="text-center">{{ s.requestsUsed }} / {{ s.requestQuota || '∞' }}</td>
             <td class="text-end text-nowrap">
               @if (s.status === 'PENDING_PAYMENT') {
@@ -231,7 +227,7 @@
   <div class="modal d-block" style="background: rgba(0,0,0,.4)">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
-        <div class="modal-header py-2" style="background: linear-gradient(135deg, #111827, #4C1D95); color: #fff;">
+        <div class="modal-header py-2">
           <h5 class="modal-title fs-6 fw-semibold">Cancel Subscription</h5>
           <button class="btn-close" (click)="cancelTarget = null"></button>
         </div>

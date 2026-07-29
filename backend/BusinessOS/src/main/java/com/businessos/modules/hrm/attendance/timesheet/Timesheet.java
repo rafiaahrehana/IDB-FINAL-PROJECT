@@ -7,6 +7,7 @@ import com.businessos.modules.company.Company;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import org.hibernate.annotations.Filter;
 import org.hibernate.annotations.FilterDef;
@@ -38,6 +39,17 @@ public class Timesheet extends BaseEntity {
 
     @Column(columnDefinition = "TEXT")
     private String workSummary;
+
+    @Column(name = "project_name", length = 150)
+    private String projectName;
+
+    @Column(name = "task_description", columnDefinition = "TEXT")
+    private String taskDescription;
+
+    private boolean submitted = false;
+
+    @Column(name = "submitted_at")
+    private LocalDateTime submittedAt;
 
     private boolean approved = false;
 

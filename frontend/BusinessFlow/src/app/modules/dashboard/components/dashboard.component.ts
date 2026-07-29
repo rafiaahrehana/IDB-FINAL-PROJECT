@@ -1,6 +1,7 @@
 import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../../core/services/auth.service';
 import { PermissionService } from '../../../core/services/permission.service';
 import {
@@ -11,6 +12,9 @@ import {
   ClientSummary,
   RecommendationResponse,
 } from '../../../core/services/dashboard.service';
+import { TicketService } from '../../support/services/ticket.service';
+import { AgentService } from '../../support/services/agent.service';
+import { SupportTicket, SupportAgent } from '../../support/models/support.model';
 import { Loader } from '../../../shared/components/loader/loader';
 import { StatCard } from '../../../shared/components/stat-card/stat-card';
 import { WIDGET_REGISTRY, DASHBOARD_SECTIONS, DashboardWidgetDef, DashboardSection } from '../widget-registry';
@@ -32,7 +36,7 @@ const PLATFORM_ADMIN_ROLES = ['SUPER_ADMIN', 'SYSTEM_ADMIN', 'PLATFORM_ACCOUNTAN
 
 @Component({
   selector: 'app-dashboard',
-  imports: [CommonModule, RouterLink, Loader, StatCard],
+  imports: [CommonModule, RouterLink, FormsModule, Loader, StatCard],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
@@ -50,6 +54,38 @@ export class DashboardComponent implements OnInit {
   loading = false;
   error = '';
 
+  // Support Shared State
+  supportTickets: SupportTicket[] = [];
+  slaBreachedTickets: SupportTicket[] = [];
+  criticalTickets: SupportTicket[] = [];
+
+  // Support Agent Specific State
+  isSupportAgentRole = false;
+  myAgentRecord?: SupportAgent;
+  myAssignedTickets: SupportTicket[] = [];
+  displayAgentTickets: SupportTicket[] = [];
+  unassignedTicketsQueue: SupportTicket[] = [];
+  agentAssignedCount = 0;
+  agentOpenCount = 0;
+  agentResolvedCount = 0;
+  agentSlaRiskCount = 0;
+  supportTotalCount = 0;
+  supportOpenCount = 0;
+  supportResolvedCount = 0;
+  supportSlaBreachedCount = 0;
+  updatingTicketId: number | null = null;
+  resolvingTicketTarget: SupportTicket | null = null;
+  resolutionNotesInput = '';
+
+  // Support Manager Specific State
+  isSupportManagerRole = false;
+  teamAgents: SupportAgent[] = [];
+  managerAllTickets: SupportTicket[] = [];
+  managerTotalCount = 0;
+  managerUnassignedCount = 0;
+  managerSlaBreachedCount = 0;
+  managerActiveAgentsCount = 0;
+
   // Role flags resolved once from the logged-in user
   isCompanyRole = false;
   isPlatformRole = false;
@@ -64,6 +100,8 @@ export class DashboardComponent implements OnInit {
     public auth: AuthService,
     private dashboardService: DashboardService,
     public permissionService: PermissionService,
+    private ticketService: TicketService,
+    private agentService: AgentService,
     private cdr: ChangeDetectorRef,
   ) {}
 
@@ -80,25 +118,49 @@ export class DashboardComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    const roles = this.auth.getCurrentUser()?.roles ?? [];
+    const processUser = (user: any) => {
+      const roles = user?.roles ?? [];
+      if (!roles.length) return;
 
-    this.isCompanyRole = roles.some(r => COMPANY_ROLES.includes(r));
-    this.isClientRole = roles.includes('CLIENT');
-    this.isPlatformRole = !this.isCompanyRole && !this.isClientRole && roles.length > 0;
-    this.canManagePlatform = roles.some(r => PLATFORM_ADMIN_ROLES.includes(r));
+      this.isCompanyRole = roles.some((r: string) => COMPANY_ROLES.includes(r));
+      this.isClientRole = roles.includes('CLIENT');
+      this.isSupportAgentRole = roles.includes('SUPPORT_AGENT') && !roles.includes('SUPPORT_MANAGER') && !roles.includes('SUPER_ADMIN');
+      this.isSupportManagerRole = roles.includes('SUPPORT_MANAGER') || (roles.includes('SUPPORT_AGENT') && (roles.includes('SUPER_ADMIN') || roles.includes('SUPPORT_MANAGER')));
+      this.isPlatformRole = !this.isCompanyRole && !this.isClientRole && !this.isSupportAgentRole && !this.isSupportManagerRole && roles.length > 0;
+      this.canManagePlatform = roles.some((r: string) => PLATFORM_ADMIN_ROLES.includes(r));
 
-    if (this.isCompanyRole) {
-      this.subtitle = 'Live overview of your company';
-      this.loadCompanyDashboard();
-    } else if (this.isPlatformRole) {
-      this.subtitle = "Here's what's happening with your platform today.";
-      this.quickLinks = this.buildPlatformQuickLinks(roles);
-      this.loadPlatformDashboard();
-    } else if (this.isClientRole) {
-      this.subtitle = 'Welcome back';
-      this.quickLinks = this.buildClientQuickLinks();
-      this.loadClientDashboard();
-    }
+      if (this.isSupportAgentRole) {
+        this.subtitle = 'Personal Support Workstation & Assigned Queue';
+        this.quickLinks = this.buildSupportAgentQuickLinks();
+        this.loadSupportAgentDashboard();
+      } else if (this.isSupportManagerRole) {
+        this.subtitle = 'Support Team Operations, SLA Compliance & Team Management';
+        this.quickLinks = this.buildSupportManagerQuickLinks();
+        this.loadSupportManagerDashboard();
+      } else if (this.isCompanyRole) {
+        this.subtitle = 'Live overview of your company';
+        this.quickLinks = this.buildCompanyQuickLinks(roles);
+        this.loadCompanyDashboard();
+      } else if (this.isPlatformRole) {
+        this.subtitle = "Here's what's happening with your platform today.";
+        this.quickLinks = this.buildPlatformQuickLinks(roles);
+        this.loadPlatformDashboard();
+      } else if (this.isClientRole) {
+        this.subtitle = 'Welcome back';
+        this.quickLinks = this.buildClientQuickLinks();
+        this.loadClientDashboard();
+      }
+      this.cdr.markForCheck();
+    };
+
+    // Immediate check if user exists in storage/subject
+    const current = this.auth.getCurrentUser();
+    if (current) processUser(current);
+
+    // Reactive subscription for state changes
+    this.auth.currentUser$.subscribe(user => {
+      if (user) processUser(user);
+    });
   }
 
   // ---------- COMPANY_OWNER / EMPLOYEE ----------
@@ -172,6 +234,221 @@ export class DashboardComponent implements OnInit {
     });
   }
 
+  // ---------- SUPPORT AGENT ----------
+
+  private loadSupportAgentDashboard(): void {
+    this.loading = true;
+    this.error = '';
+    this.cdr.markForCheck();
+
+    // 1. Fetch all platform company tickets for general workstation list
+    this.ticketService.list(0, 50).subscribe({
+      next: (res) => {
+        const all = res.content || [];
+        this.supportTickets = all;
+        this.unassignedTicketsQueue = all.filter(t => !t.assignedToAgentId && t.status !== 'RESOLVED' && t.status !== 'CLOSED');
+
+        this.supportTotalCount = res.totalElements || all.length;
+        this.supportOpenCount = all.filter(t => t.status === 'NEW' || t.status === 'OPEN' || t.status === 'IN_PROGRESS').length;
+        this.supportResolvedCount = all.filter(t => t.status === 'RESOLVED' || t.status === 'CLOSED').length;
+        this.supportSlaBreachedCount = all.filter(t => t.slaBreached).length;
+
+        // Display all tickets if myAssignedTickets has not populated or is empty
+        if (this.myAssignedTickets.length === 0) {
+          this.displayAgentTickets = all;
+        }
+
+        this.loading = false;
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        this.error = err?.error?.message || 'Failed to load tickets';
+        this.loading = false;
+        this.cdr.markForCheck();
+      }
+    });
+
+    // 2. Fetch agent record and tickets explicitly assigned to logged-in agent
+    const userId = this.auth.getCurrentUser()?.id;
+    if (userId) {
+      this.agentService.getByUserId(userId).subscribe({
+        next: (agent) => {
+          this.myAgentRecord = agent;
+          if (agent?.id) {
+            this.ticketService.assignedToMe(agent.id, 0, 50).subscribe({
+              next: (res) => {
+                this.myAssignedTickets = res.content || [];
+                this.agentAssignedCount = res.totalElements || this.myAssignedTickets.length;
+                this.agentOpenCount = this.myAssignedTickets.filter(t => t.status === 'NEW' || t.status === 'OPEN' || t.status === 'IN_PROGRESS').length;
+                this.agentResolvedCount = this.myAssignedTickets.filter(t => t.status === 'RESOLVED' || t.status === 'CLOSED').length;
+                this.agentSlaRiskCount = this.myAssignedTickets.filter(t => t.slaBreached).length;
+
+                this.displayAgentTickets = this.myAssignedTickets.length > 0 ? this.myAssignedTickets : this.supportTickets;
+                this.cdr.markForCheck();
+              },
+              error: () => {}
+            });
+          }
+        },
+        error: () => {}
+      });
+    }
+  }
+
+  claimTicket(ticket: SupportTicket): void {
+    if (!this.myAgentRecord?.id) {
+      const userId = this.auth.getCurrentUser()?.id;
+      if (userId) {
+        this.agentService.getByUserId(userId).subscribe({
+          next: (agent) => {
+            this.myAgentRecord = agent;
+            if (agent?.id) this.doAssignTicket(ticket.id, agent.id);
+          },
+          error: () => {}
+        });
+      }
+      return;
+    }
+    this.doAssignTicket(ticket.id, this.myAgentRecord.id);
+  }
+
+  private doAssignTicket(ticketId: number, agentId: number): void {
+    this.updatingTicketId = ticketId;
+    this.cdr.markForCheck();
+    this.ticketService.assign(ticketId, agentId).subscribe({
+      next: () => {
+        this.updatingTicketId = null;
+        if (this.isSupportAgentRole) this.loadSupportAgentDashboard();
+        if (this.isSupportManagerRole) this.loadSupportManagerDashboard();
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        this.error = err?.error?.message || 'Failed to assign ticket';
+        this.updatingTicketId = null;
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  updateTicketStatus(ticket: SupportTicket, newStatus: string): void {
+    if (newStatus === 'RESOLVED') {
+      this.openResolveModal(ticket);
+      return;
+    }
+    this.updatingTicketId = ticket.id;
+    this.cdr.markForCheck();
+    this.ticketService.update(ticket.id, { status: newStatus }).subscribe({
+      next: () => {
+        this.updatingTicketId = null;
+        if (this.isSupportAgentRole) this.loadSupportAgentDashboard();
+        if (this.isSupportManagerRole) this.loadSupportManagerDashboard();
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        this.error = err?.error?.message || 'Failed to update ticket status';
+        this.updatingTicketId = null;
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  openResolveModal(ticket: SupportTicket): void {
+    this.resolvingTicketTarget = ticket;
+    this.resolutionNotesInput = '';
+    this.cdr.markForCheck();
+  }
+
+  submitTicketResolution(): void {
+    if (!this.resolvingTicketTarget || !this.resolutionNotesInput.trim()) return;
+    const ticketId = this.resolvingTicketTarget.id;
+    this.updatingTicketId = ticketId;
+    this.cdr.markForCheck();
+    this.ticketService.resolve(ticketId, this.resolutionNotesInput.trim()).subscribe({
+      next: () => {
+        this.resolvingTicketTarget = null;
+        this.resolutionNotesInput = '';
+        this.updatingTicketId = null;
+        if (this.isSupportAgentRole) this.loadSupportAgentDashboard();
+        if (this.isSupportManagerRole) this.loadSupportManagerDashboard();
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        this.error = err?.error?.message || 'Failed to resolve ticket';
+        this.updatingTicketId = null;
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  private buildSupportAgentQuickLinks(): QuickLink[] {
+    return [
+      { label: 'My Tickets', description: 'Assigned ticket queue', icon: 'bi-ticket-perforated', link: '/support/tickets' },
+      { label: 'Direct Messages', description: 'Chat with client users', icon: 'bi-envelope', link: '/support/messages' },
+      { label: 'SLA Policies', description: 'Response time SLAs', icon: 'bi-stopwatch', link: '/support/sla-policies' },
+      { label: 'Notifications', description: 'System alerts', icon: 'bi-bell', link: '/notifications' },
+      { label: 'My Profile', description: 'Agent profile & settings', icon: 'bi-person', link: '/profile' },
+    ];
+  }
+
+  // ---------- SUPPORT MANAGER ----------
+
+  private loadSupportManagerDashboard(): void {
+    this.loading = true;
+    this.error = '';
+    this.cdr.markForCheck();
+
+    this.ticketService.list(0, 50).subscribe({
+      next: (res) => {
+        this.managerAllTickets = res.content || [];
+        this.managerTotalCount = res.totalElements || this.managerAllTickets.length;
+        this.managerUnassignedCount = this.managerAllTickets.filter(t => !t.assignedToAgentId && t.status !== 'RESOLVED' && t.status !== 'CLOSED').length;
+        this.loading = false;
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        this.error = err?.error?.message || 'Failed to load manager dashboard';
+        this.loading = false;
+        this.cdr.markForCheck();
+      }
+    });
+
+    this.ticketService.slaBreached().subscribe({
+      next: (res) => {
+        this.slaBreachedTickets = res || [];
+        this.managerSlaBreachedCount = this.slaBreachedTickets.length;
+        this.cdr.markForCheck();
+      },
+      error: () => {}
+    });
+
+    this.ticketService.criticalOpen().subscribe({
+      next: (res) => {
+        this.criticalTickets = res || [];
+        this.cdr.markForCheck();
+      },
+      error: () => {}
+    });
+
+    this.agentService.available().subscribe({
+      next: (agents) => {
+        this.teamAgents = agents || [];
+        this.managerActiveAgentsCount = this.teamAgents.filter(a => a.status === 'AVAILABLE' || a.acceptingTickets).length;
+        this.cdr.markForCheck();
+      },
+      error: () => {}
+    });
+  }
+
+  private buildSupportManagerQuickLinks(): QuickLink[] {
+    return [
+      { label: 'All Tickets', description: 'Manage platform tickets', icon: 'bi-ticket-perforated', link: '/support/tickets' },
+      { label: 'Support Team', description: 'Agent roster & workload', icon: 'bi-headset', link: '/support/agents' },
+      { label: 'Direct Messages', description: 'Client messaging', icon: 'bi-envelope', link: '/support/messages' },
+      { label: 'SLA Policies', description: 'Manage SLA rules', icon: 'bi-stopwatch', link: '/support/sla-policies' },
+      { label: 'Audit Logs', description: 'System activity logs', icon: 'bi-journal-text', link: '/support/audit-logs' },
+    ];
+  }
+
   private platformHistoryDays(): number {
     switch (this.selectedRange) {
       case 'day': return 2;
@@ -186,13 +463,15 @@ export class DashboardComponent implements OnInit {
     if (this.canManagePlatform) {
       links.push(
         { label: 'Companies', description: 'Manage tenant companies', icon: 'bi-buildings', link: '/platform/companies' },
+        { label: 'Subscriptions', description: 'Plan catalog & pricing', icon: 'bi-credit-card', link: '/platform/subscription-management' },
         { label: 'Platform Users', description: 'SaaS staff accounts', icon: 'bi-person-badge', link: '/platform/platform-users' },
         { label: 'Feature Flags', description: 'Toggle platform features', icon: 'bi-toggles', link: '/platform/feature-flags' },
-        { label: 'Custom Roles', description: 'Role permission sets', icon: 'bi-shield-check', link: '/platform/custom-roles' },
+        { label: 'AI Settings', description: 'AI models & credentials', icon: 'bi-robot', link: '/ai/settings' },
       );
     }
-    if (roles.includes('SUPPORT_AGENT') || roles.includes('SUPPORT_MANAGER')) {
+    if (this.canManagePlatform || roles.includes('SUPPORT_AGENT') || roles.includes('SUPPORT_MANAGER')) {
       links.push(
+        { label: 'Support Agents', description: 'Platform support team', icon: 'bi-headset', link: '/support/agents' },
         { label: 'Support Tickets', description: 'Resolve tenant tickets', icon: 'bi-ticket-perforated', link: '/support/tickets' },
         { label: 'SLA Policies', description: 'Response time targets', icon: 'bi-stopwatch', link: '/support/sla-policies' },
       );
@@ -200,6 +479,36 @@ export class DashboardComponent implements OnInit {
     links.push(
       { label: 'Notifications', description: 'Your latest updates', icon: 'bi-bell', link: '/notifications' },
       { label: 'Settings', description: 'Profile & preferences', icon: 'bi-gear', link: '/profile' },
+    );
+    return links;
+  }
+
+  private buildCompanyQuickLinks(roles: string[]): QuickLink[] {
+    const links: QuickLink[] = [];
+    if (this.permissionService.hasPermission('EMPLOYEE_VIEW')) {
+      links.push({ label: 'Employees', description: 'Manage company staff', icon: 'bi-people', link: '/hrm/employees' });
+    }
+    if (this.permissionService.hasPermission('ATTENDANCE_VIEW')) {
+      links.push({ label: 'Attendance', description: 'Timesheets & records', icon: 'bi-clock-history', link: '/attendance/records' });
+    }
+    if (this.permissionService.hasPermission('INVOICE_VIEW')) {
+      links.push({ label: 'Invoices', description: 'Billing & revenue', icon: 'bi-file-earmark-text', link: '/finance/invoices' });
+    }
+    if (this.permissionService.hasPermission('SERVICE_REQUEST_VIEW')) {
+      links.push({ label: 'Service Desk', description: 'Client requests & tickets', icon: 'bi-headset', link: '/servicedesk/requests' });
+    }
+    if (this.permissionService.hasPermission('CLIENT_VIEW') || this.permissionService.hasPermission('LEAD_VIEW')) {
+      links.push({ label: 'CRM & Clients', description: 'Leads & accounts', icon: 'bi-person-lines-fill', link: '/crm/leads' });
+    }
+    if (this.permissionService.hasPermission('HARDWARE_VIEW')) {
+      links.push({ label: 'IT Assets', description: 'Hardware & software', icon: 'bi-laptop', link: '/itam/hardware' });
+    }
+    if (roles.includes('COMPANY_OWNER')) {
+      links.push({ label: 'Roles & Permissions', description: 'Access controls', icon: 'bi-shield-lock', link: '/roles-permissions' });
+    }
+    links.push(
+      { label: 'Notifications', description: 'Your latest updates', icon: 'bi-bell', link: '/notifications' },
+      { label: 'Settings', description: 'Profile & preferences', icon: 'bi-gear', link: '/profile' }
     );
     return links;
   }
@@ -226,10 +535,12 @@ export class DashboardComponent implements OnInit {
 
   private buildClientQuickLinks(): QuickLink[] {
     return [
-      { label: 'My Service Requests', description: 'Track your requests', icon: 'bi-clipboard-check', link: '/servicedesk/requests' },
-      { label: 'Knowledge Base', description: 'Guides and answers', icon: 'bi-journal-text', link: '/servicedesk/kb' },
+      { label: 'My Service Requests', description: 'Track your requests', icon: 'bi-clipboard-check', link: '/client/requests' },
+      { label: 'Browse Services', description: 'Explore available services', icon: 'bi-grid', link: '/client/categories' },
+      { label: 'Packages', description: 'Service plans & packages', icon: 'bi-box-seam', link: '/client/packages' },
+      { label: 'Payment History', description: 'Invoices & receipts', icon: 'bi-credit-card', link: '/client/payments' },
       { label: 'Notifications', description: 'Your latest updates', icon: 'bi-bell', link: '/notifications' },
-      { label: 'Settings', description: 'Profile & preferences', icon: 'bi-gear', link: '/profile' },
+      { label: 'Settings', description: 'Profile & preferences', icon: 'bi-gear', link: '/client/profile' },
     ];
   }
 
@@ -436,10 +747,10 @@ export class DashboardComponent implements OnInit {
     const total = s.totalCompanies || 0;
     const pct = (n: number) => total > 0 ? Math.round((n / total) * 10000) / 100 : 0;
     return [
-      { icon: 'bi-buildings', label: 'Total Companies', value: s.totalCompanies, pct: total > 0 ? 100 : 0, bg: '#EEF2FF', fg: '#4F46E5' },
-      { icon: 'bi-check-circle', label: 'Active Companies', value: s.activeCompanies, pct: pct(s.activeCompanies), bg: '#d1fae5', fg: '#10b981' },
-      { icon: 'bi-hourglass-split', label: 'On Trial', value: s.trialCompanies, pct: pct(s.trialCompanies), bg: '#dbeafe', fg: '#0ea5e9' },
-      { icon: 'bi-pause-circle', label: 'Suspended', value: s.suspendedCompanies, pct: pct(s.suspendedCompanies), bg: '#ffedd5', fg: '#f97316' },
+      { icon: 'bi-buildings', label: 'Total Companies', value: s.totalCompanies, pct: total > 0 ? 100 : 0, bg: '#ede9fe', fg: '#8b5cf6' },
+      { icon: 'bi-check-circle', label: 'Active Companies', value: s.activeCompanies, pct: pct(s.activeCompanies), bg: '#d1fae5', fg: '#059669' },
+      { icon: 'bi-hourglass-split', label: 'On Trial', value: s.trialCompanies, pct: pct(s.trialCompanies), bg: '#dbeafe', fg: '#0284c7' },
+      { icon: 'bi-pause-circle', label: 'Suspended', value: s.suspendedCompanies, pct: pct(s.suspendedCompanies), bg: '#fef3c7', fg: '#b45309' },
       { icon: 'bi-clock-history', label: 'Pending Verification', value: s.pendingVerificationCompanies, pct: pct(s.pendingVerificationCompanies), bg: '#f1f5f9', fg: '#475569' },
       { icon: 'bi-people', label: 'Total Platform Users', value: s.totalPlatformUsers, pct: null, bg: '#e0e7ff', fg: '#4338ca' },
     ];

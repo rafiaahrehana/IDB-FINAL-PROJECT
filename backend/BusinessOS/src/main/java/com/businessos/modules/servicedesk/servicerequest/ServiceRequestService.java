@@ -46,4 +46,7 @@ public interface ServiceRequestService {
     ServiceRequestResponse submitQuotation(Long id, SubmitQuotationRequest request);
     ServiceRequestResponse acceptQuotation(Long id);
     ServiceRequestResponse rejectQuotation(Long id, RejectQuotationRequest request);
+
+    /** Summarise a request's real status/history with AI and suggest a next action */
+    ServiceRequestResponse summarise(Long id);
 }

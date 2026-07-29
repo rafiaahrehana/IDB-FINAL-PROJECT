@@ -64,6 +64,10 @@ public class Lead extends BaseEntity {
     @Column(nullable = false, length = 30)
     private LeadSource source = LeadSource.OTHER;
 
+    // Free-text detail when source = OTHER (e.g. "Trade show", "Partner referral network")
+    @Column(length = 150)
+    private String sourceOther;
+
     @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(length = 30)
@@ -106,6 +110,13 @@ public class Lead extends BaseEntity {
     @OneToMany(mappedBy = "lead", fetch = FetchType.LAZY, orphanRemoval = false)
     @Builder.Default
     private List<com.businessos.modules.crm.activity.CrmActivity> activities = new ArrayList<>();
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(name = "lead_tags",
+        joinColumns = @JoinColumn(name = "lead_id"),
+        inverseJoinColumns = @JoinColumn(name = "tag_id"))
+    @Builder.Default
+    private List<com.businessos.modules.crm.tag.Tag> tags = new ArrayList<>();
 
     @PrePersist
     protected void onCreate() {

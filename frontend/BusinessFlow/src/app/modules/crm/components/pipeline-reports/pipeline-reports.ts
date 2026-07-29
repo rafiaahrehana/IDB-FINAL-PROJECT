@@ -4,20 +4,38 @@ import { RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { ChartConfiguration } from 'chart.js';
 import { BaseChartDirective } from 'ng2-charts';
-import { Opportunity, PipelineSummary } from '../../models/crm.model';
+import { Lead, LeadStatus, Opportunity, PipelineSummary } from '../../models/crm.model';
 import { OpportunityService } from '../../services/opportunity.service';
+import { LeadService } from '../../services/lead.service';
 import { Loader } from '../../../../shared/components/loader/loader';
 
+import { BosCurrencyPipe } from '../../../../shared/pipes/bos-currency.pipe';
 // Validated categorical/status slots (see dataviz skill palette) - fixed per
 // series, never reassigned by data. Won/Lost use the reserved status colors
 // since they represent an outcome's state, not an arbitrary category.
 const STAGE_HUE = '#7d55fa';
 const STATUS_GOOD = '#10b981';
 const STATUS_CRITICAL = '#ef4444';
+const LEAD_STATUS_COLORS: Record<LeadStatus, string> = {
+  NEW: '#3b82f6',
+  CONTACTED: '#f59e0b',
+  QUALIFIED: '#10b981',
+  DISQUALIFIED: '#ef4444',
+};
+
+export interface SalesPerformanceRow {
+  ownerId: number | null;
+  ownerName: string;
+  totalOpportunities: number;
+  wonCount: number;
+  lostCount: number;
+  wonValue: number;
+  winRate: number;
+}
 
 @Component({
   selector: 'app-pipeline-reports',
-  imports: [CommonModule, RouterLink, BaseChartDirective, Loader],
+  imports: [BosCurrencyPipe, CommonModule, RouterLink, BaseChartDirective, Loader],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './pipeline-reports.html',
 })
@@ -28,6 +46,9 @@ export class PipelineReports implements OnInit {
   summary?: PipelineSummary;
   wonDeals: Opportunity[] = [];
   lostDeals: Opportunity[] = [];
+  leads: Lead[] = [];
+  allOpportunities: Opportunity[] = [];
+  salesPerformance: SalesPerformanceRow[] = [];
 
   stageChartData?: ChartConfiguration<'bar'>['data'];
   stageChartOptions: ChartConfiguration<'bar'>['options'] = {
@@ -46,7 +67,26 @@ export class PipelineReports implements OnInit {
     scales: { y: { beginAtZero: true } },
   };
 
-  constructor(private opportunityService: OpportunityService, private cdr: ChangeDetectorRef) {}
+  revenueChartData?: ChartConfiguration<'bar'>['data'];
+  revenueChartOptions: ChartConfiguration<'bar'>['options'] = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: { y: { beginAtZero: true } },
+  };
+
+  leadStatusChartData?: ChartConfiguration<'doughnut'>['data'];
+  leadStatusChartOptions: ChartConfiguration<'doughnut'>['options'] = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { position: 'right' } },
+  };
+
+  constructor(
+    private opportunityService: OpportunityService,
+    private leadService: LeadService,
+    private cdr: ChangeDetectorRef,
+  ) {}
 
   ngOnInit(): void {
     this.load();
@@ -58,15 +98,22 @@ export class PipelineReports implements OnInit {
     this.cdr.markForCheck();
     forkJoin({
       summary: this.opportunityService.pipelineSummary(),
-      won: this.opportunityService.list(0, 500, { stage: 'CLOSED_WON' }),
-      lost: this.opportunityService.list(0, 500, { stage: 'CLOSED_LOST' }),
+      won: this.opportunityService.list(0, 500, { stage: 'WON' }),
+      lost: this.opportunityService.list(0, 500, { stage: 'LOST' }),
+      allOpportunities: this.opportunityService.list(0, 1000),
+      leads: this.leadService.list(0, 1000),
     }).subscribe({
-      next: ({ summary, won, lost }) => {
+      next: ({ summary, won, lost, allOpportunities, leads }) => {
         this.summary = summary;
         this.wonDeals = won.content;
         this.lostDeals = lost.content;
+        this.allOpportunities = allOpportunities.content;
+        this.leads = leads.content;
         this.buildStageChart(summary);
         this.buildTrendChart();
+        this.buildRevenueChart();
+        this.buildLeadStatusChart();
+        this.buildSalesPerformance();
         this.loading = false;
         this.cdr.markForCheck();
       },
@@ -76,6 +123,72 @@ export class PipelineReports implements OnInit {
         this.cdr.markForCheck();
       },
     });
+  }
+
+  get leadConversionRate(): number {
+    return this.leads.length > 0
+      ? Math.round((this.leads.filter((l) => l.converted).length / this.leads.length) * 100)
+      : 0;
+  }
+
+  get convertedLeadsCount(): number {
+    return this.leads.filter((l) => l.converted).length;
+  }
+
+  private buildLeadStatusChart(): void {
+    const statuses: LeadStatus[] = ['NEW', 'CONTACTED', 'QUALIFIED', 'DISQUALIFIED'];
+    this.leadStatusChartData = {
+      labels: statuses.map((s) => this.stageLabel(s)),
+      datasets: [{
+        data: statuses.map((s) => this.leads.filter((l) => l.status === s).length),
+        backgroundColor: statuses.map((s) => LEAD_STATUS_COLORS[s]),
+      }],
+    };
+  }
+
+  // Sums actual won amount per calendar month (vs. the trend chart's deal count),
+  // bucketed the same way as buildTrendChart for a consistent last-6-months window.
+  private buildRevenueChart(): void {
+    const months: { key: string; label: string }[] = [];
+    const now = new Date();
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      months.push({ key: `${d.getFullYear()}-${d.getMonth()}`, label: d.toLocaleString('en-US', { month: 'short' }) });
+    }
+    const revenueByMonth = months.map(({ key }) =>
+      this.wonDeals
+        .filter((d) => {
+          if (!d.actualCloseDate) return false;
+          const cd = new Date(d.actualCloseDate);
+          return `${cd.getFullYear()}-${cd.getMonth()}` === key;
+        })
+        .reduce((sum, d) => sum + (d.amount || 0), 0),
+    );
+    this.revenueChartData = {
+      labels: months.map((m) => m.label),
+      datasets: [{ data: revenueByMonth, backgroundColor: STATUS_GOOD, borderRadius: 4, maxBarThickness: 40 }],
+    };
+  }
+
+  private buildSalesPerformance(): void {
+    const byOwner = new Map<string, SalesPerformanceRow>();
+    for (const o of this.allOpportunities) {
+      const key = o.ownerId != null ? String(o.ownerId) : 'unassigned';
+      if (!byOwner.has(key)) {
+        byOwner.set(key, {
+          ownerId: o.ownerId ?? null,
+          ownerName: o.ownerName || 'Unassigned',
+          totalOpportunities: 0, wonCount: 0, lostCount: 0, wonValue: 0, winRate: 0,
+        });
+      }
+      const row = byOwner.get(key)!;
+      row.totalOpportunities++;
+      if (o.stage === 'WON') { row.wonCount++; row.wonValue += o.amount || 0; }
+      if (o.stage === 'LOST') row.lostCount++;
+    }
+    this.salesPerformance = Array.from(byOwner.values())
+      .map((row) => ({ ...row, winRate: row.wonCount + row.lostCount > 0 ? Math.round((row.wonCount / (row.wonCount + row.lostCount)) * 100) : 0 }))
+      .sort((a, b) => b.wonValue - a.wonValue);
   }
 
   get wonAmount(): number {

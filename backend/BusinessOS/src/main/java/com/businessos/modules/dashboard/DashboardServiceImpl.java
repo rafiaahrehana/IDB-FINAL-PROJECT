@@ -486,7 +486,7 @@ public class DashboardServiceImpl implements DashboardService {
         List<RecommendationResponse> recommendations = new ArrayList<>();
 
         // 1. Stale open opportunities — no activity for 14+ days
-        List<OpportunityStage> closedStages = List.of(OpportunityStage.CLOSED_WON, OpportunityStage.CLOSED_LOST);
+        List<OpportunityStage> closedStages = List.of(OpportunityStage.WON, OpportunityStage.LOST);
         var staleDeals = opportunityRepository.findStaleOpenOpportunities(
                 companyId, closedStages, LocalDateTime.now().minusDays(14), PageRequest.of(0, 5));
         for (var deal : staleDeals) {
@@ -560,7 +560,7 @@ public class DashboardServiceImpl implements DashboardService {
                 .build();
 
         long start = System.currentTimeMillis();
-        String insights = aiService.generateFromPrompt(AiFeature.BUSINESS_INSIGHTS, prompt);
+        String insights = aiService.generateRaw(AiFeature.BUSINESS_INSIGHTS, prompt);
 
         InsightsResponse response = new InsightsResponse();
         response.setInsights(insights);

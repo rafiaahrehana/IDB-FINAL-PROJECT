@@ -11,21 +11,24 @@ import java.math.BigDecimal;
 @Data
 public class CreateClientRequest {
 
-    @NotBlank(message = "First name is required")
+    // First/last name, email and password are only required when provisionPortalLogin=true
+    // (validated in ClientServiceImpl, not here, since they're conditionally required).
     @Size(min = 2, max = 50, message = "First name must be between 2 and 50 characters")
     private String firstName;
 
-    @NotBlank(message = "Last name is required")
     @Size(min = 2, max = 50, message = "Last name must be between 2 and 50 characters")
     private String lastName;
 
-    @NotBlank(message = "Email is required")
     @Email(message = "Email must be valid")
     private String email;
 
-    @NotBlank(message = "Password is required")
     @Size(min = 8, message = "Password must be at least 8 characters")
     private String password;
+
+    // When true (default false), a portal login (User) is created and linked to the Client
+    // in the same step. When false, the Client is created without a User - a login can be
+    // provisioned later. See ClientServiceImpl.create().
+    private Boolean provisionPortalLogin = false;
 
     @Size(max = 30, message = "Phone must not exceed 30 characters")
     private String phone;
@@ -52,4 +55,6 @@ public class CreateClientRequest {
 
     private Integer employeeCount;
     private BigDecimal annualRevenue;
+
+    private java.util.List<Long> tagIds;
 }

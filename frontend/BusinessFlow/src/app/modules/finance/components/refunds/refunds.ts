@@ -9,9 +9,10 @@ import { EmptyState } from '../../../../shared/components/empty-state/empty-stat
 import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/confirm-dialog';
 import { HasPermissionDirective } from '../../../../shared/directives/has-permission.directive';
 
+import { BosCurrencyPipe } from '../../../../shared/pipes/bos-currency.pipe';
 @Component({
   selector: 'app-refunds',
-  imports: [CommonModule, FormsModule, RouterLink, Pagination, Loader, EmptyState, ConfirmDialog, HasPermissionDirective],
+  imports: [BosCurrencyPipe, CommonModule, FormsModule, RouterLink, Pagination, Loader, EmptyState, ConfirmDialog, HasPermissionDirective],
   templateUrl: './refunds.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -22,7 +23,7 @@ export class Refunds implements OnInit {
   loading = false;
   error = '';
   success = '';
-  statusFilter = 'REQUESTED';
+  statusFilter = 'PROCESSED';
   statuses = ['REQUESTED', 'PROCESSED', 'REJECTED'];
 
   processTarget: RefundRequest | null = null;

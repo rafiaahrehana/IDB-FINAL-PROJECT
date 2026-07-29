@@ -20,6 +20,9 @@ public class OfferLetterResponse {
     private boolean issued;
     private Long employeeId;
     private String employeeName;
+    private Long jobApplicationId;
+    private String recipientName;
+    private String recipientEmail;
     private Long createdById;
     private String createdByName;
     private LocalDateTime createdAt;

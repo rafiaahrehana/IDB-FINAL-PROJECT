@@ -15,5 +15,7 @@ public interface JournalEntryService {
 
     void post(Long id);
 
+    JournalEntryResponse reverse(Long id);
+
     JournalEntryResponse delete(Long id);
 }

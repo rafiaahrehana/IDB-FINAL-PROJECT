@@ -24,6 +24,8 @@ public class ExpenseResponse {
     private BigDecimal amount;
     private String vendorName;
     private String category;
+    private Long expenseAccountId;
+    private String expenseAccountName;
     private LocalDate expenseDate;
     private String receiptUrl;
     private ExpenseStatus status;

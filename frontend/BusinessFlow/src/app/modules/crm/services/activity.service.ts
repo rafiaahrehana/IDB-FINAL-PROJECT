@@ -24,4 +24,8 @@ export class ActivityService {
   delete(id: number): Observable<void> {
     return this.api.delete<void>(`${this.endpoint}/${id}`);
   }
+
+  summarise(params: { clientId?: number; opportunityId?: number }): Observable<{ summary: string }> {
+    return this.api.get<{ summary: string }>(`${this.endpoint}/summary`, params);
+  }
 }

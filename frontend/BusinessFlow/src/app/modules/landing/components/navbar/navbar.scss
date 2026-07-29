@@ -1,17 +1,26 @@
 .navbar {
-  padding-top: 1.25rem;
-  padding-bottom: 1.25rem;
-  
+  padding-top: 1.4rem;
+  padding-bottom: 1.4rem;
+  transition: padding 0.3s ease, background 0.3s ease, box-shadow 0.3s ease;
+
   &.scrolled {
-    padding-top: 0.75rem;
-    padding-bottom: 0.75rem;
-    border-bottom: 1px solid var(--bos-border);
+    padding-top: 0.7rem;
+    padding-bottom: 0.7rem;
+    box-shadow: 0 4px 24px rgba(30, 27, 75, 0.08);
   }
 }
 
 .logo-icon {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
+  object-fit: cover;
+  box-shadow: 0 4px 14px rgba(107, 70, 255, 0.4);
+}
+
+.brand-accent {
+  background: linear-gradient(120deg, #A78BFA, #7C5CFF);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .transition-all {
@@ -25,9 +34,12 @@
 }
 
 .nav-link {
-  font-size: 0.95rem;
+  font-size: 0.92rem;
+  font-weight: 500;
   position: relative;
-  
+  padding-top: 0.4rem !important;
+  padding-bottom: 0.4rem !important;
+
   &::after {
     content: '';
     position: absolute;
@@ -36,12 +48,34 @@
     transform: translateX(-50%);
     width: 0;
     height: 2px;
-    background-color: var(--bos-primary);
-    transition: width 0.2s ease;
+    border-radius: 2px;
+    background: linear-gradient(90deg, #7C5CFF, #A78BFA);
+    transition: width 0.25s ease;
   }
-  
+
   &:hover::after {
-    width: 100%;
+    width: 70%;
+  }
+}
+
+.dropdown-menu-bos {
+  border: 1px solid rgba(107, 70, 255, 0.1);
+  border-radius: 14px;
+  box-shadow: 0 16px 40px rgba(30, 27, 75, 0.14);
+  padding: 0.5rem;
+  margin-top: 0.75rem !important;
+
+  .dropdown-item {
+    border-radius: 8px;
+    padding: 0.55rem 0.85rem;
+    font-size: 0.88rem;
+    font-weight: 500;
+    transition: background 0.15s ease;
+
+    &:hover, &:focus {
+      background: var(--bos-lavender-lt);
+      color: var(--bos-brand);
+    }
   }
 }
 
@@ -52,12 +86,12 @@
     border-radius: 12px;
     margin-top: 1rem;
     box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-    
+
     .nav-link {
       color: var(--bos-dark) !important;
       padding-top: 0.5rem;
       padding-bottom: 0.5rem;
-      
+
       &::after {
         display: none;
       }

@@ -3,12 +3,32 @@
   color: #1a103c;
 }
 
+.pricing-dots {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  opacity: 0.6;
+  mask-image: radial-gradient(ellipse 70% 70% at 50% 20%, #000 30%, transparent 90%);
+  -webkit-mask-image: radial-gradient(ellipse 70% 70% at 50% 20%, #000 30%, transparent 90%);
+}
+
 /* Gradient heading accent */
 .text-gradient {
-  background: linear-gradient(90deg, #4F46E5 0%, #818cf8 100%);
+  background: linear-gradient(90deg, #7d55fa 0%, #b48af9 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
+}
+
+.trust-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #4b5563;
+
+  i { color: #16A34A; font-size: 0.85rem; }
 }
 
 /* Card Styling */
@@ -16,6 +36,13 @@
   border: 1px solid rgba(0, 0, 0, 0.06);
   z-index: 2;
   color: #1a103c;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+
+  &:not(.pricing-card-highlighted):hover {
+    transform: translateY(-6px);
+    box-shadow: 0 16px 36px rgba(30, 27, 75, 0.1) !important;
+    border-color: rgba(107, 70, 255, 0.25);
+  }
 }
 .pricing-card:not(.pricing-card-highlighted) h2,
 .pricing-card:not(.pricing-card-highlighted) h4 {
@@ -23,13 +50,23 @@
 }
 
 .pricing-card-highlighted {
-  background: linear-gradient(160deg, #1a103c 0%, #3d2678 100%) !important;
+  background: linear-gradient(160deg, #1E1B4B 0%, #3d2678 55%, #4C1D95 100%) !important;
   border: none;
-  transform: translateY(-12px);
+  transform: translateY(-14px);
+  box-shadow: 0 24px 50px rgba(76, 29, 149, 0.3) !important;
+
+  &:hover {
+    transform: translateY(-18px);
+    box-shadow: 0 28px 60px rgba(76, 29, 149, 0.4) !important;
+  }
 }
 .pricing-card-highlighted h2,
 .pricing-card-highlighted h4 {
   color: #fff !important;
+}
+
+.popular-badge {
+  letter-spacing: 0.02em;
 }
 
 .pricing-divider {
@@ -41,15 +78,15 @@
 }
 
 .border-purple {
-  border: 1.5px solid #818cf8 !important;
+  border: 1.5px solid #a484f4 !important;
 }
 
 .border-purple-light {
-  border: 1px solid #c7d2fe;
+  border: 1px solid #c9b4f7;
 }
 
 .bg-lavender {
-  background-color: #EEF2FF !important;
+  background-color: #efe9fd !important;
 }
 
 .text-purple {
@@ -58,18 +95,18 @@
 
 /* Buttons */
 .btn-outline-purple {
-  border: 1.5px solid #4F46E5;
-  color: #4F46E5;
+  border: 1.5px solid #7d55fa;
+  color: #6a42e5;
   background: transparent;
   transition: all 0.2s;
 }
 .btn-outline-purple:hover {
-  background: #4F46E5;
+  background: #7d55fa;
   color: #fff;
 }
 
 .btn-purple-solid {
-  background: linear-gradient(90deg, #4F46E5 0%, #818cf8 100%);
+  background: linear-gradient(90deg, #7d55fa 0%, #9b7bfb 100%);
   color: #fff;
   border: none;
   transition: all 0.2s;

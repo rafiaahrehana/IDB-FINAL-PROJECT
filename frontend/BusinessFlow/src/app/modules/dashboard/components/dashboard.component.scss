@@ -1,475 +1,173 @@
-// =============================================
-// Design System Variables
-// =============================================
-$primary: #4F46E5;
-$primary-light: #EEF2FF;
-$success: #16A34A;
-$success-light: #DCFCE7;
-$danger: #DC2626;
-$danger-light: #FEE2E2;
-$info: #0EA5E9;
-$info-light: #E0F2FE;
-$warning: #F97316;
-$warning-light: #FFF7ED;
-$amber: #D97706;
-$amber-light: #FEF3C7;
-$bg: #F5F6F8;
-$bg-white: #ffffff;
-$text-primary: #111827;
-$text-secondary: #6B7280;
-$border-color: #E5E7EB;
-$border-radius: 10px;
-$border-radius-lg: 12px;
+// High Contrast Premium Variables
+$deep-slate: #0f172a;
+$secondary-slate: #334155;
+$light-bg: #f8fafc;
+$purple-primary: #8b5cf6;
+$purple-dark: #4c1d95;
+$purple-bg: #f3e8ff;
 
-// =============================================
-// Global Utilities
-// =============================================
 .container-fluid {
-  background-color: $bg;
+  background-color: #f8fafc;
   min-height: 100vh;
 }
 
-// =============================================
-// Page Header
-// =============================================
-.workspace-label {
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: $primary;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  margin-bottom: 4px;
+// Platform KPI cards — soft-tint colored treatment (matches the app-wide stat cards)
+.platform-kpi-card {
+  --pk: #8b5cf6;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--pk);
+  }
+  &:hover { transform: translateY(-4px); }
+
+  // Colored value
+  .fs-2 { color: var(--pk) !important; }
+
+  &.pk-purple { --pk: #8b5cf6; background: linear-gradient(135deg, rgba(139, 92, 246, 0.10), rgba(139, 92, 246, 0.02) 60%, #fff); }
+  &.pk-green  { --pk: #059669; background: linear-gradient(135deg, rgba(5, 150, 105, 0.10), rgba(5, 150, 105, 0.02) 60%, #fff); }
+  &.pk-blue   { --pk: #0284c7; background: linear-gradient(135deg, rgba(2, 132, 199, 0.10), rgba(2, 132, 199, 0.02) 60%, #fff); }
+  &.pk-amber  { --pk: #b45309; background: linear-gradient(135deg, rgba(180, 83, 9, 0.10), rgba(180, 83, 9, 0.02) 60%, #fff); }
 }
 
-.page-title {
-  font-size: 1.5rem;
+// Text Contrast Utilities
+.text-dark-contrast {
+  color: $deep-slate !important;
   font-weight: 700;
-  color: $text-primary;
-  margin-bottom: 4px;
-  line-height: 1.3;
 }
 
-.page-subtitle {
-  font-size: 0.875rem;
-  color: $text-secondary;
+.text-secondary-contrast {
+  color: $secondary-slate !important;
   font-weight: 500;
 }
 
-// =============================================
-// Filter Buttons
-// =============================================
-.filter-chip {
-  background: $bg-white;
-  border: 1px solid $border-color;
-  border-radius: 8px;
-  padding: 8px 12px;
-  font-weight: 600;
-  font-size: 0.875rem;
-  color: $text-primary;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-
-  i {
-    color: $text-secondary;
-  }
+// Pastel Card Color Sets (High Contrast Text)
+.text-purple-contrast {
+  color: #6b21a8 !important;
+}
+.text-purple-dark {
+  color: #3b0764 !important;
+}
+.text-purple-success {
+  color: #15803d !important;
 }
 
-.filter-btn-group {
-  background: $bg-white;
-  border: 1px solid $border-color;
-  border-radius: 8px;
-  padding: 4px;
-  display: flex;
-  gap: 2px;
+.text-amber-contrast {
+  color: #b45309 !important;
 }
 
-.filter-btn {
-  border: none;
-  background: transparent;
-  color: $text-secondary;
-  font-weight: 600;
-  font-size: 0.8125rem;
-  padding: 6px 14px;
-  border-radius: 6px;
-  transition: all 0.2s ease;
-
-  &:hover {
-    background: $bg;
-    color: $text-primary;
-  }
-
-  &.active {
-    background: $primary;
-    color: #ffffff;
-  }
+.text-blue-contrast {
+  color: #0369a1 !important;
+}
+.text-blue-dark {
+  color: #0c4a6e !important;
+}
+.text-blue-success {
+  color: #15803d !important;
 }
 
-// =============================================
-// Section Labels
-// =============================================
-.section-label {
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: $text-secondary;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  margin-bottom: 8px;
+.text-teal-contrast {
+  color: #0f766e !important;
+}
+.text-teal-dark {
+  color: #115e59 !important;
+}
+.text-teal-success {
+  color: #15803d !important;
 }
 
-// =============================================
-// Stat Cards
-// =============================================
-.stat-card {
-  background: $bg-white;
-  border: 1px solid $border-color;
-  border-radius: $border-radius;
-  min-height: 110px;
+.text-lime-contrast {
+  color: #4d7c0f !important;
+}
+.text-lime-dark {
+  color: #365314 !important;
+}
+.text-lime-success {
+  color: #15803d !important;
+}
+
+// Standard Stat Card Icons
+.text-purple { color: #8b5cf6; }
+.text-blue { color: #0284c7; }
+.text-teal { color: #0d9488; }
+.text-lime { color: #65a30d; }
+.text-emerald { color: #059669; }
+.text-indigo { color: #4f46e5; }
+.text-danger { color: #dc2626; }
+
+// Bottom Stat Card Color Sets
+.text-danger-contrast { color: #991b1b !important; }
+.text-danger-dark { color: #7f1d1d !important; }
+.text-emerald-contrast { color: #065f46 !important; }
+.text-emerald-dark { color: #064e3b !important; }
+.text-indigo-contrast { color: #3730a3 !important; }
+.text-indigo-dark { color: #312e81 !important; }
+
+// Card Base Styling
+.dashboard-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+  border-radius: 1rem;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
-
+  
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.08);
   }
 }
 
-.stat-label {
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: $text-secondary;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
+.card-header {
+  border-bottom: 1px solid #f1f5f9;
+  background-color: transparent !important;
 }
 
-.stat-value {
-  font-size: 1.75rem;
-  font-weight: 800;
-  color: $text-primary;
-  line-height: 1.2;
-  margin-bottom: 4px;
-}
-
-.stat-icon-wrap {
-  width: 36px;
-  height: 36px;
-  background: $primary-light;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-
-  i {
-    font-size: 1rem;
-  }
-}
-
-.stat-icon-wrap-sm {
-  width: 32px;
-  height: 32px;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.stat-icon-wrap-xs {
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.stat-trend {
-  font-size: 0.75rem;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-// =============================================
-// Module Cards (Bottom Row)
-// =============================================
-.module-card {
-  background: $bg-white;
-  border: 1px solid $border-color;
-  border-radius: $border-radius;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
-  }
-}
-
-.card-title-sm {
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: $text-primary;
-}
-
-.mini-stat-card {
-  background: rgba(255, 255, 255, 0.8);
-  border: 1px solid $border-color;
-  border-radius: 6px;
-  padding: 8px;
-  text-align: center;
-}
-
-.announcement-icon-wrap {
-  width: 32px;
-  height: 32px;
-  background: $bg-white;
-  border: 1px solid $border-color;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-// =============================================
-// Chart Cards
-// =============================================
-.chart-card {
-  background: $bg-white;
-  border: 1px solid $border-color;
-  border-radius: $border-radius-lg;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
-  }
-}
-
-.card-title {
-  font-size: 1rem;
-  font-weight: 700;
-  color: $text-primary;
-  margin-bottom: 0;
-}
-
-// Donut Center
-.donut-center-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-
-.donut-center-label {
-  font-size: 0.6875rem;
-  color: $text-secondary;
-  font-weight: 600;
-}
-
-// Task Icons
-.task-icon-wrap {
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  background: $bg;
-
-  i {
-    font-size: 1.1rem;
-  }
-}
-
-.bg-indigo-light {
-  background: $primary-light;
-}
-
-.bg-success-light {
-  background: $success-light;
-}
-
-.bg-danger-light {
-  background: $danger-light;
-}
-
-.bg-info-light {
-  background: $info-light;
-}
-
-.bg-warning-light {
-  background: $warning-light;
-}
-
-// =============================================
-// Platform KPI Cards
-// =============================================
-.platform-kpi-card {
-  border: 1px solid $border-color !important;
-  border-radius: $border-radius !important;
-  background: $bg-white;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
-  }
-}
-
-.plan-card {
-  border: 1px solid $border-color;
-  border-radius: 8px;
-  padding: 8px;
-  height: 100%;
-  display: block;
-  text-decoration: none;
-  transition: all 0.2s ease;
-
-  &:hover {
-    background: $bg;
-    border-color: darken($border-color, 5%);
-  }
-}
-
-// =============================================
+// Donut Center Text
 // Progress Bars
-// =============================================
 .progress {
-  background-color: #F3F4F6;
+  background-color: #f1f5f9;
   border-radius: 9999px;
-  height: 6px;
+  height: 8px;
 }
-
 .progress-bar-indigo {
-  background-color: $primary;
+  background-color: #6366f1;
 }
-
 .progress-bar-teal {
   background-color: #14b8a6;
 }
 
-// =============================================
 // Lists & Dividers
-// =============================================
 .list-group-item {
   border: none;
   padding: 0.75rem 0;
-  border-bottom: 1px solid #F3F4F6;
-
+  border-bottom: 1px solid #f1f5f9;
+  
   &:last-child {
     border-bottom: none;
   }
 }
 
-// =============================================
-// View All Links
-// =============================================
+// Links
 .view-all-link {
-  color: $primary;
+  color: #4f46e5;
   font-weight: 600;
-  font-size: 0.78rem;
+  font-size: 0.875rem;
   text-decoration: none;
-
+  
   &:hover {
     text-decoration: underline;
   }
 }
 
-// =============================================
-// Badge Variants
-// =============================================
-.bg-danger-light {
-  background-color: $danger-light !important;
-  color: $danger !important;
-}
-
-.bg-success-light {
-  background-color: $success-light !important;
-}
-
-// =============================================
-// Color Utilities
-// =============================================
-.text-indigo {
-  color: $primary;
-}
-
-.text-success {
-  color: $success;
-}
-
-.text-danger {
-  color: $danger;
-}
-
-.text-info {
-  color: $info;
-}
-
-.text-warning {
-  color: $warning;
-}
-
-.text-amber {
-  color: $amber;
-}
-
-.text-dark {
-  color: $text-primary;
-}
-
-.text-secondary {
-  color: $text-secondary;
-}
-
-.text-muted {
-  color: #9CA3AF;
-}
-
-// =============================================
-// SVG & Charts
-// =============================================
+// Custom drop shadow and line path
 svg path {
   transition: stroke-dashoffset 0.5s ease-in-out;
-}
-
-// =============================================
-// Transitions
-// =============================================
-.transition-hover {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  border: 1px solid $border-color;
-  border-radius: $border-radius;
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
-  }
-}
-
-// =============================================
-// Card Header Override
-// =============================================
-.card-header {
-  background-color: transparent !important;
-}
-
-// =============================================
-// Text Utilities
-// =============================================
-.fw-extrabold {
-  font-weight: 800;
-}
-
-.tracking-wider {
-  letter-spacing: 0.04em;
 }

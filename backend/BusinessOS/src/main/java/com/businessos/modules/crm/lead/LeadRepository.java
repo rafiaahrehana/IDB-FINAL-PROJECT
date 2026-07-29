@@ -38,11 +38,12 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     Page<Lead> findByCompanyIdAndPriority(Long companyId, Priority priority, Pageable pageable);
 
 
-    @Query("SELECT l FROM Lead l WHERE l.company.id = :companyId " +
+    @Query("SELECT DISTINCT l FROM Lead l LEFT JOIN l.tags t WHERE l.company.id = :companyId " +
            "AND (:status IS NULL OR l.status = :status) " +
            "AND (:source IS NULL OR l.source = :source) " +
            "AND (:priority IS NULL OR l.priority = :priority) " +
            "AND (:assignedToId IS NULL OR l.assignedTo.id = :assignedToId) " +
+           "AND (:tagId IS NULL OR t.id = :tagId) " +
            "AND l.deleted = false " +
            "ORDER BY l.createdAt DESC")
     Page<Lead> filterLeads(@Param("companyId") Long companyId,
@@ -50,6 +51,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                            @Param("source") LeadSource source,
                            @Param("priority") Priority priority,
                            @Param("assignedToId") Long assignedToId,
+                           @Param("tagId") Long tagId,
                            Pageable pageable);
 
     long countByCompanyIdAndStatus(Long companyId, LeadStatus status);
@@ -58,13 +60,13 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             Long companyId, LeadStatus status, LocalDateTime from, LocalDateTime to);
 
     @Query("SELECT COUNT(l) FROM Lead l WHERE l.company.id = :companyId AND " +
-           "l.status NOT IN :closedStatuses AND l.deleted = false")
-    long countActiveByCompanyId(@Param("companyId") Long companyId, 
+           "l.status NOT IN :closedStatuses AND l.converted = false AND l.deleted = false")
+    long countActiveByCompanyId(@Param("companyId") Long companyId,
                                 @Param("closedStatuses") List<LeadStatus> closedStatuses);
 
     @Query("SELECT COUNT(l) FROM Lead l WHERE l.company.id = :companyId AND " +
-           "l.assignedTo.id = :assignedToId AND l.status NOT IN :closedStatuses AND l.deleted = false")
-    long countActiveByAssignee(@Param("companyId") Long companyId, 
+           "l.assignedTo.id = :assignedToId AND l.status NOT IN :closedStatuses AND l.converted = false AND l.deleted = false")
+    long countActiveByAssignee(@Param("companyId") Long companyId,
                                @Param("assignedToId") Long assignedToId,
                                @Param("closedStatuses") List<LeadStatus> closedStatuses);
 
@@ -77,12 +79,12 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                                              @Param("endDate") LocalDate endDate);
 
     @Query("SELECT l FROM Lead l WHERE l.company.id = :companyId AND " +
-           "l.lastContactDate IS NULL AND l.status != 'WON' AND l.status != 'LOST' AND " +
+           "l.lastContactDate IS NULL AND l.status != 'DISQUALIFIED' AND l.converted = false AND " +
            "l.deleted = false")
     Page<Lead> findNeverContactedLeads(@Param("companyId") Long companyId, Pageable pageable);
 
     @Query("SELECT l FROM Lead l WHERE l.company.id = :companyId AND " +
-           "l.lastContactDate < :beforeDate AND l.status NOT IN :closedStatuses AND " +
+           "l.lastContactDate < :beforeDate AND l.status NOT IN :closedStatuses AND l.converted = false AND " +
            "l.deleted = false")
     Page<Lead> findStalLeads(@Param("companyId") Long companyId,
                              @Param("beforeDate") LocalDateTime beforeDate,
@@ -90,14 +92,14 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                              Pageable pageable);
 
     @Query("SELECT l FROM Lead l WHERE l.company.id = :companyId AND " +
-           "l.assignedTo IS NULL AND l.status NOT IN :closedStatuses AND " +
+           "l.assignedTo IS NULL AND l.status NOT IN :closedStatuses AND l.converted = false AND " +
            "l.deleted = false")
     Page<Lead> findUnassignedLeads(@Param("companyId") Long companyId,
                                    @Param("closedStatuses") List<LeadStatus> closedStatuses,
                                    Pageable pageable);
 
     @Query("SELECT l FROM Lead l WHERE l.company.id = :companyId AND " +
-           "l.priority = 'HIGH' AND l.status NOT IN :closedStatuses AND " +
+           "l.priority = 'HIGH' AND l.status NOT IN :closedStatuses AND l.converted = false AND " +
            "l.deleted = false " +
            "ORDER BY l.expectedCloseDate ASC")
     Page<Lead> findHighPriorityOpenLeads(@Param("companyId") Long companyId,
@@ -108,4 +110,6 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
 
     boolean existsByPhoneAndCompanyIdAndDeletedFalse(String phone, Long companyId);
     long countByCompanyId(Long companyId);
+
+    long countByCompanyIdAndConvertedTrue(Long companyId);
 }

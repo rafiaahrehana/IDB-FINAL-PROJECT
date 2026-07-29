@@ -14,22 +14,19 @@
   @if (loading) { <app-loader /> }
 
   @if (!loading && services.length) {
-    <!-- Mock Filters -->
     <div class="d-flex flex-wrap gap-3 mb-4 align-items-center">
-      <div class="input-search" style="max-width: 300px;">
-        <i class="bi bi-search"></i>
-        <input class="form-control" placeholder="Search services..." />
+      <div class="input-group" style="max-width: 300px;">
+        <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+        <input class="form-control border-start-0 ps-0" placeholder="Search services..." [(ngModel)]="searchTerm" />
       </div>
-      <select class="form-select w-auto text-secondary border-0 bg-light">
-        <option>All Prices</option>
-      </select>
-      <select class="form-select w-auto text-secondary border-0 bg-light">
-        <option>Sort By: Popular</option>
-      </select>
     </div>
 
+    @if (!filteredServices.length) {
+      <app-empty-state icon="bi-search" [message]="'No services match \'' + searchTerm + '\'.'" />
+    }
+
     <div class="d-flex flex-column gap-3">
-      @for (service of services; track service.id) {
+      @for (service of filteredServices; track service.id) {
         <div class="card shadow-sm border-0 w-100" style="border-radius: 12px; transition: transform 0.2s ease, box-shadow 0.2s ease;">
           <div class="card-body p-4 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
             

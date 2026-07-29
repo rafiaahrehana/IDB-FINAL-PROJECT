@@ -69,6 +69,14 @@ public class PaymentReceiptController {
         return ResponseEntity.ok().build();
     }
 
+    @PostMapping("/{id}/reverse")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
+    @Operation(summary = "Reverse a confirmed payment (NSF/chargeback) - restores the invoice balance and unwinds the GL")
+    public ResponseEntity<Void> reverse(@PathVariable Long id, @RequestParam(required = false) String reason) {
+        service.reverse(id, reason);
+        return ResponseEntity.ok().build();
+    }
+
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('COMPANY_OWNER')")
     @Operation(summary = "Delete Payment Receipt")

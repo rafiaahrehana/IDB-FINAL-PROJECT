@@ -36,6 +36,13 @@ public class ClientInvoiceController {
         return ResponseEntity.ok(service.getById(id));
     }
 
+    @GetMapping("/{id}/ai-summary")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
+    @Operation(summary = "Draft a concise invoice summary note with AI (not persisted)")
+    public ResponseEntity<InvoiceSummaryDraftResponse> draftSummaryWithAi(@PathVariable Long id) {
+        return ResponseEntity.ok(service.draftSummaryWithAi(id));
+    }
+
     @GetMapping("/{id}/pdf")
     @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE', 'CLIENT')")
     @Operation(summary = "Download the invoice as a PDF (staff: any invoice in their company; client: only their own)")
@@ -166,5 +173,22 @@ public class ClientInvoiceController {
     public ResponseEntity<Void> rejectRefund(@PathVariable Long id, @RequestParam(required = false) String reason) {
         service.rejectRefund(id, reason);
         return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/credit-notes")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
+    @Operation(summary = "Issue a credit note against an invoice (reduces balance owed, no cash moves)")
+    public ResponseEntity<CreditNoteResponse> issueCreditNote(@Valid @RequestBody CreditNoteRequest request) {
+        return new ResponseEntity<>(service.issueCreditNote(request), HttpStatus.CREATED);
+    }
+
+    @GetMapping("/credit-notes")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
+    @Operation(summary = "List credit notes, optionally filtered by invoice")
+    public ResponseEntity<Page<CreditNoteResponse>> listCreditNotes(
+            @RequestParam(required = false) Long invoiceId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(service.listCreditNotes(invoiceId, PageRequest.of(page, size)));
     }
 }

@@ -1,9 +1,15 @@
 package com.businessos.modules.hrm.leave.companyleavePolicy;
 
+import com.businessos.modules.ai.enums.AiFeature;
+import com.businessos.modules.ai.prompt.LeavePolicyPromptBuilder;
+import com.businessos.modules.ai.service.AiService;
 import com.businessos.modules.company.Company;
 import com.businessos.modules.company.CompanyLeavePolicy;
+import com.businessos.modules.company.CompanyRepository;
 import com.businessos.auth.role.enums.PermissionCode;
 import com.businessos.auth.role.service.AuthorizationService;
+import com.businessos.enums.EmploymentType;
+import com.businessos.enums.LeaveType;
 import com.businessos.shared.exception.BadRequestException;
 import com.businessos.shared.exception.ResourceNotFoundException;
 import com.businessos.security.SecurityUtil;
@@ -22,8 +28,10 @@ import java.util.List;
 public class CompanyLeavePolicyServiceImpl implements CompanyLeavePolicyService {
 
     private final CompanyLeavePolicyRepository policyRepository;
+    private final CompanyRepository companyRepository;
     private final SecurityUtil securityUtil;
     private final AuthorizationService authorizationService;
+    private final AiService aiService;
 
     @Override
     @Transactional
@@ -90,6 +98,35 @@ public class CompanyLeavePolicyServiceImpl implements CompanyLeavePolicyService 
     public void delete(Long id) {
         authorizationService.checkPermission(PermissionCode.LEAVE_POLICY_DELETE);
         findInTenant(id).softDelete();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public LeavePolicyDraftResponse draftWithAi(LeavePolicyDraftRequest request) {
+        authorizationService.checkPermission(PermissionCode.LEAVE_POLICY_CREATE);
+        Long companyId = requireCompanyId();
+        Company company = companyRepository.findById(companyId)
+            .orElseThrow(() -> new ResourceNotFoundException("Company not found: " + companyId));
+
+        CompanyLeavePolicy annual = policyRepository
+            .findApplicablePolicy(companyId, LeaveType.ANNUAL, EmploymentType.FULL_TIME)
+            .orElseThrow(() -> new BadRequestException(
+                "Configure at least an Annual leave policy for Full-time employees before drafting a policy document"));
+        CompanyLeavePolicy sick = policyRepository
+            .findApplicablePolicy(companyId, LeaveType.SICK, EmploymentType.FULL_TIME)
+            .orElse(null);
+
+        String prompt = LeavePolicyPromptBuilder.builder()
+            .setCompanyName(company.getCompanyName())
+            .setAnnualLeaveDays(annual.getAnnualEntitlement())
+            .setSickLeaveDays(sick != null ? sick.getAnnualEntitlement() : 0)
+            .setRemoteWorkAllowed(request.isRemoteWorkAllowed())
+            .setAdditionalContext(request.getAdditionalContext())
+            .build();
+
+        LeavePolicyDraftResponse response = new LeavePolicyDraftResponse();
+        response.setDocument(aiService.generateRaw(AiFeature.LEAVE_POLICY, prompt));
+        return response;
     }
 
     private CompanyLeavePolicy findInTenant(Long id) {

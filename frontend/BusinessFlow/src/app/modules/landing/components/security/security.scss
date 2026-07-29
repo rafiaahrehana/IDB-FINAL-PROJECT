@@ -12,15 +12,15 @@
 }
 
 .bg-purple-dark {
-  background-color: #3730A3;
+  background-color: #4a287c;
 }
 
 .text-lavender {
-  color: #c7d2fe;
+  color: #e6d8fa;
 }
 
 .security-card {
-  border: 1px solid var(--card-border-color, #c7d2fe);
+  border: 1px solid var(--card-border-color, #e0d0f5);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
   transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   height: 100%;

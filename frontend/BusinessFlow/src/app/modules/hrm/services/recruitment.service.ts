@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService, PagedResponse } from '../../../core/services/api.service';
-import { ApplicationStatus, JobApplication, JobApplicationRequest } from '../models/hrm.model';
+import { ApplicationStatus, Employee, HireApplicationRequest, JobApplication, JobApplicationRequest } from '../models/hrm.model';
 
 @Injectable({ providedIn: 'root' })
 export class RecruitmentService {
@@ -34,6 +34,11 @@ export class RecruitmentService {
   // UPDATE APPLICATION STATUS
   updateStatus(id: number, status: ApplicationStatus, notes?: string): Observable<JobApplication> {
     return this.api.patch<JobApplication>(`${this.endpoint}/applications/${id}/status`, { status, notes });
+  }
+
+  // HIRE AN OFFERED CANDIDATE — creates the Employee (+ portal user) and marks the application HIRED
+  hire(id: number, payload: HireApplicationRequest): Observable<Employee> {
+    return this.api.post<Employee>(`${this.endpoint}/applications/${id}/hire`, payload);
   }
 
   // DELETE APPLICATION

@@ -28,4 +28,5 @@ public class RegisterCompanyRequest {
     private String ownerPassword;
     @Size(max = 30)
     private String companyPhone;
+    private com.businessos.shared.address.AddressRequest locationDetail;
 }

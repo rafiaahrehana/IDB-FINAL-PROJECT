@@ -1,14 +1,8 @@
 package com.businessos.modules.ai.prompt;
 
-import com.businessos.modules.ai.exception.AiPromptException;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 
-/**
- * FIX: Added missing import for AiPromptException.
- * validateFields() throws AiPromptException but had no import for it,
- * causing "cannot find symbol class AiPromptException".
- */
 @Setter
 @Accessors(chain = true)
 public class CrmSummaryPromptBuilder {
@@ -41,17 +35,15 @@ public class CrmSummaryPromptBuilder {
             - Return only the summary and recommendation — no preamble.
             """.formatted(
                 contactName,
-                companyName       != null ? companyName       : "Unknown",
+                PromptSupport.orDefault(companyName, "Unknown"),
                 currentStatus,
-                interestedService != null ? interestedService : "Not specified",
-                activityHistory   != null ? activityHistory   : "No activity recorded yet"
+                PromptSupport.orDefault(interestedService, "Not specified"),
+                PromptSupport.orDefault(activityHistory, "No activity recorded yet")
             );
     }
 
     private void validateFields() {
-        if (contactName   == null || contactName.isBlank())
-            throw new AiPromptException("contactName is required for CRM summary prompt");
-        if (currentStatus == null || currentStatus.isBlank())
-            throw new AiPromptException("currentStatus is required for CRM summary prompt");
+        PromptSupport.requireNonBlank(contactName, "contactName", "CRM summary");
+        PromptSupport.requireNonBlank(currentStatus, "currentStatus", "CRM summary");
     }
 }

@@ -28,6 +28,7 @@ public class LeadMapper {
         lr.setDescription(lead.getDescription());
         lr.setStatus(lead.getStatus());
         lr.setSource(lead.getSource());
+        lr.setSourceOther(lead.getSourceOther());
         lr.setPriority(lead.getPriority());
         lr.setEstimatedValue(lead.getEstimatedValue());
         lr.setExpectedCloseDate(lead.getExpectedCloseDate());
@@ -45,6 +46,9 @@ public class LeadMapper {
         lr.setActivitiesCount(lead.getActivities() != null ? lead.getActivities().size() : 0);
         lr.setCreatedAt(lead.getCreatedAt());
         lr.setUpdatedAt(lead.getUpdatedAt());
+        lr.setTags(lead.getTags() != null
+                ? com.businessos.modules.crm.tag.TagMapper.toResponseList(lead.getTags())
+                : java.util.List.of());
         return lr;
     }
 

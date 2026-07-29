@@ -51,6 +51,10 @@ public class PaymentReceipt extends BaseEntity {
     private LocalDate depositDate;
     private String depositedToBank;
 
+    // Set when the payment bounced/was reversed (NSF cheque, chargeback...)
+    private LocalDate reversedDate;
+    private String reversalReason;
+
     public void confirmPayment() {
         this.status = PaymentStatus.CONFIRMED;
     }

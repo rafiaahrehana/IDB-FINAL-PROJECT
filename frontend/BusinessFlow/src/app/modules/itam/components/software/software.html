@@ -1,21 +1,16 @@
 <div class="container-fluid py-3">
-  <div class="page-hero">
-    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
-      <div>
-        <div class="page-hero-label">IT ASSETS</div>
-        <h4 class="page-hero-title underline-cyan">Software Licenses</h4>
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <h4 class="mb-0">Software Licenses</h4>
+    <div class="d-flex gap-2 flex-wrap">
+      <div class="form-check form-switch mb-0 d-flex align-items-center gap-1">
+        <input class="form-check-input" type="checkbox" id="expiringToggle" [(ngModel)]="showExpiring" (change)="page=0;load()" />
+        <label class="form-check-label small" for="expiringToggle">Expiring soon</label>
       </div>
-      <div class="page-hero-actions">
-        <div class="form-check form-switch mb-0 d-flex align-items-center gap-1">
-          <input class="form-check-input" type="checkbox" id="expiringToggle" [(ngModel)]="showExpiring" (change)="page=0;load()" />
-          <label class="form-check-label small" for="expiringToggle">Expiring soon</label>
-        </div>
-        <select class="form-select form-select-sm" style="width:160px" [(ngModel)]="statusFilter" (change)="page=0;load()" [disabled]="showExpiring">
-          <option value="">All statuses</option>
-          @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
-        </select>
-        <button *appHasPermission="'SOFTWARE_LICENSE_CREATE'" class="btn btn-hero-primary btn-sm" (click)="editId=null; form={}; showForm=!showForm"><i class="bi bi-plus-circle"></i> Add License</button>
-      </div>
+      <select class="form-select form-select-sm" style="width:160px" [(ngModel)]="statusFilter" (change)="page=0;load()" [disabled]="showExpiring">
+        <option value="">All statuses</option>
+        @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
+      </select>
+      <button *appHasPermission="'SOFTWARE_LICENSE_CREATE'" class="btn btn-primary btn-sm" (click)="editId=null; form={}; showForm=!showForm"><i class="bi bi-plus"></i> Add License</button>
     </div>
   </div>
   @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
@@ -76,7 +71,7 @@
   @if (!loading && licenses.length) {
   <div class="card"><div class="table-responsive">
     <table class="table table-hover table-sm align-middle mb-0">
-      <thead><tr><th>Software</th><th>Publisher</th><th>Type</th><th>Seats</th><th>Used</th><th>Expiry</th><th>Status</th><th></th></tr></thead>
+      <thead class="table-light"><tr><th>Software</th><th>Publisher</th><th>Type</th><th>Seats</th><th>Used</th><th>Expiry</th><th>Status</th><th></th></tr></thead>
       <tbody>
         @for (l of licenses; track l.id) {
         <tr [class.table-warning]="l.expiringSoon" [class.table-danger]="l.expired">
@@ -111,7 +106,7 @@
   <div class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,.5)">
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
-        <div class="modal-header py-2" style="background: linear-gradient(135deg, #111827, #4C1D95); color: #fff;">
+        <div class="modal-header">
           <h5 class="modal-title">Manage Seats - {{ seatsTarget.softwareName }}</h5>
           <button type="button" class="btn-close" (click)="seatsTarget = null"></button>
         </div>
@@ -130,7 +125,7 @@
           @if (seatsLoading) { <app-loader /> }
           @if (!seatsLoading && seatHolders.length) {
           <table class="table table-sm table-hover align-middle mb-0">
-            <thead><tr><th>Employee</th><th>Assigned</th><th></th></tr></thead>
+            <thead class="table-light"><tr><th>Employee</th><th>Assigned</th><th></th></tr></thead>
             <tbody>
               @for (s of seatHolders; track s.id) {
               <tr>

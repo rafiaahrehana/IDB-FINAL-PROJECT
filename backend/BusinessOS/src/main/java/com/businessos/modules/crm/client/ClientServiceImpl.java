@@ -44,6 +44,8 @@ public class ClientServiceImpl implements ClientService {
     private final EmailBranding emailBranding;
     private final CompanyRepository companyRepository;
     private final AuthorizationService authorizationService;
+    private final com.businessos.modules.crm.tag.TagRepository tagRepository;
+    private final com.businessos.modules.crm.duplicate.DuplicateDetectionService duplicateDetectionService;
 
     @Override
     @Transactional
@@ -51,22 +53,40 @@ public class ClientServiceImpl implements ClientService {
         authorizationService.checkPermission(PermissionCode.CLIENT_CREATE);
         Long companyId = requireCompanyId();
 
-        String normalizedEmail = request.getEmail().toLowerCase().trim();
-        if (userRepository.existsByEmail(normalizedEmail)) {
-            throw new BadRequestException("An account with this email already exists");
-        }
+        // Checked before saving, against existing clients only - the new row doesn't
+        // exist yet, so this can't match itself.
+        com.businessos.modules.crm.duplicate.DuplicateMatch possibleDuplicate = duplicateDetectionService
+                .findPossibleDuplicateClient(request.getClientCompanyName(), request.getEmail(), request.getPhone())
+                .orElse(null);
 
-        User user = User.builder()
-                .firstName(request.getFirstName())
-                .lastName(request.getLastName())
-                .email(normalizedEmail)
-                .password(passwordEncoder.encode(request.getPassword()))
-                .phone(request.getPhone())
-                .role(Role.CLIENT)
-                .active(true)
-                .emailVerified(true)
-                .build();
-        userRepository.save(user);
+        boolean provisionLogin = Boolean.TRUE.equals(request.getProvisionPortalLogin());
+        User user = null;
+
+        if (provisionLogin) {
+            if (request.getFirstName() == null || request.getFirstName().isBlank()
+                    || request.getLastName() == null || request.getLastName().isBlank()
+                    || request.getEmail() == null || request.getEmail().isBlank()
+                    || request.getPassword() == null || request.getPassword().isBlank()) {
+                throw new BadRequestException(
+                        "First name, last name, email and password are required to provision a portal login");
+            }
+            String normalizedEmail = request.getEmail().toLowerCase().trim();
+            if (userRepository.existsByEmail(normalizedEmail)) {
+                throw new BadRequestException("An account with this email already exists");
+            }
+
+            user = User.builder()
+                    .firstName(request.getFirstName())
+                    .lastName(request.getLastName())
+                    .email(normalizedEmail)
+                    .password(passwordEncoder.encode(request.getPassword()))
+                    .phone(request.getPhone())
+                    .role(Role.CLIENT)
+                    .active(true)
+                    .emailVerified(true)
+                    .build();
+            userRepository.save(user);
+        }
 
         Client client = Client.builder()
                 .user(user)
@@ -91,20 +111,27 @@ public class ClientServiceImpl implements ClientService {
             client.setAccountManager(am);
         }
 
-        clientRepository.save(client);
-        notificationPreferenceService.createDefaultsForUser(user.getId());
-
-        try {
-            Company fullCompany = companyRepository.findById(companyId)
-                .orElseThrow(() -> new ResourceNotFoundException("Company not found"));
-            EmailBranding.Data branding = emailBranding.from(fullCompany);
-            emailService.sendClientWelcomeEmail(user.getEmail(), user.getFirstName(), branding);
-        } catch (Exception ex) {
-            log.warn("Welcome email failed for client {}: {}", user.getEmail(), ex.getMessage());
+        if (request.getTagIds() != null && !request.getTagIds().isEmpty()) {
+            client.setTagEntities(tagRepository.findByIdInAndCompanyId(request.getTagIds(), companyId));
         }
 
-        
-        return ClientMapper.toResponse(client);
+        clientRepository.save(client);
+
+        if (user != null) {
+            notificationPreferenceService.createDefaultsForUser(user.getId());
+            try {
+                Company fullCompany = companyRepository.findById(companyId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Company not found"));
+                EmailBranding.Data branding = emailBranding.from(fullCompany);
+                emailService.sendClientWelcomeEmail(user.getEmail(), user.getFirstName(), branding);
+            } catch (Exception ex) {
+                log.warn("Welcome email failed for client {}: {}", user.getEmail(), ex.getMessage());
+            }
+        }
+
+        ClientResponse response = ClientMapper.toResponse(client);
+        response.setPossibleDuplicate(possibleDuplicate);
+        return response;
     }
 
     @Override
@@ -188,12 +215,17 @@ public class ClientServiceImpl implements ClientService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<ClientResponse> listAll(ClientStatus status, Pageable pageable) {
+    public Page<ClientResponse> listAll(ClientStatus status, Long tagId, Pageable pageable) {
         authorizationService.checkPermission(PermissionCode.CLIENT_VIEW);
         Long companyId = requireCompanyId();
-        Page<Client> page = status != null
-                ? clientRepository.findByCompanyIdAndStatus(companyId, status, pageable)
-                : clientRepository.findByCompanyId(companyId, pageable);
+        Page<Client> page;
+        if (tagId != null) {
+            page = clientRepository.findByCompanyIdAndTagEntitiesId(companyId, tagId, pageable);
+        } else if (status != null) {
+            page = clientRepository.findByCompanyIdAndStatus(companyId, status, pageable);
+        } else {
+            page = clientRepository.findByCompanyId(companyId, pageable);
+        }
         return page.map(ClientMapper::toResponse);
     }
 
@@ -233,6 +265,12 @@ public class ClientServiceImpl implements ClientService {
                     .orElseThrow(() -> new ResourceNotFoundException(
                             "Account manager not found: " + request.getAccountManagerId()));
             client.setAccountManager(am);
+        }
+
+        if (request.getTagIds() != null) {
+            client.setTagEntities(request.getTagIds().isEmpty()
+                    ? new java.util.ArrayList<>()
+                    : tagRepository.findByIdInAndCompanyId(request.getTagIds(), companyId));
         }
 
         clientRepository.save(client);

@@ -40,20 +40,18 @@ public class PerformanceReviewPromptBuilder {
             - Return only the review summary — no preamble, no explanation.
             """.formatted(
                 employeeName,
-                designation,
+                PromptSupport.orDefault(designation, "Not specified"),
                 reviewPeriod,
                 overallScore,
-                strengths       != null ? strengths       : "Not specified",
-                areasForImprovement != null ? areasForImprovement : "Not specified",
-                goalsForNextPeriod  != null ? goalsForNextPeriod  : "Not specified"
+                PromptSupport.orDefault(strengths, "Not specified"),
+                PromptSupport.orDefault(areasForImprovement, "Not specified"),
+                PromptSupport.orDefault(goalsForNextPeriod, "Not specified")
             );
     }
 
     private void validateFields() {
-        if (employeeName == null || employeeName.isBlank())
-            throw new AiPromptException("employeeName is required for performance review prompt");
-        if (reviewPeriod == null || reviewPeriod.isBlank())
-            throw new AiPromptException("reviewPeriod is required for performance review prompt");
+        PromptSupport.requireNonBlank(employeeName, "employeeName", "performance review");
+        PromptSupport.requireNonBlank(reviewPeriod, "reviewPeriod", "performance review");
         if (overallScore < 1 || overallScore > 5)
             throw new AiPromptException("overallScore must be between 1 and 5");
     }

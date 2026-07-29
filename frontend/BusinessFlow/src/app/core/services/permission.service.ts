@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject, Observable, of } from 'rxjs';
 import { map, tap } from 'rxjs/operators';
 import { ApiService } from './api.service';
 
@@ -25,6 +25,12 @@ export class PermissionService {
   private permissionsSubject = new BehaviorSubject<string[]>(this.getFromStorage(this.STORAGE_KEY));
   public permissions$ = this.permissionsSubject.asObservable();
 
+  // True once load() has resolved at least once *this page session*. The permission
+  // set restored from localStorage at construction can be stale (from a previous
+  // account, or simply absent on a fresh login bypassing the normal flow) - a route
+  // guard must not trust it until a real fetch has completed. See ensureLoaded().
+  private loaded = false;
+
   // Full catalog of every permission code the app knows about (GET /api/permissions) -
   // used only to answer "does this user hold every permission that exists", e.g. to
   // decide whether a custom role the owner built with every checkbox ticked should be
@@ -39,9 +45,23 @@ export class PermissionService {
     return this.api.get<string[]>('/users/permissions').pipe(
       tap(permissions => {
         this.permissionsSubject.next(permissions);
+        this.loaded = true;
         localStorage.setItem(this.STORAGE_KEY, JSON.stringify(permissions));
       }),
     );
+  }
+
+  /**
+   * Resolves with the current permission set, guaranteed fresh (fetched this page
+   * session) rather than whatever localStorage happened to hold at construction time.
+   * RoleGuard awaits this before checking a route's requiredPermission - a hard reload
+   * straight into a permission-gated route used to 403 on stale/empty cached
+   * permissions and only work on a second reload, because nothing made the guard's
+   * synchronous hasPermission() check wait for the in-flight load() to land.
+   */
+  ensureLoaded(): Observable<string[]> {
+    if (this.loaded) return of(this.permissionsSubject.value);
+    return this.load();
   }
 
   /** Fetches the full permission catalog and caches it. See catalogSubject above. */
@@ -78,6 +98,7 @@ export class PermissionService {
   clear(): void {
     this.permissionsSubject.next([]);
     this.catalogSubject.next([]);
+    this.loaded = false;
     localStorage.removeItem(this.STORAGE_KEY);
     localStorage.removeItem(this.CATALOG_STORAGE_KEY);
   }

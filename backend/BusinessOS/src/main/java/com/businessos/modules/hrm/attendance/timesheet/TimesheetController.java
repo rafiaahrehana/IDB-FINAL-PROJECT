@@ -65,6 +65,12 @@ public class TimesheetController {
         return ResponseEntity.ok(timesheetService.update(id, request));
     }
 
+    @PostMapping("/submit")
+    public ResponseEntity<java.util.Map<String, Integer>> submitForReview() {
+        int count = timesheetService.submitForReview();
+        return ResponseEntity.ok(java.util.Map.of("submitted", count));
+    }
+
     @PatchMapping("/{id}/approve")
     public ResponseEntity<TimesheetResponse> approve(@PathVariable Long id) {
         return ResponseEntity.ok(timesheetService.approve(id));

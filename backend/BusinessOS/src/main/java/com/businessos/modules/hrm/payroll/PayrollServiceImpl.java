@@ -5,7 +5,10 @@ import com.businessos.modules.finance.chartofaccounts.ChartOfAccount;
 import com.businessos.modules.finance.chartofaccounts.DefaultAccountResolver;
 import com.businessos.modules.finance.generalledger.GeneralLedgerService;
 import com.businessos.modules.finance.generalledger.GlReferenceType;
+import com.businessos.modules.finance.generalledger.LedgerLine;
 import com.businessos.modules.hrm.employee.Employee;
+import com.businessos.modules.hrm.attendance.attendance.AttendanceRepository;
+import com.businessos.modules.hrm.attendance.attendance.AttendanceStatus;
 import com.businessos.modules.hrm.salary.SalaryStructure;
 import com.businessos.modules.hrm.salary.SalaryStructureRepository;
 import com.businessos.enums.PayrollStatus;
@@ -25,6 +28,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -41,6 +45,8 @@ public class PayrollServiceImpl implements PayrollService {
     private final EmployeeRepository employeeRepository;
     private final CompanyRepository companyRepository;
     private final SalaryStructureRepository salaryStructureRepository;
+    private final AttendanceRepository attendanceRepository;
+    private final com.businessos.modules.hrm.attendance.timesheet.TimesheetRepository timesheetRepository;
     private final SecurityUtil securityUtil;
     private final EmailService emailService;
     private final EmailBranding emailBranding;
@@ -69,9 +75,14 @@ public class PayrollServiceImpl implements PayrollService {
         BigDecimal tax = orZero(request.getTaxDeduction());
         BigDecimal insurance = orZero(request.getInsuranceDeduction());
         BigDecimal providentFund = orZero(request.getProvidentFundDeduction());
-        BigDecimal gross = comps.basic().add(comps.rent()).add(comps.medical()).add(comps.transport())
-                .add(comps.food()).add(comps.special()).add(bonus);
-        BigDecimal net = gross.subtract(deductions).subtract(tax).subtract(insurance).subtract(providentFund);
+        BigDecimal grossForAttendance = comps.basic().add(comps.rent()).add(comps.medical()).add(comps.transport())
+                .add(comps.food()).add(comps.special());
+        BillablePay billable = calculateBillablePay(employee, request.getPayMonth(), request.getPayYear());
+        BigDecimal gross = grossForAttendance.add(bonus).add(billable.amount());
+        AttendanceDeduction attendanceDeduction = calculateAttendanceDeduction(
+                employee, request.getPayMonth(), request.getPayYear(), grossForAttendance);
+        BigDecimal net = gross.subtract(deductions).subtract(tax).subtract(insurance).subtract(providentFund)
+                .subtract(attendanceDeduction.amount());
 
         Payroll payroll = Payroll.builder()
                 .employee(employee)
@@ -85,10 +96,15 @@ public class PayrollServiceImpl implements PayrollService {
                 .foodAllowance(comps.food())
                 .specialAllowance(comps.special())
                 .bonus(bonus)
+                .billableHours(billable.hours())
+                .billableRate(billable.rate())
+                .billablePay(billable.amount())
                 .deductions(deductions)
                 .taxDeduction(tax)
                 .insuranceDeduction(insurance)
                 .providentFundDeduction(providentFund)
+                .attendanceDeduction(attendanceDeduction.amount())
+                .absentDays(attendanceDeduction.days())
                 .netSalary(net)
                 .notes(request.getNotes())
                 .status(PayrollStatus.DRAFT)
@@ -126,9 +142,12 @@ public class PayrollServiceImpl implements PayrollService {
             SalaryComponents comps = fromStructure(structure);
             BigDecimal tax = orZero(structure.getTaxDeduction());
             BigDecimal providentFund = orZero(structure.getProvidentFund());
-            BigDecimal gross = comps.basic().add(comps.rent()).add(comps.medical()).add(comps.transport())
+            BigDecimal grossForAttendance = comps.basic().add(comps.rent()).add(comps.medical()).add(comps.transport())
                     .add(comps.food()).add(comps.special());
-            BigDecimal net = gross.subtract(providentFund).subtract(tax);
+            BillablePay billable = calculateBillablePay(employee, month, year);
+            BigDecimal gross = grossForAttendance.add(billable.amount());
+            AttendanceDeduction attendanceDeduction = calculateAttendanceDeduction(employee, month, year, grossForAttendance);
+            BigDecimal net = gross.subtract(providentFund).subtract(tax).subtract(attendanceDeduction.amount());
 
             Payroll payroll = Payroll.builder()
                     .employee(employee)
@@ -142,8 +161,13 @@ public class PayrollServiceImpl implements PayrollService {
                     .foodAllowance(comps.food())
                     .specialAllowance(comps.special())
                     .bonus(BigDecimal.ZERO)
+                    .billableHours(billable.hours())
+                    .billableRate(billable.rate())
+                    .billablePay(billable.amount())
                     .taxDeduction(tax)
                     .providentFundDeduction(providentFund)
+                    .attendanceDeduction(attendanceDeduction.amount())
+                    .absentDays(attendanceDeduction.days())
                     .netSalary(net)
                     .status(PayrollStatus.DRAFT)
                     .build();
@@ -160,6 +184,45 @@ public class PayrollServiceImpl implements PayrollService {
 
     private record SalaryComponents(BigDecimal basic, BigDecimal rent, BigDecimal medical, BigDecimal transport,
             BigDecimal food, BigDecimal special) {}
+
+    private record AttendanceDeduction(BigDecimal amount, int days) {}
+
+    private record BillablePay(BigDecimal hours, BigDecimal rate, BigDecimal amount) {}
+
+    /**
+     * Approved timesheet billableHours for the pay period * the employee's fixed
+     * billableRate - added to gross/net on top of their salary. Unsubmitted/unapproved
+     * hours don't count yet (see TimesheetRepository.sumApprovedBillableHours).
+     */
+    private BillablePay calculateBillablePay(Employee employee, int payMonth, int payYear) {
+        BigDecimal rate = orZero(employee.getBillableRate());
+        LocalDate start = LocalDate.of(payYear, payMonth, 1);
+        LocalDate end = start.withDayOfMonth(start.lengthOfMonth());
+        BigDecimal hours = BigDecimal.valueOf(
+                timesheetRepository.sumApprovedBillableHours(employee.getId(), start, end).orElse(0.0));
+        BigDecimal amount = rate.compareTo(BigDecimal.ZERO) == 0
+                ? BigDecimal.ZERO
+                : rate.multiply(hours).setScale(2, RoundingMode.HALF_UP);
+        return new BillablePay(hours, rate, amount);
+    }
+
+    /**
+     * ABSENT days (unapproved - approved leave is a separate ON_LEAVE status and
+     * never becomes ABSENT, see AbsenteeMarkingService) are deducted at
+     * gross / calendar-days-in-month per day.
+     */
+    private AttendanceDeduction calculateAttendanceDeduction(Employee employee, int payMonth, int payYear, BigDecimal gross) {
+        LocalDate start = LocalDate.of(payYear, payMonth, 1);
+        LocalDate end = start.withDayOfMonth(start.lengthOfMonth());
+        int absentDays = (int) attendanceRepository.countByEmployeeIdAndStatusAndAttendanceDateBetween(
+                employee.getId(), AttendanceStatus.ABSENT, start, end);
+        if (absentDays == 0 || gross.compareTo(BigDecimal.ZERO) == 0) {
+            return new AttendanceDeduction(BigDecimal.ZERO, absentDays);
+        }
+        BigDecimal perDayRate = gross.divide(BigDecimal.valueOf(start.lengthOfMonth()), 4, RoundingMode.HALF_UP);
+        BigDecimal amount = perDayRate.multiply(BigDecimal.valueOf(absentDays)).setScale(2, RoundingMode.HALF_UP);
+        return new AttendanceDeduction(amount, absentDays);
+    }
 
     private Optional<SalaryStructure> activeStructure(Long employeeId, int payMonth, int payYear) {
         return salaryStructureRepository.findActiveForEmployeeOnDate(employeeId, LocalDate.of(payYear, payMonth, 1));
@@ -268,26 +331,29 @@ public class PayrollServiceImpl implements PayrollService {
      */
     private void postPayrollToLedger(Payroll p) {
         Long companyId = p.getCompany().getId();
+        // Expense recognized excludes unpaid-absence days - the company never incurred
+        // that cost - so the ledger debit matches what's actually credited below.
         BigDecimal gross = p.getBasicSalary().add(p.getHouseRent()).add(p.getMedicalAllowance())
-                .add(p.getTransportAllowance()).add(p.getFoodAllowance()).add(p.getSpecialAllowance()).add(p.getBonus());
+                .add(p.getTransportAllowance()).add(p.getFoodAllowance()).add(p.getSpecialAllowance()).add(p.getBonus())
+                .add(orZero(p.getBillablePay()))
+                .subtract(orZero(p.getAttendanceDeduction()));
         BigDecimal withheld = p.getDeductions().add(p.getTaxDeduction())
                 .add(p.getInsuranceDeduction()).add(p.getProvidentFundDeduction());
         String description = "Payroll " + p.getPayMonth() + "/" + p.getPayYear()
                 + " for " + p.getEmployee().getUser().getFullName();
 
         ChartOfAccount salaryExpense = accountResolver.salaryExpense(companyId);
-        glService.recordTransaction(salaryExpense.getId(), gross, BigDecimal.ZERO,
-                description, GlReferenceType.PAYROLL, p.getId(), p.getPaymentReference());
-
         ChartOfAccount cash = accountResolver.cash(companyId);
-        glService.recordTransaction(cash.getId(), BigDecimal.ZERO, p.getNetSalary(),
-                description, GlReferenceType.PAYROLL, p.getId(), p.getPaymentReference());
 
+        List<LedgerLine> lines = new ArrayList<>();
+        lines.add(LedgerLine.debit(salaryExpense.getId(), gross));
+        lines.add(LedgerLine.credit(cash.getId(), p.getNetSalary()));
         if (withheld.compareTo(BigDecimal.ZERO) > 0) {
             ChartOfAccount payable = accountResolver.payrollPayable(companyId);
-            glService.recordTransaction(payable.getId(), BigDecimal.ZERO, withheld,
-                    description, GlReferenceType.PAYROLL, p.getId(), p.getPaymentReference());
+            lines.add(LedgerLine.credit(payable.getId(), withheld));
         }
+        glService.recordBalancedTransaction(companyId, lines, description,
+                GlReferenceType.PAYROLL, p.getId(), p.getPaymentReference(), LocalDate.now());
 
         p.setGlDebitAccount(salaryExpense.getAccountCode());
         p.setGlCreditAccount(cash.getAccountCode());

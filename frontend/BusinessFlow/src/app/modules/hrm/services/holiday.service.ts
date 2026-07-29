@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService, PagedResponse } from '../../../core/services/api.service';
-import { Holiday, HolidayRequest } from '../models/hrm.model';
+import { Holiday, HolidayRequest, HolidayDraftResponse } from '../models/hrm.model';
 
 @Injectable({ providedIn: 'root' })
 export class HolidayService {
@@ -34,6 +34,10 @@ export class HolidayService {
   }
 
   delete(id: number): Observable<string> {
-    return this.api.delete<string>(`${this.endpoint}/${id}`);
+    return this.api.deleteText(`${this.endpoint}/${id}`);
+  }
+
+  draftWithAi(instructions: string): Observable<HolidayDraftResponse> {
+    return this.api.post<HolidayDraftResponse>(`${this.endpoint}/ai-draft`, { instructions });
   }
 }

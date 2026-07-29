@@ -36,6 +36,26 @@ public class Company extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String portalAbout;
 
+    // Shown on invoice PDFs so clients receive a legally usable invoice - previously
+    // nothing but the company name was ever printed on an invoice.
+    private String taxRegistrationNumber; // VAT/BIN/TIN etc.
+    private String bankName;
+    private String bankAccountName;
+    private String bankAccountNumber;
+    private String bankBranch;
+
+    // Which calendar month the company's fiscal year starts in (1=January,
+    // 4=April, 7=July...). Drives how AccountingPeriod months are numbered/dated.
+    @Builder.Default
+    private Integer fiscalYearStartMonth = 1;
+
+    // The single currency the General Ledger keeps its books in. Foreign-currency
+    // invoices carry an exchangeRate and post converted amounts - see
+    // ClientInvoiceServiceImpl#toBase.
+    @Builder.Default
+    @Column(length = 10)
+    private String baseCurrency = "BDT";
+
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_id", nullable = false)
     private User owner;

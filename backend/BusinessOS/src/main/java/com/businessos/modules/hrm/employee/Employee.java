@@ -79,6 +79,10 @@ public class Employee extends BaseEntity {
     private BigDecimal medicalAllowance;
     private BigDecimal transportAllowance;
 
+    // Fixed pay rate for approved billable timesheet hours - added on top of the
+    // salary components above when payroll is generated for a period.
+    private BigDecimal billableRate;
+
     // Bank
     private String bankName;
     private String bankAccountNumber;

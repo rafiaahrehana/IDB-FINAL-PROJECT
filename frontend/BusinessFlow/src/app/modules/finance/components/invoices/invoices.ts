@@ -2,8 +2,9 @@ import { GatewayPaymentService } from '../../../../core/services/gateway-payment
 import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Invoice, InvoiceItemRequest, InvoiceRequest } from '../../models/finance.model';
+import { Invoice, InvoiceItemRequest, InvoiceRequest, CreditNote } from '../../models/finance.model';
 import { InvoiceService } from '../../services/invoice.service';
+import { PortalService } from '../../../portal/portal.service';
 import { ClientService } from '../../../crm/services/client.service';
 import { Client } from '../../../crm/models/crm.model';
 import { Pagination } from '../../../../shared/components/pagination/pagination';
@@ -12,11 +13,13 @@ import { EmptyState } from '../../../../shared/components/empty-state/empty-stat
 import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/confirm-dialog';
 import { HasPermissionDirective } from '../../../../shared/directives/has-permission.directive';
 
+import { BosCurrencyPipe } from '../../../../shared/pipes/bos-currency.pipe';
 @Component({
   selector: 'app-invoices',
-  imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState, ConfirmDialog, HasPermissionDirective],
+  imports: [BosCurrencyPipe, CommonModule, FormsModule, Pagination, Loader, EmptyState, ConfirmDialog, HasPermissionDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './invoices.html',
+  styleUrl: './invoices.scss',
 })
 export class Invoices implements OnInit {
   invoices: Invoice[] = [];
@@ -32,6 +35,19 @@ export class Invoices implements OnInit {
   paymentMethod = 'BANK_TRANSFER';
   statuses = ['DRAFT', 'ISSUED', 'PARTIALLY_PAID', 'PAID', 'OVERDUE', 'CANCELLED'];
   paymentTerms = ['DUE_ON_RECEIPT', 'NET_15', 'NET_30', 'NET_45', 'NET_60', 'NET_90', 'CUSTOM'];
+  currencies = ['BDT', 'USD', 'EUR', 'GBP', 'INR'];
+  // The company's ledger currency - invoices in any other currency need an exchange rate.
+  baseCurrency = 'BDT';
+
+  get needsExchangeRate(): boolean {
+    return !!this.form.currency && this.form.currency !== this.baseCurrency;
+  }
+
+  creditNotes: CreditNote[] = [];
+  creditNoteTarget: Invoice | null = null;
+  creditNoteAmount: number | null = null;
+  creditNoteReason = '';
+  issuingCreditNote = false;
 
   showForm = false;
   editing = false;
@@ -41,9 +57,13 @@ export class Invoices implements OnInit {
   deleteTarget: Invoice | null = null;
   cancelTarget: Invoice | null = null;
 
+  draftingSummary = false;
+  draftSummaryError = '';
+
   constructor(
     private invoiceService: InvoiceService,
     private clientService: ClientService,
+    private portalService: PortalService,
     private gatewayPayment: GatewayPaymentService,
     private cdr: ChangeDetectorRef,
   ) {}
@@ -53,6 +73,11 @@ export class Invoices implements OnInit {
     this.clientService.listActive().subscribe({
       next: (res) => { this.clients = res; this.cdr.markForCheck(); },
       error: () => { this.error = 'Failed to load clients'; this.cdr.markForCheck(); },
+    });
+    // Employees without company-settings access just keep the BDT default.
+    this.portalService.getMyCompany().subscribe({
+      next: (c) => { this.baseCurrency = c.baseCurrency || 'BDT'; this.cdr.markForCheck(); },
+      error: () => {},
     });
   }
 
@@ -82,6 +107,10 @@ export class Invoices implements OnInit {
       next: (i) => { this.selected = i; this.cdr.markForCheck(); },
       error: () => { this.error = 'Failed to load invoice details'; this.cdr.markForCheck(); },
     });
+    this.invoiceService.listCreditNotes(invoice.id).subscribe({
+      next: (res) => { this.creditNotes = res.content; this.cdr.markForCheck(); },
+      error: () => { this.creditNotes = []; this.cdr.markForCheck(); },
+    });
   }
 
   private emptyForm(): InvoiceRequest {
@@ -93,6 +122,9 @@ export class Invoices implements OnInit {
       dueDate: this.calculateDueDate(invoiceDate, paymentTerms),
       items: [{ description: '', quantity: 1, unitPrice: 0 }],
       taxAmount: 0,
+      taxRatePercent: undefined,
+      discountAmount: 0,
+      currency: 'BDT',
       paymentTerms,
       description: '',
       notes: '',
@@ -135,6 +167,9 @@ export class Invoices implements OnInit {
             ? full.items.map((i) => ({ description: i.description, quantity: i.quantity, unitPrice: i.unitPrice, notes: i.notes }))
             : [{ description: '', quantity: 1, unitPrice: 0 }]),
           taxAmount: full.taxAmount ?? 0,
+          taxRatePercent: full.taxRatePercent,
+          discountAmount: full.discountAmount ?? 0,
+          currency: full.currency ?? 'BDT',
           paymentTerms: full.paymentTerms ?? 'DUE_ON_RECEIPT',
           description: full.description ?? '',
           notes: full.notes ?? '',
@@ -146,6 +181,25 @@ export class Invoices implements OnInit {
         this.cdr.markForCheck();
       },
       error: () => { this.error = 'Failed to load invoice for editing'; this.cdr.markForCheck(); },
+    });
+  }
+
+  draftSummaryWithAi(): void {
+    if (!this.editingId || this.draftingSummary) return;
+    this.draftingSummary = true;
+    this.draftSummaryError = '';
+    this.cdr.markForCheck();
+    this.invoiceService.draftSummaryWithAi(this.editingId).subscribe({
+      next: (res) => {
+        this.form.notes = res.summary;
+        this.draftingSummary = false;
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        this.draftSummaryError = err?.error?.message || 'Failed to generate summary';
+        this.draftingSummary = false;
+        this.cdr.markForCheck();
+      },
     });
   }
 
@@ -162,8 +216,21 @@ export class Invoices implements OnInit {
     return this.form.items.reduce((sum, i) => sum + (i.quantity || 0) * (i.unitPrice || 0), 0);
   }
 
+  // Mirrors ClientInvoice.calculateTotals() on the server: tax rate (if set)
+  // recomputes the tax amount from the discounted subtotal.
+  formTaxableBase(): number {
+    return Math.max(0, this.itemsSubtotal() - (this.form.discountAmount || 0));
+  }
+
+  formTaxAmount(): number {
+    if (this.form.taxRatePercent != null) {
+      return this.formTaxableBase() * (this.form.taxRatePercent / 100);
+    }
+    return this.form.taxAmount || 0;
+  }
+
   formTotal(): number {
-    return this.itemsSubtotal() + (this.form.taxAmount || 0);
+    return this.formTaxableBase() + this.formTaxAmount();
   }
 
   save(): void {
@@ -171,6 +238,8 @@ export class Invoices implements OnInit {
     this.error = '';
     const payload: InvoiceRequest = {
       ...this.form,
+      // The backend forces rate 1 for base-currency invoices; don't send a stale one.
+      exchangeRate: this.needsExchangeRate ? this.form.exchangeRate : undefined,
       items: this.form.items.filter((i) => i.description && i.quantity > 0),
     };
     const obs = this.editing && this.editingId
@@ -280,6 +349,37 @@ export class Invoices implements OnInit {
     }
     this.gatewayPayment.redirectToGateway('INVOICE', this.selected.id, remaining,
       (msg) => { this.error = msg; this.cdr.markForCheck(); });
+  }
+
+  openCreditNote(invoice: Invoice): void {
+    this.creditNoteTarget = invoice;
+    this.creditNoteAmount = null;
+    this.creditNoteReason = '';
+  }
+
+  confirmCreditNote(): void {
+    if (!this.creditNoteTarget || !this.creditNoteAmount) return;
+    this.issuingCreditNote = true;
+    this.invoiceService.issueCreditNote({
+      clientInvoiceId: this.creditNoteTarget.id,
+      amount: this.creditNoteAmount,
+      reason: this.creditNoteReason,
+    }).subscribe({
+      next: () => {
+        this.issuingCreditNote = false;
+        this.success = 'Credit note issued';
+        const invoiceId = this.creditNoteTarget!.id;
+        this.creditNoteTarget = null;
+        this.cdr.markForCheck();
+        this.load();
+        if (this.selected?.id === invoiceId) this.view(this.selected);
+      },
+      error: (err) => {
+        this.issuingCreditNote = false;
+        this.error = err?.error?.message || 'Failed to issue credit note';
+        this.cdr.markForCheck();
+      },
+    });
   }
 
   downloadPdf(invoice: Invoice): void {

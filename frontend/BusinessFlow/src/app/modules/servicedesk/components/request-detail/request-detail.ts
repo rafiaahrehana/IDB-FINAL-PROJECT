@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
@@ -7,6 +7,8 @@ import { ServiceRequestService, RequestDocument } from '../../services/service-r
 import { ServiceFormFieldService } from '../../services/service-form-field.service';
 import { ApprovalService } from '../../services/approval.service';
 import { AuthService } from '../../../../core/services/auth.service';
+import { ChatSocketService } from '../../../../core/services/chat-socket.service';
+import { ChatThread, ChatMessage } from '../../../../shared/components/chat-thread/chat-thread';
 import { EmployeeService } from '../../../hrm/services/employee.service';
 import { Employee } from '../../../hrm/models/hrm.model';
 import { ApiService } from '../../../../core/services/api.service';
@@ -19,18 +21,18 @@ const TASK_STATUSES = ['PENDING', 'IN_PROGRESS', 'COMPLETED', 'BLOCKED', 'CANCEL
 
 @Component({
   selector: 'app-request-detail',
-  imports: [CommonModule, FormsModule, HasPermissionDirective],
+  imports: [CommonModule, FormsModule, HasPermissionDirective, ChatThread],
   templateUrl: './request-detail.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './request-detail.scss',
 })
-export class RequestDetail implements OnInit {
+export class RequestDetail implements OnInit, OnDestroy {
   requestId!: number;
   request?: ServiceRequest;
   approvals: StageApproval[] = [];
   comments: RequestComment[] = [];
   history: any[] = [];
-  newComment = '';
+  posting = false;
 
   // Client's dynamic form answers with labels resolved from the field definitions
   formAnswers: { label: string; value: string }[] = [];
@@ -49,6 +51,9 @@ export class RequestDetail implements OnInit {
   statusReason = '';
   employees: Employee[] = [];
   assignEmployeeId: number | null = null;
+  // Once a request has an assignee, show it as read-only text instead of an
+  // always-open dropdown; this flips to true to reveal the dropdown for reassigning.
+  editingAssignment = false;
 
   // Tasks (staff)
   tasks: any[] = [];
@@ -65,6 +70,9 @@ export class RequestDetail implements OnInit {
   uploading = false;
   documentLabel = '';
 
+  summarising = false;
+  summaryError = '';
+
   constructor(
     private route: ActivatedRoute,
     private requestService: ServiceRequestService,
@@ -74,7 +82,42 @@ export class RequestDetail implements OnInit {
     private employeeService: EmployeeService,
     private api: ApiService,
     private cdr: ChangeDetectorRef,
+    private chatSocket: ChatSocketService,
   ) {}
+
+  private chatUnsubscribe?: () => void;
+
+  get chatConnected(): boolean {
+    return this.chatSocket.connected;
+  }
+
+  // ChatThread wants oldest-first bubbles; the API returns newest-first
+  // (findByServiceRequestIdOrderByCreatedAtDesc), and INTERNAL comments (staff
+  // notes clients never see, per getComments()'s visibility filter) get the
+  // "Internal note" pill so staff can tell them apart from the client-facing thread.
+  //
+  // This used to be a getter that remapped `comments` on every template read, which
+  // handed ChatThread a brand-new array on every change-detection tick (e.g. every
+  // keystroke anywhere on the page) - ChatThread treated that as "new messages
+  // arrived" and auto-scrolled itself into view, yanking the whole page down while
+  // someone was mid-sentence in the composer. Caching it as a plain property that
+  // only updates when `comments` actually changes fixes that.
+  chatMessages: ChatMessage[] = [];
+
+  private syncChatMessages(): void {
+    this.chatMessages = [...this.comments].reverse().map((c) => ({
+      id: c.id,
+      authorId: c.authorId ?? 0,
+      authorName: c.authorName || 'Unknown',
+      content: c.content,
+      createdAt: c.createdAt,
+      internal: c.visibility === 'INTERNAL',
+    }));
+  }
+
+  get currentUserId(): number | null {
+    return this.auth.getCurrentUser()?.id ?? null;
+  }
 
   // Answers are stored keyed by field id; resolve labels from the service's
   // field definitions (fields deleted since submission fall back to "Field {id}")
@@ -125,6 +168,23 @@ export class RequestDetail implements OnInit {
         this.cdr.markForCheck();
       } });
     }
+
+    this.chatUnsubscribe = this.chatSocket.subscribe(
+      `/user/queue/service-requests/${this.requestId}/messages`,
+      (message: RequestComment) => {
+        // Comments load newest-first (findByServiceRequestIdOrderByCreatedAtDesc) -
+        // a live one belongs at the top for the same reason. Guard against a
+        // duplicate if this tab is also the sender and loadAll() already refetched.
+        if (this.comments.some((c) => c.id === message.id)) return;
+        this.comments = [message, ...this.comments];
+        this.syncChatMessages();
+        this.cdr.markForCheck();
+      },
+    );
+  }
+
+  ngOnDestroy(): void {
+    this.chatUnsubscribe?.();
   }
 
   loadAll(): void {
@@ -149,6 +209,7 @@ export class RequestDetail implements OnInit {
       } });
     this.requestService.comments(this.requestId).subscribe({ next: (c) => {
       this.comments = c.content;
+      this.syncChatMessages();
       this.cdr.markForCheck();
     } });
     this.loadDocuments();
@@ -219,6 +280,7 @@ export class RequestDetail implements OnInit {
       next: (r) => {
         this.request = r;
         this.info = 'Assigned successfully';
+        this.editingAssignment = false;
         this.loadAll();
         this.cdr.markForCheck();
       },
@@ -359,15 +421,18 @@ export class RequestDetail implements OnInit {
     });
   }
 
-  addComment(): void {
-    if (!this.newComment.trim()) return;
-    this.requestService.addComment(this.requestId, this.newComment.trim()).subscribe({
+  postChatMessage(text: string): void {
+    this.posting = true;
+    this.cdr.markForCheck();
+    // The live push (pushChatMessage on the backend) only reaches the *other*
+    // party, never the sender - refetch so this tab sees its own message too.
+    this.requestService.addComment(this.requestId, text).subscribe({
       next: () => {
-        this.newComment = '';
+        this.posting = false;
         this.loadAll();
-        this.cdr.markForCheck();
       },
       error: (err) => {
+        this.posting = false;
         this.error = err?.error?.message || 'Failed to add comment';
         this.cdr.markForCheck();
       },
@@ -428,5 +493,24 @@ export class RequestDetail implements OnInit {
 
   hasPendingApproval(): boolean {
     return this.approvals.some((a) => a.status === 'PENDING');
+  }
+
+  summarise(): void {
+    if (this.summarising) return;
+    this.summarising = true;
+    this.summaryError = '';
+    this.cdr.markForCheck();
+    this.requestService.summarise(this.requestId).subscribe({
+      next: (r) => {
+        if (this.request) this.request.aiSummary = r.aiSummary;
+        this.summarising = false;
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        this.summaryError = err?.error?.message || 'Failed to generate summary';
+        this.summarising = false;
+        this.cdr.markForCheck();
+      },
+    });
   }
 }

@@ -2,9 +2,11 @@ package com.businessos.modules.finance.generalledger;
 
 import com.businessos.modules.finance.chartofaccounts.ChartOfAccount;
 import com.businessos.modules.finance.chartofaccounts.ChartOfAccountRepository;
+import com.businessos.modules.finance.period.PeriodLockChecker;
 import com.businessos.auth.role.enums.PermissionCode;
 import com.businessos.auth.role.service.AuthorizationService;
 import com.businessos.security.SecurityUtil;
+import com.businessos.shared.exception.BadRequestException;
 import com.businessos.shared.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -24,6 +26,7 @@ public class GeneralLedgerServiceImpl implements GeneralLedgerService {
     private final ChartOfAccountRepository coaRepository;
     private final SecurityUtil securityUtil;
     private final AuthorizationService authorizationService;
+    private final PeriodLockChecker periodLockChecker;
 
     @Override
     @Transactional
@@ -31,7 +34,7 @@ public class GeneralLedgerServiceImpl implements GeneralLedgerService {
                                   String description, GlReferenceType referenceType, Long referenceId,
                                   String referenceNumber) {
         recordTransaction(securityUtil.getCurrentCompanyId(), accountId, debitAmount, creditAmount,
-                description, referenceType, referenceId, referenceNumber);
+                description, referenceType, referenceId, referenceNumber, LocalDate.now());
     }
 
     @Override
@@ -39,13 +42,31 @@ public class GeneralLedgerServiceImpl implements GeneralLedgerService {
     public void recordTransaction(Long companyId, Long accountId, BigDecimal debitAmount, BigDecimal creditAmount,
                                   String description, GlReferenceType referenceType, Long referenceId,
                                   String referenceNumber) {
+        recordTransaction(companyId, accountId, debitAmount, creditAmount,
+                description, referenceType, referenceId, referenceNumber, LocalDate.now());
+    }
+
+    @Override
+    @Transactional
+    public void recordTransaction(Long companyId, Long accountId, BigDecimal debitAmount, BigDecimal creditAmount,
+                                  String description, GlReferenceType referenceType, Long referenceId,
+                                  String referenceNumber, LocalDate transactionDate) {
+        LocalDate date = transactionDate != null ? transactionDate : LocalDate.now();
+
+        // The year-end close is the one entry type allowed to post into the period it's
+        // finalizing - every other poster is blocked from backdating into a closed period.
+        if (referenceType != GlReferenceType.YEAR_END_CLOSE && periodLockChecker.isDateInClosedPeriod(companyId, date)) {
+            throw new BadRequestException(
+                    "Cannot post to " + date + " - that accounting period is closed. Reopen it first if this entry truly belongs there.");
+        }
+
         ChartOfAccount account = coaRepository.findByIdAndCompanyId(accountId, companyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Chart of Account not found"));
 
         var currentUser = securityUtil.getCurrentUser();
         GeneralLedger entry = GeneralLedger.builder()
                 .companyId(companyId)
-                .transactionDate(LocalDate.now())
+                .transactionDate(date)
                 .account(account)
                 .debitAmount(debitAmount != null ? debitAmount : BigDecimal.ZERO)
                 .creditAmount(creditAmount != null ? creditAmount : BigDecimal.ZERO)
@@ -63,6 +84,39 @@ public class GeneralLedgerServiceImpl implements GeneralLedgerService {
 
         // Update account balance
         updateAccountBalance(account, debitAmount, creditAmount);
+    }
+
+    @Override
+    @Transactional
+    public void recordBalancedTransaction(Long companyId, List<LedgerLine> lines, String description,
+                                           GlReferenceType referenceType, Long referenceId, String referenceNumber,
+                                           LocalDate transactionDate) {
+        if (lines == null || lines.isEmpty()) {
+            throw new BadRequestException("A transaction needs at least one line");
+        }
+
+        BigDecimal totalDebits = lines.stream()
+                .map(l -> l.debitAmount() != null ? l.debitAmount() : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal totalCredits = lines.stream()
+                .map(l -> l.creditAmount() != null ? l.creditAmount() : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        if (totalDebits.subtract(totalCredits).abs().compareTo(new BigDecimal("0.01")) > 0) {
+            throw new BadRequestException("Transaction does not balance: debits " + totalDebits
+                    + " vs credits " + totalCredits + " - rejected before posting anything");
+        }
+
+        for (LedgerLine line : lines) {
+            boolean bothZero = isZero(line.debitAmount()) && isZero(line.creditAmount());
+            if (bothZero) continue; // a genuinely empty line is a no-op, not an error
+            recordTransaction(companyId, line.accountId(), line.debitAmount(), line.creditAmount(),
+                    description, referenceType, referenceId, referenceNumber, transactionDate);
+        }
+    }
+
+    private static boolean isZero(BigDecimal value) {
+        return value == null || value.compareTo(BigDecimal.ZERO) == 0;
     }
 
     @Override

@@ -18,8 +18,13 @@ public class TimesheetMapper {
         r.setHoursWorked(t.getHoursWorked());
         r.setBillableHours(t.getBillableHours());
         r.setDescription(t.getWorkSummary());
+        r.setProjectName(t.getProjectName());
+        r.setTaskDescription(t.getTaskDescription());
+        r.setSubmitted(t.isSubmitted());
+        r.setSubmittedAt(t.getSubmittedAt());
         r.setApproved(t.isApproved());
-        
+        r.setStatus(t.isApproved() ? "APPROVED" : t.isSubmitted() ? "SUBMITTED" : "NOT_SUBMITTED");
+
         r.setEmployeeId(emp != null ? emp.getId() : null);
         r.setEmployeeName(empUser != null ? empUser.getFullName() : null);
         r.setApprovedById(approverUser != null ? approverUser.getId() : null);

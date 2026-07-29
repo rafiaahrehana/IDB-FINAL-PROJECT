@@ -32,11 +32,15 @@ export class TimesheetService {
     return this.api.patch<Timesheet>(`${this.endpoint}/${id}`, payload);
   }
 
+  submitForReview(): Observable<{ submitted: number }> {
+    return this.api.post<{ submitted: number }>(`${this.endpoint}/submit`, {});
+  }
+
   approve(id: number): Observable<Timesheet> {
     return this.api.patch<Timesheet>(`${this.endpoint}/${id}/approve`, {});
   }
 
   delete(id: number): Observable<string> {
-    return this.api.delete<string>(`${this.endpoint}/${id}`);
+    return this.api.deleteText(`${this.endpoint}/${id}`);
   }
 }

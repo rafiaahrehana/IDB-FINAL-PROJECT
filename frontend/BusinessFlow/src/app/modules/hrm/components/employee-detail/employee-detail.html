@@ -1,17 +1,25 @@
 <div class="container-fluid py-3">
-  <div class="page-hero">
-    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
-      <div>
-        <div class="page-hero-label">HRM</div>
-        <h4 class="page-hero-title mb-0">{{ employee ? employee.firstName + ' ' + employee.lastName : 'Employee' }}</h4>
-        <div class="page-hero-subtitle mt-1"><a routerLink="/hrm/employees" class="text-decoration-none" style="color: rgba(255,255,255,0.7);">Employees</a></div>
-      </div>
-      @if (employee && !editing) {
-      <div class="page-hero-actions">
-        <button *appHasPermission="'EMPLOYEE_UPDATE'" class="btn-hero-secondary" (click)="startEdit()"><i class="bi bi-pencil"></i> Edit</button>
-      </div>
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <a routerLink="/hrm/employees" class="small text-decoration-none"><i class="bi bi-arrow-left me-1"></i>Employees</a>
+      @if (employee) {
+        <div class="d-flex align-items-center gap-2">
+          @if (employee.profileImageUrl || employee.image) {
+            <img [src]="employee.profileImageUrl || employee.image" class="rounded-circle" style="width:40px;height:40px;object-fit:cover;" alt="Profile photo" />
+          } @else {
+            <div class="rounded-circle bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center fw-bold" style="width:40px;height:40px;font-size:0.9rem;flex-shrink:0;">
+              {{ employee.firstName?.charAt(0) }}{{ employee.lastName?.charAt(0) }}
+            </div>
+          }
+          <h4 class="mb-0">{{ employee.firstName + ' ' + employee.lastName }}</h4>
+        </div>
+      } @else {
+        <h4 class="mb-0">Employee</h4>
       }
     </div>
+    @if (employee && !editing) {
+    <button *appHasPermission="'EMPLOYEE_UPDATE'" class="btn btn-outline-primary btn-sm" (click)="startEdit()"><i class="bi bi-pencil me-1"></i>Edit</button>
+    }
   </div>
 
   @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
@@ -21,8 +29,8 @@
   @if (employee && !editing) {
   <div class="row g-3">
     <div class="col-lg-6">
-      <div class="card h-100">
-        <div class="card-header py-2 fw-semibold small text-uppercase">Employment</div>
+      <div class="card h-100" style="background-color: #f3e8ff;">
+        <div class="card-header py-2 fw-semibold small text-uppercase bg-transparent border-bottom border-light-subtle">Employment</div>
         <div class="card-body py-2">
           <dl class="row mb-0 small">
             <dt class="col-5">Employee No</dt><dd class="col-7">{{ employee.employeeNumber || '-' }}</dd>
@@ -41,8 +49,8 @@
       </div>
     </div>
     <div class="col-lg-6">
-      <div class="card h-100">
-        <div class="card-header py-2 fw-semibold small text-uppercase">Contact & Personal</div>
+      <div class="card h-100" style="background-color: #f3e8ff;">
+        <div class="card-header py-2 fw-semibold small text-uppercase bg-transparent border-bottom border-light-subtle">Contact & Personal</div>
         <div class="card-body py-2">
           <dl class="row mb-0 small">
             <dt class="col-5">Email</dt><dd class="col-7">{{ employee.email }}</dd>
@@ -70,22 +78,23 @@
       </div>
     </div>
     <div class="col-lg-6">
-      <div class="card">
-        <div class="card-header py-2 fw-semibold small text-uppercase">Compensation</div>
+      <div class="card" style="background-color: #f3e8ff;">
+        <div class="card-header py-2 fw-semibold small text-uppercase bg-transparent border-bottom border-light-subtle">Compensation</div>
         <div class="card-body py-2">
           <dl class="row mb-0 small">
             <dt class="col-5">Basic Salary</dt><dd class="col-7">{{ employee.basicSalary ?? '-' }}</dd>
             <dt class="col-5">House Rent</dt><dd class="col-7">{{ employee.houseRent ?? '-' }}</dd>
             <dt class="col-5">Medical Allowance</dt><dd class="col-7">{{ employee.medicalAllowance ?? '-' }}</dd>
             <dt class="col-5">Transport Allowance</dt><dd class="col-7">{{ employee.transportAllowance ?? '-' }}</dd>
+            <dt class="col-5">Billable Rate</dt><dd class="col-7">{{ employee.billableRate ? (employee.billableRate + '/hr') : '-' }}</dd>
             <dt class="col-5">Bank</dt><dd class="col-7">{{ employee.bankName || '-' }}</dd>
           </dl>
         </div>
       </div>
     </div>
     <div class="col-lg-6">
-      <div class="card">
-        <div class="card-header py-2 fw-semibold small text-uppercase">Custom Role &amp; Permissions</div>
+      <div class="card" style="background-color: #f3e8ff;">
+        <div class="card-header py-2 fw-semibold small text-uppercase bg-transparent border-bottom border-light-subtle">Custom Role &amp; Permissions</div>
         <div class="card-body py-2">
           <p class="small text-muted mb-2">
             Current role: <strong>{{ employee.customRoleName || 'None' }}</strong>.
@@ -106,8 +115,8 @@
       </div>
     </div>
     <div class="col-12">
-      <div class="card">
-        <div class="card-header py-2 d-flex justify-content-between align-items-center">
+      <div class="card" style="background-color: #f3e8ff;">
+        <div class="card-header py-2 d-flex justify-content-between align-items-center bg-transparent border-bottom border-light-subtle">
           <span class="fw-semibold small text-uppercase">Education Qualifications</span>
           @if (!addingQualification) {
             <button class="btn btn-outline-primary btn-sm" (click)="startAddQualification()"><i class="bi bi-plus-lg me-1"></i>Add</button>
@@ -268,6 +277,10 @@
           <div class="col-md-3">
             <label class="form-label">Transport Allowance</label>
             <input type="number" class="form-control form-control-sm" name="transportAllowance" [(ngModel)]="form.transportAllowance" min="0">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Billable Rate <span class="text-muted">(per hour)</span></label>
+            <input type="number" class="form-control form-control-sm" name="billableRate" [(ngModel)]="form.billableRate" min="0">
           </div>
           <div class="col-md-4">
             <label class="form-label">Bank Name</label>

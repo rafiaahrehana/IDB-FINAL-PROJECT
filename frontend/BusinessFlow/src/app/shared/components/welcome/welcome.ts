@@ -1,7 +1,6 @@
 import { Component, OnInit, ViewChild, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { EmployeeService } from '../../../modules/hrm/services/employee.service';
 import { EducationQualificationService } from '../../../modules/hrm/services/education-qualification.service';
@@ -13,7 +12,7 @@ import { FileUploadResult } from '../../services/file-upload.service';
 
 @Component({
   selector: 'app-welcome',
-  imports: [CommonModule, FormsModule, RouterLink, Loader, LocationComponent, FileUpload],
+  imports: [CommonModule, FormsModule, Loader, LocationComponent, FileUpload],
   templateUrl: './welcome.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './welcome.scss',

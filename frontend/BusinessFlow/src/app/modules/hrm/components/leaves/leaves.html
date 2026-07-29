@@ -1,24 +1,18 @@
 <div class="container-fluid py-3">
-  <div class="page-hero">
-    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
-      <div>
-        <div class="page-hero-label">HRM</div>
-        <h4 class="page-hero-title underline-mint">Leaves</h4>
-        <div class="page-hero-subtitle">Manage leave requests and balances</div>
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <h4 class="mb-0">Leaves</h4>
+    <div class="d-flex gap-2 align-items-center">
+      <div class="btn-group btn-group-sm" role="group">
+        <button class="btn" [class.btn-primary]="view === 'my'" [class.btn-outline-secondary]="view !== 'my'" (click)="setView('my')">My Requests</button>
+        <button class="btn" [class.btn-primary]="view === 'all'" [class.btn-outline-secondary]="view !== 'all'" (click)="setView('all')">All Requests</button>
       </div>
-      <div class="page-hero-actions">
-        <div class="btn-group btn-group-sm" role="group">
-          <button class="btn" [class.btn-primary]="view === 'my'" [class.btn-outline-secondary]="view !== 'my'" (click)="setView('my')">My Requests</button>
-          <button class="btn" [class.btn-primary]="view === 'all'" [class.btn-outline-secondary]="view !== 'all'" (click)="setView('all')">All Requests</button>
-        </div>
-        @if (view === 'all') {
-        <select class="form-select form-select-sm" style="width:150px" [(ngModel)]="statusFilter" (change)="page=0;load()">
-          <option value="">All statuses</option>
-          @for (s of statuses; track s) { <option [value]="s">{{ s | titlecase }}</option> }
-        </select>
-        }
-        <button *appHasPermission="'LEAVE_CREATE'" class="btn btn-hero-primary" (click)="openApply()"><i class="bi bi-plus-circle"></i> Apply for Leave</button>
-      </div>
+      @if (view === 'all') {
+      <select class="form-select form-select-sm" style="width:150px" [(ngModel)]="statusFilter" (change)="page=0;load()">
+        <option value="">All statuses</option>
+        @for (s of statuses; track s) { <option [value]="s">{{ s | titlecase }}</option> }
+      </select>
+      }
+      <button *appHasPermission="'LEAVE_CREATE'" class="btn btn-primary btn-sm" (click)="openApply()"><i class="bi bi-plus"></i> Apply for Leave</button>
     </div>
   </div>
   @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
@@ -80,7 +74,7 @@
   <div class="card">
     <div class="table-responsive">
       <table class="table table-hover table-sm align-middle mb-0">
-        <thead>
+        <thead class="table-light">
           <tr>
             @if (view === 'all') { <th>Employee</th> }
             <th>Type</th><th>Start</th><th>End</th><th class="text-end">Days</th><th>Reason</th><th>Status</th><th>Reviewed By</th><th></th>
@@ -122,9 +116,9 @@
   <div class="modal d-block" style="background: rgba(0,0,0,.4)">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
-        <div class="modal-header py-2" style="background: #4F46E5; color:#fff;">
-          <h5 class="modal-title fs-6 fw-semibold" style="color:#fff;">{{ reviewAction === 'APPROVED' ? 'Approve' : 'Reject' }} Leave Request</h5>
-          <button class="btn-close btn-close-white" (click)="reviewTarget = null"></button>
+        <div class="modal-header py-2">
+          <h5 class="modal-title fs-6 fw-semibold">{{ reviewAction === 'APPROVED' ? 'Approve' : 'Reject' }} Leave Request</h5>
+          <button class="btn-close" (click)="reviewTarget = null"></button>
         </div>
         <div class="modal-body">
           <div class="text-muted small mb-2">

@@ -8,9 +8,10 @@ import { Pagination } from '../../../../shared/components/pagination/pagination'
 import { Loader } from '../../../../shared/components/loader/loader';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
 
+import { BosCurrencyPipe } from '../../../../shared/pipes/bos-currency.pipe';
 @Component({
   selector: 'app-wallet',
-  imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState],
+  imports: [BosCurrencyPipe, CommonModule, FormsModule, Pagination, Loader, EmptyState],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './wallet.html',
 })

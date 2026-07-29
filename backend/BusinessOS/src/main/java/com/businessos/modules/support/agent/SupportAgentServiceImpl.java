@@ -24,6 +24,9 @@ public class SupportAgentServiceImpl implements SupportAgentService {
     @Override
     @Transactional
     public SupportAgentResponse create(SupportAgentRequest request) {
+        if (request.getUserId() == null) {
+            throw new IllegalArgumentException("User ID is required");
+        }
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
@@ -35,7 +38,7 @@ public class SupportAgentServiceImpl implements SupportAgentService {
                 .user(user)
                 .department(request.getDepartment())
                 .specialization(request.getSpecialization())
-                .status(request.getStatus())
+                .status(request.getStatus() != null ? request.getStatus() : SupportAgentStatus.ACTIVE)
                 .maxConcurrentTickets(request.getMaxConcurrentTickets())
                 .notes(request.getNotes())
                 .build();

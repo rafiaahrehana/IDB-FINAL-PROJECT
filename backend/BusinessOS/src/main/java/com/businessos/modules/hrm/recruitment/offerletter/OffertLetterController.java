@@ -1,5 +1,6 @@
 package com.businessos.modules.hrm.recruitment.offerletter;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -20,6 +21,11 @@ public class OffertLetterController {
     @PostMapping
     public ResponseEntity<OfferLetterResponse> create(@RequestBody OfferLetterRequest request) {
         return new ResponseEntity<>(letterService.create(request), HttpStatus.CREATED);
+    }
+
+    @PostMapping("/draft")
+    public ResponseEntity<OfferLetterDraftResponse> draftWithAi(@Valid @RequestBody OfferLetterDraftRequest request) {
+        return ResponseEntity.ok(letterService.draftWithAi(request));
     }
 
     @GetMapping

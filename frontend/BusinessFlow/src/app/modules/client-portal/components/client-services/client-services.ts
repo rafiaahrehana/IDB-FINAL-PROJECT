@@ -1,5 +1,6 @@
 import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { CompanyService, ServiceCategory } from '../../../servicedesk/models/servicedesk.model';
 import { CompanyServiceService } from '../../../servicedesk/services/company-service.service';
@@ -9,7 +10,7 @@ import { EmptyState } from '../../../../shared/components/empty-state/empty-stat
 
 @Component({
   selector: 'app-client-services',
-  imports: [CommonModule, RouterLink, Loader, EmptyState],
+  imports: [CommonModule, FormsModule, RouterLink, Loader, EmptyState],
   templateUrl: './client-services.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -19,6 +20,16 @@ export class ClientServices implements OnInit {
   services: CompanyService[] = [];
   loading = true;
   error = '';
+  searchTerm = '';
+
+  get filteredServices(): CompanyService[] {
+    const term = this.searchTerm.trim().toLowerCase();
+    if (!term) return this.services;
+    return this.services.filter((s) =>
+      s.name.toLowerCase().includes(term) ||
+      (s.description ?? '').toLowerCase().includes(term)
+    );
+  }
 
   constructor(
     private companyServiceService: CompanyServiceService,

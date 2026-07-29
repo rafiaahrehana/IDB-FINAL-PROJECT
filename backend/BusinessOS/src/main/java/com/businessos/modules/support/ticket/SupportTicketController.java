@@ -41,7 +41,7 @@ public class SupportTicketController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('SUPPORT_MANAGER') or hasRole('COMPANY_OWNER') or hasAnyRole('SUPER_ADMIN', 'SYSTEM_ADMIN')")
+    @PreAuthorize("hasRole('SUPPORT_MANAGER') or hasRole('SUPPORT_AGENT') or hasRole('COMPANY_OWNER') or hasAnyRole('SUPER_ADMIN', 'SYSTEM_ADMIN')")
     @Operation(summary = "Get all Tickets")
     public ResponseEntity<Page<SupportTicketResponse>> getAll(
             @RequestParam(defaultValue = "0") int page,
@@ -63,7 +63,7 @@ public class SupportTicketController {
     @PreAuthorize("hasRole('SUPPORT_AGENT')")
     @Operation(summary = "Get Tickets Assigned to Me")
     public ResponseEntity<Page<SupportTicketResponse>> getAssignedToMe(
-            @RequestParam Long agentId,
+            @RequestParam(required = false) Long agentId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         return ResponseEntity.ok(service.getAssignedToMe(agentId, PageRequest.of(page, size)));
@@ -80,21 +80,21 @@ public class SupportTicketController {
     }
 
     @GetMapping("/sla-breached")
-    @PreAuthorize("hasRole('SUPPORT_MANAGER') or hasRole('COMPANY_OWNER') or hasAnyRole('SUPER_ADMIN', 'SYSTEM_ADMIN')")
+    @PreAuthorize("hasRole('SUPPORT_MANAGER') or hasRole('SUPPORT_AGENT') or hasRole('COMPANY_OWNER') or hasAnyRole('SUPER_ADMIN', 'SYSTEM_ADMIN')")
     @Operation(summary = "Get SLA Breached Tickets")
     public ResponseEntity<?> getSLABreached() {
         return ResponseEntity.ok(service.getSLABreachedTickets());
     }
 
     @GetMapping("/critical-open")
-    @PreAuthorize("hasRole('SUPPORT_MANAGER') or hasRole('COMPANY_OWNER') or hasAnyRole('SUPER_ADMIN', 'SYSTEM_ADMIN')")
+    @PreAuthorize("hasRole('SUPPORT_MANAGER') or hasRole('SUPPORT_AGENT') or hasRole('COMPANY_OWNER') or hasAnyRole('SUPER_ADMIN', 'SYSTEM_ADMIN')")
     @Operation(summary = "Get Critical Open Tickets")
     public ResponseEntity<?> getCriticalOpen() {
         return ResponseEntity.ok(service.getOpenCriticalTickets());
     }
 
     @PostMapping("/{id}/assign")
-    @PreAuthorize("hasRole('SUPPORT_MANAGER') or hasRole('COMPANY_OWNER') or hasAnyRole('SUPER_ADMIN', 'SYSTEM_ADMIN')")
+    @PreAuthorize("hasRole('SUPPORT_MANAGER') or hasRole('SUPPORT_AGENT') or hasRole('COMPANY_OWNER') or hasAnyRole('SUPER_ADMIN', 'SYSTEM_ADMIN')")
     @Operation(summary = "Assign Ticket to Agent")
     public ResponseEntity<Void> assign(
             @PathVariable Long id,
@@ -104,7 +104,7 @@ public class SupportTicketController {
     }
 
     @PostMapping("/{id}/reassign")
-    @PreAuthorize("hasRole('SUPPORT_MANAGER') or hasRole('COMPANY_OWNER') or hasAnyRole('SUPER_ADMIN', 'SYSTEM_ADMIN')")
+    @PreAuthorize("hasRole('SUPPORT_MANAGER') or hasRole('SUPPORT_AGENT') or hasRole('COMPANY_OWNER') or hasAnyRole('SUPER_ADMIN', 'SYSTEM_ADMIN')")
     @Operation(summary = "Reassign Ticket")
     public ResponseEntity<Void> reassign(
             @PathVariable Long id,
@@ -115,7 +115,7 @@ public class SupportTicketController {
     }
 
     @PostMapping("/{id}/escalate")
-    @PreAuthorize("hasRole('SUPPORT_MANAGER') or hasRole('COMPANY_OWNER') or hasAnyRole('SUPER_ADMIN', 'SYSTEM_ADMIN')")
+    @PreAuthorize("hasRole('SUPPORT_MANAGER') or hasRole('SUPPORT_AGENT') or hasRole('COMPANY_OWNER') or hasAnyRole('SUPER_ADMIN', 'SYSTEM_ADMIN')")
     @Operation(summary = "Escalate Ticket")
     public ResponseEntity<Void> escalate(
             @PathVariable Long id,
@@ -125,7 +125,7 @@ public class SupportTicketController {
     }
 
     @PostMapping("/{id}/first-response")
-    @PreAuthorize("hasRole('SUPPORT_AGENT')")
+    @PreAuthorize("hasRole('SUPPORT_AGENT') or hasRole('SUPPORT_MANAGER') or hasAnyRole('SUPER_ADMIN', 'SYSTEM_ADMIN')")
     @Operation(summary = "Record First Response (SLA Timer)")
     public ResponseEntity<Void> recordFirstResponse(@PathVariable Long id) {
         service.recordFirstResponse(id);
@@ -133,7 +133,7 @@ public class SupportTicketController {
     }
 
     @PostMapping("/{id}/resolve")
-    @PreAuthorize("hasRole('SUPPORT_AGENT')")
+    @PreAuthorize("hasRole('SUPPORT_AGENT') or hasRole('SUPPORT_MANAGER') or hasAnyRole('SUPER_ADMIN', 'SYSTEM_ADMIN')")
     @Operation(summary = "Resolve Ticket")
     public ResponseEntity<Void> resolve(
             @PathVariable Long id,
@@ -151,7 +151,7 @@ public class SupportTicketController {
     }
 
     @PostMapping("/{id}/reopen")
-    @PreAuthorize("hasAnyRole('SUPPORT_AGENT', 'COMPANY_OWNER', 'EMPLOYEE')")
+    @PreAuthorize("hasAnyRole('SUPPORT_AGENT', 'SUPPORT_MANAGER', 'COMPANY_OWNER', 'EMPLOYEE')")
     @Operation(summary = "Reopen Ticket")
     public ResponseEntity<Void> reopen(
             @PathVariable Long id,
@@ -172,7 +172,7 @@ public class SupportTicketController {
     }
 
     @PatchMapping("/{id}")
-    @PreAuthorize("hasRole('SUPPORT_MANAGER') or hasRole('COMPANY_OWNER') or hasAnyRole('SUPER_ADMIN', 'SYSTEM_ADMIN')")
+    @PreAuthorize("hasRole('SUPPORT_MANAGER') or hasRole('SUPPORT_AGENT') or hasRole('COMPANY_OWNER') or hasAnyRole('SUPER_ADMIN', 'SYSTEM_ADMIN')")
     @Operation(summary = "Update Ticket")
     public ResponseEntity<SupportTicketResponse> update(
             @PathVariable Long id,

@@ -1,5 +1,6 @@
 package com.businessos.modules.hrm.employee;
 
+import com.businessos.enums.EmploymentStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -28,12 +29,120 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
     // excludeOwner support - the company owner gets an auto-created Employee record
     // (so leave/timesheet/expense/payroll "my work" lookups don't 404 for them), but
     // the HRM Employees admin page shouldn't list the owner as a manageable employee.
-    Page<Employee> findByCompanyIdAndUserIdNot(Long companyId, Long excludedUserId, Pageable pageable);
+    @Query("SELECT e FROM Employee e " +
+           "LEFT JOIN e.user u " +
+           "WHERE e.company.id = :companyId " +
+           "AND (:excludedUserId IS NULL OR u.id IS NULL OR u.id != :excludedUserId) " +
+           "AND e.deleted = false")
+    Page<Employee> findByCompanyIdExcludingOwner(
+            @Param("companyId") Long companyId,
+            @Param("excludedUserId") Long excludedUserId,
+            Pageable pageable);
 
-    Page<Employee> findByCompanyIdAndDepartmentIdAndUserIdNot(
-            Long companyId, Long departmentId, Long excludedUserId, Pageable pageable);
+    @Query("SELECT e FROM Employee e " +
+           "LEFT JOIN e.user u " +
+           "LEFT JOIN e.department d " +
+           "WHERE e.company.id = :companyId " +
+           "AND d.id = :departmentId " +
+           "AND (:excludedUserId IS NULL OR u.id IS NULL OR u.id != :excludedUserId) " +
+           "AND e.deleted = false")
+    Page<Employee> findByCompanyIdAndDepartmentIdExcludingOwner(
+            @Param("companyId") Long companyId,
+            @Param("departmentId") Long departmentId,
+            @Param("excludedUserId") Long excludedUserId,
+            Pageable pageable);
 
-    long countByCompanyId(Long companyId);
+    @Query("SELECT e FROM Employee e " +
+           "LEFT JOIN e.user u " +
+           "WHERE e.company.id = :companyId " +
+           "AND e.employmentStatus = :status " +
+           "AND (:excludedUserId IS NULL OR u.id IS NULL OR u.id != :excludedUserId) " +
+           "AND e.deleted = false")
+    Page<Employee> findByCompanyIdAndEmploymentStatusExcludingOwner(
+            @Param("companyId") Long companyId,
+            @Param("status") EmploymentStatus status,
+            @Param("excludedUserId") Long excludedUserId,
+            Pageable pageable);
+
+    @Query("SELECT e FROM Employee e " +
+           "LEFT JOIN e.user u " +
+           "LEFT JOIN e.department d " +
+           "WHERE e.company.id = :companyId " +
+           "AND d.id = :departmentId " +
+           "AND e.employmentStatus = :status " +
+           "AND (:excludedUserId IS NULL OR u.id IS NULL OR u.id != :excludedUserId) " +
+           "AND e.deleted = false")
+    Page<Employee> findByCompanyIdAndDepartmentIdAndEmploymentStatusExcludingOwner(
+            @Param("companyId") Long companyId,
+            @Param("departmentId") Long departmentId,
+            @Param("status") EmploymentStatus status,
+            @Param("excludedUserId") Long excludedUserId,
+            Pageable pageable);
+
+    @Query("SELECT e FROM Employee e " +
+           "LEFT JOIN e.user u " +
+           "LEFT JOIN e.department d " +
+           "LEFT JOIN e.designation des " +
+           "WHERE e.company.id = :companyId " +
+           "AND (:departmentId IS NULL OR d.id = :departmentId) " +
+           "AND e.employmentStatus = :status " +
+           "AND (:ownerUserId IS NULL OR u.id != :ownerUserId) " +
+           "AND (:search IS NULL OR (" +
+           "    LOWER(e.employeeNumber) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "    CAST(e.id AS string) LIKE CONCAT('%', :search, '%') OR " +
+           "    LOWER(u.firstName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "    LOWER(u.lastName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "    LOWER(CONCAT(u.firstName, ' ', u.lastName)) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "    LOWER(u.email) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "    LOWER(e.officialEmail) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "    LOWER(e.jobTitle) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "    LOWER(d.name) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "    LOWER(d.code) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "    CAST(d.id AS string) LIKE CONCAT('%', :search, '%') OR " +
+           "    LOWER(des.name) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "    LOWER(des.code) LIKE LOWER(CONCAT('%', :search, '%'))" +
+           ")) " +
+           "AND e.deleted = false")
+    Page<Employee> searchEmployeesWithStatus(
+            @Param("companyId") Long companyId,
+            @Param("departmentId") Long departmentId,
+            @Param("status") EmploymentStatus status,
+            @Param("ownerUserId") Long ownerUserId,
+            @Param("search") String search,
+            Pageable pageable);
+
+    @Query("SELECT e FROM Employee e " +
+           "LEFT JOIN e.user u " +
+           "LEFT JOIN e.department d " +
+           "LEFT JOIN e.designation des " +
+           "WHERE e.company.id = :companyId " +
+           "AND (:departmentId IS NULL OR d.id = :departmentId) " +
+           "AND (:ownerUserId IS NULL OR u.id != :ownerUserId) " +
+           "AND (:search IS NULL OR (" +
+           "    LOWER(e.employeeNumber) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "    CAST(e.id AS string) LIKE CONCAT('%', :search, '%') OR " +
+           "    LOWER(u.firstName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "    LOWER(u.lastName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "    LOWER(CONCAT(u.firstName, ' ', u.lastName)) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "    LOWER(u.email) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "    LOWER(e.officialEmail) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "    LOWER(e.jobTitle) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "    LOWER(d.name) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "    LOWER(d.code) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "    CAST(d.id AS string) LIKE CONCAT('%', :search, '%') OR " +
+           "    LOWER(des.name) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "    LOWER(des.code) LIKE LOWER(CONCAT('%', :search, '%'))" +
+           ")) " +
+           "AND e.deleted = false")
+    Page<Employee> searchEmployeesWithoutStatus(
+            @Param("companyId") Long companyId,
+            @Param("departmentId") Long departmentId,
+            @Param("ownerUserId") Long ownerUserId,
+            @Param("search") String search,
+            Pageable pageable);
+
+    @Query("SELECT COUNT(e) FROM Employee e WHERE e.company.id = :companyId AND e.deleted = false")
+    long countByCompanyId(@Param("companyId") Long companyId);
 
     long countByCompanyIdAndUserIdNot(Long companyId, Long excludedUserId);
 

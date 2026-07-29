@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 public class ClientContactResponse {
     private Long id;
     private Long clientId;
+    private String clientCompanyName;
     private String fullName;
     private String email;
     private String phone;

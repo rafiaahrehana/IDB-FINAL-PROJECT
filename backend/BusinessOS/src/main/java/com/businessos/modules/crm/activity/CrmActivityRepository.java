@@ -4,6 +4,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 public interface CrmActivityRepository extends JpaRepository<CrmActivity, Long> {
@@ -17,4 +19,12 @@ public interface CrmActivityRepository extends JpaRepository<CrmActivity, Long> 
     Page<CrmActivity> findByCompanyIdOrderByActivityDateDesc(Long companyId, Pageable pageable);
 
     Page<CrmActivity> findByLeadId(Long leadId, Pageable pageable);
+
+    // No companyId scoping - runs outside an HTTP request context (scheduler), so the
+    // tenant Hibernate filter isn't active; matches the convention used by SLA/invoice
+    // schedulers, which likewise scan across all companies.
+    List<CrmActivity> findByFollowUpAtLessThanEqualAndFollowUpDoneFalseAndDeletedFalse(LocalDateTime cutoff);
+
+    List<CrmActivity> findByCompanyIdAndFollowUpDoneFalseAndFollowUpAtGreaterThanEqualOrderByFollowUpAtAsc(
+            Long companyId, LocalDateTime from);
 }

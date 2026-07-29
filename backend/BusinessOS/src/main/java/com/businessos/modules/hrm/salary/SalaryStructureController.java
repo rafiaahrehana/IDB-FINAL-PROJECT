@@ -24,6 +24,12 @@ public class SalaryStructureController {
         return new ResponseEntity<>(salaryStructureService.create(request), HttpStatus.CREATED);
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<SalaryStructureResponse> update(
+            @PathVariable Long id, @RequestBody SalaryStructureRequest request) {
+        return ResponseEntity.ok(salaryStructureService.update(id, request));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<SalaryStructureResponse> getById(@PathVariable Long id) {
         return ResponseEntity.ok(salaryStructureService.getById(id));

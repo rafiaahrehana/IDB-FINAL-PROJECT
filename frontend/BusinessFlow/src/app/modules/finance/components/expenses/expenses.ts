@@ -1,16 +1,20 @@
 import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Expense } from '../../models/finance.model';
+import { RouterLink } from '@angular/router';
+import { Expense, ChartOfAccount } from '../../models/finance.model';
 import { ExpenseService } from '../../services/expense.service';
+import { CoaService } from '../../services/coa.service';
+import { BudgetService } from '../../services/budget.service';
 import { Pagination } from '../../../../shared/components/pagination/pagination';
 import { Loader } from '../../../../shared/components/loader/loader';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
 import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/confirm-dialog';
 
+import { BosCurrencyPipe } from '../../../../shared/pipes/bos-currency.pipe';
 @Component({
   selector: 'app-expenses',
-  imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState, ConfirmDialog],
+  imports: [BosCurrencyPipe, CommonModule, FormsModule, RouterLink, Pagination, Loader, EmptyState, ConfirmDialog],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './expenses.html',
 })
@@ -35,10 +39,42 @@ export class Expenses implements OnInit {
 
   statuses = ['PENDING', 'APPROVED', 'REJECTED', 'PAID', 'CANCELLED'];
 
-  constructor(private expenseService: ExpenseService, private cdr: ChangeDetectorRef) {}
+  // EXPENSE-type COA accounts for the "posts to" select (lazy-loaded on first form open)
+  expenseAccounts: ChartOfAccount[] = [];
+  // Existing budget category names, suggested via <datalist> so free-text entry here
+  // doesn't drift from what a budget was actually set up for (typos silently break
+  // the budget-vs-actual matching - see BudgetService.toResponse()).
+  budgetCategories: string[] = [];
+
+  constructor(
+    private expenseService: ExpenseService,
+    private coaService: CoaService,
+    private budgetService: BudgetService,
+    private cdr: ChangeDetectorRef,
+  ) {}
 
   ngOnInit(): void {
     this.load();
+  }
+
+  openForm(): void {
+    this.showForm = true;
+    this.form = {};
+    if (!this.expenseAccounts.length) {
+      this.coaService.list(0, 200).subscribe({
+        next: (res) => {
+          this.expenseAccounts = res.content.filter((a) => a.type === 'EXPENSE' && a.active);
+          this.cdr.markForCheck();
+        },
+        error: () => {},
+      });
+    }
+    if (!this.budgetCategories.length) {
+      this.budgetService.listCategories().subscribe({
+        next: (res) => { this.budgetCategories = res; this.cdr.markForCheck(); },
+        error: () => {},
+      });
+    }
   }
 
   load(): void {
@@ -81,16 +117,32 @@ export class Expenses implements OnInit {
     this.approvalNotes = '';
   }
 
+  budgetWarning = '';
+
   doApproval(): void {
     if (!this.approvalTarget) return;
-    const op =
-      this.approvalAction === 'approve'
-        ? this.expenseService.approve(this.approvalTarget.id, this.approvalNotes)
-        : this.expenseService.reject(this.approvalTarget.id, this.approvalNotes);
-    op.subscribe({
+    this.budgetWarning = '';
+    if (this.approvalAction === 'approve') {
+      this.expenseService.approve(this.approvalTarget.id, this.approvalNotes).subscribe({
+        next: (res) => {
+          this.approvalTarget = null;
+          this.success = 'Expense approved';
+          this.budgetWarning = res?.budgetWarning || '';
+          this.cdr.markForCheck();
+          this.load();
+        },
+        error: (err) => {
+          this.error = err?.error?.message || 'Failed';
+          this.approvalTarget = null;
+          this.cdr.markForCheck();
+        },
+      });
+      return;
+    }
+    this.expenseService.reject(this.approvalTarget.id, this.approvalNotes).subscribe({
       next: () => {
         this.approvalTarget = null;
-        this.success = 'Done';
+        this.success = 'Expense rejected';
         this.cdr.markForCheck();
         this.load();
       },

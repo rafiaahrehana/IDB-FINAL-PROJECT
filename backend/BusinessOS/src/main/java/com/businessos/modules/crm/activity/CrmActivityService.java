@@ -18,4 +18,7 @@ public interface CrmActivityService {
     CrmActivityResponse markCompleted(Long id);
 
     void delete(Long id);
+
+    /** Summarise recent activity for a client or opportunity with AI and suggest a next action */
+    CrmActivitySummaryResponse summarise(Long clientId, Long opportunityId);
 }

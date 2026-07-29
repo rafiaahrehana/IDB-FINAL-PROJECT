@@ -18,11 +18,12 @@ import { Loader } from '../../../../shared/components/loader/loader';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
 import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/confirm-dialog';
 
+import { BosCurrencyPipe } from '../../../../shared/pipes/bos-currency.pipe';
 type Tab = 'packages' | 'subscriptions';
 
 @Component({
   selector: 'app-service-packages',
-  imports: [CommonModule, FormsModule, Pagination, Loader, EmptyState, ConfirmDialog],
+  imports: [BosCurrencyPipe, CommonModule, FormsModule, Pagination, Loader, EmptyState, ConfirmDialog],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './packages.html',
   styleUrls: ['./packages.scss']

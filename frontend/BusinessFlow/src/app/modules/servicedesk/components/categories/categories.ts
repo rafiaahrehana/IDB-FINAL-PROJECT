@@ -24,8 +24,17 @@ export class Categories implements OnInit {
   showForm = false;
   editingId: number | null = null;
   form: ServiceCategoryRequest = { name: '' };
+  searchTerm = '';
 
   constructor(private categoryService: ServiceCategoryService, private cdr: ChangeDetectorRef) {}
+
+  get filteredCategories(): ServiceCategory[] {
+    const term = this.searchTerm.trim().toLowerCase();
+    if (!term) return this.categories;
+    return this.categories.filter((c) =>
+      c.name.toLowerCase().includes(term) || (c.description ?? '').toLowerCase().includes(term)
+    );
+  }
 
   // LIFECYCLE HOOKS
   ngOnInit(): void { this.load(); }

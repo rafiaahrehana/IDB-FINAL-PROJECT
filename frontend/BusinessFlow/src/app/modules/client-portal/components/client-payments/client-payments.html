@@ -1,4 +1,4 @@
-﻿<div class="container-fluid py-3">
+<div class="container-fluid py-3">
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h4 class="mb-0">Payment</h4>
     <div class="btn-group btn-group-sm">
@@ -15,7 +15,7 @@
     <div class="card">
       <div class="table-responsive">
         <table class="table table-hover table-sm align-middle mb-0">
-          <thead>
+          <thead class="table-light">
             <tr><th>Invoice #</th><th>For</th><th>Date</th><th>Due</th><th>Total</th><th>Paid</th><th>Balance</th><th>Status</th><th></th></tr>
           </thead>
           <tbody>
@@ -29,9 +29,9 @@
               </td>
               <td>{{ inv.invoiceDate ? (inv.invoiceDate | date) : '-' }}</td>
               <td>{{ inv.dueDate ? (inv.dueDate | date) : '-' }}</td>
-              <td>{{ inv.totalAmount | currency }}</td>
-              <td>{{ inv.paidAmount | currency }}</td>
-              <td class="fw-semibold">{{ inv.balanceAmount | currency }}</td>
+              <td>{{ inv.totalAmount | bosCurrency }}</td>
+              <td>{{ inv.paidAmount | bosCurrency }}</td>
+              <td class="fw-semibold">{{ inv.balanceAmount | bosCurrency }}</td>
               <td>
                 <span class="badge {{ statusClass(inv.status) }}">{{ inv.status }}</span>
                 @if (inv.refundStatus) {
@@ -57,7 +57,7 @@
     <div class="card">
       <div class="table-responsive">
         <table class="table table-hover table-sm align-middle mb-0">
-          <thead>
+          <thead class="table-light">
             <tr><th>Receipt #</th><th>Date</th><th>Amount</th><th>Method</th><th>Status</th></tr>
           </thead>
           <tbody>
@@ -65,7 +65,7 @@
             <tr>
               <td>{{ r.receiptNumber }}</td>
               <td>{{ r.paymentDate | date }}</td>
-              <td>{{ r.amount | currency }}</td>
+              <td>{{ r.amount | bosCurrency }}</td>
               <td>{{ r.paymentMethod }}</td>
               <td><span class="badge {{ statusClass(r.status) }}">{{ r.status }}</span></td>
             </tr>

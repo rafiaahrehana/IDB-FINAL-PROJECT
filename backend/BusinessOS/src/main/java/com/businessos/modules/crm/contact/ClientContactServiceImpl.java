@@ -1,11 +1,15 @@
 package com.businessos.modules.crm.contact;
 
+import com.businessos.auth.role.enums.PermissionCode;
+import com.businessos.auth.role.service.AuthorizationService;
 import com.businessos.modules.crm.client.Client;
 import com.businessos.modules.crm.client.ClientRepository;
 import com.businessos.security.SecurityUtil;
 import com.businessos.shared.exception.BadRequestException;
 import com.businessos.shared.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,9 +23,11 @@ public class ClientContactServiceImpl implements ClientContactService {
     private final ClientContactRepository clientContactRepository;
     private final ClientRepository clientRepository;
     private final SecurityUtil securityUtil;
+    private final AuthorizationService authorizationService;
 
     @Override
     public ClientContactResponse create(Long clientId, ClientContactRequest request) {
+        authorizationService.checkPermission(PermissionCode.CONTACT_CREATE);
         Long companyId = requireCompanyId();
         Client client = clientRepository.findByIdAndCompanyId(clientId, companyId)
             .orElseThrow(() -> new ResourceNotFoundException("Client not found"));
@@ -54,6 +60,7 @@ public class ClientContactServiceImpl implements ClientContactService {
     @Override
     @Transactional(readOnly = true)
     public List<ClientContactResponse> listByClient(Long clientId) {
+        authorizationService.checkPermission(PermissionCode.CONTACT_VIEW);
         Long companyId = requireCompanyId();
         clientRepository.findByIdAndCompanyId(clientId, companyId)
             .orElseThrow(() -> new ResourceNotFoundException("Client not found"));
@@ -66,12 +73,24 @@ public class ClientContactServiceImpl implements ClientContactService {
 
     @Override
     @Transactional(readOnly = true)
+    public Page<ClientContactResponse> listAll(String keyword, Pageable pageable) {
+        authorizationService.checkPermission(PermissionCode.CONTACT_VIEW);
+        Long companyId = requireCompanyId();
+        Page<ClientContact> page = keyword != null && !keyword.isBlank()
+                ? clientContactRepository.searchContacts(companyId, keyword.trim(), pageable)
+                : clientContactRepository.findByCompanyId(companyId, pageable);
+        return page.map(ClientContactMapper::toResponse);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public ClientContactResponse getById(Long clientId, Long id) {
         return ClientContactMapper.toResponse(findOwned(clientId, id));
     }
 
     @Override
     public ClientContactResponse update(Long clientId, Long id, ClientContactRequest request) {
+        authorizationService.checkPermission(PermissionCode.CONTACT_UPDATE);
         ClientContact contact = findOwned(clientId, id);
 
         if (request.getFullName() != null) contact.setFullName(request.getFullName());
@@ -99,6 +118,7 @@ public class ClientContactServiceImpl implements ClientContactService {
 
     @Override
     public void delete(Long clientId, Long id) {
+        authorizationService.checkPermission(PermissionCode.CONTACT_DELETE);
         ClientContact contact = findOwned(clientId, id);
         contact.softDelete();
         clientContactRepository.save(contact);

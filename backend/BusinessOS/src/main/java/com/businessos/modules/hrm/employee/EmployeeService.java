@@ -1,5 +1,6 @@
 package com.businessos.modules.hrm.employee;
 
+import com.businessos.enums.EmploymentStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -18,12 +19,16 @@ public interface EmployeeService {
     EmployeeResponse updateMyProfile(SelfUpdateEmployeeRequest request);
 
     /**
-     * ADMIN / OWNER: list all employees, optionally filtered by department.
+     * ADMIN / OWNER: list all employees, optionally filtered by department, status, or search term.
      * excludeOwner=true drops the company owner's own auto-created Employee record -
      * used by the HRM Employees admin page; other callers (asset assignment, payroll,
      * offboarding pickers) pass false to keep including the owner as before.
      */
-    Page<EmployeeResponse> listAll(Long departmentId, boolean excludeOwner, Pageable pageable);
+    Page<EmployeeResponse> listAll(Long departmentId, EmploymentStatus status, String search, boolean excludeOwner, Pageable pageable);
+
+    default Page<EmployeeResponse> listAll(Long departmentId, boolean excludeOwner, Pageable pageable) {
+        return listAll(departmentId, null, null, excludeOwner, pageable);
+    }
 
     /** ADMIN / OWNER: update employee profile fields and relationships */
     EmployeeResponse update(Long id, UpdateEmployeeRequest request);

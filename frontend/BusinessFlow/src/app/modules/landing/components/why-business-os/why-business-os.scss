@@ -18,7 +18,7 @@
     right: -8%;
     width: 460px;
     height: 460px;
-    background: radial-gradient(circle, var(--bs-primary) 0%, rgba(79, 70, 229, 0) 70%);
+    background: radial-gradient(circle, var(--bs-primary) 0%, rgba(91, 61, 245, 0) 70%);
   }
 
   .glow-2 {
@@ -65,7 +65,7 @@
   position: relative;
 
   &:hover {
-    border-color: var(--card-hover-border-color, rgba(79, 70, 229, 0.3));
+    border-color: var(--card-hover-border-color, rgba(91, 61, 245, 0.3));
     box-shadow: var(--bs-box-shadow-lg);
 
     .icon-wrapper {
@@ -101,7 +101,7 @@
     background: linear-gradient(160deg, #1a2036 0%, #0c0f1f 100%);
     border-color: var(--card-border-color, transparent);
     color: #fff;
-    box-shadow: 0 20px 45px rgba(79, 70, 229, 0.28);
+    box-shadow: 0 20px 45px rgba(91, 61, 245, 0.28);
 
     h4, p {
       color: #fff;
@@ -118,7 +118,7 @@
 
     &:hover {
       border-color: var(--card-hover-border-color, transparent);
-      box-shadow: 0 24px 55px rgba(79, 70, 229, 0.38);
+      box-shadow: 0 24px 55px rgba(91, 61, 245, 0.38);
 
       .icon-wrapper {
         background: rgba(255, 255, 255, 0.28);
@@ -132,7 +132,7 @@
 }
 
 .bg-purple-dark {
-  background-color: #3730A3;
+  background-color: #4a287c;
 }
 
 .explore-cta {

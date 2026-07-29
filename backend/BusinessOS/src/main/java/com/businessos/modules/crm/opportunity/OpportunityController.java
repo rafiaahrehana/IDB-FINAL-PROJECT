@@ -37,10 +37,11 @@ public class OpportunityController {
             @RequestParam(required = false) OpportunityStage stage,
             @RequestParam(required = false) Long clientId,
             @RequestParam(required = false) Long ownerId,
+            @RequestParam(required = false) Long tagId,
             @RequestParam(required = false) String keyword,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        return ResponseEntity.ok(opportunityService.listAll(stage, clientId, ownerId, keyword,
+        return ResponseEntity.ok(opportunityService.listAll(stage, clientId, ownerId, tagId, keyword,
                 PageRequest.of(page, size, Sort.by("createdAt").descending())));
     }
 
@@ -70,6 +71,12 @@ public class OpportunityController {
             @PathVariable Long id,
             @Valid @RequestBody ChangeStageRequest request) {
         return ResponseEntity.ok(opportunityService.changeStage(id, request));
+    }
+
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
+    @GetMapping("/{id}/won-duplicate-check")
+    public ResponseEntity<com.businessos.modules.crm.duplicate.DuplicateMatch> previewWonDuplicate(@PathVariable Long id) {
+        return ResponseEntity.ok(opportunityService.previewWonDuplicate(id));
     }
 
     @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")

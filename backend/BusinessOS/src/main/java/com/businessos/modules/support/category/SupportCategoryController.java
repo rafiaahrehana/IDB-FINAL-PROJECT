@@ -28,21 +28,21 @@ public class SupportCategoryController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE', 'SUPPORT_AGENT')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE', 'SUPPORT_AGENT', 'SUPPORT_MANAGER', 'SUPER_ADMIN', 'SYSTEM_ADMIN')")
     @Operation(summary = "Get Category by ID")
     public ResponseEntity<SupportCategoryResponse> getById(@PathVariable Long id) {
         return ResponseEntity.ok(service.getById(id));
     }
 
     @GetMapping("/name/{name}")
-    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE', 'SUPPORT_AGENT')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE', 'SUPPORT_AGENT', 'SUPPORT_MANAGER', 'SUPER_ADMIN', 'SYSTEM_ADMIN')")
     @Operation(summary = "Get Category by Name")
     public ResponseEntity<SupportCategoryResponse> getByName(@PathVariable String name) {
         return ResponseEntity.ok(service.getByName(name));
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE', 'SUPPORT_AGENT')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE', 'SUPPORT_AGENT', 'SUPPORT_MANAGER', 'SUPER_ADMIN', 'SYSTEM_ADMIN')")
     @Operation(summary = "Get all Categories")
     public ResponseEntity<Page<SupportCategoryResponse>> getAll(
             @RequestParam(defaultValue = "0") int page,
@@ -51,7 +51,7 @@ public class SupportCategoryController {
     }
 
     @GetMapping("/active")
-    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE', 'SUPPORT_AGENT')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE', 'SUPPORT_AGENT', 'SUPPORT_MANAGER', 'SUPER_ADMIN', 'SYSTEM_ADMIN')")
     @Operation(summary = "Get Active Categories")
     public ResponseEntity<List<SupportCategoryResponse>> getActive() {
         return ResponseEntity.ok(service.getActive());

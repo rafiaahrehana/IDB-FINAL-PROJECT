@@ -63,6 +63,7 @@ public class EmployeeMapper {
         r.setHouseRent(e.getHouseRent());
         r.setMedicalAllowance(e.getMedicalAllowance());
         r.setTransportAllowance(e.getTransportAllowance());
+        r.setBillableRate(e.getBillableRate());
         r.setBankName(e.getBankName());
         r.setEmergencyContactName(e.getEmergencyContactName());
         r.setEmergencyContactPhone(e.getEmergencyContactPhone());

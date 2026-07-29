@@ -1,5 +1,5 @@
 .category-card {
-  background: #fff;
+  background: color-mix(in srgb, var(--card-bg-color, #ffffff) 6%, #fff);
   border: 1px solid var(--card-border-color, #e5e7eb);
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);

@@ -45,7 +45,8 @@ export class Preferences implements OnInit {
   };
 
   emailForm = {
-    newEmail: ''
+    newEmail: '',
+    currentPassword: ''
   };
 
   // NOTIFICATION VARIABLES
@@ -73,7 +74,7 @@ export class Preferences implements OnInit {
 
   constructor(
     private notificationService: NotificationService,
-    private authService: AuthService,
+    public authService: AuthService,
     private cdr: ChangeDetectorRef,
   ) {}
 
@@ -128,9 +129,29 @@ export class Preferences implements OnInit {
     });
   }
 
+  editEmail(): void {
+    this.editingEmail = true;
+    this.editingPassword = false;
+    this.error = '';
+    this.success = '';
+    this.cdr.markForCheck();
+  }
+
+  cancelEmail(): void {
+    this.editingEmail = false;
+    this.emailForm = { newEmail: '', currentPassword: '' };
+    this.error = '';
+    this.success = '';
+    this.cdr.markForCheck();
+  }
+
   saveEmail(): void {
     if (!this.emailForm.newEmail.trim()) {
-      this.error = 'Email is required';
+      this.error = 'New email is required';
+      return;
+    }
+    if (!this.emailForm.currentPassword) {
+      this.error = 'Enter your current password to confirm this change';
       return;
     }
     this.changingEmail = true;
@@ -138,13 +159,23 @@ export class Preferences implements OnInit {
     this.success = '';
     this.cdr.markForCheck();
 
-    // Simulate an API call
-    setTimeout(() => {
-      this.changingEmail = false;
-      this.editingEmail = false;
-      this.success = 'Email updated successfully (Mock)';
-      this.cdr.markForCheck();
-    }, 1000);
+    this.authService.updateProfile({
+      email: this.emailForm.newEmail.trim(),
+      currentPassword: this.emailForm.currentPassword,
+    }).subscribe({
+      next: () => {
+        this.changingEmail = false;
+        this.editingEmail = false;
+        this.emailForm = { newEmail: '', currentPassword: '' };
+        this.success = 'Email updated successfully';
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        this.changingEmail = false;
+        this.error = err?.error?.message || 'Failed to update email';
+        this.cdr.markForCheck();
+      },
+    });
   }
 
   resetPasswordForm(): void {

@@ -44,6 +44,12 @@ public interface ServicePackageService {
     /** Admin reactivates a SUSPENDED subscription. */
     PackageSubscriptionResponse reactivate(Long subscriptionId);
 
+    /** System entry point (scheduler) — renews an ACTIVE, auto-renew subscription past its endDate. No security context. */
+    PackageSubscription renewSubscription(Long subscriptionId);
+
+    /** System entry point (scheduler) — expires an ACTIVE subscription past its endDate. No security context. */
+    PackageSubscription expireSubscription(Long subscriptionId);
+
     /** Get one subscription by ID (tenant-scoped). */
     PackageSubscriptionResponse getSubscriptionById(Long id);
 

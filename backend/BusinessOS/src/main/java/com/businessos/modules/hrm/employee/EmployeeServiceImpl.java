@@ -131,6 +131,7 @@ public class EmployeeServiceImpl implements EmployeeService {
                 .houseRent(request.getHouseRent())
                 .medicalAllowance(request.getMedicalAllowance())
                 .transportAllowance(request.getTransportAllowance())
+                .billableRate(request.getBillableRate())
                 .bankName(request.getBankName())
                 .bankAccountNumber(request.getBankAccountNumber())
                 .emergencyContactName(request.getEmergencyContactName())
@@ -199,6 +200,8 @@ public class EmployeeServiceImpl implements EmployeeService {
             emp.setMedicalAllowance(request.getMedicalAllowance());
         if (request.getTransportAllowance() != null)
             emp.setTransportAllowance(request.getTransportAllowance());
+        if (request.getBillableRate() != null)
+            emp.setBillableRate(request.getBillableRate());
         if (request.getBankName() != null)
             emp.setBankName(request.getBankName());
         if (request.getBankAccountNumber() != null)
@@ -226,6 +229,13 @@ public class EmployeeServiceImpl implements EmployeeService {
             User user = emp.getUser();
             if (user != null) {
                 user.setImage(request.getProfileImageUrl());
+            }
+        }
+        if (request.getLocation() != null) {
+            if (emp.getLocation() == null) {
+                emp.setLocation(addressMapper.toEntity(request.getLocation()));
+            } else {
+                addressMapper.updateEntityFromRequest(emp.getLocation(), request.getLocation());
             }
         }
     }
@@ -354,31 +364,50 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<EmployeeResponse> listAll(Long departmentId, boolean excludeOwner, Pageable pageable) {
-        // Deliberately NOT gated by EMPLOYEE_VIEW here: this single endpoint is also
-        // used as a cross-module employee-picker (Assign Asset, Manage Seats, Payroll,
-        // Offboarding, etc. all call it) by users who may hold a narrower permission
-        // relevant to THAT module but not EMPLOYEE_VIEW itself. Gating it would break
-        // those pickers. The HRM "Employees" admin page is gated at the frontend
-        // sidebar/route level only until this endpoint is split into a full admin view
-        // vs a lightweight picker.
+    public Page<EmployeeResponse> listAll(Long departmentId, EmploymentStatus status, String search, boolean excludeOwner, Pageable pageable) {
         Long companyId = requireCompanyId();
 
         Long ownerUserId = null;
         if (excludeOwner) {
-            Company company = findCompanyById(companyId);
-            ownerUserId = company.getOwner() != null ? company.getOwner().getId() : null;
+            try {
+                Company company = findCompanyById(companyId);
+                if (company != null && company.getOwner() != null) {
+                    ownerUserId = company.getOwner().getId();
+                }
+            } catch (Exception ignored) {
+                ownerUserId = null;
+            }
         }
 
-        if (departmentId != null) {
-            Page<Employee> page = ownerUserId != null
-                    ? employeeRepository.findByCompanyIdAndDepartmentIdAndUserIdNot(companyId, departmentId, ownerUserId, pageable)
-                    : employeeRepository.findByCompanyIdAndDepartmentId(companyId, departmentId, pageable);
+        boolean hasSearch = search != null && !search.trim().isEmpty();
+        boolean hasStatus = status != null;
+        boolean hasDept = departmentId != null;
+
+        // 1. No search text active
+        if (!hasSearch) {
+            Page<Employee> page;
+            if (hasDept && hasStatus) {
+                page = employeeRepository.findByCompanyIdAndDepartmentIdAndEmploymentStatusExcludingOwner(companyId, departmentId, status, ownerUserId, pageable);
+            } else if (hasDept) {
+                page = employeeRepository.findByCompanyIdAndDepartmentIdExcludingOwner(companyId, departmentId, ownerUserId, pageable);
+            } else if (hasStatus) {
+                page = employeeRepository.findByCompanyIdAndEmploymentStatusExcludingOwner(companyId, status, ownerUserId, pageable);
+            } else {
+                page = employeeRepository.findByCompanyIdExcludingOwner(companyId, ownerUserId, pageable);
+            }
             return page.map(employeeMapper::toDTO);
         }
-        Page<Employee> page = ownerUserId != null
-                ? employeeRepository.findByCompanyIdAndUserIdNot(companyId, ownerUserId, pageable)
-                : employeeRepository.findByCompanyId(companyId, pageable);
+
+        // 2. Search text active
+        String searchKeyword = search.trim();
+        Page<Employee> page;
+        if (hasStatus) {
+            page = employeeRepository.searchEmployeesWithStatus(
+                    companyId, departmentId, status, ownerUserId, searchKeyword, pageable);
+        } else {
+            page = employeeRepository.searchEmployeesWithoutStatus(
+                    companyId, departmentId, ownerUserId, searchKeyword, pageable);
+        }
         return page.map(employeeMapper::toDTO);
     }
 
@@ -413,8 +442,9 @@ public class EmployeeServiceImpl implements EmployeeService {
                 emailService.sendTerminationEmail(
                         emp.getUser().getEmail(), emp.getUser().getFirstName(), branding);
             } catch (Exception ex) {
-                throw new com.businessos.shared.exception.BadRequestException(
-                        "Internal error during operation: " + ex.getMessage());
+                // Best-effort notification — a failed email must not roll back the termination.
+                log.warn("Termination email failed for employee {} (termination still saved): {}",
+                        emp.getId(), ex.getMessage());
             }
         }
 

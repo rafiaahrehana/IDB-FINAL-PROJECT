@@ -332,6 +332,15 @@ export class AuthService {
     if (!user) return false;
     return roles.some(role => user.roles.includes(role));
   }
+
+  /**
+   * Check if user has any SaaS platform staff role
+   */
+  isPlatformStaff(): boolean {
+    const user = this.currentUserSubject.value;
+    if (!user) return false;
+    return user.roles.some(role => PLATFORM_ROLES.includes(role));
+  }
  
   /**
    * Get current user

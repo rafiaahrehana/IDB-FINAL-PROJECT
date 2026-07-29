@@ -10,10 +10,8 @@ import java.time.LocalTime;
 @Builder
 public class AttendanceCheckOutRequest {
 
-    @NotNull(message = "Check-out time is required")
     private LocalTime checkOutTime;
 
-    @NotNull(message = "Attendance method is required")
     private AttendanceMethod method;
 
     private Long deviceId;       // If biometric device used for check-out

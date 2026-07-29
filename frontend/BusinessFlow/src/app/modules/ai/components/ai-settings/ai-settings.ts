@@ -210,4 +210,14 @@ export class AiSettings implements OnInit {
       },
     });
   }
+
+  deleteTemplate(t: AiPromptTemplate): void {
+    this.aiService.deleteTemplate(t.id).subscribe({
+      next: () => this.loadTemplates(),
+      error: (err) => {
+        this.templateError = extractErrorMessage(err, 'Failed to delete template');
+        this.cdr.markForCheck();
+      },
+    });
+  }
 }

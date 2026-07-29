@@ -52,4 +52,6 @@ public class ServiceRequestResponse {
 
     // Client answers to the service's dynamic form fields, keyed by field id
     private java.util.Map<String, String> formData;
+
+    private String aiSummary;
 }

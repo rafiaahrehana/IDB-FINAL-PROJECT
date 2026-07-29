@@ -7,6 +7,7 @@ import java.util.List;
 
 public interface SalaryStructureService {
     SalaryStructureResponse create(SalaryStructureRequest request);
+    SalaryStructureResponse update(Long id, SalaryStructureRequest request);
     SalaryStructureResponse getById(Long id);
     SalaryStructureResponse getActiveForEmployee(Long employeeId);
     Page<SalaryStructureResponse> listForEmployee(Long employeeId, Pageable pageable);

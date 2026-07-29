@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Timesheet, TimesheetRequest } from '../../models/attendance.model';
@@ -19,6 +19,8 @@ import { StatCard } from '../../../../shared/components/stat-card/stat-card';
   templateUrl: './timesheets.html',
 })
 export class Timesheets implements OnInit {
+  @ViewChild('formSection') formSection?: ElementRef<HTMLElement>;
+
   // MY TIMESHEETS
   myTimesheets: Timesheet[] = [];
   totalPages = 0;
@@ -39,6 +41,8 @@ export class Timesheets implements OnInit {
   employeePage = 0;
   employeeTotalPages = 0;
   employeeLoading = false;
+
+  submitting = false;
 
   constructor(
     private timesheetService: TimesheetService,
@@ -80,9 +84,11 @@ export class Timesheets implements OnInit {
     this.editingId = null;
     this.form = this.emptyForm();
     this.showForm = true;
+    this.scrollToForm();
   }
 
   openEdit(t: Timesheet): void {
+    if (t.status !== 'NOT_SUBMITTED') return;
     this.editingId = t.id;
     this.form = {
       workDate: t.workDate,
@@ -95,6 +101,14 @@ export class Timesheets implements OnInit {
       description: t.description,
     };
     this.showForm = true;
+    this.scrollToForm();
+  }
+
+  // The form renders above the stat cards, near the top of the page - without this,
+  // clicking "edit" on a row further down (e.g. in Manager Review) leaves the form
+  // open off-screen and looks like nothing happened.
+  private scrollToForm(): void {
+    setTimeout(() => this.formSection?.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start' }));
   }
 
   save(): void {
@@ -179,12 +193,48 @@ export class Timesheets implements OnInit {
     return this.myTimesheets.filter((t) => !t.approved).length;
   }
 
+  get draftCount(): number {
+    return this.myTimesheets.filter((t) => t.status === 'NOT_SUBMITTED').length;
+  }
+
+  // "My Recent Timesheets" (employee's own view) - a not-yet-submitted entry just
+  // reads as "Pending" here; "Not Submitted" (see managerStatusLabel) is reserved
+  // for the manager's side, where it means "nothing to review yet".
   statusLabel(t: Timesheet): string {
-    return t.approved ? 'Approved' : 'Pending';
+    if (t.status === 'APPROVED') return 'Approved';
+    if (t.status === 'SUBMITTED') return 'Submitted';
+    return 'Pending';
+  }
+
+  managerStatusLabel(t: Timesheet): string {
+    if (t.status === 'APPROVED') return 'Approved';
+    if (t.status === 'SUBMITTED') return 'Submitted';
+    return 'Not Submitted';
   }
 
   statusBadgeClass(t: Timesheet): string {
-    return t.approved ? 'text-bg-success' : 'text-bg-warning';
+    if (t.status === 'APPROVED') return 'badge-soft-success';
+    if (t.status === 'SUBMITTED') return 'badge-soft-info';
+    return 'badge-soft-warning';
+  }
+
+  submitForReview(): void {
+    if (!this.draftCount || this.submitting) return;
+    this.submitting = true;
+    this.cdr.markForCheck();
+    this.timesheetService.submitForReview().subscribe({
+      next: (res) => {
+        this.submitting = false;
+        this.success = `${res.submitted} timesheet(s) submitted for review`;
+        this.cdr.markForCheck();
+        this.load();
+      },
+      error: (err) => {
+        this.submitting = false;
+        this.error = err?.error?.message || 'Failed to submit for review';
+        this.cdr.markForCheck();
+      },
+    });
   }
 
   loadEmployeeTimesheets(): void {

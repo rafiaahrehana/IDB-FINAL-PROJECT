@@ -10,6 +10,7 @@ import { Pagination } from '../../../../shared/components/pagination/pagination'
 import { Loader } from '../../../../shared/components/loader/loader';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
 import { AuthService } from '../../../../core/services/auth.service';
+import { ApiService } from '../../../../core/services/api.service';
 
 @Component({
   selector: 'app-tickets',
@@ -20,6 +21,7 @@ import { AuthService } from '../../../../core/services/auth.service';
 export class Tickets implements OnInit {
   tickets: SupportTicket[] = [];
   agents: SupportAgent[] = [];
+  categories: any[] = [];
   totalPages = 0;
   page = 0;
   loading = false;
@@ -39,6 +41,10 @@ export class Tickets implements OnInit {
   // by companies - they can never create one themselves (backend's create() endpoint
   // is COMPANY_OWNER/EMPLOYEE only), so "New Ticket" must not show for them.
   isPlatformStaff = false;
+  // Platform admins should have manager-equivalent authority for escalation/reassignment
+  // (the backend's /escalate and /reassign already allow them) - kept distinct from
+  // isManager so plain SUPPORT_AGENT stays excluded from those actions, unchanged.
+  isPlatformAdmin = false;
   myAgentId: number | null = null;
 
   // Escalate / reassign / satisfaction state
@@ -53,7 +59,7 @@ export class Tickets implements OnInit {
   resolutionNotes = '';
   reopenReason = '';
   showCreate = false;
-  form: any = {};
+  form: any = { priority: 'MEDIUM' };
 
   statuses = ['NEW', 'OPEN', 'IN_PROGRESS', 'WAITING', 'ON_HOLD', 'RESOLVED', 'CLOSED'];
 
@@ -61,6 +67,7 @@ export class Tickets implements OnInit {
     private ticketService: TicketService,
     private agentService: AgentService,
     private auth: AuthService,
+    private api: ApiService,
     private cdr: ChangeDetectorRef,
   ) {}
 
@@ -69,8 +76,8 @@ export class Tickets implements OnInit {
     this.isManager = roles.includes('SUPPORT_MANAGER');
     this.isAgent = roles.includes('SUPPORT_AGENT');
     this.isEmployee = roles.includes('EMPLOYEE') && !this.isManager && !this.isAgent;
-    this.isPlatformStaff = this.isManager || this.isAgent
-      || roles.includes('SUPER_ADMIN') || roles.includes('SYSTEM_ADMIN');
+    this.isPlatformAdmin = roles.includes('SUPER_ADMIN') || roles.includes('SYSTEM_ADMIN');
+    this.isPlatformStaff = this.isManager || this.isAgent || this.isPlatformAdmin;
     if (this.isAgent) {
       // Resolve the agent record for /assigned-to-me
       const userId = this.auth.getCurrentUser()?.id;
@@ -83,7 +90,16 @@ export class Tickets implements OnInit {
     } else {
       this.load();
     }
-    this.agentService.available().subscribe({ next: (r) => { this.agents = r; this.cdr.markForCheck(); } });
+    if (this.isPlatformStaff) {
+      this.agentService.available().subscribe({ next: (r) => { this.agents = r; this.cdr.markForCheck(); } });
+    }
+    this.api.get<any>('/support/categories').subscribe({
+      next: (res) => {
+        this.categories = res.content || res || [];
+        this.cdr.markForCheck();
+      },
+      error: () => {}
+    });
   }
 
   load(): void {
@@ -106,12 +122,13 @@ export class Tickets implements OnInit {
       return;
     }
     if (this.isAgent && !this.isManager) {
-      if (this.myAgentId == null) { this.loading = false; this.cdr.markForCheck(); return; }
-      this.ticketService.assignedToMe(this.myAgentId, this.page).subscribe({
-        next: (res) => { this.tickets = res.content; this.totalPages = res.totalPages; this.loading = false; this.cdr.markForCheck(); },
-        error: (err) => this.onLoadError(err),
-      });
-      return;
+      if (this.myAgentId != null) {
+        this.ticketService.assignedToMe(this.myAgentId, this.page).subscribe({
+          next: (res) => { this.tickets = res.content; this.totalPages = res.totalPages; this.loading = false; this.cdr.markForCheck(); },
+          error: (err) => this.onLoadError(err),
+        });
+        return;
+      }
     }
     if (this.showSlaOnly) {
       // Backend returns a plain list for SLA-breached tickets, not a page
@@ -163,16 +180,43 @@ export class Tickets implements OnInit {
     });
   }
 
+  openCreate(): void {
+    this.showCreate = !this.showCreate;
+    this.form = { priority: 'MEDIUM', title: '', description: '', categoryId: undefined };
+    this.cdr.markForCheck();
+  }
+
   create(): void {
-    this.ticketService.create(this.form).subscribe({
+    if (!this.form.title?.trim() || !this.form.description?.trim()) {
+      this.error = 'Title and Description are required';
+      this.cdr.markForCheck();
+      return;
+    }
+
+    const payload: any = {
+      title: this.form.title.trim(),
+      description: this.form.description.trim(),
+      priority: this.form.priority || 'MEDIUM',
+    };
+
+    if (this.form.categoryId) {
+      payload.categoryId = Number(this.form.categoryId);
+    }
+
+    this.error = '';
+    this.ticketService.create(payload).subscribe({
       next: () => {
         this.showCreate = false;
-        this.form = {};
-        this.success = 'Ticket created';
+        this.form = { priority: 'MEDIUM' };
+        this.success = 'Ticket created successfully';
+        this.error = '';
         this.cdr.markForCheck();
         this.load();
       },
-      error: (err) => { this.error = err?.error?.message || 'Failed'; this.cdr.markForCheck(); },
+      error: (err) => {
+        this.error = err?.error?.message || (Array.isArray(err?.error?.errors) ? err.error.errors.join(', ') : 'Failed to create ticket');
+        this.cdr.markForCheck();
+      },
     });
   }
 

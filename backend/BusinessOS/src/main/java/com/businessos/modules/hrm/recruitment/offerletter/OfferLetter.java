@@ -1,6 +1,7 @@
 package com.businessos.modules.hrm.recruitment.offerletter;
 
 import com.businessos.modules.hrm.employee.Employee;
+import com.businessos.modules.hrm.recruitment.jobapplication.JobApplication;
 import com.businessos.core.base.BaseEntity;
 import com.businessos.auth.user.User;
 import com.businessos.modules.company.Company;
@@ -43,9 +44,20 @@ public class OfferLetter extends BaseEntity {
     @Builder.Default
     private boolean acknowledged = false;
 
+    // Recipient — an existing Employee for employment letters, OR a recruitment
+    // candidate (JobApplication) for pre-employment OFFER/APPOINTMENT letters.
+    // Exactly one of the two is set; recipientName/Email are denormalized so the
+    // stored letter and its PDF keep the recipient even if the source record changes.
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "employee_id", nullable = false)
+    @JoinColumn(name = "employee_id")
     private Employee employee;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "job_application_id")
+    private JobApplication jobApplication;
+
+    private String recipientName;
+    private String recipientEmail;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "company_id", nullable = false)

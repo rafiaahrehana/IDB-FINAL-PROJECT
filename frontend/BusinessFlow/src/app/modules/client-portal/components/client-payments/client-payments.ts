@@ -6,6 +6,7 @@ import { PaymentReceiptService } from '../../../finance/services/payment-receipt
 import { Loader } from '../../../../shared/components/loader/loader';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
 
+import { BosCurrencyPipe } from '../../../../shared/pipes/bos-currency.pipe';
 // Real ClientInvoiceResponse shape from the backend - the shared Invoice model in
 // finance.model.ts is out of sync with it (claims outstandingAmount/discountAmount,
 // which don't exist server-side; the real field is balanceAmount). Typed locally
@@ -41,7 +42,7 @@ type Tab = 'invoices' | 'receipts';
 
 @Component({
   selector: 'app-client-payments',
-  imports: [CommonModule, RouterLink, Loader, EmptyState],
+  imports: [BosCurrencyPipe, CommonModule, RouterLink, Loader, EmptyState],
   templateUrl: './client-payments.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

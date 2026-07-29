@@ -55,4 +55,8 @@ export class WorkflowService {
   removeStage(templateId: number, stageId: number): Observable<string> {
     return this.api.deleteText(`${this.endpoint}/${templateId}/stages/${stageId}`);
   }
+
+  suggest(goal: string): Observable<{ suggestion: string }> {
+    return this.api.post<{ suggestion: string }>(`${this.endpoint}/suggest`, { goal });
+  }
 }

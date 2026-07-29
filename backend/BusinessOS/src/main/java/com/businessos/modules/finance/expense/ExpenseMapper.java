@@ -18,6 +18,8 @@ public class ExpenseMapper {
                 .amount(entity.getAmount())
                 .vendorName(entity.getVendorName() != null ? entity.getVendorName(): null)
                 .category(entity.getCategory())
+                .expenseAccountId(entity.getExpenseAccount() != null ? entity.getExpenseAccount().getId() : null)
+                .expenseAccountName(entity.getExpenseAccount() != null ? entity.getExpenseAccount().getAccountName() : null)
                 .expenseDate(entity.getExpenseDate())
                 .receiptUrl(entity.getReceiptUrl())
                 .status(entity.getStatus())

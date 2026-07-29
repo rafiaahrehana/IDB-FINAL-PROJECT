@@ -33,7 +33,11 @@ export class PerformanceReviewService {
     return this.api.patch<PerformanceReview>(`${this.endpoint}/${id}/finalise`, {});
   }
 
+  summarise(id: number): Observable<PerformanceReview> {
+    return this.api.get<PerformanceReview>(`${this.endpoint}/${id}/summary`);
+  }
+
   delete(id: number): Observable<string> {
-    return this.api.delete<string>(`${this.endpoint}/${id}`);
+    return this.api.deleteText(`${this.endpoint}/${id}`);
   }
 }

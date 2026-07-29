@@ -1,12 +1,6 @@
 <div class="container-fluid py-3">
-  <div class="page-hero">
-    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
-      <div>
-        <div class="page-hero-label">ATTENDANCE</div>
-        <h4 class="page-hero-title underline-amber">Attendance — Check In / Out</h4>
-        <div class="page-hero-subtitle">Mark your daily attendance and view today's record.</div>
-      </div>
-    </div>
+  <div class="mb-4 p-3 rounded-3 shadow-sm page-header-bar">
+    <h4 class="mb-0">Attendance â€” Check In / Out</h4>
   </div>
   @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
   @if (success) { <div class="alert alert-success py-2">{{ success }}</div> }
@@ -47,15 +41,15 @@
         <div class="card-header py-2 fw-semibold">Recent Records</div>
         <div class="table-responsive">
           <table class="table table-sm align-middle mb-0">
-            <thead><tr><th>Employee</th><th>Date</th><th>In</th><th>Out</th><th>Hours</th><th>Status</th></tr></thead>
+            <thead class="table-light"><tr><th>Employee</th><th>Date</th><th>In</th><th>Out</th><th>Hours</th><th>Status</th></tr></thead>
             <tbody>
-              @for (r of recentRecords; track r.id) {
+              @for (r of consolidatedRecentRecords; track (r.id + '_' + r.attendanceDate)) {
               <tr>
                 <td>{{ r.employeeName }}</td>
                 <td class="small">{{ r.attendanceDate | date:'mediumDate' }}</td>
-                <td class="small">{{ r.checkInTime || '-' }}</td>
-                <td class="small">{{ r.checkOutTime || '-' }}</td>
-                <td class="small">{{ r.totalWorkingHours || '-' }}</td>
+                <td class="small font-monospace">{{ r.checkInTime || '-' }}</td>
+                <td class="small font-monospace">{{ r.checkOutTime || '-' }}</td>
+                <td class="small fw-semibold">{{ r.totalWorkingHours || '-' }}</td>
                 <td><span class="badge {{ statusClass(r.status) }}">{{ r.status }}</span></td>
               </tr>
               }

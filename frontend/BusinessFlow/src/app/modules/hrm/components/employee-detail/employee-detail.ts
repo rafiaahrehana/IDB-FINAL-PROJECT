@@ -159,6 +159,7 @@ export class EmployeeDetail implements OnInit {
       houseRent: e.houseRent,
       medicalAllowance: e.medicalAllowance,
       transportAllowance: e.transportAllowance,
+      billableRate: e.billableRate,
       bankName: e.bankName,
       officialEmail: e.officialEmail,
       workPhone: e.workPhone,

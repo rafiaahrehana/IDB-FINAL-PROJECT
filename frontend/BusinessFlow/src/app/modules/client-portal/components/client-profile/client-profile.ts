@@ -34,7 +34,7 @@ export class ClientProfile implements OnInit {
   companySuccess = '';
 
   editingEmail = false;
-  emailForm = { newEmail: '' };
+  emailForm = { newEmail: '', currentPassword: '' };
   savingEmail = false;
   emailError = '';
   emailSuccess = '';
@@ -105,7 +105,7 @@ export class ClientProfile implements OnInit {
   }
 
   editEmail(): void {
-    this.emailForm = { newEmail: '' };
+    this.emailForm = { newEmail: '', currentPassword: '' };
     this.emailError = '';
     this.emailSuccess = '';
     this.editingEmail = true;
@@ -113,14 +113,19 @@ export class ClientProfile implements OnInit {
   }
 
   cancelEditEmail(): void {
-    this.emailForm = { newEmail: '' };
+    this.emailForm = { newEmail: '', currentPassword: '' };
     this.editingEmail = false;
     this.cdr.markForCheck();
   }
 
   saveEmail(): void {
     if (!this.emailForm.newEmail.trim()) {
-      this.emailError = 'Email is required';
+      this.emailError = 'New email is required';
+      this.cdr.markForCheck();
+      return;
+    }
+    if (!this.emailForm.currentPassword) {
+      this.emailError = 'Enter your current password to confirm this change';
       this.cdr.markForCheck();
       return;
     }
@@ -128,12 +133,12 @@ export class ClientProfile implements OnInit {
     this.emailError = '';
     this.emailSuccess = '';
     this.cdr.markForCheck();
-    this.auth.updateProfile({ email: this.emailForm.newEmail.trim() }).subscribe({
+    this.auth.updateProfile({ email: this.emailForm.newEmail.trim(), currentPassword: this.emailForm.currentPassword }).subscribe({
       next: (res) => {
         this.profile = res;
         if (this.client) this.client.email = res.email;
         this.emailSuccess = 'Email updated';
-        this.emailForm = { newEmail: '' };
+        this.emailForm = { newEmail: '', currentPassword: '' };
         this.savingEmail = false;
         this.editingEmail = false;
         this.cdr.markForCheck();

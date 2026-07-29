@@ -34,6 +34,14 @@ public class CrmActivityController {
     }
 
     @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
+    @GetMapping("/summary")
+    public ResponseEntity<CrmActivitySummaryResponse> summarise(
+            @RequestParam(required = false) Long clientId,
+            @RequestParam(required = false) Long opportunityId) {
+        return ResponseEntity.ok(crmActivityService.summarise(clientId, opportunityId));
+    }
+
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     @PatchMapping("/{id}/complete")
     public ResponseEntity<CrmActivityResponse> markCompleted(@PathVariable Long id) {
         return ResponseEntity.ok(crmActivityService.markCompleted(id));

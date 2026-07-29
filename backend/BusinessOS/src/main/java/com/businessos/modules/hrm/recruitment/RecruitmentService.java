@@ -2,6 +2,8 @@ package com.businessos.modules.hrm.recruitment;
 
 
 import com.businessos.enums.ApplicationStatus;
+import com.businessos.modules.hrm.employee.EmployeeResponse;
+import com.businessos.modules.hrm.recruitment.jobapplication.HireApplicationRequest;
 import com.businessos.modules.hrm.recruitment.jobapplication.JobApplicationRequest;
 import com.businessos.modules.hrm.recruitment.jobapplication.JobApplicationResponse;
 import org.springframework.data.domain.Page;
@@ -18,6 +20,10 @@ public interface RecruitmentService {
     Page<JobApplicationResponse> listAll(ApplicationStatus status, Pageable pageable);
 
     JobApplicationResponse updateStatus(Long id, ApplicationStatus status, String notes);
+
+    /** ADMIN / OWNER: hire an OFFERED candidate — creates the Employee (+ portal user)
+     * in one transaction and marks the application HIRED. */
+    EmployeeResponse hire(Long id, HireApplicationRequest request);
 
     void delete(Long id);
 }

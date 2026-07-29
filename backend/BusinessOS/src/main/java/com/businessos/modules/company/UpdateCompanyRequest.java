@@ -23,4 +23,20 @@ public class UpdateCompanyRequest {
     @Size(max = 255)
     private String portalAbout;
     private com.businessos.shared.address.AddressRequest locationDetail;
+
+    @Size(max = 100)
+    private String taxRegistrationNumber;
+    @Size(max = 150)
+    private String bankName;
+    @Size(max = 150)
+    private String bankAccountName;
+    @Size(max = 60)
+    private String bankAccountNumber;
+    @Size(max = 150)
+    private String bankBranch;
+
+    private Integer fiscalYearStartMonth;
+
+    @Size(max = 10)
+    private String baseCurrency;
 }

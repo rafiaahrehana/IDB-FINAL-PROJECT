@@ -10,11 +10,19 @@ export class EmployeeService {
 
   constructor(private api: ApiService) {}
 
-  list(page = 0, size = 20, departmentId?: number, status?: EmploymentStatus, excludeOwner = true): Observable<PagedResponse<Employee>> {
+  list(
+    page = 0,
+    size = 20,
+    departmentId?: number,
+    status?: EmploymentStatus,
+    excludeOwner = true,
+    search?: string
+  ): Observable<PagedResponse<Employee>> {
     const params: any = {};
     if (departmentId) params.departmentId = departmentId;
     if (status) params.status = status;
     if (excludeOwner) params.excludeOwner = true;
+    if (search && search.trim()) params.search = search.trim();
     return this.api.getPaged<Employee>(this.endpoint, page, size, params);
   }
 
@@ -39,6 +47,15 @@ export class EmployeeService {
   }
 
   terminate(id: number): Observable<string> {
-    return this.api.delete<string>(`${this.endpoint}/${id}`);
+    return this.api.deleteText(`${this.endpoint}/${id}`);
+  }
+
+  downloadPdf(departmentId?: number, status?: EmploymentStatus, search?: string, excludeOwner = true): Observable<Blob> {
+    const params: string[] = [];
+    if (departmentId) params.push(`departmentId=${departmentId}`);
+    if (status) params.push(`status=${status}`);
+    if (search && search.trim()) params.push(`search=${encodeURIComponent(search.trim())}`);
+    params.push(`excludeOwner=${excludeOwner}`);
+    return this.api.getBlob(`${this.endpoint}/pdf?${params.join('&')}`);
   }
 }

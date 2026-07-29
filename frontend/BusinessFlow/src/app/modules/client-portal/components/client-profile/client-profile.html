@@ -24,21 +24,23 @@
               <h5 class="fw-bold mb-1">{{ personalForm.firstName }} {{ personalForm.lastName }}</h5>
               <span class="badge text-bg-light border mb-3">Client</span>
             </div>
-            <table class="table table-sm mb-0">
-              <tbody>
-                <tr>
-                  <td class="text-muted" style="width: 35%">Email</td>
-                  <td class="d-flex justify-content-between align-items-center">
-                    <span>{{ client?.email }}</span>
-                    @if (!editingEmail) {
-                      <button class="btn btn-link btn-sm p-0" (click)="editEmail()">Change Email</button>
-                    }
-                  </td>
-                </tr>
-                <tr><td class="text-muted">Phone</td><td>{{ personalForm.phone || 'Not Provided' }}</td></tr>
-                <tr><td class="text-muted">Address</td><td>{{ getFormattedAddress(profile?.location) }}</td></tr>
-              </tbody>
-            </table>
+            <div class="table-responsive">
+              <table class="table table-sm mb-0">
+                <tbody>
+                  <tr>
+                    <td class="text-muted" style="width: 35%">Email</td>
+                    <td class="d-flex justify-content-between align-items-center">
+                      <span>{{ client?.email }}</span>
+                      @if (!editingEmail) {
+                        <button class="btn btn-link btn-sm p-0" (click)="editEmail()">Change Email</button>
+                      }
+                    </td>
+                  </tr>
+                  <tr><td class="text-muted">Phone</td><td>{{ personalForm.phone || 'Not Provided' }}</td></tr>
+                  <tr><td class="text-muted">Address</td><td>{{ getFormattedAddress(profile?.location) }}</td></tr>
+                </tbody>
+              </table>
+            </div>
 
             @if (emailError) { <div class="alert alert-danger py-2 mt-2 mb-0">{{ emailError }}</div> }
             @if (emailSuccess) { <div class="alert alert-success py-2 mt-2 mb-0">{{ emailSuccess }}</div> }
@@ -46,6 +48,8 @@
               <div class="border rounded p-3 mt-2 bg-light">
                 <label class="form-label small text-secondary mb-1">New Email</label>
                 <input type="email" class="form-control form-control-sm mb-2" [(ngModel)]="emailForm.newEmail" placeholder="new@email.com" autocomplete="email" />
+                <label class="form-label small text-secondary mb-1">Current Password</label>
+                <input type="password" class="form-control form-control-sm mb-2" [(ngModel)]="emailForm.currentPassword" placeholder="Confirm with your password" autocomplete="current-password" />
                 <div class="d-flex justify-content-end gap-2">
                   <button class="btn btn-light btn-sm border" (click)="cancelEditEmail()" [disabled]="savingEmail">Cancel</button>
                   <button class="btn btn-primary btn-sm" (click)="saveEmail()" [disabled]="savingEmail">
@@ -159,13 +163,15 @@
       <div class="card mb-3">
         <div class="card-header py-2 fw-semibold">Account</div>
         <div class="card-body p-0">
-          <table class="table table-sm mb-0">
-            <tbody>
-              <tr><td class="text-muted">Status</td><td>{{ client?.status }}</td></tr>
-              <tr><td class="text-muted">Account Manager</td><td>{{ client?.accountManagerName || 'Not yet assigned' }}</td></tr>
-              <tr><td class="text-muted">Onboarded</td><td>{{ client?.onboardedAt ? (client?.onboardedAt | date) : '-' }}</td></tr>
-            </tbody>
-          </table>
+          <div class="table-responsive">
+            <table class="table table-sm mb-0">
+              <tbody>
+                <tr><td class="text-muted">Status</td><td>{{ client?.status }}</td></tr>
+                <tr><td class="text-muted">Account Manager</td><td>{{ client?.accountManagerName || 'Not yet assigned' }}</td></tr>
+                <tr><td class="text-muted">Onboarded</td><td>{{ client?.onboardedAt ? (client?.onboardedAt | date) : '-' }}</td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
@@ -176,15 +182,17 @@
           @if (companySuccess) { <div class="alert alert-success py-2">{{ companySuccess }}</div> }
 
           @if (!editingCompany) {
-            <table class="table table-sm mb-0">
-              <tbody>
-                <tr><td class="text-muted" style="width: 40%">Company Name</td><td>{{ client?.clientCompanyName || 'Not Provided' }}</td></tr>
-                <tr><td class="text-muted">Industry</td><td>{{ client?.industry || 'Not Provided' }}</td></tr>
-                <tr><td class="text-muted">Website</td><td>{{ client?.website || 'Not Provided' }}</td></tr>
-                <tr><td class="text-muted">Billing Address</td><td>{{ client?.billingAddress || 'Not Provided' }}</td></tr>
-                <tr><td class="text-muted">Shipping Address</td><td>{{ client?.shippingAddress || 'Not Provided' }}</td></tr>
-              </tbody>
-            </table>
+            <div class="table-responsive">
+              <table class="table table-sm mb-0">
+                <tbody>
+                  <tr><td class="text-muted" style="width: 40%">Company Name</td><td>{{ client?.clientCompanyName || 'Not Provided' }}</td></tr>
+                  <tr><td class="text-muted">Industry</td><td>{{ client?.industry || 'Not Provided' }}</td></tr>
+                  <tr><td class="text-muted">Website</td><td>{{ client?.website || 'Not Provided' }}</td></tr>
+                  <tr><td class="text-muted">Billing Address</td><td>{{ client?.billingAddress || 'Not Provided' }}</td></tr>
+                  <tr><td class="text-muted">Shipping Address</td><td>{{ client?.shippingAddress || 'Not Provided' }}</td></tr>
+                </tbody>
+              </table>
+            </div>
             <div class="text-end mt-3 border-top pt-2">
               <button class="btn btn-outline-primary btn-sm px-3" (click)="editCompany()">
                 <i class="bi bi-pencil me-1"></i> Edit

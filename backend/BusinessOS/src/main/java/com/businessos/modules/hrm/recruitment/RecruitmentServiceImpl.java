@@ -2,8 +2,12 @@ package com.businessos.modules.hrm.recruitment;
 
 import com.businessos.enums.ApplicationStatus;
 import com.businessos.enums.JobPostingStatus;
+import com.businessos.modules.hrm.employee.CreateEmployeeRequest;
 import com.businessos.modules.hrm.employee.Employee;
 import com.businessos.modules.hrm.employee.EmployeeRepository;
+import com.businessos.modules.hrm.employee.EmployeeResponse;
+import com.businessos.modules.hrm.employee.EmployeeService;
+import com.businessos.modules.hrm.recruitment.jobapplication.HireApplicationRequest;
 import com.businessos.modules.hrm.recruitment.jobapplication.JobApplication;
 import com.businessos.modules.hrm.recruitment.jobapplication.JobApplicationRepository;
 import com.businessos.modules.hrm.recruitment.jobapplication.JobApplicationRequest;
@@ -19,19 +23,24 @@ import com.businessos.shared.email.EmailService;
 import com.businessos.shared.exception.BadRequestException;
 import com.businessos.shared.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+@Slf4j
 @Service
 @RequiredArgsConstructor
-
 public class RecruitmentServiceImpl implements RecruitmentService {
 
     private final JobApplicationRepository applicationRepository;
     private final com.businessos.modules.hrm.recruitment.jobpost.JobPostingRepository jobPostingRepository;
     private final EmployeeRepository employeeRepository;
+    private final EmployeeService           employeeService;
     private final CompanyRepository        companyRepository;
     private final SecurityUtil             securityUtil;
     private final EmailService             emailService;
@@ -116,11 +125,88 @@ public class RecruitmentServiceImpl implements RecruitmentService {
                 emailService.sendOfferLetterEmail(application.getApplicantEmail(), application.getApplicantName(), branding);
                 
             } catch (Exception ex) {
-                throw new com.businessos.shared.exception.BadRequestException("Internal error during operation: " + ex.getMessage());
+                // Best-effort notification — a failed email must not roll back the status change.
+                log.warn("Offer letter email failed (application status still updated): {}", ex.getMessage());
             }
         }
 
         return RecruitmentMapper.toJobApplicationResponse(application);
+    }
+
+    @Override
+    @Transactional
+    public EmployeeResponse hire(Long id, HireApplicationRequest request) {
+        authorizationService.checkPermission(PermissionCode.APPLICATION_UPDATE);
+        JobApplication application = findInTenant(id);
+
+        if (application.getConvertedEmployee() != null) {
+            throw new BadRequestException("This application has already been converted to an employee");
+        }
+        if (application.getStatus() != ApplicationStatus.OFFERED) {
+            throw new BadRequestException(
+                "Only candidates with status OFFERED can be hired. Current status: " + application.getStatus());
+        }
+
+        JobPosting posting = application.getJobPosting();
+        String[] name = splitApplicantName(application.getApplicantName());
+
+        CreateEmployeeRequest createRequest = new CreateEmployeeRequest();
+        createRequest.setFirstName(name[0]);
+        createRequest.setLastName(name[1]);
+        createRequest.setEmail(application.getApplicantEmail());
+        createRequest.setPassword(request.getPassword());
+        createRequest.setOfficialEmail(request.getOfficialEmail());
+        createRequest.setWorkPhone(application.getApplicantPhone());
+        createRequest.setJobTitle(posting != null ? posting.getTitle() : null);
+        createRequest.setEmploymentType(request.getEmploymentType() != null
+            ? request.getEmploymentType()
+            : (posting != null ? posting.getEmploymentType() : null));
+        createRequest.setDepartmentId(request.getDepartmentId() != null
+            ? request.getDepartmentId()
+            : (posting != null && posting.getDepartment() != null ? posting.getDepartment().getId() : null));
+        createRequest.setDesignationId(request.getDesignationId());
+        createRequest.setReportingManagerId(request.getReportingManagerId());
+        createRequest.setShiftId(request.getShiftId());
+        createRequest.setHireDate(request.getHireDate() != null ? request.getHireDate() : LocalDate.now());
+        createRequest.setConfirmationDate(request.getConfirmationDate());
+        createRequest.setProbationEndDate(request.getProbationEndDate());
+        createRequest.setContractEndDate(request.getContractEndDate());
+        createRequest.setBasicSalary(request.getBasicSalary());
+        createRequest.setHouseRent(request.getHouseRent());
+        createRequest.setMedicalAllowance(request.getMedicalAllowance());
+        createRequest.setTransportAllowance(request.getTransportAllowance());
+        createRequest.setBankName(request.getBankName());
+        createRequest.setBankAccountNumber(request.getBankAccountNumber());
+        createRequest.setEmergencyContactName(request.getEmergencyContactName());
+        createRequest.setEmergencyContactPhone(request.getEmergencyContactPhone());
+        createRequest.setEmergencyContactRelation(request.getEmergencyContactRelation());
+
+        // Delegates to the same onboarding path as a manual hire: portal user creation,
+        // notification defaults, and the welcome email all happen inside employeeService.create().
+        EmployeeResponse employeeResponse = employeeService.create(createRequest);
+
+        Employee employee = employeeRepository.findByIdAndCompanyId(employeeResponse.getId(), requireCompanyId())
+            .orElseThrow(() -> new ResourceNotFoundException("Employee not found: " + employeeResponse.getId()));
+
+        application.setStatus(ApplicationStatus.HIRED);
+        application.setConvertedEmployee(employee);
+        application.setConvertedAt(LocalDateTime.now());
+        employeeRepository.findByUserId(securityUtil.getCurrentUser().getId())
+            .ifPresent(reviewer -> application.setReviewedBy(reviewer.getUser()));
+
+        return employeeResponse;
+    }
+
+    /** Applicants only supply one free-text name field; Employee onboarding needs first/last separately. */
+    private String[] splitApplicantName(String fullName) {
+        String trimmed = fullName == null ? "" : fullName.trim();
+        int idx = trimmed.indexOf(' ');
+        if (idx < 0) {
+            return new String[] { trimmed, trimmed };
+        }
+        String first = trimmed.substring(0, idx).trim();
+        String last = trimmed.substring(idx + 1).trim();
+        return new String[] { first, last.isEmpty() ? first : last };
     }
 
     @Override

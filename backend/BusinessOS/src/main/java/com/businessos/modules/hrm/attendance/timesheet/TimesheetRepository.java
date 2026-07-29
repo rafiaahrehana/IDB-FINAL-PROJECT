@@ -21,8 +21,17 @@ public interface TimesheetRepository extends JpaRepository<Timesheet, Long> {
     List<Timesheet> findByCompanyIdAndEmployeeIdAndWorkDateBetween(
         Long companyId, Long employeeId, LocalDate from, LocalDate to);
 
+    List<Timesheet> findByCompanyIdAndEmployeeIdAndSubmittedFalseAndApprovedFalse(Long companyId, Long employeeId);
+
     @Query("SELECT SUM(t.hoursWorked) FROM Timesheet t WHERE t.employee.id = :employeeId AND t.workDate BETWEEN :from AND :to AND t.deleted = false")
     Optional<Double> sumHoursWorked(
+        @Param("employeeId") Long employeeId,
+        @Param("from") LocalDate from,
+        @Param("to") LocalDate to);
+
+    // Only APPROVED hours are paid - a submitted-but-not-yet-approved entry doesn't count yet.
+    @Query("SELECT SUM(t.billableHours) FROM Timesheet t WHERE t.employee.id = :employeeId AND t.approved = true AND t.workDate BETWEEN :from AND :to AND t.deleted = false")
+    Optional<Double> sumApprovedBillableHours(
         @Param("employeeId") Long employeeId,
         @Param("from") LocalDate from,
         @Param("to") LocalDate to);

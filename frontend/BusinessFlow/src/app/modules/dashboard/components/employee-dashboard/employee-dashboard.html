@@ -1,0 +1,136 @@
+<div class="container-fluid py-4">
+  <div class="page-header mb-4">
+    <h3 class="fw-bold text-dark-contrast mb-1">Welcome, {{ profile?.firstName }} {{ profile?.lastName }}</h3>
+    <div class="text-secondary-contrast">Role: <span class="badge text-bg-secondary">{{ roleLabel | uppercase }}</span></div>
+  </div>
+
+  @if (error) { <div class="alert alert-danger py-2 mb-3">{{ error }}</div> }
+  @if (success) { <div class="alert alert-success py-2 mb-3">{{ success }}</div> }
+
+  <div class="row g-3">
+    <!-- My Profile -->
+    <div class="col-lg-4">
+      <div class="card border-0 shadow-sm rounded-4 h-100">
+        <div class="card-header border-0 d-flex justify-content-between align-items-center px-4 pt-3 pb-0 bg-transparent">
+          <h6 class="fw-bold text-dark-contrast mb-0">My Profile</h6>
+          <a routerLink="/my-profile" class="btn btn-outline-primary btn-sm">Edit Profile</a>
+        </div>
+        <div class="card-body p-4">
+          @if (loadingProfile) { <app-loader /> }
+          @if (profile) {
+          <div class="text-center mb-3">
+            @if (profile.profileImageUrl || profile.image) {
+              <img [src]="profile.profileImageUrl || profile.image" class="rounded-circle" style="width:110px;height:110px;object-fit:cover;" alt="Profile photo" />
+            } @else {
+              <div class="rounded-circle bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center mx-auto fw-bold fs-3" style="width:110px;height:110px;">
+                {{ profile.firstName?.charAt(0) }}{{ profile.lastName?.charAt(0) }}
+              </div>
+            }
+          </div>
+          <table class="table table-sm mb-0">
+            <tbody>
+              <tr><td class="text-muted">Name:</td><td class="fw-semibold">{{ profile.firstName }} {{ profile.lastName }}</td></tr>
+              <tr><td class="text-muted">Employee ID:</td><td>{{ profile.employeeNumber || '-' }}</td></tr>
+              <tr><td class="text-muted">Department:</td><td>{{ profile.departmentName || '-' }}</td></tr>
+              <tr><td class="text-muted">Designation:</td><td>{{ profile.designationName || '-' }}</td></tr>
+              <tr><td class="text-muted">Role:</td><td>{{ roleLabel }}</td></tr>
+              <tr><td class="text-muted">Email:</td><td>{{ profile.email }}</td></tr>
+              <tr><td class="text-muted">Date of Birth:</td><td>{{ profile.dateOfBirth ? (profile.dateOfBirth | date:'mediumDate') : '-' }}</td></tr>
+            </tbody>
+          </table>
+          }
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-8 d-flex flex-column gap-3">
+      <!-- Daily Attendance -->
+      <div class="card border-0 shadow-sm rounded-4" style="background-color: #ecfdf5;">
+        <div class="card-header border-0 bg-transparent px-4 pt-3 pb-0">
+          <h6 class="fw-bold text-dark-contrast mb-0"><i class="bi bi-clock me-1"></i>Daily Attendance</h6>
+        </div>
+        <div class="card-body px-4 pb-3 pt-2 d-flex align-items-center gap-3 flex-wrap">
+          @if (!todayRecord) {
+          <button class="btn btn-success" [disabled]="checkingInOut" (click)="checkIn()">
+            @if (checkingInOut) { <span class="spinner-border spinner-border-sm me-1"></span> } Clock In
+          </button>
+          <span class="text-muted small">You have not checked in today.</span>
+          }
+          @if (todayRecord && !todayRecord.checkOutTime) {
+          <button class="btn btn-warning" [disabled]="checkingInOut" (click)="checkOut()">
+            @if (checkingInOut) { <span class="spinner-border spinner-border-sm me-1"></span> } Check Out
+          </button>
+          <span class="text-muted small">Checked in: {{ todayRecord.checkInTime }}</span>
+          }
+          @if (todayRecord && todayRecord.checkOutTime) {
+          <span class="badge text-bg-dark">Completed for Today</span>
+          <span class="text-muted small">Checked out: {{ todayRecord.checkOutTime }}</span>
+          }
+        </div>
+      </div>
+
+      <!-- This Month -->
+      <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-header border-0 bg-transparent px-4 pt-3 pb-0">
+          <h6 class="fw-bold text-dark-contrast mb-0"><i class="bi bi-calendar2-week me-1"></i>This Month</h6>
+        </div>
+        <div class="card-body px-4 pb-3 pt-2">
+          @if (loadingAttendance) { <app-loader /> }
+          @if (monthlySummary) {
+          <div class="d-flex flex-wrap gap-2">
+            <span class="badge text-bg-success">Present: {{ monthlySummary.presentDays }}</span>
+            <span class="badge text-bg-danger">Absent: {{ monthlySummary.absentDays }}</span>
+            <span class="badge text-bg-warning">Half Day: {{ monthlySummary.halfDays }}</span>
+            <span class="badge text-bg-dark">On Leave: {{ monthlySummary.onLeaveDays }}</span>
+            <span class="badge text-bg-secondary">Holiday: {{ monthlySummary.holidayDays }}</span>
+            <span class="badge text-bg-secondary">Week Off: {{ monthlySummary.weekOffDays }}</span>
+            <span class="badge text-bg-info">Worked Hours: {{ monthlySummary.workedHours | number:'1.0-1' }}</span>
+          </div>
+          }
+        </div>
+      </div>
+
+      <!-- My Utilities -->
+      <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-header border-0 bg-transparent px-4 pt-3 pb-0">
+          <h6 class="fw-bold text-dark-contrast mb-0">My Utilities</h6>
+        </div>
+        <div class="card-body px-4 pb-3 pt-2">
+          <div class="d-flex flex-wrap gap-2">
+            @if (permissionService.hasPermission('ATTENDANCE_VIEW')) {
+            <a routerLink="/attendance/records" class="btn btn-outline-secondary btn-sm"><i class="bi bi-calendar-check me-1"></i>Attendance History</a>
+            }
+            @if (permissionService.hasPermission('LEAVE_VIEW')) {
+            <a routerLink="/hrm/leaves" class="btn btn-outline-warning btn-sm"><i class="bi bi-calendar-plus me-1"></i>Apply for Leave</a>
+            <a routerLink="/hrm/leaves" class="btn btn-outline-secondary btn-sm"><i class="bi bi-calendar-check me-1"></i>Leave History</a>
+            }
+            <a routerLink="/hrm/my-payslips" class="btn btn-outline-info btn-sm"><i class="bi bi-cash-stack me-1"></i>View Payslips</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notice Board -->
+      <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-header border-0 bg-transparent px-4 pt-3 pb-0">
+          <h6 class="fw-bold text-dark-contrast mb-0"><i class="bi bi-megaphone me-1"></i>Notice Board</h6>
+        </div>
+        <div class="card-body px-4 pb-3 pt-2">
+          @if (!notices.length) {
+          <div class="text-muted small">No notices right now.</div>
+          }
+          <div class="list-group list-group-flush">
+            @for (n of notices; track n.title + n.date) {
+            <div class="list-group-item bg-transparent d-flex justify-content-between align-items-center py-2 px-0">
+              <div>
+                <span class="badge text-bg-light border me-2">{{ n.kind }}</span>
+                <span class="fw-semibold">{{ n.title }}</span>
+              </div>
+              <span class="text-muted small">{{ n.date | date:'mediumDate' }}</span>
+            </div>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

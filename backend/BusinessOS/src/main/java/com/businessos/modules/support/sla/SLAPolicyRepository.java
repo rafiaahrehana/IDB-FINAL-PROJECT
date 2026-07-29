@@ -16,4 +16,7 @@ public interface SLAPolicyRepository extends JpaRepository<SLAPolicy, Long> {
     List<SLAPolicy> findByActiveTrue();
 
     Optional<SLAPolicy> findByApplicablePriority(TicketPriority priority);
+
+    /** Used for the create-time duplicate check - a soft-deleted policy must not block re-creating one for the same priority. */
+    Optional<SLAPolicy> findByApplicablePriorityAndDeletedFalse(TicketPriority priority);
 }

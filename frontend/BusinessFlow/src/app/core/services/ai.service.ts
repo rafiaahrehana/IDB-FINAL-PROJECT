@@ -68,4 +68,8 @@ export class AiService {
   saveTemplate(template: AiPromptTemplateRequest): Observable<AiPromptTemplate> {
     return this.api.post<AiPromptTemplate>('/ai/templates', template);
   }
+
+  deleteTemplate(id: number): Observable<void> {
+    return this.api.delete<void>(`/ai/templates/${id}`);
+  }
 }

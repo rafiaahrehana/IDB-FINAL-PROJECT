@@ -1,0 +1,53 @@
+<div class="container-fluid py-3">
+  <div class="mb-4 p-3 rounded-3 shadow-sm page-header-bar">
+    <h4 class="mb-0">My Payslips</h4>
+  </div>
+
+  @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
+  @if (loading) { <app-loader /> }
+
+  @if (!loading && payslips.length) {
+  <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light text-secondary text-uppercase small">
+          <tr>
+            <th class="ps-4">Pay Period</th>
+            <th class="text-end">Basic Salary</th>
+            <th class="text-end">Billable Pay</th>
+            <th class="text-end">Net Salary</th>
+            <th>Status</th>
+            <th>Paid On</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (p of payslips; track p.id) {
+          <tr>
+            <td class="ps-4 fw-semibold">{{ p.payMonth }}/{{ p.payYear }}</td>
+            <td class="text-end">{{ p.basicSalary | number:'1.2-2' }}</td>
+            <td class="text-end">
+              @if (p.billablePay) {
+                <div>{{ p.billablePay | number:'1.2-2' }}</div>
+                <div class="text-muted small">{{ p.billableHours | number:'1.1-1' }} hrs &times; {{ p.billableRate | number:'1.2-2' }}/hr</div>
+              } @else {
+                <span class="text-muted">-</span>
+              }
+            </td>
+            <td class="text-end fw-semibold text-primary">{{ p.netSalary | number:'1.2-2' }}</td>
+            <td><span class="badge {{ statusClass(p.status) }}">{{ p.status }}</span></td>
+            <td class="text-muted small">{{ p.paidAt ? (p.paidAt | date:'mediumDate') : '-' }}</td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <div class="card-footer d-flex justify-content-end bg-white border-0 py-3">
+      <app-pagination [page]="page" [totalPages]="totalPages" (pageChange)="goToPage($event)" />
+    </div>
+  </div>
+  }
+
+  @if (!loading && !payslips.length) {
+    <app-empty-state icon="bi-cash-stack" message="No payslips found yet." />
+  }
+</div>

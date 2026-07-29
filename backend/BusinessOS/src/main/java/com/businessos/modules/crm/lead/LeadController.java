@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 public class LeadController {
 
     private final LeadService leadService;
+    private final LeadPdfService leadPdfService;
 
     @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     @PostMapping
@@ -60,6 +61,16 @@ public class LeadController {
         Sort.Direction direction = Sort.Direction.fromString(sortDirection);
         Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
         return ResponseEntity.ok(leadService.listLeads(status, pageable));
+    }
+
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
+    @GetMapping("/pdf")
+    public ResponseEntity<byte[]> downloadPdf(@RequestParam(required = false) LeadStatus status) {
+        byte[] pdf = leadPdfService.generateListPdf(status);
+        return ResponseEntity.ok()
+                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=leads.pdf")
+                .contentType(org.springframework.http.MediaType.APPLICATION_PDF)
+                .body(pdf);
     }
 
     @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
@@ -150,9 +161,10 @@ public class LeadController {
     // ==================== Lead Conversion ====================
 
     @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
-    @PatchMapping("/{id}/convert")
-    public ResponseEntity<LeadResponse> convert(@PathVariable Long id) {
-        return ResponseEntity.ok(leadService.convertLead(id));
+    @PatchMapping("/{id}/convert-to-opportunity")
+    public ResponseEntity<com.businessos.modules.crm.opportunity.OpportunityResponse> convertToOpportunity(
+            @PathVariable Long id, @Valid @RequestBody ConvertToOpportunityRequest request) {
+        return ResponseEntity.ok(leadService.convertToOpportunity(id, request));
     }
 
     // ==================== Activity Timeline ====================

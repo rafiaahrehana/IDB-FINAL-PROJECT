@@ -17,7 +17,7 @@ export class FaqComponent {
     },
     {
       q: 'Can we integrate with our existing tools?',
-      a: 'Yes, BusinessOS provides robust REST APIs and pre-built integrations for over 100 popular tools including Slack, Salesforce, Google Workspace, and Microsoft 365.',
+      a: 'Yes, Zuhoo CMS provides robust REST APIs and pre-built integrations for over 100 popular tools including Slack, Salesforce, Google Workspace, and Microsoft 365.',
       open: false
     },
     {

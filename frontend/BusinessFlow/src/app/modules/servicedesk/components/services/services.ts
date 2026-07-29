@@ -14,15 +14,15 @@ import {
 import { CompanyServiceService } from '../../services/company-service.service';
 import { ServiceCategoryService } from '../../services/service-category.service';
 import { WorkflowService } from '../../services/workflow.service';
-import { Pagination } from '../../../../shared/components/pagination/pagination';
 import { Loader } from '../../../../shared/components/loader/loader';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
 import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/confirm-dialog';
 import { HasPermissionDirective } from '../../../../shared/directives/has-permission.directive';
 
+import { BosCurrencyPipe } from '../../../../shared/pipes/bos-currency.pipe';
 @Component({
   selector: 'app-services',
-  imports: [CommonModule, FormsModule, RouterLink, Pagination, Loader, EmptyState, ConfirmDialog, HasPermissionDirective],
+  imports: [BosCurrencyPipe, CommonModule, FormsModule, RouterLink, Loader, EmptyState, ConfirmDialog, HasPermissionDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './services.html',
   styleUrls: ['./services.scss']
@@ -32,11 +32,10 @@ export class Services implements OnInit {
   services: CompanyService[] = [];
   categories: ServiceCategory[] = [];
   workflows: WorkflowTemplate[] = [];
-  totalPages = 0;
-  page = 0;
   loading = false;
   error = '';
   success = '';
+  searchTerm = '';
 
   showForm = false;
   editingId: number | null = null;
@@ -58,15 +57,44 @@ export class Services implements OnInit {
   // LIFECYCLE HOOKS
   ngOnInit(): void { this.load(); }
 
-  // LOAD SERVICES
+  // LOAD SERVICES - the whole catalog at once (not paginated) so services can be
+  // grouped by category on one screen; admin catalogs are small enough for this.
   load(): void {
     this.loading = true;
     this.error = '';
     this.cdr.markForCheck();
-    this.serviceService.list(this.page).subscribe({
-      next: (res) => { this.services = res.content; this.totalPages = res.totalPages; this.loading = false; this.cdr.markForCheck(); },
+    this.serviceService.list(0, 1000).subscribe({
+      next: (res) => { this.services = res.content; this.loading = false; this.cdr.markForCheck(); },
       error: () => { this.error = 'Failed to load services'; this.loading = false; this.cdr.markForCheck(); }
     });
+  }
+
+  get filteredServices(): CompanyService[] {
+    const term = this.searchTerm.trim().toLowerCase();
+    if (!term) return this.services;
+    return this.services.filter((s) =>
+      s.name.toLowerCase().includes(term) ||
+      (s.description ?? '').toLowerCase().includes(term) ||
+      (s.categoryName ?? '').toLowerCase().includes(term)
+    );
+  }
+
+  // Services grouped under their category name, for the "category, then its
+  // services" layout - categories with no name go last under "Uncategorized".
+  get groupedServices(): { categoryName: string; services: CompanyService[] }[] {
+    const groups = new Map<string, CompanyService[]>();
+    for (const s of this.filteredServices) {
+      const key = s.categoryName || 'Uncategorized';
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key)!.push(s);
+    }
+    return [...groups.entries()]
+      .sort(([a], [b]) => {
+        if (a === 'Uncategorized') return 1;
+        if (b === 'Uncategorized') return -1;
+        return a.localeCompare(b);
+      })
+      .map(([categoryName, services]) => ({ categoryName, services }));
   }
 
   // LAZY LOAD LOOKUPS FOR THE FORM DROPDOWNS
@@ -145,9 +173,6 @@ export class Services implements OnInit {
       error: () => { this.deleteTarget = null; this.error = 'Cannot delete service'; this.cdr.markForCheck(); }
     });
   }
-
-  // PAGINATION
-  goToPage(p: number): void { this.page = p; this.load(); }
 
   // LABELS
   priceTypeLabel(type?: string): string {

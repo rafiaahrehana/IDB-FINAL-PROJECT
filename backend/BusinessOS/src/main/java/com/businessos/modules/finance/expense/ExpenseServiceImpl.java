@@ -3,6 +3,7 @@ import com.businessos.modules.finance.chartofaccounts.ChartOfAccount;
 import com.businessos.modules.finance.chartofaccounts.DefaultAccountResolver;
 import com.businessos.modules.finance.generalledger.GeneralLedgerService;
 import com.businessos.modules.finance.generalledger.GlReferenceType;
+import com.businessos.modules.finance.generalledger.LedgerLine;
 import com.businessos.modules.hrm.employee.Employee;
 import com.businessos.modules.hrm.employee.EmployeeRepository;
 import com.businessos.auth.role.enums.PermissionCode;
@@ -33,6 +34,20 @@ public class ExpenseServiceImpl implements ExpenseService {
     private final GeneralLedgerService glService;
     private final DefaultAccountResolver accountResolver;
     private final AuthorizationService authorizationService;
+    private final com.businessos.modules.finance.chartofaccounts.ChartOfAccountRepository coaRepository;
+    private final com.businessos.modules.finance.budget.BudgetService budgetService;
+
+    /** Resolves + validates an optional COA expense account (must exist in-tenant and be EXPENSE type). */
+    private ChartOfAccount resolveExpenseAccount(Long companyId, Long accountId) {
+        if (accountId == null) return null;
+        ChartOfAccount account = coaRepository.findByIdAndCompanyId(accountId, companyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Expense account not found: " + accountId));
+        if (account.getType() != com.businessos.modules.finance.chartofaccounts.AccountType.EXPENSE) {
+            throw new BadRequestException("Account " + account.getAccountCode() + " is " + account.getType()
+                    + " - expenses must post to an EXPENSE account");
+        }
+        return account;
+    }
 
     @Override
     @Transactional
@@ -68,6 +83,7 @@ public class ExpenseServiceImpl implements ExpenseService {
                 .amount(request.getAmount())
                 .vendorName(request.getVendorName())
                 .category(request.getCategory())
+                .expenseAccount(resolveExpenseAccount(companyId, request.getExpenseAccountId()))
                 .expenseDate(request.getExpenseDate())
                 .receiptUrl(request.getReceiptUrl())
                 .status(ExpenseStatus.PENDING)
@@ -197,6 +213,7 @@ public class ExpenseServiceImpl implements ExpenseService {
         expense.setDescription(request.getDescription());
         expense.setAmount(request.getAmount());
         expense.setCategory(request.getCategory());
+        expense.setExpenseAccount(resolveExpenseAccount(expense.getCompanyId(), request.getExpenseAccountId()));
         expense.setExpenseDate(request.getExpenseDate());
         expense.setReceiptUrl(request.getReceiptUrl());
         expense.setNotes(request.getNotes());
@@ -211,7 +228,7 @@ public class ExpenseServiceImpl implements ExpenseService {
 
     @Override
     @Transactional
-    public void approveExpense(Long id, String approvalNotes) {
+    public String approveExpense(Long id, String approvalNotes) {
         if (!isPlatformCaller()) {
             authorizationService.checkPermission(PermissionCode.EXPENSE_APPROVE);
         }
@@ -225,9 +242,26 @@ public class ExpenseServiceImpl implements ExpenseService {
         User approver = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
+        // Maker-checker: you can't approve your own expense claim - the whole point of
+        // the approval step is a second person's eyes on the money.
+        if (expense.getSubmittedBy() != null && expense.getSubmittedBy().getUser() != null
+                && expense.getSubmittedBy().getUser().getId().equals(currentUserId)) {
+            throw new BadRequestException("You submitted this expense - a different user must approve it");
+        }
+
         expense.approve(approver);
         expense.setApprovalNotes(approvalNotes);
         expenseRepository.save(expense);
+
+        // Non-blocking: the approver is warned when this pushes the category over (or
+        // near) its budget, but the approval still stands - real companies want a
+        // human judgment call here, not a hard stop. Platform expenses have no company
+        // and therefore no budgets.
+        if (expense.getCompanyId() != null) {
+            return budgetService.warningFor(expense.getCompanyId(), expense.getCategory(),
+                    expense.getExpenseDate(), expense.getAmount());
+        }
+        return null;
     }
 
     @Override
@@ -252,22 +286,22 @@ public class ExpenseServiceImpl implements ExpenseService {
         expense.markAsPaid(reimbursementMethod, referenceNumber);
         expenseRepository.save(expense);
 
-        // Reimbursement previously only flipped the expense's own status - nothing
-        // ever hit the ledger, so paid expenses were invisible to Finance reports.
-        // Dr Operating Expenses / Cr Cash (category isn't a real CoA link today, so
-        // it's recorded in the transaction description instead of a per-category account).
+        // Dr the expense's linked COA account (falling back to generic Operating
+        // Expenses for expenses that never chose one) / Cr Cash - so the P&L can
+        // actually break spending down by account, not one undifferentiated bucket.
         Long companyId = expense.getCompanyId();
         String description = "Expense reimbursed: " + expense.getTitle()
                 + (expense.getCategory() != null ? " (" + expense.getCategory() + ")" : "")
                 + " - " + expense.getExpenseNumber();
 
-        ChartOfAccount expenseAccount = accountResolver.operatingExpenses(companyId);
-        glService.recordTransaction(expenseAccount.getId(), expense.getAmount(), BigDecimal.ZERO,
-                description, GlReferenceType.EXPENSE, expense.getId(), expense.getExpenseNumber());
-
+        ChartOfAccount expenseAccount = expense.getExpenseAccount() != null
+                ? expense.getExpenseAccount()
+                : accountResolver.operatingExpenses(companyId);
         ChartOfAccount cash = accountResolver.cash(companyId);
-        glService.recordTransaction(cash.getId(), BigDecimal.ZERO, expense.getAmount(),
-                description, GlReferenceType.EXPENSE, expense.getId(), expense.getExpenseNumber());
+        glService.recordBalancedTransaction(companyId, java.util.List.of(
+                        LedgerLine.debit(expenseAccount.getId(), expense.getAmount()),
+                        LedgerLine.credit(cash.getId(), expense.getAmount())),
+                description, GlReferenceType.EXPENSE, expense.getId(), expense.getExpenseNumber(), LocalDate.now());
     }
 
     @Override

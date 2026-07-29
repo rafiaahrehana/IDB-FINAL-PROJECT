@@ -21,5 +21,7 @@ public class JobApplicationResponse {
     private String jobPostingTitle;
     private Long reviewedById;
     private String reviewedByName;
+    private Long convertedEmployeeId;
+    private LocalDateTime convertedAt;
     private LocalDateTime createdAt;
 }

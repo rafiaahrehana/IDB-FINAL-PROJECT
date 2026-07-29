@@ -12,6 +12,14 @@ public interface AttendanceService {
 
     AttendanceResponse checkOut(Long attendanceId, AttendanceCheckOutRequest request);
 
+    AttendanceResponse getMyTodayAttendance();
+
+    /** The calling user's own attendance history - resolves their Employee record internally. */
+    Page<AttendanceResponse> getMyRecords(Pageable pageable);
+
+    /** The calling user's own Present/Absent/Half Day/On Leave/Holiday/Week Off/Worked Hours breakdown for a month. */
+    MyAttendanceMonthlySummaryResponse getMyMonthlySummary(int year, int month);
+
     // ── Admin / HR actions ───────────────────────────────────────────────────
     /** Manual entry: create an attendance record for any date (admin / HR only). */
     AttendanceResponse createManual(AttendanceRequest request);
@@ -27,7 +35,11 @@ public interface AttendanceService {
 
     Page<AttendanceResponse> getByStatus(AttendanceStatus status, Pageable pageable);
 
-    Page<AttendanceResponse> listAll(Pageable pageable);
+    Page<AttendanceResponse> listAll(AttendanceStatus status, LocalDate date, LocalDate startDate, LocalDate endDate, String search, Pageable pageable);
+
+    default Page<AttendanceResponse> listAll(Pageable pageable) {
+        return listAll(null, null, null, null, null, pageable);
+    }
 
     List<AttendanceResponse> getLateAttendances(LocalDate date);
 

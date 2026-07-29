@@ -1,15 +1,32 @@
 <section id="pricing" class="py-3 pricing-section position-relative overflow-hidden">
+  <div class="bg-dot-grid pricing-dots"></div>
 
   <div class="container py-5 position-relative z-1">
     <div class="text-center max-w-2xl mx-auto mb-4 slide-up">
+      <span class="eyebrow-badge mb-3 d-inline-flex"><span class="eyebrow-dot"></span>Simple, Transparent Pricing</span>
       <h2 class="display-5 fw-bold section-title mb-4 slide-up" style="animation-delay: 0.1s;">Pricing that scales with you</h2>
       <p class="text-muted fs-5 mb-4">No hidden fees. Pay only for what your team uses.</p>
 
       <div class="d-flex flex-wrap justify-content-center gap-4 pt-1">
-        <span class="text-muted small fw-medium" *ngFor="let badge of trustBadges">{{ badge }}</span>
+        <span class="trust-badge" *ngFor="let badge of trustBadges"><i class="bi bi-check-circle-fill"></i>{{ badge }}</span>
       </div>
     </div>
 
+    @if (loading()) {
+      <div class="text-center py-5">
+        <div class="spinner-border text-primary-bos" role="status" style="width: 2.5rem; height: 2.5rem;"></div>
+        <p class="text-muted mt-3 mb-0">Loading current plans…</p>
+      </div>
+    }
+
+    @if (!loading() && error()) {
+      <div class="text-center py-5">
+        <i class="bi bi-exclamation-triangle text-muted fs-1 d-block mb-3"></i>
+        <p class="text-muted mb-0">Couldn't load pricing right now — please refresh, or <a routerLink="/contact" class="fw-semibold">contact sales</a> directly.</p>
+      </div>
+    }
+
+    @if (!loading() && !error()) {
     <div class="row g-4 align-items-stretch justify-content-center pt-4">
       <div class="col-md-6 col-lg-3 slide-up" *ngFor="let plan of plans(); let i = index"
         [style.animation-delay]="(i * 0.1) + 's'">
@@ -18,21 +35,21 @@
           [ngClass]="plan.highlighted ? 'pricing-card-highlighted shadow position-relative' : 'bg-white border-light shadow-sm'">
 
           <div *ngIf="plan.highlighted"
-            class="position-absolute top-0 start-50 translate-middle badge rounded-pill bg-white text-purple px-3 py-2 fw-semibold shadow-sm">
-            Most Popular
+            class="position-absolute top-0 start-50 translate-middle badge rounded-pill bg-white text-purple px-3 py-2 fw-semibold shadow-sm popular-badge">
+            <i class="bi bi-stars me-1"></i>Most Popular
           </div>
 
           <h4 class="fw-bold mb-3 mt-2" [ngClass]="plan.highlighted ? 'text-white' : 'text-dark'">{{ plan.name }}</h4>
 
           <div class="mb-4">
-            <h2 class="display-5 fw-bold mb-1" [ngClass]="plan.highlighted ? 'text-white' : 'text-dark'">{{ plan.price }}</h2>
-            <span class="small" [ngClass]="plan.highlighted ? 'text-white-50' : 'text-muted'">{{ plan.period }}</span>
+            <h2 class="display-5 fw-bold mb-1" [ngClass]="plan.highlighted ? 'text-white' : 'text-dark'">{{ plan.priceLabel }}</h2>
+            <span class="small" [ngClass]="plan.highlighted ? 'text-white-50' : 'text-muted'">{{ plan.periodLabel }}</span>
           </div>
 
-          <button [routerLink]="plan.name === 'Enterprise' ? '/contact' : '/auth/register'"
-            class="btn w-100 rounded-pill py-2 mb-4 fw-medium" [ngClass]="plan.btnClass">
-            {{ plan.btnText }}
-          </button>
+          <a [routerLink]="plan.ctaLink"
+            class="btn w-100 rounded-pill py-2 mb-4 fw-medium" [ngClass]="plan.highlighted ? 'btn-purple-solid' : 'btn-outline-purple'">
+            {{ plan.ctaText }}
+          </a>
 
           <hr class="pricing-divider mb-4" [ngClass]="plan.highlighted ? 'pricing-divider-highlighted' : ''" />
 
@@ -46,5 +63,6 @@
         </div>
       </div>
     </div>
+    }
   </div>
 </section>

@@ -1,15 +1,6 @@
 <div class="container-fluid py-3">
-  <div class="page-hero">
-    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
-      <div>
-        <div class="page-hero-label">ATTENDANCE</div>
-        <h4 class="page-hero-title underline-amber">Biometric Data</h4>
-        <div class="page-hero-subtitle">Manage biometric devices and employee enrollments.</div>
-      </div>
-      <div class="page-hero-actions">
-        <button *appHasPermission="'BIOMETRIC_MANAGE'" class="btn-hero-primary" (click)="openCreateDevice()"><i class="bi bi-plus-circle"></i> Register Device</button>
-      </div>
-    </div>
+  <div class="mb-4 p-3 rounded-3 shadow-sm page-header-bar">
+    <h4 class="mb-0">Biometric Data</h4>
   </div>
   @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
   @if (success) { <div class="alert alert-success py-2">{{ success }}</div> }
@@ -21,7 +12,7 @@
 
   @if (tab === 'devices') {
   <div class="d-flex justify-content-end mb-3">
-    <button *appHasPermission="'BIOMETRIC_MANAGE'" class="btn btn-success btn-sm" (click)="openCreateDevice()"><i class="bi bi-plus"></i> Register Device</button>
+    <button *appHasPermission="'BIOMETRIC_MANAGE'" class="btn btn-primary btn-sm" (click)="openCreateDevice()"><i class="bi bi-plus"></i> Register Device</button>
   </div>
 
   @if (showDeviceForm) {
@@ -60,7 +51,7 @@
   @if (!deviceLoading && devices.length) {
   <div class="card"><div class="table-responsive">
     <table class="table table-hover table-sm align-middle mb-0">
-      <thead><tr><th>Name</th><th>Type</th><th>Device ID</th><th>Location</th><th>Status</th><th>Online</th><th>Enrollments</th><th></th></tr></thead>
+      <thead class="table-light"><tr><th>Name</th><th>Type</th><th>Device ID</th><th>Location</th><th>Status</th><th>Online</th><th>Enrollments</th><th></th></tr></thead>
       <tbody>
         @for (d of devices; track d.id) {
         <tr>
@@ -121,7 +112,7 @@
   @if (!enrollmentLoading && enrollments.length) {
   <div class="card"><div class="table-responsive">
     <table class="table table-hover table-sm align-middle mb-0">
-      <thead><tr><th>Device</th><th>Type</th><th>Quality</th><th>Successful</th><th>Failed</th><th>Last Verified</th><th></th></tr></thead>
+      <thead class="table-light"><tr><th>Device</th><th>Type</th><th>Quality</th><th>Successful</th><th>Failed</th><th>Last Verified</th><th></th></tr></thead>
       <tbody>
         @for (e of enrollments; track e.id) {
         <tr>

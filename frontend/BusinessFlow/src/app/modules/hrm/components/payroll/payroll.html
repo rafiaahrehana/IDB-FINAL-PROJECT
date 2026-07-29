@@ -1,49 +1,43 @@
 <div class="container-fluid py-3">
-  <div class="page-hero">
-    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
-      <div>
-        <div class="page-hero-label">HRM</div>
-        <h4 class="page-hero-title underline-mint">Payroll</h4>
-        <div class="page-hero-subtitle">Manage employee salaries and payments</div>
-      </div>
-      <div class="page-hero-actions">
-        <select
-          class="form-select form-select-sm"
-          style="width: 110px"
-          [(ngModel)]="month"
-          (change)="page = 0; load()"
-        >
-          @for (m of months; track m) {
-            <option [ngValue]="m">{{ m | number: '2.0' }}</option>
-          }
-        </select>
-        <select
-          class="form-select form-select-sm"
-          style="width: 110px"
-          [(ngModel)]="year"
-          (change)="page = 0; load()"
-        >
-          @for (y of years; track y) {
-            <option [ngValue]="y">{{ y }}</option>
-          }
-        </select>
-        <button
-          *appHasPermission="'PAYROLL_PROCESS'"
-          class="btn btn-hero-secondary"
-          [disabled]="generating"
-          (click)="openGenerate()"
-        >
-          @if (generating) {
-            <span class="spinner-border spinner-border-sm me-1"></span>
-          } @else {
-            <i class="bi bi-lightning-charge me-1"></i>
-          }
-          Generate for All Employees
-        </button>
-        <button *appHasPermission="'PAYROLL_PROCESS'" class="btn btn-hero-primary" (click)="showForm = true">
-          <i class="bi bi-plus-circle"></i> Add Payroll
-        </button>
-      </div>
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h4 class="mb-0">Payroll</h4>
+    <div class="d-flex gap-2">
+      <select
+        class="form-select form-select-sm"
+        style="width: 110px"
+        [(ngModel)]="month"
+        (change)="page = 0; load()"
+      >
+        @for (m of months; track m) {
+          <option [ngValue]="m">{{ m | number: '2.0' }}</option>
+        }
+      </select>
+      <select
+        class="form-select form-select-sm"
+        style="width: 110px"
+        [(ngModel)]="year"
+        (change)="page = 0; load()"
+      >
+        @for (y of years; track y) {
+          <option [ngValue]="y">{{ y }}</option>
+        }
+      </select>
+      <button
+        *appHasPermission="'PAYROLL_PROCESS'"
+        class="btn btn-outline-primary btn-sm text-nowrap"
+        [disabled]="generating"
+        (click)="openGenerate()"
+      >
+        @if (generating) {
+          <span class="spinner-border spinner-border-sm me-1"></span>
+        } @else {
+          <i class="bi bi-lightning-charge me-1"></i>
+        }
+        Generate for All Employees
+      </button>
+      <button *appHasPermission="'PAYROLL_PROCESS'" class="btn btn-primary btn-sm text-nowrap" (click)="showForm = true">
+        <i class="bi bi-plus-lg me-1"></i>Add Payroll
+      </button>
     </div>
   </div>
 
@@ -83,12 +77,14 @@
     <div class="card">
       <div class="table-responsive">
         <table class="table table-hover table-sm align-middle mb-0">
-          <thead>
+          <thead class="table-light">
             <tr>
               <th>Employee</th>
               <th>Period</th>
               <th class="text-end">Basic</th>
               <th class="text-end">Bonus</th>
+              <th class="text-end">Billable</th>
+              <th class="text-end">Absent</th>
               <th class="text-end">Deductions</th>
               <th class="text-end">Net</th>
               <th>Status</th>
@@ -104,8 +100,26 @@
                 <td class="text-end">{{ p.basicSalary | number: '1.2-2' }}</td>
                 <td class="text-end">{{ p.bonus ?? 0 | number: '1.2-2' }}</td>
                 <td class="text-end">
+                  @if (p.billablePay) {
+                    <span [title]="(p.billableHours ?? 0) + ' hrs × ' + (p.billableRate ?? 0) + '/hr'">
+                      {{ p.billablePay | number: '1.2-2' }}
+                    </span>
+                  } @else {
+                    <span class="text-muted">-</span>
+                  }
+                </td>
+                <td class="text-end">
+                  @if (p.absentDays) {
+                    <span class="text-danger" [title]="(p.attendanceDeduction ?? 0) + ' deducted'">
+                      {{ p.absentDays }} day{{ p.absentDays === 1 ? '' : 's' }}
+                    </span>
+                  } @else {
+                    <span class="text-muted">-</span>
+                  }
+                </td>
+                <td class="text-end">
                   {{
-                    (p.deductions ?? 0) + (p.taxDeduction ?? 0) + (p.insuranceDeduction ?? 0) + (p.providentFundDeduction ?? 0)
+                    (p.deductions ?? 0) + (p.taxDeduction ?? 0) + (p.insuranceDeduction ?? 0) + (p.providentFundDeduction ?? 0) + (p.attendanceDeduction ?? 0)
                       | number: '1.2-2'
                   }}
                 </td>
@@ -182,11 +196,15 @@
     <div class="modal-dialog modal-lg modal-dialog-centered">
       <div class="modal-content">
         <form #f="ngForm" (ngSubmit)="f.valid && save()">
-          <div class="modal-header" style="background: #4F46E5; color:#fff;">
-            <h5 class="modal-title" style="color:#fff;">Add Payroll</h5>
-            <button type="button" class="btn-close btn-close-white" (click)="showForm = false"></button>
+          <div class="modal-header">
+            <h5 class="modal-title">Add Payroll</h5>
+            <button type="button" class="btn-close" (click)="showForm = false"></button>
           </div>
           <div class="modal-body">
+            <div class="alert alert-info py-2 small mb-3">
+              <i class="bi bi-info-circle me-1"></i>Billable pay is calculated automatically from the employee's
+              approved timesheet hours × their billable rate for this period - no manual entry needed here.
+            </div>
             <div class="row g-3">
               <div class="col-md-6">
                 <label class="form-label">Employee *</label>
@@ -373,9 +391,9 @@
   <div class="modal d-block" tabindex="-1" style="background: rgba(0, 0, 0, 0.4)">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
-        <div class="modal-header" style="background: #059669; color:#fff;">
-          <h5 class="modal-title" style="color:#fff;">Mark as Paid</h5>
-          <button type="button" class="btn-close btn-close-white" (click)="payTarget = null"></button>
+        <div class="modal-header">
+          <h5 class="modal-title">Mark as Paid</h5>
+          <button type="button" class="btn-close" (click)="payTarget = null"></button>
         </div>
         <div class="modal-body">
           <p class="small mb-2">

@@ -34,6 +34,52 @@
         <div class="card-body"><div style="white-space: pre-wrap" class="small">{{ result.result }}</div></div>
       </div>
       }
+
+      @if (announcementDraft) {
+      <div class="card mt-3 border-primary">
+        <div class="card-header py-2 fw-semibold small">Draft Announcement</div>
+        <div class="card-body">
+          <div class="fw-semibold mb-1">{{ announcementDraft.title }}</div>
+          <div style="white-space: pre-wrap" class="small mb-3">{{ announcementDraft.body }}</div>
+          @if (announcementSaved) {
+          <div class="alert alert-success py-2 small mb-0">Saved as a real announcement — visible on the Announcements page.</div>
+          } @else {
+          <button class="btn btn-primary btn-sm" [disabled]="savingAnnouncement" (click)="saveAsAnnouncement()">
+            @if (savingAnnouncement) { <span class="spinner-border spinner-border-sm me-1"></span> Saving... }
+            @else { <i class="bi bi-megaphone me-1"></i> Save as Announcement }
+          </button>
+          }
+        </div>
+      </div>
+      }
+
+      @if (holidayDraft) {
+      <div class="card mt-3 border-primary">
+        <div class="card-header py-2 fw-semibold small">Draft Holiday</div>
+        <div class="card-body">
+          <div class="fw-semibold mb-1">{{ holidayDraft.name }}</div>
+          <div class="small text-muted mb-2">{{ holidayDraft.date }} · {{ holidayDraft.type }}</div>
+          <div style="white-space: pre-wrap" class="small mb-3">{{ holidayDraft.description }}</div>
+          @if (holidaySaved) {
+          <div class="alert alert-success py-2 small mb-0">Saved as a real holiday — visible on the Holidays page.</div>
+          } @else {
+          <button class="btn btn-primary btn-sm" [disabled]="savingHoliday" (click)="saveAsHoliday()">
+            @if (savingHoliday) { <span class="spinner-border spinner-border-sm me-1"></span> Saving... }
+            @else { <i class="bi bi-calendar-event me-1"></i> Save as Holiday }
+          </button>
+          }
+        </div>
+      </div>
+      }
+
+      @if (leavePolicyDraft) {
+      <div class="card mt-3 border-primary">
+        <div class="card-header py-2 fw-semibold small">Draft Leave Policy</div>
+        <div class="card-body">
+          <div style="white-space: pre-wrap" class="small">{{ leavePolicyDraft.document }}</div>
+        </div>
+      </div>
+      }
     </div>
 
     <div class="col-lg-5">

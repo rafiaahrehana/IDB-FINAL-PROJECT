@@ -11,6 +11,9 @@ import com.businessos.modules.servicedesk.workflow.template.WorkflowTemplateResp
 import com.businessos.modules.company.Company;
 import com.businessos.auth.role.enums.PermissionCode;
 import com.businessos.auth.role.service.AuthorizationService;
+import com.businessos.modules.ai.enums.AiFeature;
+import com.businessos.modules.ai.prompt.WorkflowSuggestionPromptBuilder;
+import com.businessos.modules.ai.service.AiService;
 import com.businessos.shared.exception.BadRequestException;
 import com.businessos.shared.exception.ResourceNotFoundException;
 import com.businessos.security.SecurityUtil;
@@ -32,6 +35,7 @@ public class WorkflowServiceImpl implements WorkflowService {
     private final WorkflowStageRepository stageRepository;
     private final SecurityUtil               securityUtil;
     private final AuthorizationService       authorizationService;
+    private final AiService                  aiService;
 
     // ── Templates ─────────────────────────────────────────────────
 
@@ -240,6 +244,30 @@ public class WorkflowServiceImpl implements WorkflowService {
         templateRepository.save(template);
 
         
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public WorkflowSuggestionResponse suggest(WorkflowSuggestionRequest request) {
+        Long companyId = requireCompanyId();
+        List<WorkflowTemplate> activeTemplates = templateRepository.findByCompanyIdAndActiveTrue(companyId);
+
+        String existingSummary = activeTemplates.stream()
+            .map(t -> "- " + t.getName() + ": " + t.getStages().stream()
+                .map(WorkflowStage::getName)
+                .reduce((a, b) -> a + " -> " + b)
+                .orElse("(no stages)"))
+            .reduce((a, b) -> a + "\n" + b)
+            .orElse(null);
+
+        String prompt = WorkflowSuggestionPromptBuilder.builder()
+            .setGoal(request.getGoal())
+            .setExistingTemplatesSummary(existingSummary)
+            .build();
+
+        WorkflowSuggestionResponse response = new WorkflowSuggestionResponse();
+        response.setSuggestion(aiService.generateRaw(AiFeature.WORKFLOW_SUGGESTION, prompt));
+        return response;
     }
 
     // ── Private helpers ───────────────────────────────────────────

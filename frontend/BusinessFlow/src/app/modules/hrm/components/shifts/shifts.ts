@@ -141,6 +141,19 @@ export class Shifts implements OnInit {
     this.load();
   }
 
+  // Top-accent color per shift type.
+  shiftColor(type?: string): string {
+    switch (type) {
+      case 'MORNING': return '#F59E0B';
+      case 'AFTERNOON': return '#0EA5E9';
+      case 'FULL_DAY': return '#16A34A';
+      case 'EVENING': return '#8B5CF6';
+      case 'NIGHT': return '#1E1B4B';
+      case 'FLEXIBLE': return '#14B8A6';
+      default: return '#6B46FF';
+    }
+  }
+
   private emptyForm(): ShiftRequest {
     return {
       name: '',

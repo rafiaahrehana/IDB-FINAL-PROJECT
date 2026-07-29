@@ -42,7 +42,10 @@ public class LeadRequest {
     private LeadStatus status;
     
     private LeadSource source;
-    
+
+    @Size(max = 150, message = "Source detail must not exceed 150 characters")
+    private String sourceOther;
+
     private Priority priority;
     
     @DecimalMin(value = "0.00", message = "Estimated value must be 0 or greater")
@@ -55,4 +58,6 @@ public class LeadRequest {
     private Long assignedToId;
     
     private Long interestedServiceId;
+
+    private java.util.List<Long> tagIds;
 }

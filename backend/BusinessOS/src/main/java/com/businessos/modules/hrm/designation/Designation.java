@@ -2,6 +2,7 @@ package com.businessos.modules.hrm.designation;
 
 import com.businessos.core.base.BaseEntity;
 import com.businessos.modules.company.Company;
+import com.businessos.modules.hrm.department.Department;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.Filter;
@@ -32,6 +33,14 @@ public class Designation extends BaseEntity {
 
 
     private boolean active = true;
+
+    /** Free-form: FULL_TIME, PART_TIME, CONTRACT, TEMPORARY, INTERNSHIP, CONSULTANT. */
+    @Column(length = 30)
+    private String employmentCategory;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "department_id")
+    private Department department;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "company_id", nullable = false)

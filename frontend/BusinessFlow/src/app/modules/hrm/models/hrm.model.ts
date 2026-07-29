@@ -59,6 +59,7 @@ export interface Employee {
   houseRent?: number;
   medicalAllowance?: number;
   transportAllowance?: number;
+  billableRate?: number;
   bankName?: string;
   emergencyContactName?: string;
   emergencyContactPhone?: string;
@@ -103,6 +104,7 @@ export interface CreateEmployeeRequest {
   houseRent?: number;
   medicalAllowance?: number;
   transportAllowance?: number;
+  billableRate?: number;
   bankName?: string;
   bankAccountNumber?: string;
   emergencyContactName?: string;
@@ -132,6 +134,7 @@ export interface UpdateEmployeeRequest {
   houseRent?: number;
   medicalAllowance?: number;
   transportAllowance?: number;
+  billableRate?: number;
   bankName?: string;
   bankAccountNumber?: string;
   emergencyContactName?: string;
@@ -201,6 +204,9 @@ export interface Designation {
   level: number;
   description?: string;
   active: boolean;
+  employmentCategory?: string;
+  departmentId?: number;
+  departmentName?: string;
   createdAt: string;
 }
 
@@ -210,7 +216,31 @@ export interface DesignationRequest {
   code: string;
   level: number;
   description?: string;
+  employmentCategory?: string;
+  departmentId?: number;
+  active?: boolean;
 }
+
+export const JOB_LEVELS: { value: number; label: string }[] = [
+  { value: 1, label: 'L1 - Executive Leadership' },
+  { value: 2, label: 'L2 - Director' },
+  { value: 3, label: 'L3 - Senior Manager' },
+  { value: 4, label: 'L4 - Manager' },
+  { value: 5, label: 'L5 - Team Lead' },
+  { value: 6, label: 'L6 - Senior Professional' },
+  { value: 7, label: 'L7 - Professional' },
+  { value: 8, label: 'L8 - Associate' },
+  { value: 9, label: 'L9 - Trainee' },
+];
+
+export const DESIGNATION_EMPLOYMENT_CATEGORIES: { value: string; label: string }[] = [
+  { value: 'FULL_TIME', label: 'Full Time' },
+  { value: 'PART_TIME', label: 'Part Time' },
+  { value: 'CONTRACT', label: 'Contract' },
+  { value: 'TEMPORARY', label: 'Temporary' },
+  { value: 'INTERNSHIP', label: 'Internship' },
+  { value: 'CONSULTANT', label: 'Consultant' },
+];
 
 export type PayrollStatus = 'DRAFT' | 'APPROVED' | 'PAID' | 'CANCELLED';
 
@@ -226,10 +256,17 @@ export interface Payroll {
   foodAllowance?: number;
   specialAllowance?: number;
   bonus?: number;
+  // Server-computed: approved timesheet billable hours in this period * the
+  // employee's billableRate - not a manual entry field, see CreatePayrollRequest.
+  billableHours?: number;
+  billableRate?: number;
+  billablePay?: number;
   deductions?: number;
   taxDeduction?: number;
   insuranceDeduction?: number;
   providentFundDeduction?: number;
+  attendanceDeduction?: number;
+  absentDays?: number;
   netSalary: number;
   status: PayrollStatus;
   paymentReference?: string;
@@ -385,6 +422,13 @@ export interface HolidayRequest {
   departmentId?: number;
 }
 
+export interface HolidayDraftResponse {
+  name: string;
+  date: string;
+  type: string;
+  description: string;
+}
+
 export interface LeavePolicy {
   id: number;
   leaveType: string;
@@ -433,6 +477,7 @@ export interface PerformanceReview {
   reviewedById?: number;
   reviewedByName?: string;
   createdAt: string;
+  aiSummary?: string;
 }
 
 export interface PerformanceReviewRequest {
@@ -575,8 +620,11 @@ export interface OfferLetter {
   signedBy?: string;
   fileUrl?: string;
   issued: boolean;
-  employeeId: number;
+  employeeId?: number;
   employeeName?: string;
+  jobApplicationId?: number;
+  recipientName?: string;
+  recipientEmail?: string;
   createdById?: number;
   createdByName?: string;
   createdAt: string;
@@ -584,6 +632,7 @@ export interface OfferLetter {
 
 export interface OfferLetterRequest {
   employeeId?: number;
+  jobApplicationId?: number;
   letterType?: LetterType;
   referenceNumber?: string;
   issueDate?: string;
@@ -625,12 +674,21 @@ export interface ReviewLeavePayload {
 
 export interface LeaveBalance {
   id: number;
+  employeeId?: number;
+  employeeName?: string;
   leaveType: LeaveType;
   year: number;
   entitledDays: number;
   usedDays: number;
   pendingDays: number;
   remainingDays: number;
+}
+
+export interface LeaveBalanceRequest {
+  employeeId: number;
+  leaveType: LeaveType;
+  year: number;
+  totalDays: number;
 }
 
 export type ApplicationStatus =
@@ -654,6 +712,8 @@ export interface JobApplication {
   jobPostingTitle?: string;
   reviewedById?: number;
   reviewedByName?: string;
+  convertedEmployeeId?: number;
+  convertedAt?: string;
   createdAt: string;
 }
 
@@ -663,6 +723,31 @@ export interface JobApplicationRequest {
   applicantPhone?: string;
   resumeUrl?: string;
   coverLetter?: string;
+}
+
+// HireApplicationRequest - onboarding details for hiring an OFFERED candidate.
+// Applicant name/email/phone come from the JobApplication itself.
+export interface HireApplicationRequest {
+  password: string;
+  officialEmail?: string;
+  departmentId?: number;
+  designationId?: number;
+  reportingManagerId?: number;
+  shiftId?: number;
+  employmentType?: EmploymentType;
+  hireDate?: string;
+  confirmationDate?: string;
+  probationEndDate?: string;
+  contractEndDate?: string;
+  basicSalary?: number;
+  houseRent?: number;
+  medicalAllowance?: number;
+  transportAllowance?: number;
+  bankName?: string;
+  bankAccountNumber?: string;
+  emergencyContactName?: string;
+  emergencyContactPhone?: string;
+  emergencyContactRelation?: string;
 }
 
 export type HrAssetStatus = 'AVAILABLE' | 'ASSIGNED' | 'UNDER_MAINTENANCE' | 'DISPOSED';

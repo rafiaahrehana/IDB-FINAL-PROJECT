@@ -1,6 +1,5 @@
 package com.businessos.modules.ai.prompt;
 
-import com.businessos.modules.ai.exception.AiPromptException;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 
@@ -35,12 +34,10 @@ public class SearchAnswerPromptBuilder {
             - If the records do not contain the answer, say so plainly.
             - Do not invent names, numbers, or statuses that are not in the records.
             - Return only the answer — no preamble.
-            """.formatted(question, context != null ? context : "No matching records found");
+            """.formatted(question, PromptSupport.orDefault(context, "No matching records found"));
     }
 
     private void validateFields() {
-        if (question == null || question.isBlank()) {
-            throw new AiPromptException("question is required for SearchAnswerPromptBuilder");
-        }
+        PromptSupport.requireNonBlank(question, "question", "search answer");
     }
 }

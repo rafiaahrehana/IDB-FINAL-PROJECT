@@ -47,6 +47,12 @@ public class GeneralLedger extends BaseEntity {
 
     private String reconciliationNotes;
 
+    // Which BankReconciliation cleared this line, if any - lets a reconciliation's
+    // "still outstanding" set be computed live (unreconciled entries for the account)
+    // instead of the user hand-typing amounts. Plain id (not a @ManyToOne) to avoid a
+    // cross-package dependency on the reconciliation module, same pattern as referenceId.
+    private Long reconciledInReconciliationId;
+
     private String postedBy; // User who posted this GL entry
     private LocalDate postedDate;
 

@@ -21,4 +21,7 @@ public interface OfferLetterService {
 
     /** ADMIN / OWNER: soft-delete an unissued letter */
     void delete(Long id);
+
+    /** ADMIN / OWNER: draft letter content with AI from real employee/company data - not persisted */
+    OfferLetterDraftResponse draftWithAi(OfferLetterDraftRequest request);
 }

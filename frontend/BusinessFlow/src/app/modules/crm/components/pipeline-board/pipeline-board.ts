@@ -1,48 +1,64 @@
 import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
+import { CdkDragDrop, DragDropModule, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
 import {
+  ChangeStageRequest,
   Client,
+  DuplicateMatch,
   Opportunity,
   OpportunityStage,
   OPEN_STAGES,
   PipelineSummary,
+  Tag,
 } from '../../models/crm.model';
 import { OpportunityService } from '../../services/opportunity.service';
 import { ClientService } from '../../services/client.service';
+import { TagService } from '../../services/tag.service';
 import { Loader } from '../../../../shared/components/loader/loader';
 import { HasPermissionDirective } from '../../../../shared/directives/has-permission.directive';
 
-// Fixed per-stage color, never reassigned by data (see dataviz skill) - a light
-// to deep purple/blue progression across the open funnel, then the reserved
-// status colors (green/red) for the two closed outcomes.
+import { BosCurrencyPipe } from '../../../../shared/pipes/bos-currency.pipe';
+// Fixed per-stage color, never reassigned by data (see dataviz skill) - each open
+// stage gets a visually distinct dark hue so columns are easy to tell apart at a
+// glance, then the reserved status colors (purple/green/red) for the later stages.
 const STAGE_COLORS: Record<string, string> = {
-  PROSPECTING: '#8b5cf6',
-  QUALIFICATION: '#6366f1',
-  NEEDS_ANALYSIS: '#3b82f6',
-  PROPOSAL: '#0ea5e9',
+  QUALIFICATION: '#1e3a8a', // dark navy blue
+  PRESENTATION: '#92400e', // dark amber/brown
+  PROPOSAL: '#115e59', // dark teal
   NEGOTIATION: '#7d55fa',
-  CLOSED_WON: '#10b981',
-  CLOSED_LOST: '#ef4444',
+  WON: '#10b981',
+  LOST: '#ef4444',
 };
 
 @Component({
   selector: 'app-pipeline-board',
-  imports: [CommonModule, FormsModule, Loader, HasPermissionDirective],
+  imports: [BosCurrencyPipe, CommonModule, FormsModule, RouterLink, Loader, HasPermissionDirective, DragDropModule],
   templateUrl: './pipeline-board.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './pipeline-board.scss',
 })
 export class PipelineBoard implements OnInit {
-  stages: OpportunityStage[] = [...OPEN_STAGES, 'CLOSED_WON', 'CLOSED_LOST'];
+  stages: OpportunityStage[] = [...OPEN_STAGES, 'WON', 'LOST'];
   openStages = OPEN_STAGES;
   columns: Record<string, Opportunity[]> = {};
   summary?: PipelineSummary;
+
+  // Kanban/Table view toggle - same underlying data, different layout.
+  viewMode: 'kanban' | 'table' = 'kanban';
+  allOpportunities: Opportunity[] = [];
+  tableSortField: keyof Opportunity | '' = '';
+  tableSortAsc = true;
   loading = false;
   error = '';
   lostReasonFor: Opportunity | null = null;
   lostReason = '';
+
+  // Won-duplicate confirm modal state - shown only when moving a client-less
+  // opportunity to WON and a possible-duplicate Client is found beforehand.
+  wonDuplicateFor: Opportunity | null = null;
+  wonDuplicateMatch: DuplicateMatch | null = null;
 
   // Create/Edit modal state - null editing means "create"
   showForm = false;
@@ -50,10 +66,18 @@ export class PipelineBoard implements OnInit {
   saving = false;
   form: any = this.emptyForm();
   clients: Client[] = [];
+  tags: Tag[] = [];
+  tagFilter: number | null = null;
+
+  // Quick "add a new tag" row inside the create/edit form's tag picker
+  newTagName = '';
+  newTagColor = '#7d55fa';
+  addingTag = false;
 
   constructor(
     private opportunityService: OpportunityService,
     private clientService: ClientService,
+    private tagService: TagService,
     private router: Router,
     private cdr: ChangeDetectorRef,
   ) {}
@@ -66,13 +90,18 @@ export class PipelineBoard implements OnInit {
     return STAGE_COLORS[stage] || '#6b7280';
   }
 
+  stageBgClass(stage: string): string {
+    return 'stage-bg-' + stage.toLowerCase();
+  }
+
   get lostValue(): number {
-    return this.summary?.stages.find((s) => s.stage === 'CLOSED_LOST')?.totalAmount || 0;
+    return this.summary?.stages.find((s) => s.stage === 'LOST')?.totalAmount || 0;
   }
 
   ngOnInit(): void {
     this.load();
     this.clientService.listActive().subscribe({ next: (res) => { this.clients = res; this.cdr.markForCheck(); } });
+    this.tagService.list().subscribe({ next: (tags) => { this.tags = tags; this.cdr.markForCheck(); } });
   }
 
   private emptyForm(): any {
@@ -80,11 +109,12 @@ export class PipelineBoard implements OnInit {
       name: '',
       clientId: null,
       description: '',
-      stage: 'PROSPECTING',
+      stage: 'QUALIFICATION',
       amount: null,
       probability: null,
       expectedCloseDate: '',
       nextStep: '',
+      tagIds: [],
     };
   }
 
@@ -95,24 +125,25 @@ export class PipelineBoard implements OnInit {
     this.cdr.markForCheck();
   }
 
-  openEdit(deal: Opportunity): void {
-    this.editing = deal;
+  openEdit(opportunity: Opportunity): void {
+    this.editing = opportunity;
     this.form = {
-      name: deal.name,
-      clientId: deal.clientId,
-      description: deal.description || '',
-      stage: deal.stage,
-      amount: deal.amount ?? null,
-      probability: deal.probability ?? null,
-      expectedCloseDate: deal.expectedCloseDate || '',
-      nextStep: deal.nextStep || '',
+      name: opportunity.name,
+      clientId: opportunity.clientId,
+      description: opportunity.description || '',
+      stage: opportunity.stage,
+      amount: opportunity.amount ?? null,
+      probability: opportunity.probability ?? null,
+      expectedCloseDate: opportunity.expectedCloseDate || '',
+      nextStep: opportunity.nextStep || '',
+      tagIds: opportunity.tags?.map((t) => t.id) || [],
     };
     this.showForm = true;
     this.cdr.markForCheck();
   }
 
   save(): void {
-    if (!this.form.name?.trim() || !this.form.clientId) {
+    if (!this.form.name?.trim() || (!this.editing && !this.form.clientId)) {
       this.error = 'Name and client are required';
       this.cdr.markForCheck();
       return;
@@ -128,8 +159,9 @@ export class PipelineBoard implements OnInit {
       probability: this.form.probability ?? undefined,
       expectedCloseDate: this.form.expectedCloseDate || undefined,
       nextStep: this.form.nextStep || undefined,
+      tagIds: this.form.tagIds,
     };
-    // Stage changes on an existing deal go through the dedicated /stage endpoint
+    // Stage changes on an existing opportunity go through the dedicated /stage endpoint
     // (it records lost reasons and timeline entries), so it's only sent on create.
     if (!this.editing) payload.stage = this.form.stage;
 
@@ -151,15 +183,42 @@ export class PipelineBoard implements OnInit {
     });
   }
 
+  setTagFilter(tagId: number | null): void {
+    this.tagFilter = tagId;
+    this.load();
+  }
+
+  createTag(): void {
+    const name = this.newTagName.trim();
+    if (!name || this.addingTag) return;
+    this.addingTag = true;
+    this.tagService.create({ name, color: this.newTagColor }).subscribe({
+      next: (tag) => {
+        this.tags = [...this.tags, tag];
+        this.form.tagIds = [...this.form.tagIds, tag.id];
+        this.newTagName = '';
+        this.addingTag = false;
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        this.error = err?.error?.message || 'Failed to create tag';
+        this.addingTag = false;
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
   load(): void {
     this.loading = true;
     this.error = '';
     this.cdr.markForCheck();
-    this.opportunityService.list(0, 200).subscribe({
+    this.opportunityService.list(0, 200, this.tagFilter ? { tagId: this.tagFilter } : undefined).subscribe({
       next: (page) => {
         this.columns = {};
         this.stages.forEach((s) => (this.columns[s] = []));
         page.content.forEach((o) => (this.columns[o.stage] ??= []).push(o));
+        this.allOpportunities = page.content;
+        this.applyTableSort();
         this.loading = false;
         this.cdr.markForCheck();
       },
@@ -174,15 +233,49 @@ export class PipelineBoard implements OnInit {
     });
   }
 
+  // Dropping into a different stage column defers entirely to move() - it already
+  // handles the Lost-reason modal, the Won-duplicate pre-check modal, and reverting
+  // the optimistic move (via load()) on cancel/error. Dropping within the same column
+  // is a cosmetic-only reorder (there's no persisted ordering field per stage).
+  onDrop(event: CdkDragDrop<Opportunity[]>, targetStage: OpportunityStage): void {
+    if (event.previousContainer === event.container) {
+      moveItemInArray(event.container.data, event.previousIndex, event.currentIndex);
+      return;
+    }
+    const opportunity = event.previousContainer.data[event.previousIndex];
+    transferArrayItem(event.previousContainer.data, event.container.data, event.previousIndex, event.currentIndex);
+    this.move(opportunity, targetStage);
+  }
+
   move(opportunity: Opportunity, stage: OpportunityStage): void {
     if (stage === opportunity.stage) return;
-    if (stage === 'CLOSED_LOST') {
+    if (stage === 'LOST') {
       this.lostReasonFor = opportunity;
       this.lostReason = '';
       this.cdr.markForCheck();
       return;
     }
-    this.opportunityService.changeStage(opportunity.id, stage).subscribe({
+    if (stage === 'WON' && !opportunity.clientId) {
+      this.opportunityService.previewWonDuplicate(opportunity.id).subscribe({
+        next: (match) => {
+          if (match) {
+            this.wonDuplicateFor = opportunity;
+            this.wonDuplicateMatch = match;
+            this.cdr.markForCheck();
+          } else {
+            this.commitChangeStage(opportunity, stage);
+          }
+        },
+        // Fail open - don't let a preview-check failure block a real stage change.
+        error: () => this.commitChangeStage(opportunity, stage),
+      });
+      return;
+    }
+    this.commitChangeStage(opportunity, stage);
+  }
+
+  private commitChangeStage(opportunity: Opportunity, stage: OpportunityStage, options?: Partial<ChangeStageRequest>): void {
+    this.opportunityService.changeStage(opportunity.id, stage, options).subscribe({
       next: () => this.load(),
       error: () => {
         this.error = 'Failed to change stage';
@@ -199,10 +292,33 @@ export class PipelineBoard implements OnInit {
     this.load(); // Revert UI dropdown
   }
 
+  cancelWonDuplicate(): void {
+    this.wonDuplicateFor = null;
+    this.wonDuplicateMatch = null;
+    this.cdr.markForCheck();
+    this.load(); // Revert UI dropdown
+  }
+
+  linkToExistingClient(): void {
+    if (!this.wonDuplicateFor || !this.wonDuplicateMatch) return;
+    this.commitChangeStage(this.wonDuplicateFor, 'WON', { linkToExistingClientId: this.wonDuplicateMatch.clientId });
+    this.wonDuplicateFor = null;
+    this.wonDuplicateMatch = null;
+    this.cdr.markForCheck();
+  }
+
+  createNewClientAnyway(): void {
+    if (!this.wonDuplicateFor) return;
+    this.commitChangeStage(this.wonDuplicateFor, 'WON', { forceCreateNewClient: true });
+    this.wonDuplicateFor = null;
+    this.wonDuplicateMatch = null;
+    this.cdr.markForCheck();
+  }
+
   confirmLost(): void {
     if (!this.lostReasonFor || !this.lostReason.trim()) return;
     this.opportunityService
-      .changeStage(this.lostReasonFor.id, 'CLOSED_LOST', this.lostReason.trim())
+      .changeStage(this.lostReasonFor.id, 'LOST', { lostReason: this.lostReason.trim() })
       .subscribe({
         next: () => {
           this.lostReasonFor = null;
@@ -219,10 +335,42 @@ export class PipelineBoard implements OnInit {
   }
 
   stageLabel(stage: string): string {
-    return stage.replace(/_/g, ' ');
+    return stage.charAt(0) + stage.slice(1).toLowerCase();
   }
 
   columnTotal(stage: OpportunityStage): number {
     return (this.columns[stage] || []).reduce((sum, o) => sum + (o.amount || 0), 0);
+  }
+
+  setViewMode(mode: 'kanban' | 'table'): void {
+    this.viewMode = mode;
+    this.cdr.markForCheck();
+  }
+
+  sortTable(field: keyof Opportunity): void {
+    this.tableSortAsc = this.tableSortField === field ? !this.tableSortAsc : true;
+    this.tableSortField = field;
+    this.applyTableSort();
+    this.cdr.markForCheck();
+  }
+
+  sortIcon(field: keyof Opportunity): string {
+    if (this.tableSortField !== field) return 'bi-arrow-down-up text-muted';
+    return this.tableSortAsc ? 'bi-sort-up' : 'bi-sort-down';
+  }
+
+  private applyTableSort(): void {
+    const field = this.tableSortField;
+    if (!field) return;
+    const dir = this.tableSortAsc ? 1 : -1;
+    this.allOpportunities = [...this.allOpportunities].sort((a, b) => {
+      const av = a[field];
+      const bv = b[field];
+      if (av == null && bv == null) return 0;
+      if (av == null) return -1 * dir;
+      if (bv == null) return 1 * dir;
+      if (typeof av === 'string' && typeof bv === 'string') return av.localeCompare(bv) * dir;
+      return (av > bv ? 1 : av < bv ? -1 : 0) * dir;
+    });
   }
 }

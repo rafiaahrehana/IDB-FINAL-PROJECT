@@ -55,6 +55,18 @@ export interface AttendanceRecord {
   updatedAt?: string;
 }
 
+export interface MyAttendanceMonthlySummary {
+  year: number;
+  month: number;
+  presentDays: number;
+  absentDays: number;
+  halfDays: number;
+  onLeaveDays: number;
+  holidayDays: number;
+  weekOffDays: number;
+  workedHours: number;
+}
+
 // For HR manually recording/backdating an employee's attendance (POST /manual)
 export interface ManualAttendanceRequest {
   employeeId: number;
@@ -104,8 +116,11 @@ export interface Timesheet {
   projectName?: string;
   taskDescription?: string;
   description?: string;
+  submitted: boolean;
+  submittedAt?: string;
   approved: boolean;
   approvedAt?: string;
+  status: 'NOT_SUBMITTED' | 'SUBMITTED' | 'APPROVED';
   employeeId: number;
   employeeName?: string;
   approvedById?: number;

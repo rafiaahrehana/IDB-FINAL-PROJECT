@@ -24,6 +24,8 @@ public class PaymentReceiptResponse {
     private String transactionReference;
     private PaymentStatus status;
     private String depositedToBank;
+    private LocalDate reversedDate;
+    private String reversalReason;
     private String notes;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

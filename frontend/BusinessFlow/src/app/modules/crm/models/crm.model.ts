@@ -1,13 +1,26 @@
 export type OpportunityStage =
-  | 'PROSPECTING' | 'QUALIFICATION' | 'NEEDS_ANALYSIS'
-  | 'PROPOSAL' | 'NEGOTIATION' | 'CLOSED_WON' | 'CLOSED_LOST';
+  | 'QUALIFICATION' | 'PRESENTATION' | 'PROPOSAL' | 'NEGOTIATION' | 'WON' | 'LOST';
+
+export type LeadStatus = 'NEW' | 'CONTACTED' | 'QUALIFIED' | 'DISQUALIFIED';
 
 export type CrmActivityType =
   | 'CALL' | 'MEETING' | 'EMAIL' | 'NOTE' | 'TASK'
   | 'FOLLOW_UP' | 'STAGE_CHANGE' | 'STATUS_CHANGE' | 'DOCUMENT';
 
 export const OPEN_STAGES: OpportunityStage[] =
-  ['PROSPECTING', 'QUALIFICATION', 'NEEDS_ANALYSIS', 'PROPOSAL', 'NEGOTIATION'];
+  ['QUALIFICATION', 'PRESENTATION', 'PROPOSAL', 'NEGOTIATION'];
+
+export interface Tag {
+  id: number;
+  name: string;
+  color: string;
+}
+
+export interface DuplicateMatch {
+  clientId: number;
+  clientCompanyName: string;
+  matchedOn: string;
+}
 
 export interface Lead {
   id: number;
@@ -19,8 +32,9 @@ export interface Lead {
   jobTitle?: string;
   notes?: string;
   description?: string;
-  status: string;
+  status: LeadStatus;
   source: string;
+  sourceOther?: string;
   priority?: string;
   estimatedValue?: number;
   expectedCloseDate?: string;
@@ -41,6 +55,8 @@ export interface Lead {
   createdByName?: string;
   updatedByName?: string;
   aiSummary?: string;
+  tags?: Tag[];
+  possibleDuplicate?: DuplicateMatch;
 }
 
 export interface Client {
@@ -63,16 +79,20 @@ export interface Client {
   createdAt: string;
   billingAddress?: string;
   shippingAddress?: string;
+  /** @deprecated legacy free-text tags - use tagList (shared taxonomy) instead */
   tags?: string;
+  tagList?: Tag[];
   employeeCount?: number;
   annualRevenue?: number;
   lifetimeValue?: number;
   totalRequests?: number;
+  possibleDuplicate?: DuplicateMatch;
 }
 
 export interface ClientContact {
   id: number;
   clientId: number;
+  clientCompanyName?: string;
   fullName: string;
   email?: string;
   phone?: string;
@@ -97,7 +117,8 @@ export interface Opportunity {
   actualCloseDate?: string;
   nextStep?: string;
   lostReason?: string;
-  clientId: number;
+  /** Null until the opportunity reaches Won and a Client is created/linked. */
+  clientId?: number;
   clientCompanyName?: string;
   contactId?: number;
   contactName?: string;
@@ -108,6 +129,21 @@ export interface Opportunity {
   createdAt: string;
   sourceLeadId?: number;
   updatedAt?: string;
+  tags?: Tag[];
+  possibleDuplicate?: DuplicateMatch;
+}
+
+export interface ConvertToOpportunityRequest {
+  opportunityName: string;
+  expectedValue: number;
+  expectedCloseDate: string;
+}
+
+export interface ChangeStageRequest {
+  stage: OpportunityStage;
+  lostReason?: string;
+  linkToExistingClientId?: number;
+  forceCreateNewClient?: boolean;
 }
 
 export interface PipelineStageSummary {
@@ -140,4 +176,27 @@ export interface CrmActivity {
   performedByName?: string;
   createdAt: string;
   performedById?: number;
+}
+
+export interface CrmDashboardSummary {
+  pipelineValue: number;
+  wonThisMonth: number;
+  qualifiedLeadsCount: number;
+  conversionRate: number;
+  upcomingFollowUps: CrmUpcomingFollowUp[];
+  totalClients: number;
+  totalLeads: number;
+  totalOpportunities: number;
+  openOpportunitiesCount: number;
+  wonCount: number;
+  wonValue: number;
+  lostCount: number;
+  lostValue: number;
+}
+
+export interface CrmUpcomingFollowUp {
+  activityId: number;
+  subject: string;
+  followUpAt: string;
+  relatedName?: string;
 }

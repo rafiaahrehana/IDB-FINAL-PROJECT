@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService, PagedResponse } from '../../../core/services/api.service';
-import { BankReconciliation, BankReconciliationRequest } from '../models/finance.model';
+import { BankReconciliation, BankReconciliationRequest, ReconciliationTransaction, StatementImportResult } from '../models/finance.model';
 
 @Injectable({ providedIn: 'root' })
 export class BankReconciliationService {
@@ -27,5 +27,22 @@ export class BankReconciliationService {
 
   getPending(): Observable<BankReconciliation[]> {
     return this.api.get<BankReconciliation[]>(`${this.endpoint}/pending`);
+  }
+
+  unclearedTransactions(id: number): Observable<ReconciliationTransaction[]> {
+    return this.api.get<ReconciliationTransaction[]>(`${this.endpoint}/${id}/uncleared-transactions`);
+  }
+
+  toggleTransaction(id: number, glEntryId: number, cleared: boolean): Observable<BankReconciliation> {
+    return this.api.post<BankReconciliation>(
+      `${this.endpoint}/${id}/transactions/${glEntryId}/toggle?cleared=${cleared}`, {});
+  }
+
+  attachStatement(id: number, fileName: string, fileUrl: string): Observable<BankReconciliation> {
+    return this.api.post<BankReconciliation>(`${this.endpoint}/${id}/statement`, { fileName, fileUrl });
+  }
+
+  importStatement(id: number, file: File): Observable<StatementImportResult> {
+    return this.api.postFile<StatementImportResult>(`${this.endpoint}/${id}/import-statement`, file);
   }
 }

@@ -1,5 +1,8 @@
 package com.businessos.modules.crm.activity;
 
+import com.businessos.modules.ai.enums.AiFeature;
+import com.businessos.modules.ai.prompt.CrmActivitySummaryPromptBuilder;
+import com.businessos.modules.ai.service.AiService;
 import com.businessos.modules.crm.client.Client;
 import com.businessos.modules.crm.client.ClientRepository;
 import com.businessos.modules.crm.opportunity.Opportunity;
@@ -9,6 +12,7 @@ import com.businessos.shared.exception.BadRequestException;
 import com.businessos.shared.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +28,7 @@ public class CrmActivityServiceImpl implements CrmActivityService {
     private final ClientRepository clientRepository;
     private final OpportunityRepository opportunityRepository;
     private final SecurityUtil securityUtil;
+    private final AiService aiService;
 
     @Override
     public CrmActivityResponse log(CrmActivityRequest request) {
@@ -54,7 +59,8 @@ public class CrmActivityServiceImpl implements CrmActivityService {
         if (request.getClientId() != null) {
             client = clientRepository.findByIdAndCompanyId(request.getClientId(), companyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Client not found"));
-            if (opportunity != null && !client.getId().equals(opportunity.getClient().getId())) {
+            if (opportunity != null && opportunity.getClient() != null
+                    && !client.getId().equals(opportunity.getClient().getId())) {
                 throw new BadRequestException("Client does not belong to the referenced opportunity");
             }
         }
@@ -130,6 +136,57 @@ public class CrmActivityServiceImpl implements CrmActivityService {
         }
         activity.softDelete();
         crmActivityRepository.save(activity);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public CrmActivitySummaryResponse summarise(Long clientId, Long opportunityId) {
+        Long companyId = requireCompanyId();
+        if (clientId == null && opportunityId == null) {
+            throw new BadRequestException("Provide a clientId or an opportunityId to summarise");
+        }
+
+        String recordType;
+        String recordName;
+        String stageOrStatus;
+        Page<CrmActivity> activities;
+
+        if (opportunityId != null) {
+            Opportunity opportunity = opportunityRepository.findByIdAndCompanyId(opportunityId, companyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Opportunity not found: " + opportunityId));
+            recordType = "Opportunity";
+            recordName = opportunity.getName();
+            stageOrStatus = opportunity.getStage().name();
+            activities = crmActivityRepository.findByCompanyIdAndOpportunityIdOrderByActivityDateDesc(
+                companyId, opportunityId, PageRequest.of(0, 10));
+        } else {
+            Client client = clientRepository.findByIdAndCompanyId(clientId, companyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Client not found: " + clientId));
+            recordType = "Client";
+            recordName = client.getClientCompanyName() != null
+                ? client.getClientCompanyName()
+                : (client.getUser() != null ? client.getUser().getFullName() : "Unknown");
+            stageOrStatus = client.getStatus() != null ? client.getStatus().name() : "UNKNOWN";
+            activities = crmActivityRepository.findByCompanyIdAndClientIdOrderByActivityDateDesc(
+                companyId, clientId, PageRequest.of(0, 10));
+        }
+
+        String activityHistory = activities.stream()
+            .map(a -> "- [" + a.getType() + "] " + a.getSubject()
+                + (a.getDescription() != null && !a.getDescription().isBlank() ? ": " + a.getDescription() : ""))
+            .reduce((a, b) -> a + "\n" + b)
+            .orElse(null);
+
+        String prompt = CrmActivitySummaryPromptBuilder.builder()
+            .setRecordType(recordType)
+            .setRecordName(recordName)
+            .setStageOrStatus(stageOrStatus)
+            .setActivityHistory(activityHistory)
+            .build();
+
+        CrmActivitySummaryResponse response = new CrmActivitySummaryResponse();
+        response.setSummary(aiService.generateRaw(AiFeature.CRM_ACTIVITY_SUMMARY, prompt));
+        return response;
     }
 
     private CrmActivity findOwned(Long id) {

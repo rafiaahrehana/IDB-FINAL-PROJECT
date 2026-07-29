@@ -38,4 +38,11 @@ public class ClientResponse {
     private BigDecimal annualRevenue;
     private BigDecimal lifetimeValue;
     private Integer totalRequests;
+
+    // Normalized shared-taxonomy tags (distinct from the legacy free-text `tags` field above).
+    private java.util.List<com.businessos.modules.crm.tag.TagResponse> tagList;
+
+    // Set only right after creation, when a possible-duplicate Client was found.
+    // A nudge, not a block - the Client is created either way.
+    private com.businessos.modules.crm.duplicate.DuplicateMatch possibleDuplicate;
 }

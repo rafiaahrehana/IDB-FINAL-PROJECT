@@ -53,10 +53,20 @@ public class FinancialReportServiceImpl implements FinancialReportService {
         // requested window, not the account's live all-time balance.
         List<GeneralLedger> transactions = glRepository.findTransactionsBetweenDates(companyId, startDate, endDate);
 
-        BigDecimal totalRevenue = transactions.stream()
+        BigDecimal grossRevenue = transactions.stream()
                 .filter(gl -> gl.getAccount().getType() == AccountType.REVENUE)
                 .map(gl -> nz(gl.getCreditAmount()).subtract(nz(gl.getDebitAmount())))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // Contra-revenue (returns, discounts, allowances) is debit-normal and reduces
+        // revenue - previously excluded entirely, which overstated revenue by however
+        // much had been recorded against a contra-revenue account.
+        BigDecimal contraRevenue = transactions.stream()
+                .filter(gl -> gl.getAccount().getType() == AccountType.CONTRA_REVENUE)
+                .map(gl -> nz(gl.getDebitAmount()).subtract(nz(gl.getCreditAmount())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal totalRevenue = grossRevenue.subtract(contraRevenue);
 
         BigDecimal totalExpense = transactions.stream()
                 .filter(gl -> gl.getAccount().getType() == AccountType.EXPENSE)
@@ -84,15 +94,28 @@ public class FinancialReportServiceImpl implements FinancialReportService {
         // Assets/Liabilities/Equity are point-in-time balances - rebuild each from the
         // ledger up to asOfDate rather than trusting the account's *current* live balance,
         // which would be wrong for any asOfDate other than today.
-        BigDecimal totalAssets = balanceAsOf(companyId, AccountType.ASSET, asOfDate);
-        BigDecimal totalLiabilities = balanceAsOf(companyId, AccountType.LIABILITY, asOfDate);
+        // Contra-asset (e.g. Accumulated Depreciation) and contra-liability accounts were
+        // previously never queried at all, overstating assets/liabilities by whatever had
+        // been recorded against them - net them out here.
+        BigDecimal totalAssets = balanceAsOf(companyId, AccountType.ASSET, asOfDate)
+                .subtract(balanceAsOf(companyId, AccountType.CONTRA_ASSET, asOfDate));
+        BigDecimal totalLiabilities = balanceAsOf(companyId, AccountType.LIABILITY, asOfDate)
+                .subtract(balanceAsOf(companyId, AccountType.CONTRA_LIABILITY, asOfDate));
         BigDecimal totalEquity = balanceAsOf(companyId, AccountType.EQUITY, asOfDate);
+
+        // Assets = Liabilities + Equity is the fundamental accounting identity - if this
+        // doesn't hold, something posted an unbalanced entry (or period-end closing hasn't
+        // run), and the report should say so loudly rather than silently show wrong numbers.
+        BigDecimal outOfBalanceAmount = totalAssets.subtract(totalLiabilities.add(totalEquity));
+        boolean balanced = outOfBalanceAmount.abs().compareTo(new BigDecimal("0.01")) <= 0;
 
         return BalanceSheetReport.builder()
                 .asOfDate(asOfDate)
                 .totalAssets(totalAssets)
                 .totalLiabilities(totalLiabilities)
                 .totalEquity(totalEquity)
+                .balanced(balanced)
+                .outOfBalanceAmount(outOfBalanceAmount)
                 .build();
     }
 
@@ -106,8 +129,16 @@ public class FinancialReportServiceImpl implements FinancialReportService {
 
         List<Long> accountIds = accounts.stream().map(ChartOfAccount::getId).collect(Collectors.toList());
         List<GeneralLedger> transactions = glRepository.findByCompanyIdAndAccountIdsUpToDate(companyId, accountIds, asOfDate);
-        boolean creditNormal = type.isCreditNormal();
+        return sumSigned(transactions, type.isCreditNormal());
+    }
 
+    private BigDecimal accountBalanceAsOf(Long companyId, Long accountId, boolean creditNormal, LocalDate asOfDate) {
+        List<GeneralLedger> transactions = glRepository.findByCompanyIdAndAccountIdsUpToDate(
+                companyId, List.of(accountId), asOfDate);
+        return sumSigned(transactions, creditNormal);
+    }
+
+    private static BigDecimal sumSigned(List<GeneralLedger> transactions, boolean creditNormal) {
         return transactions.stream()
                 .map(gl -> creditNormal
                         ? nz(gl.getCreditAmount()).subtract(nz(gl.getDebitAmount()))
@@ -123,14 +154,29 @@ public class FinancialReportServiceImpl implements FinancialReportService {
 
         List<ChartOfAccount> accounts = coaRepository.findByCompanyIdAndActive(companyId, true);
 
+        // Previously read ChartOfAccount.balance (the account's *current* live balance)
+        // split by normal side - asOfDate was accepted but silently ignored, so a Trial
+        // Balance "as of" any past date returned today's numbers. Replay the ledger up to
+        // asOfDate per account instead, same as Balance Sheet already does.
         List<TrialBalanceReport.AccountBalance> balances = accounts.stream()
-                .map(acc -> TrialBalanceReport.AccountBalance.builder()
-                        .accountId(acc.getId())
-                        .accountCode(acc.getAccountCode())
-                        .accountName(acc.getAccountName())
-                        .debitBalance(acc.getDebitBalance())
-                        .creditBalance(acc.getCreditBalance())
-                        .build())
+                .map(acc -> {
+                    boolean creditNormal = acc.getType().isCreditNormal();
+                    // Positive = sitting on its normal side; negative means this particular
+                    // account is abnormally balanced (e.g. an overdrawn bank account) - it
+                    // still has to land in *some* column, just the opposite one, or
+                    // totalDebit would stop equalling totalCredit for no real reason.
+                    BigDecimal balance = accountBalanceAsOf(companyId, acc.getId(), creditNormal, asOfDate);
+                    boolean normalSide = balance.signum() >= 0;
+                    BigDecimal amount = balance.abs();
+                    boolean showsAsDebit = creditNormal != normalSide; // XOR: flips to the other column when abnormal
+                    return TrialBalanceReport.AccountBalance.builder()
+                            .accountId(acc.getId())
+                            .accountCode(acc.getAccountCode())
+                            .accountName(acc.getAccountName())
+                            .debitBalance(showsAsDebit ? amount : BigDecimal.ZERO)
+                            .creditBalance(showsAsDebit ? BigDecimal.ZERO : amount)
+                            .build();
+                })
                 .collect(Collectors.toList());
 
         BigDecimal totalDebit = balances.stream()

@@ -33,6 +33,9 @@ export class PerformanceReviews implements OnInit {
 
   deleteTarget: PerformanceReview | null = null;
 
+  summarisingId: number | null = null;
+  summaryError = '';
+
   constructor(
     private reviewService: PerformanceReviewService,
     private employeeService: EmployeeService,
@@ -154,6 +157,25 @@ export class PerformanceReviews implements OnInit {
   goToPage(p: number): void {
     this.page = p;
     this.load();
+  }
+
+  summarise(r: PerformanceReview): void {
+    if (this.summarisingId) return;
+    this.summarisingId = r.id;
+    this.summaryError = '';
+    this.cdr.markForCheck();
+    this.reviewService.summarise(r.id).subscribe({
+      next: (res) => {
+        r.aiSummary = res.aiSummary;
+        this.summarisingId = null;
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        this.summaryError = err?.error?.message || 'Failed to generate summary';
+        this.summarisingId = null;
+        this.cdr.markForCheck();
+      },
+    });
   }
 
   private emptyForm(): PerformanceReviewRequest {

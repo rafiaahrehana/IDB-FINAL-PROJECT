@@ -27,6 +27,22 @@ public class ClientInvoiceRequest {
     @Builder.Default
     private BigDecimal taxAmount = BigDecimal.ZERO;
 
+    // If provided, overrides taxAmount - the server recomputes tax from
+    // (subtotal - discountAmount) * rate / 100.
+    @DecimalMin(value = "0.0")
+    private BigDecimal taxRatePercent;
+
+    @DecimalMin(value = "0.0")
+    @Builder.Default
+    private BigDecimal discountAmount = BigDecimal.ZERO;
+
+    private String currency;
+
+    // Required (>0) when currency differs from the company's base currency;
+    // ignored/forced to 1 for base-currency invoices.
+    @DecimalMin(value = "0.000001", message = "Exchange rate must be positive")
+    private BigDecimal exchangeRate;
+
     private PaymentTerms paymentTerms;
     private String description;
     private String notes;

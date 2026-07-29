@@ -6,6 +6,7 @@ import com.businessos.modules.finance.chartofaccounts.ChartOfAccount;
 import com.businessos.modules.finance.chartofaccounts.DefaultAccountResolver;
 import com.businessos.modules.finance.generalledger.GeneralLedgerService;
 import com.businessos.modules.finance.generalledger.GlReferenceType;
+import com.businessos.modules.finance.generalledger.LedgerLine;
 import com.businessos.modules.finance.invoice.ClientInvoice;
 import com.businessos.modules.finance.invoice.ClientInvoiceRepository;
 import com.businessos.modules.finance.invoice.ClientInvoiceService;
@@ -21,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -125,12 +127,67 @@ public class PaymentReceiptServiceImpl implements PaymentReceiptService {
         } else {
             String description = "Payment received (receipt " + receipt.getReceiptNumber() + ")";
             ChartOfAccount cash = accountResolver.cash(receipt.getCompanyId());
-            glService.recordTransaction(cash.getId(), receipt.getAmount(), BigDecimal.ZERO,
-                    description, GlReferenceType.PAYMENT_RECEIPT, receipt.getId(), receipt.getReceiptNumber());
             ChartOfAccount ar = accountResolver.accountsReceivable(receipt.getCompanyId());
-            glService.recordTransaction(ar.getId(), BigDecimal.ZERO, receipt.getAmount(),
-                    description, GlReferenceType.PAYMENT_RECEIPT, receipt.getId(), receipt.getReceiptNumber());
+            glService.recordBalancedTransaction(receipt.getCompanyId(), List.of(
+                            LedgerLine.debit(cash.getId(), receipt.getAmount()),
+                            LedgerLine.credit(ar.getId(), receipt.getAmount())),
+                    description, GlReferenceType.PAYMENT_RECEIPT, receipt.getId(), receipt.getReceiptNumber(), LocalDate.now());
         }
+    }
+
+    @Override
+    @Transactional
+    public void reverse(Long id, String reason) {
+        authorizationService.checkPermission(PermissionCode.PAYMENT_RECEIPT_CONFIRM);
+        PaymentReceipt receipt = findInTenant(id);
+        if (receipt.getStatus() != PaymentStatus.CONFIRMED && receipt.getStatus() != PaymentStatus.DEPOSITED) {
+            throw new BadRequestException("Only a confirmed or deposited payment can be reversed");
+        }
+
+        Long companyId = receipt.getCompanyId();
+        String description = "Payment reversal (receipt " + receipt.getReceiptNumber() + ")"
+                + (reason != null && !reason.isBlank() ? " - " + reason : "");
+
+        // Exact mirror of what confirmPayment posted: the cash goes back out of the
+        // books and the receivable is owed again. Foreign-currency invoice payments
+        // convert at the invoice's issue-time rate, same as the original posting.
+        BigDecimal amountBase = receipt.getAmount();
+        if (receipt.getInvoice() != null && receipt.getInvoice().getExchangeRate() != null
+                && receipt.getInvoice().getExchangeRate().compareTo(BigDecimal.ONE) != 0) {
+            amountBase = receipt.getAmount().multiply(receipt.getInvoice().getExchangeRate())
+                    .setScale(2, java.math.RoundingMode.HALF_UP);
+        }
+        ChartOfAccount cash = accountResolver.cash(companyId);
+        ChartOfAccount ar = accountResolver.accountsReceivable(companyId);
+        glService.recordBalancedTransaction(companyId, List.of(
+                        LedgerLine.credit(cash.getId(), amountBase),
+                        LedgerLine.debit(ar.getId(), amountBase)),
+                description, GlReferenceType.PAYMENT_REVERSAL, receipt.getId(), receipt.getReceiptNumber(), LocalDate.now());
+
+        // Restore the linked invoice: the client owes this money again.
+        if (receipt.getInvoice() != null) {
+            ClientInvoice invoice = invoiceRepository
+                    .findByIdAndCompanyId(receipt.getInvoice().getId(), companyId).orElse(null);
+            if (invoice != null) {
+                BigDecimal newPaid = invoice.getPaidAmount().subtract(receipt.getAmount()).max(BigDecimal.ZERO);
+                invoice.setPaidAmount(newPaid);
+                if (newPaid.compareTo(BigDecimal.ZERO) > 0) {
+                    invoice.setStatus(com.businessos.enums.InvoiceStatus.PARTIALLY_PAID);
+                } else if (invoice.getDueDate() != null && invoice.getDueDate().isBefore(LocalDate.now())) {
+                    invoice.setStatus(com.businessos.enums.InvoiceStatus.OVERDUE);
+                } else {
+                    invoice.setStatus(com.businessos.enums.InvoiceStatus.ISSUED);
+                }
+                invoice.setPaidDate(null);
+                invoice.calculateTotals();
+                invoiceRepository.save(invoice);
+            }
+        }
+
+        receipt.setStatus(PaymentStatus.REVERSED);
+        receipt.setReversedDate(LocalDate.now());
+        receipt.setReversalReason(reason);
+        receiptRepository.save(receipt);
     }
 
     @Override

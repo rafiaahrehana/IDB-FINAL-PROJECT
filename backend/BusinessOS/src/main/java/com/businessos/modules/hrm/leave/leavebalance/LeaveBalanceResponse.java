@@ -8,6 +8,8 @@ import lombok.Setter;
 @Setter
 public class LeaveBalanceResponse {
     private Long id;
+    private Long employeeId;
+    private String employeeName;
     private LeaveType leaveType;
     private int year;
     private int entitledDays;

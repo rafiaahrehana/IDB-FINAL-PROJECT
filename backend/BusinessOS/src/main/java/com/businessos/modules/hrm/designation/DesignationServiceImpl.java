@@ -3,6 +3,8 @@ package com.businessos.modules.hrm.designation;
 import com.businessos.auth.role.enums.PermissionCode;
 import com.businessos.auth.role.service.AuthorizationService;
 import com.businessos.modules.company.Company;
+import com.businessos.modules.hrm.department.Department;
+import com.businessos.modules.hrm.department.DepartmentRepository;
 import com.businessos.shared.exception.BadRequestException;
 import com.businessos.shared.exception.ResourceNotFoundException;
 import com.businessos.security.SecurityUtil;
@@ -21,6 +23,7 @@ import java.util.List;
 public class DesignationServiceImpl implements DesignationService {
 
     private final DesignationRepository designationRepository;
+    private final DepartmentRepository departmentRepository;
     private final SecurityUtil securityUtil;
     private final AuthorizationService authorizationService;
 
@@ -37,6 +40,9 @@ public class DesignationServiceImpl implements DesignationService {
             .code(request.getCode().toUpperCase())
             .level(request.getLevel())
             .description(request.getDescription())
+            .employmentCategory(request.getEmploymentCategory())
+            .department(resolveDepartment(request.getDepartmentId(), companyId))
+            .active(request.getActive() != null ? request.getActive() : true)
             .company(companyRef(companyId))
             .build();
         designationRepository.save(d);
@@ -81,7 +87,16 @@ public class DesignationServiceImpl implements DesignationService {
         d.setCode(request.getCode().toUpperCase());
         d.setLevel(request.getLevel());
         if (request.getDescription() != null) d.setDescription(request.getDescription());
+        d.setEmploymentCategory(request.getEmploymentCategory());
+        d.setDepartment(resolveDepartment(request.getDepartmentId(), companyId));
+        if (request.getActive() != null) d.setActive(request.getActive());
         return DesignationMapper.toDesignationResponse(d);
+    }
+
+    private Department resolveDepartment(Long departmentId, Long companyId) {
+        if (departmentId == null) return null;
+        return departmentRepository.findByIdAndCompanyId(departmentId, companyId)
+            .orElseThrow(() -> new ResourceNotFoundException("Department not found: " + departmentId));
     }
 
     @Override

@@ -24,12 +24,20 @@ public class BankReconciliationResponse {
     private BigDecimal glBalance;
     private BigDecimal bankStatementBalance;
     private BigDecimal difference;
-    
-    private String outstandingDeposits;
-    private String outstandingChecks;
-    
+
+    private BigDecimal outstandingDepositsTotal;
+    private BigDecimal outstandingChecksTotal;
+    // bankStatementBalance + outstandingDepositsTotal - outstandingChecksTotal - a
+    // convenience so the UI doesn't have to recompute it; should equal glBalance
+    // (difference == 0) before the reconciliation can be closed.
+    private BigDecimal adjustedBankBalance;
+
     private boolean reconciled;
     private LocalDate reconciledDate;
     private String reconciledBy;
     private String discrepancyNotes;
+
+    private String statementFileName;
+    private String statementFileUrl;
+    private java.time.LocalDateTime statementUploadedAt;
 }

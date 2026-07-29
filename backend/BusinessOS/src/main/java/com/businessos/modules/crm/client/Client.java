@@ -61,7 +61,18 @@ public class Client extends BaseEntity {
     @JoinColumn(name = "company_id", nullable = false)
     private Company company;
 
+    // Null when the Client was created without provisioning a portal login
+    // (see CreateClientRequest.provisionPortalLogin).
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "user_id", nullable = true)
     private User user;
+
+    // Normalized shared-taxonomy tags. Named distinctly from the legacy free-text
+    // `tags` field above (kept for backward compatibility, not replaced).
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(name = "client_tags",
+        joinColumns = @JoinColumn(name = "client_id"),
+        inverseJoinColumns = @JoinColumn(name = "tag_id"))
+    @Builder.Default
+    private java.util.List<com.businessos.modules.crm.tag.Tag> tagEntities = new java.util.ArrayList<>();
 }

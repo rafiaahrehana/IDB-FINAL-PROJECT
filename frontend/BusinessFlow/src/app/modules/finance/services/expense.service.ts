@@ -30,9 +30,12 @@ export class ExpenseService {
   update(id: number, payload: Partial<Expense>): Observable<Expense> {
     return this.api.patch<Expense>(`${this.endpoint}/${id}`, payload);
   }
-  // Backend expects these as @RequestParam query params (notes/reason), not a JSON body
-  approve(id: number, notes: string): Observable<void> {
-    return this.api.post<void>(`${this.endpoint}/${id}/approve?notes=${encodeURIComponent(notes)}`, {});
+  // Backend expects these as @RequestParam query params (notes/reason), not a JSON body.
+  // Returns { message, budgetWarning? } - budgetWarning is set when this approval
+  // pushes the category over (or near) its budget.
+  approve(id: number, notes: string): Observable<{ message: string; budgetWarning?: string }> {
+    return this.api.post<{ message: string; budgetWarning?: string }>(
+      `${this.endpoint}/${id}/approve?notes=${encodeURIComponent(notes)}`, {});
   }
   reject(id: number, reason: string): Observable<void> {
     return this.api.post<void>(`${this.endpoint}/${id}/reject?reason=${encodeURIComponent(reason)}`, {});

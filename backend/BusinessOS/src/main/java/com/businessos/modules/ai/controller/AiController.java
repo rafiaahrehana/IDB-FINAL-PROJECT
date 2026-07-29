@@ -116,4 +116,11 @@ public class AiController {
         return ResponseEntity.ok(aiService.listPromptTemplates(
                 PageRequest.of(page, size, Sort.by("feature").ascending())));
     }
+
+    @DeleteMapping("/templates/{id}")
+    public ResponseEntity<Void> deleteTemplate(@PathVariable Long id) {
+        authorizationService.checkPermission(PermissionCode.AI_ADMIN);
+        aiService.deletePromptTemplate(id);
+        return ResponseEntity.noContent().build();
+    }
 }

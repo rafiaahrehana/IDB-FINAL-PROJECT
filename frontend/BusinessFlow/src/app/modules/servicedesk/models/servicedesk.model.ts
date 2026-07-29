@@ -37,6 +37,7 @@ export interface ServiceRequest {
   quotationStatus?: QuotationStatus;
   // Client answers to the service's dynamic form fields, keyed by field id
   formData?: Record<string, string>;
+  aiSummary?: string;
 }
 
 export interface StageApproval {

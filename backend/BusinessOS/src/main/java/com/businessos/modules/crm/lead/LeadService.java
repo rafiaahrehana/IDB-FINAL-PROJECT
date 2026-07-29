@@ -39,7 +39,9 @@ public interface LeadService {
     Page<LeadResponse> findStalLeads(Pageable pageable);
 
     // ==================== Conversion ====================
-    LeadResponse convertLead(Long id);
+    // Converts a Qualified Lead into an Opportunity. No Client is created here -
+    // that happens when the Opportunity reaches Won (see OpportunityService.changeStage).
+    com.businessos.modules.crm.opportunity.OpportunityResponse convertToOpportunity(Long id, ConvertToOpportunityRequest request);
 
     // ==================== Activity Timeline ====================
     com.businessos.modules.crm.activity.CrmActivityResponse addActivity(Long leadId, com.businessos.modules.crm.activity.CrmActivityRequest request);

@@ -11,8 +11,12 @@ import com.businessos.modules.crm.contact.ClientContact;
 import com.businessos.modules.crm.contact.ClientContactRepository;
 import com.businessos.modules.crm.lead.Lead;
 import com.businessos.modules.crm.lead.LeadRepository;
+import com.businessos.modules.company.Company;
+import com.businessos.modules.crm.duplicate.DuplicateDetectionService;
+import com.businessos.modules.crm.duplicate.DuplicateMatch;
 import com.businessos.modules.hrm.employee.Employee;
 import com.businessos.modules.hrm.employee.EmployeeRepository;
+import com.businessos.enums.ClientStatus;
 import com.businessos.auth.role.enums.PermissionCode;
 import com.businessos.auth.role.service.AuthorizationService;
 import com.businessos.security.SecurityUtil;
@@ -31,6 +35,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -46,16 +51,21 @@ public class OpportunityServiceImpl implements OpportunityService {
     private final AutomationEventPublisher automationEventPublisher;
     private final NotificationService notificationService;
     private final SecurityUtil securityUtil;
+    private final DuplicateDetectionService duplicateDetectionService;
     private final AuthorizationService authorizationService;
+    private final com.businessos.modules.crm.tag.TagRepository tagRepository;
 
     @Override
     public OpportunityResponse create(OpportunityRequest request) {
         authorizationService.checkPermission(PermissionCode.OPPORTUNITY_CREATE);
         Long companyId = requireCompanyId();
+        if (request.getClientId() == null) {
+            throw new BadRequestException("Client is required when creating a deal directly");
+        }
         Client client = clientRepository.findByIdAndCompanyId(request.getClientId(), companyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Client not found"));
 
-        Opportunity opportunity = buildFromRequest(request, client, companyId);
+        Opportunity opportunity = buildFromRequest(request, client, client.getCompany(), companyId);
         opportunity = opportunityRepository.save(opportunity);
 
         crmActivityService.logSystemActivity(CrmActivityType.NOTE,
@@ -66,6 +76,10 @@ public class OpportunityServiceImpl implements OpportunityService {
         return OpportunityMapper.toResponse(opportunity);
     }
 
+    // An Opportunity can now be created directly from a Lead with no Client yet - the Client is
+    // created/linked later, when the Opportunity reaches Won (see changeStage). If the Lead was
+    // already linked to a Client some other way (legacy data) or an explicit clientId is
+    // passed, that Client is used immediately instead.
     @Override
     public OpportunityResponse createFromLead(Long leadId, OpportunityRequest request) {
         authorizationService.checkPermission(PermissionCode.OPPORTUNITY_CREATE);
@@ -73,19 +87,18 @@ public class OpportunityServiceImpl implements OpportunityService {
         Lead lead = leadRepository.findByIdAndCompanyId(leadId, companyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Lead not found"));
 
-        Client client;
+        Client client = null;
         if (lead.getConvertedClient() != null) {
             client = lead.getConvertedClient();
         } else if (request.getClientId() != null) {
             client = clientRepository.findByIdAndCompanyId(request.getClientId(), companyId)
                     .orElseThrow(() -> new ResourceNotFoundException("Client not found"));
-        } else {
-            throw new BadRequestException(
-                    "Lead is not converted yet. Convert the lead to a client first or provide a clientId");
+        }
+        if (client != null) {
+            request.setClientId(client.getId());
         }
 
-        request.setClientId(client.getId());
-        Opportunity opportunity = buildFromRequest(request, client, companyId);
+        Opportunity opportunity = buildFromRequest(request, client, lead.getCompany(), companyId);
         opportunity.setSourceLead(lead);
         if (request.getSource() == null && lead.getSource() != null) {
             opportunity.setSource(lead.getSource());
@@ -101,14 +114,14 @@ public class OpportunityServiceImpl implements OpportunityService {
         crmActivityService.logSystemActivity(CrmActivityType.NOTE,
                 "Opportunity created from lead",
                 "Opportunity \"" + opportunity.getName() + "\" created from lead \"" + lead.getContactName() + "\"",
-                client.getId(), opportunity.getId());
+                client != null ? client.getId() : null, opportunity.getId());
 
         return OpportunityMapper.toResponse(opportunity);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Page<OpportunityResponse> listAll(OpportunityStage stage, Long clientId, Long ownerId, String keyword,
+    public Page<OpportunityResponse> listAll(OpportunityStage stage, Long clientId, Long ownerId, Long tagId, String keyword,
             Pageable pageable) {
         authorizationService.checkPermission(PermissionCode.OPPORTUNITY_VIEW);
         Long companyId = requireCompanyId();
@@ -121,6 +134,8 @@ public class OpportunityServiceImpl implements OpportunityService {
             page = opportunityRepository.findByCompanyIdAndClientId(companyId, clientId, pageable);
         } else if (ownerId != null) {
             page = opportunityRepository.findByCompanyIdAndOwnerId(companyId, ownerId, pageable);
+        } else if (tagId != null) {
+            page = opportunityRepository.findByCompanyIdAndTagsId(companyId, tagId, pageable);
         } else {
             page = opportunityRepository.findByCompanyId(companyId, pageable);
         }
@@ -160,13 +175,19 @@ public class OpportunityServiceImpl implements OpportunityService {
         if (request.getContactId() != null) {
             ClientContact contact = clientContactRepository.findByIdAndCompanyId(request.getContactId(), companyId)
                     .orElseThrow(() -> new ResourceNotFoundException("Contact not found"));
-            if (!contact.getClient().getId().equals(opportunity.getClient().getId())) {
+            if (opportunity.getClient() != null
+                    && !contact.getClient().getId().equals(opportunity.getClient().getId())) {
                 throw new BadRequestException("Contact does not belong to the opportunity's client");
             }
             opportunity.setContact(contact);
         }
         if (request.getOwnerId() != null) {
             opportunity.setOwner(findEmployee(request.getOwnerId(), companyId));
+        }
+        if (request.getTagIds() != null) {
+            opportunity.setTags(request.getTagIds().isEmpty()
+                    ? new java.util.ArrayList<>()
+                    : tagRepository.findByIdInAndCompanyId(request.getTagIds(), companyId));
         }
 
         return OpportunityMapper.toResponse(opportunityRepository.save(opportunity));
@@ -182,7 +203,7 @@ public class OpportunityServiceImpl implements OpportunityService {
         if (from == to) {
             return OpportunityMapper.toResponse(opportunity);
         }
-        if (to == OpportunityStage.CLOSED_LOST
+        if (to == OpportunityStage.LOST
                 && (request.getLostReason() == null || request.getLostReason().isBlank())) {
             throw new BadRequestException("A lost reason is required when closing an opportunity as lost");
         }
@@ -191,25 +212,30 @@ public class OpportunityServiceImpl implements OpportunityService {
         opportunity.setProbability(to.getDefaultProbability());
         opportunity.setStageChangedAt(LocalDateTime.now());
 
+        DuplicateMatch autoLinkedDuplicate = null;
         if (to.isClosed()) {
             opportunity.setActualCloseDate(LocalDate.now());
-            if (to == OpportunityStage.CLOSED_LOST) {
+            if (to == OpportunityStage.LOST) {
                 opportunity.setLostReason(request.getLostReason());
                 notifyOwnerOpportunityLost(opportunity);
             } else {
                 opportunity.setLostReason(null);
+                if (opportunity.getClient() == null) {
+                    autoLinkedDuplicate = resolveClientForWonOpportunity(opportunity, request);
+                }
                 creditClientLifetimeValue(opportunity);
                 automationEventPublisher.publishOpportunityWon(
                         this, opportunity.getCompany().getId(),
                         opportunity.getId(), opportunity.getClient().getId(),
                         opportunity.getName());
+                notifyOwnerOpportunityWon(opportunity);
             }
         } else {
             opportunity.setActualCloseDate(null);
             opportunity.setLostReason(null);
             // Reopening a previously-won deal must reverse the credit applied when it
             // closed, or a later reopen+reclose double-counts the client's lifetime value.
-            if (from == OpportunityStage.CLOSED_WON) {
+            if (from == OpportunityStage.WON && opportunity.getClient() != null) {
                 debitClientLifetimeValue(opportunity);
             }
         }
@@ -219,9 +245,12 @@ public class OpportunityServiceImpl implements OpportunityService {
         crmActivityService.logSystemActivity(CrmActivityType.STAGE_CHANGE,
                 "Stage changed",
                 "Stage moved from " + from + " to " + to,
-                opportunity.getClient().getId(), opportunity.getId());
+                opportunity.getClient() != null ? opportunity.getClient().getId() : null,
+                opportunity.getId());
 
-        return OpportunityMapper.toResponse(opportunity);
+        OpportunityResponse response = OpportunityMapper.toResponse(opportunity);
+        response.setPossibleDuplicate(autoLinkedDuplicate);
+        return response;
     }
 
     @Override
@@ -236,7 +265,7 @@ public class OpportunityServiceImpl implements OpportunityService {
         BigDecimal won = BigDecimal.ZERO;
         long openDeals = 0;
 
-        EnumSet<OpportunityStage> closed = EnumSet.of(OpportunityStage.CLOSED_WON, OpportunityStage.CLOSED_LOST);
+        EnumSet<OpportunityStage> closed = EnumSet.of(OpportunityStage.WON, OpportunityStage.LOST);
 
         response.setStages(rows.stream().map(row -> {
             PipelineSummaryResponse.StageSummary s = new PipelineSummaryResponse.StageSummary();
@@ -248,7 +277,7 @@ public class OpportunityServiceImpl implements OpportunityService {
         }).toList());
 
         for (OpportunityRepository.PipelineStageSummary row : rows) {
-            if (row.getStage() == OpportunityStage.CLOSED_WON) {
+            if (row.getStage() == OpportunityStage.WON) {
                 won = won.add(row.getTotalAmount());
             } else if (!closed.contains(row.getStage())) {
                 open = open.add(row.getTotalAmount());
@@ -271,8 +300,10 @@ public class OpportunityServiceImpl implements OpportunityService {
         opportunityRepository.save(opportunity);
     }
 
-    private Opportunity buildFromRequest(OpportunityRequest request, Client client, Long companyId) {
-        OpportunityStage stage = request.getStage() != null ? request.getStage() : OpportunityStage.PROSPECTING;
+    // `client` may be null (Opportunity created straight from a Lead, pre-Client) - `company` is
+    // passed separately since it can't be derived from a null client.
+    private Opportunity buildFromRequest(OpportunityRequest request, Client client, Company company, Long companyId) {
+        OpportunityStage stage = request.getStage() != null ? request.getStage() : OpportunityStage.QUALIFICATION;
 
         Opportunity opportunity = Opportunity.builder()
                 .name(request.getName())
@@ -285,10 +316,10 @@ public class OpportunityServiceImpl implements OpportunityService {
                 .expectedCloseDate(request.getExpectedCloseDate())
                 .nextStep(request.getNextStep())
                 .client(client)
-                .company(client.getCompany())
+                .company(company)
                 .build();
 
-        if (request.getContactId() != null) {
+        if (request.getContactId() != null && client != null) {
             ClientContact contact = clientContactRepository.findByIdAndCompanyId(request.getContactId(), companyId)
                     .orElseThrow(() -> new ResourceNotFoundException("Contact not found"));
             if (!contact.getClient().getId().equals(client.getId())) {
@@ -298,6 +329,9 @@ public class OpportunityServiceImpl implements OpportunityService {
         }
         if (request.getOwnerId() != null) {
             opportunity.setOwner(findEmployee(request.getOwnerId(), companyId));
+        }
+        if (request.getTagIds() != null && !request.getTagIds().isEmpty()) {
+            opportunity.setTags(tagRepository.findByIdInAndCompanyId(request.getTagIds(), companyId));
         }
         return opportunity;
     }
@@ -315,13 +349,95 @@ public class OpportunityServiceImpl implements OpportunityService {
         Employee owner = opportunity.getOwner();
         if (owner == null || owner.getUser() == null) return;
         notificationService.send(CreateNotificationRequest.of(
-                NotificationType.GENERAL,
+                NotificationType.OPPORTUNITY_LOST,
                 "Opportunity Lost",
                 "Opportunity \"" + opportunity.getName() + "\" was marked as lost.",
                 "/crm/pipeline",
                 owner.getUser().getId(),
                 opportunity.getCompany().getId()
         ));
+    }
+
+    private void notifyOwnerOpportunityWon(Opportunity opportunity) {
+        Employee owner = opportunity.getOwner();
+        if (owner == null || owner.getUser() == null) return;
+        notificationService.send(CreateNotificationRequest.of(
+                NotificationType.OPPORTUNITY_WON,
+                "Opportunity Won",
+                "Opportunity \"" + opportunity.getName() + "\" was won.",
+                "/crm/pipeline",
+                owner.getUser().getId(),
+                opportunity.getCompany().getId()
+        ));
+    }
+
+    // Resolves the Client for an Opportunity that reaches Won with no Client yet (created
+    // straight from a Lead). Explicit link/force choices from the frontend's duplicate-detection
+    // modal take priority; otherwise runs duplicate detection and links a match, or creates a new
+    // Client (without a portal login - see CreateClientRequest.provisionPortalLogin). Returns
+    // the match that was auto-linked (if any), purely informational for the response.
+    private DuplicateMatch resolveClientForWonOpportunity(Opportunity opportunity, ChangeStageRequest request) {
+        Long companyId = opportunity.getCompany().getId();
+
+        if (request.getLinkToExistingClientId() != null) {
+            Client existing = clientRepository.findByIdAndCompanyId(request.getLinkToExistingClientId(), companyId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Client not found"));
+            opportunity.setClient(existing);
+            return null;
+        }
+
+        if (!request.isForceCreateNewClient()) {
+            Optional<DuplicateMatch> duplicate = findDuplicateForOpportunity(opportunity);
+            if (duplicate.isPresent()) {
+                Client existing = clientRepository.findByIdAndCompanyId(duplicate.get().getClientId(), companyId)
+                        .orElseThrow(() -> new ResourceNotFoundException("Client not found"));
+                opportunity.setClient(existing);
+                return duplicate.get();
+            }
+        }
+
+        Lead sourceLead = opportunity.getSourceLead();
+        String companyName = sourceLead != null ? sourceLead.getCompanyName() : null;
+        String fallbackName = companyName != null ? companyName
+                : sourceLead != null ? sourceLead.getContactName()
+                : opportunity.getName();
+        Client client = Client.builder()
+                .clientCompanyName(fallbackName)
+                .company(companyRef(companyId))
+                .status(ClientStatus.ACTIVE)
+                .industry(sourceLead != null ? sourceLead.getIndustry() : null)
+                .onboardedAt(LocalDate.now())
+                .build();
+        clientRepository.save(client);
+        opportunity.setClient(client);
+        return null;
+    }
+
+    private Optional<DuplicateMatch> findDuplicateForOpportunity(Opportunity opportunity) {
+        Lead sourceLead = opportunity.getSourceLead();
+        String companyName = sourceLead != null ? sourceLead.getCompanyName() : null;
+        String email = sourceLead != null ? sourceLead.getEmail() : null;
+        String phone = sourceLead != null ? sourceLead.getPhone() : null;
+        return duplicateDetectionService.findPossibleDuplicateClient(companyName, email, phone);
+    }
+
+    // Read-only pre-check the frontend calls before committing a WON stage change on a
+    // client-less Opportunity, so it can show a confirm modal (link existing / create new)
+    // BEFORE the transition happens, rather than only finding out after the fact.
+    @Override
+    @Transactional(readOnly = true)
+    public DuplicateMatch previewWonDuplicate(Long id) {
+        Opportunity opportunity = findOwned(id);
+        if (opportunity.getClient() != null) {
+            return null;
+        }
+        return findDuplicateForOpportunity(opportunity).orElse(null);
+    }
+
+    private Company companyRef(Long companyId) {
+        Company c = new Company();
+        c.setId(companyId);
+        return c;
     }
 
     /** Reverses creditClientLifetimeValue() when a won opportunity is reopened. */

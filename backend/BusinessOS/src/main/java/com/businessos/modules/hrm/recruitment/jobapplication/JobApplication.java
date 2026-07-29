@@ -1,6 +1,7 @@
 package com.businessos.modules.hrm.recruitment.jobapplication;
 
 import com.businessos.modules.hrm.recruitment.jobpost.JobPosting;
+import com.businessos.modules.hrm.employee.Employee;
 import com.businessos.core.base.BaseEntity;
 import com.businessos.auth.user.User;
 import com.businessos.modules.company.Company;
@@ -44,4 +45,10 @@ public class JobApplication extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "reviewed_by_id") private User reviewedBy;
+
+    // Set once the application is hired — mirrors Lead.convertedClient/convertedAt in the CRM module.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "converted_employee_id") private Employee convertedEmployee;
+
+    private LocalDateTime convertedAt;
 }

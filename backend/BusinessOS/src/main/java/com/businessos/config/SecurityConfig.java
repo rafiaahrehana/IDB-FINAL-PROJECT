@@ -49,11 +49,22 @@ public class SecurityConfig {
         // Public company portal content (anonymous visitors browsing /portal/:subdomain)
         "/api/website/**",
         // Landing-page live-traffic SSE stream (anonymous, unauthenticated /home)
-        "/api/v1/metrics/**"
+        "/api/v1/metrics/**",
+        // WebSocket handshake - a browser's native WebSocket transport can't send an
+        // Authorization header, so this can't be gated by JwtAuthFilter like a normal
+        // endpoint. WebSocketAuthInterceptor authenticates the handshake itself via a
+        // ?token= query param and refuses the upgrade if it's missing/invalid - see
+        // WebSocketConfig.
+        "/ws/**"
     };
 
     private static final String[] PUBLIC_GET_ENDPOINTS = {
-        "/api/locations/**"
+        "/api/locations/**",
+        // Plan name/price/description only - nothing sensitive - needed so the public
+        // marketing homepage's pricing section can show real, current platform prices
+        // instead of hardcoded numbers that drift from what SslCommerzServiceImpl
+        // actually charges. Mutating endpoints on this controller stay SUPER_ADMIN-only.
+        "/api/subscription-plans"
     };
 
     /**

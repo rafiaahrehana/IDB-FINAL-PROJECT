@@ -33,6 +33,7 @@ import com.businessos.modules.servicedesk.approval.StageApproval;
 import com.businessos.modules.servicedesk.approval.StageApprovalRepository;
 import com.businessos.auth.role.enums.PermissionCode;
 import com.businessos.auth.role.enums.Role;
+import com.businessos.auth.role.repository.RolePermissionRepository;
 import com.businessos.auth.role.service.AuthorizationService;
 import com.businessos.security.SecurityUtil;
 import com.businessos.shared.notification.NotificationService;
@@ -47,15 +48,21 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 import com.businessos.modules.servicedesk.dynamicform.ServiceFormField;
 import com.businessos.modules.servicedesk.dynamicform.ServiceFormFieldRepository;
+import com.businessos.modules.ai.enums.AiFeature;
+import com.businessos.modules.ai.prompt.ServiceRequestSummaryPromptBuilder;
+import com.businessos.modules.ai.service.AiService;
+import org.springframework.data.domain.PageRequest;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
@@ -80,6 +87,8 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
     private final NotificationService notificationService;
     private final SecurityUtil securityUtil;
     private final AuthorizationService authorizationService;
+    private final RolePermissionRepository rolePermissionRepository;
+    private final SimpMessagingTemplate messagingTemplate;
     private final EmailService emailService;
     private final EmailBranding emailBranding;
     private final CompanyRepository companyRepository;
@@ -87,6 +96,7 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
     private final ClientInvoiceService invoiceService;
     private final ServiceFormFieldRepository serviceFormFieldRepository;
     private final ObjectMapper objectMapper;
+    private final AiService aiService;
 
     @Override
     @Transactional
@@ -167,6 +177,15 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
         serviceRequestRepository.save(sr);
         recordStatusChange(sr, null, ServiceRequestStatus.PENDING,
             "Request submitted", currentUser, companyId);
+
+        // Staff otherwise never learn a new request exists until someone happens to
+        // open the Service Requests list - alert whoever can actually handle it.
+        try {
+            notifyAssignableStaff(companyId, NotificationType.REQUEST_SUBMITTED, "New Service Request",
+                client.getClientCompanyName() + " submitted a new request: \"" + sr.getTitle() + "\"", sr.getId());
+        } catch (Exception ex) {
+            log.warn("New-request staff notification failed for request {}: {}", sr.getId(), ex.getMessage());
+        }
 
         if (client.getUser() != null) {
             try {
@@ -437,28 +456,61 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
             .build();
 
         commentRepository.save(comment);
+        RequestCommentResponse response = ServiceRequestMapper.toCommentResponse(comment);
 
-        if (comment.getVisibility() == CommentVisibility.CLIENT
-                && sr.getClient() != null
-                && sr.getClient().getUser() != null) {
-            notificationService.sendForServiceRequest(CreateNotificationRequest.forRequest(
-                NotificationType.REQUEST_UPDATED,
-                "New Comment",
-                "A new update has been added to your request \"" + sr.getTitle() + "\".",
-                sr.getClient().getUser().getId(), companyId, requestId
-            ));
+        // Notify whoever's on the OTHER side of the conversation, not the author -
+        // this used to always notify the client, even when the client themself was
+        // the one writing the comment.
+        try {
+            if (isClientRole(currentUser)) {
+                Employee assigned = sr.getAssignedEmployee();
+                if (assigned != null && assigned.getUser() != null) {
+                    Long agentId = assigned.getUser().getId();
+                    String clientLabel = sr.getClient() != null && sr.getClient().getClientCompanyName() != null
+                        ? sr.getClient().getClientCompanyName() : currentUser.getFirstName();
+                    notificationService.sendForServiceRequest(CreateNotificationRequest.forRequest(
+                        NotificationType.REQUEST_UPDATED, "New Message",
+                        clientLabel + " sent a message on \"" + sr.getTitle() + "\".",
+                        agentId, companyId, requestId
+                    ));
+                    pushChatMessage(requestId, agentId, response);
+                } else {
+                    // Not assigned yet - nobody specific to hand it to, so alert
+                    // whoever can pick it up, same as on initial submission.
+                    List<Long> staffRecipients = notifyAssignableStaff(companyId, NotificationType.REQUEST_UPDATED,
+                        "New Message", "A client sent a message on \"" + sr.getTitle() + "\".", requestId);
+                    staffRecipients.forEach(id -> pushChatMessage(requestId, id, response));
+                }
+            } else if (comment.getVisibility() == CommentVisibility.CLIENT
+                    && sr.getClient() != null && sr.getClient().getUser() != null) {
+                Long clientUserId = sr.getClient().getUser().getId();
+                notificationService.sendForServiceRequest(CreateNotificationRequest.forRequest(
+                    NotificationType.REQUEST_UPDATED, "New Message",
+                    "A new update has been added to your request \"" + sr.getTitle() + "\".",
+                    clientUserId, companyId, requestId
+                ));
+                pushChatMessage(requestId, clientUserId, response);
+            }
+        } catch (Exception ex) {
+            log.warn("Message notification failed for request {}: {}", requestId, ex.getMessage());
         }
 
-        return ServiceRequestMapper.toCommentResponse(comment);
+        return response;
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<RequestCommentResponse> getComments(Long requestId, Pageable pageable) {
         findInTenant(requestId);
-        return commentRepository
-            .findByServiceRequestIdOrderByCreatedAtDesc(requestId, pageable)
-            .map(ServiceRequestMapper::toCommentResponse);
+        // CLIENT callers must never see INTERNAL (staff-only) notes on their own
+        // request - guardAccess() in findInTenant() already confirms this is their
+        // request, but visibility within that thread still needs enforcing here.
+        User currentUser = securityUtil.getCurrentUser();
+        Page<RequestComment> comments = isClientRole(currentUser)
+            ? commentRepository.findByServiceRequestIdAndVisibilityOrderByCreatedAtDesc(
+                requestId, CommentVisibility.CLIENT, pageable)
+            : commentRepository.findByServiceRequestIdOrderByCreatedAtDesc(requestId, pageable);
+        return comments.map(ServiceRequestMapper::toCommentResponse);
     }
 
     // ── Status history ────────────────────────────────────────────
@@ -573,6 +625,92 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
             }
         }
         return null;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ServiceRequestResponse summarise(Long id) {
+        ServiceRequest sr = findInTenant(id);
+        ServiceRequestResponse response = toResponse(sr);
+
+        long taskCount = taskRepository.countByServiceRequestId(sr.getId());
+        long completedCount = taskRepository.countByServiceRequestIdAndStatus(sr.getId(), TaskStatus.COMPLETED);
+        String recentComments = commentRepository
+            .findByServiceRequestIdOrderByCreatedAtDesc(sr.getId(), PageRequest.of(0, 5))
+            .stream()
+            .map(RequestComment::getContent)
+            .reduce((a, b) -> a + "\n- " + b)
+            .map(joined -> "- " + joined)
+            .orElse(null);
+
+        String prompt = ServiceRequestSummaryPromptBuilder.builder()
+            .setTitle(sr.getTitle())
+            .setDescription(sr.getDescription())
+            .setStatus(sr.getStatus().name())
+            .setPriority(sr.getPriority() != null ? sr.getPriority().name() : "NORMAL")
+            .setClientName(sr.getClient() != null ? sr.getClient().getClientCompanyName() : null)
+            .setAssignedEmployeeName(sr.getAssignedEmployee() != null && sr.getAssignedEmployee().getUser() != null
+                ? sr.getAssignedEmployee().getUser().getFullName() : null)
+            .setTaskProgress(completedCount + " of " + taskCount + " tasks completed")
+            .setSlaBreach(sr.isSlaBreach())
+            .setRecentComments(recentComments)
+            .build();
+
+        response.setAiSummary(aiService.generateRaw(AiFeature.SERVICE_REQUEST_SUMMARY, prompt));
+        return response;
+    }
+
+    /**
+     * Notifies whoever can actually handle a request when there's no single assigned
+     * employee to hand it to yet: the company owner plus any active employee whose
+     * CustomRole holds SERVICE_REQUEST_ASSIGN. Used both when a request is first
+     * submitted and when a client messages a request that hasn't been picked up yet.
+     * Returns the notified user ids so callers can also push a live chat update to
+     * the same people.
+     */
+    private List<Long> notifyAssignableStaff(Long companyId, NotificationType type, String title,
+                                              String message, Long requestId) {
+        List<Long> recipients = new ArrayList<>();
+        Company company = companyRepository.findById(companyId)
+            .orElseThrow(() -> new ResourceNotFoundException("Company not found"));
+        Long ownerId = company.getOwner() != null ? company.getOwner().getId() : null;
+
+        if (ownerId != null) {
+            notificationService.sendForServiceRequest(CreateNotificationRequest.forRequest(
+                type, title, message, ownerId, companyId, requestId));
+            recipients.add(ownerId);
+        }
+
+        for (Employee employee : employeeRepository.findByCompanyIdAndActiveTrue(companyId)) {
+            User employeeUser = employee.getUser();
+            if (employeeUser == null || employeeUser.getId().equals(ownerId)
+                    || employeeUser.getCustomRole() == null) {
+                continue;
+            }
+            boolean canAssign = rolePermissionRepository.existsByCustomRoleIdAndPermission_Code(
+                employeeUser.getCustomRole().getId(), PermissionCode.SERVICE_REQUEST_ASSIGN.name());
+            if (canAssign) {
+                notificationService.sendForServiceRequest(CreateNotificationRequest.forRequest(
+                    type, title, message, employeeUser.getId(), companyId, requestId));
+                recipients.add(employeeUser.getId());
+            }
+        }
+        return recipients;
+    }
+
+    /**
+     * Live-pushes a chat message to each recipient's personal queue so an open chat
+     * screen updates instantly, instead of waiting on the 60s notification-bell poll.
+     * Uses convertAndSendToUser (per-principal, not a public /topic) so a message on
+     * one client's ticket can never be received by another client's open socket.
+     */
+    private void pushChatMessage(Long requestId, Long recipientUserId, RequestCommentResponse message) {
+        try {
+            messagingTemplate.convertAndSendToUser(
+                recipientUserId.toString(), "/queue/service-requests/" + requestId + "/messages", message);
+        } catch (Exception ex) {
+            log.debug("Live chat push failed for user {} on request {}: {}", recipientUserId, requestId, ex.getMessage());
+        }
     }
 
     private ServiceRequest findInTenant(Long id) {

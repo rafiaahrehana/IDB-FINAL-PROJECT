@@ -10,13 +10,10 @@ import java.time.LocalTime;
 @Data @NoArgsConstructor @AllArgsConstructor(access = AccessLevel.PACKAGE) @Builder
 public class AttendanceCheckInRequest {
 
-    @NotNull(message = "Employee ID is required")
     private Long employeeId;
 
-    @NotNull(message = "Check-in time is required")
     private LocalTime checkInTime;
 
-    @NotNull(message = "Attendance method is required")
     private AttendanceMethod method;
 
     private Long deviceId; // If biometric device

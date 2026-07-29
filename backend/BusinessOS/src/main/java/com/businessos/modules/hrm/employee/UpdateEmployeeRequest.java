@@ -35,6 +35,7 @@ public class UpdateEmployeeRequest {
     private BigDecimal houseRent;
     private BigDecimal medicalAllowance;
     private BigDecimal transportAllowance;
+    private BigDecimal billableRate;
     @Size(max = 100)
     private String bankName;
     @Size(max = 100)

@@ -16,7 +16,7 @@
         <div class="card-body">
           <dl class="row small mb-2">
             <dt class="col-6 text-muted">Billing Cycle</dt><dd class="col-6">{{ sub.billingCycle || '-' }}</dd>
-            <dt class="col-6 text-muted">Price Paid</dt><dd class="col-6">{{ sub.pricePaid != null ? (sub.pricePaid | currency) : '-' }}</dd>
+            <dt class="col-6 text-muted">Price Paid</dt><dd class="col-6">{{ sub.pricePaid != null ? (sub.pricePaid | bosCurrency) : '-' }}</dd>
             <dt class="col-6 text-muted">Start</dt><dd class="col-6">{{ sub.startDate ? (sub.startDate | date) : '-' }}</dd>
             <dt class="col-6 text-muted">Next Billing</dt><dd class="col-6">{{ sub.nextBillingDate ? (sub.nextBillingDate | date) : '-' }}</dd>
           </dl>

@@ -24,6 +24,33 @@ public interface GeneralLedgerService {
                            String description, GlReferenceType referenceType, Long referenceId,
                            String referenceNumber);
 
+    /**
+     * Same as the companyId overload but posts dated `transactionDate` instead of always
+     * "today" - callers whose source document carries its own business date (an invoice's
+     * invoiceDate, an expense's expenseDate, a journal entry's entryDate) should use this
+     * one, so the GL entry lands in the accounting period the transaction actually
+     * belongs to (and so posting into an already-closed period is rejected - see
+     * AccountingPeriodService). Throws BadRequestException if transactionDate falls in a
+     * closed period, unless referenceType is YEAR_END_CLOSE (the one entry type allowed
+     * to post into the period it's finalizing).
+     */
+    void recordTransaction(Long companyId, Long accountId, BigDecimal debitAmount, BigDecimal creditAmount,
+                           String description, GlReferenceType referenceType, Long referenceId,
+                           String referenceNumber, LocalDate transactionDate);
+
+    /**
+     * Posts a whole multi-line transaction atomically, rejecting the entire batch up
+     * front if sum(debits) != sum(credits) - previously every caller (invoices, expenses,
+     * payroll, credit notes...) posted each leg with its own recordTransaction() call and
+     * simply trusted itself to pass matching amounts, with nothing anywhere checking that
+     * a transaction actually balances before it lands in the ledger. Throws
+     * BadRequestException if unbalanced (beyond a one-cent rounding tolerance) or if
+     * transactionDate falls in a closed period (same rule as recordTransaction()).
+     */
+    void recordBalancedTransaction(Long companyId, List<LedgerLine> lines, String description,
+                                    GlReferenceType referenceType, Long referenceId, String referenceNumber,
+                                    LocalDate transactionDate);
+
     GeneralLedgerResponse getById(Long id);
 
     Page<GeneralLedgerResponse> getAll(Pageable pageable);

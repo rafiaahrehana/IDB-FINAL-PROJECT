@@ -17,5 +17,9 @@ public class DesignationRequest {
     @NotNull(message = "Level is required")
     @Min(value = 1, message = "Level must be at least 1")
     private Integer level;
+    @Size(max = 500, message = "Description cannot exceed 500 characters")
     private String description;
+    private Long departmentId;
+    private String employmentCategory;
+    private Boolean active;
 }

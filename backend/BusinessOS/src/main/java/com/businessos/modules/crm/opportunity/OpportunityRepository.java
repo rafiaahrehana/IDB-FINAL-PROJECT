@@ -21,6 +21,8 @@ public interface OpportunityRepository extends JpaRepository<Opportunity, Long> 
 
     Page<Opportunity> findByCompanyIdAndOwnerId(Long companyId, Long ownerId, Pageable pageable);
 
+    Page<Opportunity> findByCompanyIdAndTagsId(Long companyId, Long tagId, Pageable pageable);
+
     List<Opportunity> findByCompanyIdAndStageNotInOrderByExpectedCloseDateAsc(Long companyId, List<OpportunityStage> stages);
 
     @Query("SELECT o FROM Opportunity o WHERE o.company.id = :companyId AND " +
@@ -46,6 +48,25 @@ public interface OpportunityRepository extends JpaRepository<Opportunity, Long> 
            "FROM Opportunity o WHERE o.company.id = :companyId AND o.deleted = false " +
            "GROUP BY o.stage")
     List<PipelineStageSummary> summarizePipeline(@Param("companyId") Long companyId);
+
+    @Query("SELECT COALESCE(SUM(o.amount), 0) FROM Opportunity o WHERE o.company.id = :companyId AND " +
+           "o.stage = 'WON' AND o.actualCloseDate BETWEEN :from AND :to AND o.deleted = false")
+    java.math.BigDecimal sumWonAmountBetween(@Param("companyId") Long companyId,
+        @Param("from") java.time.LocalDate from, @Param("to") java.time.LocalDate to);
+
+    @Query("SELECT COALESCE(SUM(o.amount), 0) FROM Opportunity o WHERE o.company.id = :companyId AND " +
+           "o.stage NOT IN ('WON', 'LOST') AND o.deleted = false")
+    java.math.BigDecimal sumOpenPipelineValue(@Param("companyId") Long companyId);
+
+    long countByCompanyId(Long companyId);
+
+    long countByCompanyIdAndStage(Long companyId, OpportunityStage stage);
+
+    long countByCompanyIdAndStageNotIn(Long companyId, List<OpportunityStage> stages);
+
+    @Query("SELECT COALESCE(SUM(o.amount), 0) FROM Opportunity o WHERE o.company.id = :companyId AND " +
+           "o.stage = :stage AND o.deleted = false")
+    java.math.BigDecimal sumAmountByCompanyIdAndStage(@Param("companyId") Long companyId, @Param("stage") OpportunityStage stage);
 
     interface PipelineStageSummary {
         OpportunityStage getStage();

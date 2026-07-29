@@ -58,6 +58,13 @@ public class JournalEntryController {
         return ResponseEntity.ok().build();
     }
 
+    @PostMapping("/{id}/reverse")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
+    @Operation(summary = "Reverse a posted Journal Entry")
+    public ResponseEntity<JournalEntryResponse> reverse(@PathVariable Long id) {
+        return ResponseEntity.ok(service.reverse(id));
+    }
+
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('COMPANY_OWNER')")
     @Operation(summary = "Delete Journal Entry")

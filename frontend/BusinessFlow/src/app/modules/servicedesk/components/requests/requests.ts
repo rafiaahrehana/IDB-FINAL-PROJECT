@@ -255,6 +255,34 @@ export class Requests implements OnInit {
     return request.slaBreach;
   }
 
+  statusClass(status: string): string {
+    return (
+      {
+        PENDING: 'text-bg-warning',
+        QUOTATION_PENDING: 'text-bg-warning',
+        ASSIGNED: 'text-bg-info',
+        IN_PROGRESS: 'text-bg-primary',
+        WAITING_CLIENT: 'text-bg-warning',
+        UNDER_REVIEW: 'text-bg-info',
+        COMPLETED: 'text-bg-success',
+        REJECTED: 'text-bg-danger',
+        CANCELLED: 'text-bg-secondary',
+        RESUBMITTED: 'text-bg-info',
+      }[status] || 'text-bg-secondary'
+    );
+  }
+
+  priorityClass(priority: string): string {
+    return (
+      {
+        LOW: 'text-bg-secondary',
+        NORMAL: 'text-bg-info',
+        HIGH: 'text-bg-warning',
+        URGENT: 'text-bg-danger',
+      }[priority] || 'text-bg-secondary'
+    );
+  }
+
   goToPage(p: number): void {
     this.page = p;
     this.load();

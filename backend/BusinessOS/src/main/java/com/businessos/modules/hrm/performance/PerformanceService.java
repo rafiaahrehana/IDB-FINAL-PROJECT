@@ -18,4 +18,7 @@ public interface PerformanceService {
     PerformanceReviewResponse finalise(Long id);
 
     void delete(Long id);
+
+    /** Summarise a review's real scores/notes with AI into a polished narrative */
+    PerformanceReviewResponse summarise(Long id);
 }

@@ -28,9 +28,10 @@ import { CustomRoleService } from '../../../roles-permissions/services/custom-ro
 import { HasPermissionDirective } from '../../../../shared/directives/has-permission.directive';
 import { CustomRole } from '../../../roles-permissions/models/roles-permissions.model';
 
+import { BosCurrencyPipe } from '../../../../shared/pipes/bos-currency.pipe';
 @Component({
   selector: 'app-employees',
-  imports: [CommonModule, FormsModule, RouterLink, Pagination, Loader, EmptyState, ConfirmDialog, LocationComponent, FileUpload, HasPermissionDirective],
+  imports: [BosCurrencyPipe, CommonModule, FormsModule, RouterLink, Pagination, Loader, EmptyState, ConfirmDialog, LocationComponent, FileUpload, HasPermissionDirective],
   templateUrl: './employees.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './employees.scss',
@@ -49,6 +50,7 @@ export class Employees implements OnInit {
   success = '';
   departmentFilter: number | '' = '';
   statusFilter: EmploymentStatus | '' = '';
+  searchQuery = '';
 
   statuses = EMPLOYMENT_STATUSES;
   types = EMPLOYMENT_TYPES;
@@ -89,7 +91,14 @@ export class Employees implements OnInit {
     this.loading = true;
     this.error = '';
     this.employeeService
-      .list(this.page, 20, this.departmentFilter || undefined, this.statusFilter || undefined, true)
+      .list(
+        this.page,
+        20,
+        this.departmentFilter || undefined,
+        this.statusFilter || undefined,
+        true,
+        this.searchQuery || undefined
+      )
       .subscribe({
         next: (res) => {
           this.employees = res.content;
@@ -103,6 +112,24 @@ export class Employees implements OnInit {
           this.cdr.markForCheck();
         },
       });
+  }
+
+  onSearch(): void {
+    this.page = 0;
+    this.load();
+  }
+
+  onFilterChange(): void {
+    this.page = 0;
+    this.load();
+  }
+
+  clearFilters(): void {
+    this.searchQuery = '';
+    this.departmentFilter = '';
+    this.statusFilter = '';
+    this.page = 0;
+    this.load();
   }
 
   save(): void {
@@ -208,6 +235,22 @@ export class Employees implements OnInit {
   goToPage(p: number): void {
     this.page = p;
     this.load();
+  }
+
+  downloadPdf(): void {
+    this.employeeService
+      .downloadPdf(this.departmentFilter || undefined, this.statusFilter || undefined, this.searchQuery || undefined, true)
+      .subscribe({
+        next: (blob) => {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'employees.pdf';
+          a.click();
+          URL.revokeObjectURL(url);
+        },
+        error: () => { this.error = 'Failed to download employees PDF'; this.cdr.markForCheck(); },
+      });
   }
 
   private cleanPayload(): CreateEmployeeRequest {

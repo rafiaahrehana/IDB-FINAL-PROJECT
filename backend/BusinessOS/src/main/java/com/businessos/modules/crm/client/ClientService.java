@@ -19,7 +19,7 @@ public interface ClientService {
 
     ClientResponse updateMyProfile(UpdateMyClientProfileRequest request);
 
-    Page<ClientResponse> listAll(ClientStatus status, Pageable pageable);
+    Page<ClientResponse> listAll(ClientStatus status, Long tagId, Pageable pageable);
 
     /** Lightweight, ungated - the active-client picker used by Invoices, Payment Receipts, and Pipeline. */
     List<ClientResponse> listActive();

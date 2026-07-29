@@ -1,14 +1,7 @@
 <div class="container-fluid py-3">
-  <div class="page-hero">
-    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
-      <div>
-        <div class="page-hero-label">ATTENDANCE</div>
-        <h4 class="page-hero-title underline-amber">Shift Assignments</h4>
-      </div>
-      <div class="page-hero-actions">
-        <button *appHasPermission="'SHIFT_ASSIGNMENT_CREATE'" class="btn btn-hero-primary btn-sm" (click)="openCreate()"><i class="bi bi-plus-circle"></i> Assign Shift</button>
-      </div>
-    </div>
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4 p-3 rounded-3 shadow-sm page-header-bar">
+    <h4 class="mb-0">Shift Assignments</h4>
+    <button *appHasPermission="'SHIFT_ASSIGNMENT_CREATE'" class="btn btn-primary btn-sm" (click)="openCreate()"><i class="bi bi-plus"></i> Assign Shift</button>
   </div>
   @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
   @if (success) { <div class="alert alert-success py-2">{{ success }}</div> }
@@ -74,7 +67,7 @@
   @if (!loading && assignments.length) {
   <div class="card"><div class="table-responsive">
     <table class="table table-hover table-sm align-middle mb-0">
-      <thead><tr><th>Employee</th><th>Shift</th><th>Start</th><th>End</th><th>Status</th><th></th></tr></thead>
+      <thead class="table-light"><tr><th>Employee</th><th>Shift</th><th>Start</th><th>End</th><th>Status</th><th></th></tr></thead>
       <tbody>
         @for (a of assignments; track a.id) {
         <tr>

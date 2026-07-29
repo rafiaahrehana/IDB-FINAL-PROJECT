@@ -30,4 +30,7 @@ public interface WorkflowService {
     WorkflowStageResponse updateStage(Long templateId, Long stageId, WorkflowStageRequest request);
 
     void deleteStage(Long templateId, Long stageId);
+
+    /** Suggest a new workflow's stages with AI, grounded in the company's existing templates */
+    WorkflowSuggestionResponse suggest(WorkflowSuggestionRequest request);
 }

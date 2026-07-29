@@ -1,15 +1,10 @@
 <div class="container-fluid py-3">
-  <div class="page-hero">
-    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
-      <div>
-        <div class="page-hero-label">SERVICE DESK</div>
-        <h4 class="page-hero-title underline-rose">Services</h4>
-        <div class="page-hero-subtitle">Explore all available services and request the one you need.</div>
-      </div>
-      <div class="page-hero-actions">
-        <button *appHasPermission="'SERVICE_CATALOG_CREATE'" class="btn btn-hero-primary" (click)="openCreate()"><i class="bi bi-plus-circle"></i> New Service</button>
-      </div>
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3 p-3 rounded-3 shadow-sm page-header-bar">
+    <div>
+      <h4 class="mb-1 fw-bold">Services</h4>
+      <p class="text-muted small mb-0">Explore all available services and request the one you need.</p>
     </div>
+    <button *appHasPermission="'SERVICE_CATALOG_CREATE'" class="btn btn-primary btn-sm" (click)="openCreate()"><i class="bi bi-plus"></i> New Service</button>
   </div>
   @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
   @if (success) { <div class="alert alert-success py-2">{{ success }}</div> }
@@ -76,12 +71,27 @@
   }
 
   @if (!loading && services.length) {
-  <div class="row g-3">
-    @for (s of services; track s.id; let i = $index) {
+  <div class="input-group mb-3" style="max-width: 320px;">
+    <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+    <input class="form-control border-start-0 ps-0" placeholder="Search services..." [(ngModel)]="searchTerm" />
+  </div>
+
+  @if (!filteredServices.length) {
+    <app-empty-state icon="bi-search" [message]="'No services match \'' + searchTerm + '\'.'" />
+  }
+
+  @for (group of groupedServices; track group.categoryName; let gi = $index) {
+  <div class="d-flex align-items-center gap-2 mb-3" [class.mt-4]="gi > 0">
+    <h5 class="mb-0 fw-bold">{{ group.categoryName }}</h5>
+    <span class="badge bg-light text-secondary border rounded-pill">{{ group.services.length }} Service{{ group.services.length === 1 ? '' : 's' }}</span>
+  </div>
+  <div class="row g-3 mb-2">
+    @for (s of group.services; track s.id) {
     <div class="col-md-6 col-lg-4 col-xl-3">
       <div class="service-card rounded-4 p-4 h-100 d-flex flex-column position-relative"
-           [style.--card-border-color]="getServiceBorderColor(s, i)"
-           [style.--card-hover-border-color]="getServiceHoverBorderColor(s, i)">
+           [style.--card-border-color]="getServiceBorderColor(s, gi)"
+           [style.--card-hover-border-color]="getServiceHoverBorderColor(s, gi)"
+           [style.--card-bg-color]="getIconColor(s, gi)">
         
         <!-- Status & Featured Badges -->
         <div class="position-absolute top-0 end-0 p-3 d-flex gap-2">
@@ -98,18 +108,15 @@
 
         <!-- Icon Wrapper -->
         <div class="icon-wrapper rounded-3 d-inline-flex align-items-center justify-content-center mb-3 flex-shrink-0"
-             [style.background]="getIconBg(s, i)"
-             [style.color]="getIconColor(s, i)"
+             [style.background]="getIconBg(s, gi)"
+             [style.color]="getIconColor(s, gi)"
              style="width: 48px; height: 48px;">
           <i class="bi fs-5" [ngClass]="getServiceIcon(s.name)"></i>
         </div>
 
         <!-- Card Content -->
         <div class="flex-grow-1">
-          <h5 class="fw-bold mb-1 fs-6 text-dark">{{ s.name }}</h5>
-          @if (s.categoryName) {
-            <div class="text-primary fw-semibold small mb-2" style="font-size: 0.8rem;">{{ s.categoryName }}</div>
-          }
+          <h5 class="fw-bold mb-2 fs-6 text-dark">{{ s.name }}</h5>
           @if (s.description) {
             <p class="text-muted small mb-3 service-desc">{{ s.description }}</p>
           }
@@ -120,7 +127,7 @@
           <div class="d-flex justify-content-between align-items-center mb-3">
             <div class="fw-bold text-dark">
               @if (s.price != null && !s.requiresQuotation) {
-                {{ s.price | currency: (s.currency || 'BDT ') : 'symbol' : '1.0-0' }}
+                {{ s.price | bosCurrency: (s.currency || 'BDT ') : 'symbol' : '1.0-0' }}
               } @else {
                 <span class="text-muted small fw-medium">Quoted per request</span>
               }
@@ -158,9 +165,7 @@
     </div>
     }
   </div>
-  <div class="d-flex justify-content-end mt-3">
-    <app-pagination [page]="page" [totalPages]="totalPages" (pageChange)="goToPage($event)" />
-  </div>
+  }
   }
   @if (!loading && !services.length && !showForm) { <app-empty-state icon="bi-grid" message="No services in the catalog yet." /> }
 

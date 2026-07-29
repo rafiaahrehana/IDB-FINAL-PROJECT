@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ATTENDANCE_STATUSES, AttendanceRecord, ManualAttendanceRequest } from '../../models/attendance.model';
 import { AttendanceService } from '../../services/attendance.service';
+import { AuthService } from '../../../../core/services/auth.service';
 import { EmployeeService } from '../../../hrm/services/employee.service';
 import { Employee } from '../../../hrm/models/hrm.model';
 import { Pagination } from '../../../../shared/components/pagination/pagination';
@@ -25,19 +26,73 @@ export class AttendanceList implements OnInit {
   error = '';
   success = '';
   statusFilter = '';
+  dateFilter = '';
+  searchQuery = '';
   statuses = ATTENDANCE_STATUSES;
 
   showForm = false;
   saving = false;
   form: Partial<ManualAttendanceRequest> = {};
 
+  // Owner-only "Backfill absentees" action
+  isOwner = false;
+  showBackfill = false;
+  backfilling = false;
+  backfillStart = '';
+  backfillEnd = '';
+
+  get consolidatedRecords(): AttendanceRecord[] {
+    const map = new Map<string, AttendanceRecord>();
+    for (const r of this.records) {
+      const key = `${r.employeeId || r.employeeName}_${r.attendanceDate}`;
+      if (!map.has(key)) {
+        map.set(key, { ...r });
+      } else {
+        const existing = map.get(key)!;
+        if (!existing.checkInTime && r.checkInTime) {
+          existing.checkInTime = r.checkInTime;
+        }
+        if (!existing.checkOutTime && r.checkOutTime) {
+          existing.checkOutTime = r.checkOutTime;
+        }
+        if (existing.status === 'ABSENT' && r.status !== 'ABSENT') {
+          existing.status = r.status;
+        }
+        if (r.isLate) {
+          existing.isLate = true;
+          existing.lateMinutes = r.lateMinutes;
+        }
+        if (r.approved) {
+          existing.approved = true;
+        }
+        if (existing.checkInTime && existing.checkOutTime) {
+          existing.totalWorkingHours = this.calcHours(existing.checkInTime, existing.checkOutTime);
+        }
+      }
+    }
+    return Array.from(map.values());
+  }
+
+  private calcHours(inTime: string, outTime: string): number {
+    try {
+      const [h1, m1] = inTime.split(':').map(Number);
+      const [h2, m2] = outTime.split(':').map(Number);
+      const mins = (h2 * 60 + m2) - (h1 * 60 + m1);
+      return mins > 0 ? Number((mins / 60).toFixed(2)) : 0;
+    } catch {
+      return 0;
+    }
+  }
+
   constructor(
     private attendanceService: AttendanceService,
     private employeeService: EmployeeService,
+    private auth: AuthService,
     private cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit(): void {
+    this.isOwner = this.auth.hasRole('COMPANY_OWNER');
     this.load();
     this.employeeService.list(0, 500).subscribe({ next: (res) => { this.employees = res.content; this.cdr.markForCheck(); } });
   }
@@ -45,22 +100,42 @@ export class AttendanceList implements OnInit {
   load(): void {
     this.loading = true;
     this.cdr.markForCheck();
-    const obs = this.statusFilter
-      ? this.attendanceService.listByStatus(this.statusFilter, this.page)
-      : this.attendanceService.list(this.page);
-    obs.subscribe({
-      next: (res) => {
-        this.records = res.content;
-        this.totalPages = res.totalPages;
-        this.loading = false;
-        this.cdr.markForCheck();
-      },
-      error: () => {
-        this.error = 'Failed to load records';
-        this.loading = false;
-        this.cdr.markForCheck();
-      },
-    });
+    this.attendanceService
+      .list(
+        this.page,
+        20,
+        this.statusFilter || undefined,
+        this.dateFilter || undefined,
+        undefined,
+        undefined,
+        this.searchQuery || undefined
+      )
+      .subscribe({
+        next: (res) => {
+          this.records = res?.content ?? [];
+          this.totalPages = res?.totalPages ?? 0;
+          this.loading = false;
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.error = 'Failed to load records';
+          this.loading = false;
+          this.cdr.markForCheck();
+        },
+      });
+  }
+
+  onFilterChange(): void {
+    this.page = 0;
+    this.load();
+  }
+
+  clearFilters(): void {
+    this.dateFilter = '';
+    this.statusFilter = '';
+    this.searchQuery = '';
+    this.page = 0;
+    this.load();
   }
 
   approve(r: AttendanceRecord): void {
@@ -105,6 +180,42 @@ export class AttendanceList implements OnInit {
       error: (err) => {
         this.saving = false;
         this.error = err?.error?.message || 'Failed to record attendance';
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  openBackfill(): void {
+    const today = new Date();
+    const weekAgo = new Date();
+    weekAgo.setDate(today.getDate() - 7);
+    this.backfillStart = weekAgo.toISOString().slice(0, 10);
+    this.backfillEnd = today.toISOString().slice(0, 10);
+    this.error = '';
+    this.showBackfill = true;
+  }
+
+  runBackfill(): void {
+    if (!this.backfillStart || !this.backfillEnd) return;
+    if (this.backfillStart > this.backfillEnd) {
+      this.error = 'Start date must not be after end date';
+      return;
+    }
+    this.backfilling = true;
+    this.error = '';
+    this.attendanceService.backfillAbsentees(this.backfillStart, this.backfillEnd).subscribe({
+      next: (res) => {
+        this.backfilling = false;
+        this.showBackfill = false;
+        this.success = res.created > 0
+          ? `Marked ${res.created} absentee record${res.created === 1 ? '' : 's'} for ${res.startDate} → ${res.endDate}.`
+          : `No new absences found for ${res.startDate} → ${res.endDate}.`;
+        this.cdr.markForCheck();
+        this.load();
+      },
+      error: (err) => {
+        this.backfilling = false;
+        this.error = err?.error?.error || err?.error?.message || 'Failed to backfill absentees';
         this.cdr.markForCheck();
       },
     });

@@ -26,9 +26,18 @@ public class ChartOfAccountRequest {
     // Matches ChartOfAccountResponse.isHeaderAccount naming/JSON key - see the comment there.
     @JsonProperty("isHeaderAccount")
     private boolean isHeaderAccount;
+    @JsonProperty("isBankAccount")
+    private boolean isBankAccount;
     @Builder.Default
     private boolean allowDirectPosting = true;
     @Builder.Default
     private boolean active = true;
     private String notes;
+
+    // Migration support: the balance this account starts with (from a previous
+    // accounting system). Posts a balanced entry against Opening Balance Equity on
+    // create - can't just set the balance field or the ledger wouldn't back it up.
+    @DecimalMin(value = "0.0")
+    private java.math.BigDecimal openingBalance;
+    private java.time.LocalDate openingBalanceDate;
 }

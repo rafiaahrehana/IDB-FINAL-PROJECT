@@ -78,3 +78,39 @@
   filter: brightness(1.08);
   color: #fff;
 }
+
+/* Header */
+.badge-eyebrow {
+  color: #6a42e5;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.trust-badge {
+  background: #efe9fd;
+  color: #3d2678;
+  font-weight: 500;
+  font-size: 0.85rem;
+  padding: 0.4rem 0.9rem;
+  border-radius: 999px;
+
+  i {
+    color: #7d55fa;
+  }
+}
+
+/* Plan icon badge */
+.plan-icon-badge {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: #efe9fd;
+  color: #7d55fa;
+  font-size: 1.1rem;
+}
+
+/* Custom solution banner */
+.custom-solution-banner {
+  background: #f7f5ff;
+  border: 1px solid #e3d9fc;
+}

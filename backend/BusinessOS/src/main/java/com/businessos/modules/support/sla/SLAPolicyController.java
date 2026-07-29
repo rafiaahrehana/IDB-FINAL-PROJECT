@@ -22,7 +22,7 @@ public class SLAPolicyController {
     private final SLAPolicyService service;
 
     @PostMapping
-    @PreAuthorize("hasRole('SUPPORT_MANAGER') or hasRole('COMPANY_OWNER') or hasAnyRole('SUPER_ADMIN', 'SYSTEM_ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'SYSTEM_ADMIN')")
     @Operation(summary = "Create SLA Policy")
     public ResponseEntity<SLAPolicyResponse> create(@Valid @RequestBody SLAPolicyRequest request) {
         return new ResponseEntity<>(service.create(request), HttpStatus.CREATED);
@@ -59,7 +59,7 @@ public class SLAPolicyController {
     }
 
     @PatchMapping("/{id}")
-    @PreAuthorize("hasRole('SUPPORT_MANAGER') or hasRole('COMPANY_OWNER') or hasAnyRole('SUPER_ADMIN', 'SYSTEM_ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'SYSTEM_ADMIN')")
     @Operation(summary = "Update SLA Policy")
     public ResponseEntity<SLAPolicyResponse> update(
             @PathVariable Long id,
@@ -68,7 +68,7 @@ public class SLAPolicyController {
     }
 
     @PatchMapping("/{id}/status")
-    @PreAuthorize("hasRole('SUPPORT_MANAGER') or hasRole('COMPANY_OWNER') or hasAnyRole('SUPER_ADMIN', 'SYSTEM_ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'SYSTEM_ADMIN')")
     @Operation(summary = "Update SLA Policy Status")
     public ResponseEntity<Void> updateStatus(
             @PathVariable Long id,
@@ -78,7 +78,7 @@ public class SLAPolicyController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('COMPANY_OWNER') or hasAnyRole('SUPER_ADMIN', 'SYSTEM_ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'SYSTEM_ADMIN')")
     @Operation(summary = "Delete SLA Policy")
     public ResponseEntity<SLAPolicyResponse> delete(@PathVariable Long id) {
         return ResponseEntity.ok(service.delete(id));

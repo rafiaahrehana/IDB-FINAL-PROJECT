@@ -1,4 +1,16 @@
+.text-navy {
+  color: #0F172A !important;
+}
+
 .designation-text {
-  color: #581c87 !important;
+  color: #0F172A !important; /* Deep Navy */
   font-weight: 600 !important;
+}
+
+.section-label {
+  color: #4C1D95; /* Dark Purple */
+  font-weight: bold;
+  border-bottom: 1px solid #4C1D95;
+  padding-bottom: 4px;
+  margin-bottom: 12px;
 }

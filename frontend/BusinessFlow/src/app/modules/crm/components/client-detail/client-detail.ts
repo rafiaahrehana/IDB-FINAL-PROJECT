@@ -9,9 +9,10 @@ import { ActivityService } from '../../services/activity.service';
 import { OpportunityService } from '../../services/opportunity.service';
 import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/confirm-dialog';
 
+import { BosCurrencyPipe } from '../../../../shared/pipes/bos-currency.pipe';
 @Component({
   selector: 'app-client-detail',
-  imports: [CommonModule, FormsModule, ConfirmDialog],
+  imports: [BosCurrencyPipe, CommonModule, FormsModule, ConfirmDialog],
   templateUrl: './client-detail.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './client-detail.scss',
@@ -30,6 +31,10 @@ export class ClientDetail implements OnInit {
   deleteContactTarget: ClientContact | null = null;
 
   newActivity: Partial<CrmActivity> = { type: 'NOTE' };
+
+  aiSummary = '';
+  summarising = false;
+  summaryError = '';
 
   constructor(
     private route: ActivatedRoute,
@@ -175,6 +180,37 @@ export class ClientDetail implements OnInit {
         this.cdr.markForCheck();
       },
     });
+  }
+
+  summariseActivity(): void {
+    if (this.summarising) return;
+    this.summarising = true;
+    this.summaryError = '';
+    this.cdr.markForCheck();
+    this.activityService.summarise({ clientId: this.clientId }).subscribe({
+      next: (res) => {
+        this.aiSummary = res.summary;
+        this.summarising = false;
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        this.summaryError = err?.error?.message || 'Failed to generate summary';
+        this.summarising = false;
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  get openOpportunitiesCount(): number {
+    return this.opportunities.filter((o) => o.stage !== 'WON' && o.stage !== 'LOST').length;
+  }
+
+  get completedOpportunitiesCount(): number {
+    return this.opportunities.filter((o) => o.stage === 'WON').length;
+  }
+
+  get lastActivityDate(): string | undefined {
+    return this.activities[0]?.activityDate;
   }
 
   activityIcon(type: string): string {

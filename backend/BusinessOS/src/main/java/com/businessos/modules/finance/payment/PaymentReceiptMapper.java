@@ -20,6 +20,8 @@ public class PaymentReceiptMapper {
                 .transactionReference(entity.getTransactionReference())
                 .status(entity.getStatus())
                 .depositedToBank(entity.getDepositedToBank())
+                .reversedDate(entity.getReversedDate())
+                .reversalReason(entity.getReversalReason())
                 .notes(entity.getNotes())
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())

@@ -44,6 +44,13 @@ public class ChartOfAccount extends BaseEntity {
     @Builder.Default
     private boolean isHeaderAccount = false; // Parent account for grouping
 
+    // Marks this as a real bank/cash account, so Bank Reconciliation's account picker
+    // can show only accounts that make sense to reconcile against a bank statement -
+    // without this, any ASSET-type account (Fixed Assets, Accounts Receivable, an
+    // equipment account, etc.) looks identical to an actual bank account.
+    @Builder.Default
+    private boolean isBankAccount = false;
+
     // For sub-accounts
     private Long parentAccountId; // If this is a sub-account
 

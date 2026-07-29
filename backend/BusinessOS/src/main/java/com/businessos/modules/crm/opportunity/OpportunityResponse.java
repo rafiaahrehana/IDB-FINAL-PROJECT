@@ -38,4 +38,10 @@ public class OpportunityResponse {
     private LocalDateTime stageChangedAt;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    private java.util.List<com.businessos.modules.crm.tag.TagResponse> tags;
+
+    // Set only when this Opportunity just reached Won and a possible-duplicate Client was
+    // linked automatically (informational - see OpportunityServiceImpl.resolveClientForWonDeal).
+    private com.businessos.modules.crm.duplicate.DuplicateMatch possibleDuplicate;
 }

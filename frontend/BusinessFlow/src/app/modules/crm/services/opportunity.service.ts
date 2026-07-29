@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService, PagedResponse } from '../../../core/services/api.service';
-import { Opportunity, OpportunityStage, PipelineSummary } from '../models/crm.model';
+import { ChangeStageRequest, DuplicateMatch, Opportunity, OpportunityStage, PipelineSummary } from '../models/crm.model';
 
 @Injectable({ providedIn: 'root' })
 export class OpportunityService {
@@ -29,8 +29,14 @@ export class OpportunityService {
     return this.api.patch<Opportunity>(`${this.endpoint}/${id}`, payload);
   }
 
-  changeStage(id: number, stage: OpportunityStage, lostReason?: string): Observable<Opportunity> {
-    return this.api.patch<Opportunity>(`${this.endpoint}/${id}/stage`, { stage, lostReason });
+  changeStage(id: number, stage: OpportunityStage, options?: Partial<ChangeStageRequest>): Observable<Opportunity> {
+    return this.api.patch<Opportunity>(`${this.endpoint}/${id}/stage`, { stage, ...options });
+  }
+
+  // Called before committing a WON stage change on a client-less opportunity, so the UI
+  // can confirm link-existing vs create-new before the transition happens.
+  previewWonDuplicate(id: number): Observable<DuplicateMatch | null> {
+    return this.api.get<DuplicateMatch | null>(`${this.endpoint}/${id}/won-duplicate-check`);
   }
 
   pipelineSummary(): Observable<PipelineSummary> {

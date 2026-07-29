@@ -30,6 +30,10 @@ export class LeavePolicyService {
   }
 
   delete(id: number): Observable<string> {
-    return this.api.delete<string>(`${this.endpoint}/${id}`);
+    return this.api.deleteText(`${this.endpoint}/${id}`);
+  }
+
+  draftWithAi(remoteWorkAllowed: boolean, additionalContext: string): Observable<{ document: string }> {
+    return this.api.post<{ document: string }>(`${this.endpoint}/draft`, { remoteWorkAllowed, additionalContext });
   }
 }

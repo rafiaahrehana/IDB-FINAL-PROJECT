@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService, PagedResponse } from '../../../core/services/api.service';
-import { Invoice, InvoiceRequest } from '../models/finance.model';
+import { Invoice, InvoiceRequest, CreditNote, CreditNoteRequest } from '../models/finance.model';
 
 export interface RefundRequest {
   id: number;
@@ -46,6 +46,10 @@ export class InvoiceService {
   getById(id: number): Observable<Invoice> {
     return this.api.get<Invoice>(`${this.endpoint}/${id}`);
   }
+
+  draftSummaryWithAi(id: number): Observable<{ summary: string }> {
+    return this.api.get<{ summary: string }>(`${this.endpoint}/${id}/ai-summary`);
+  }
   // Shared by staff and clients - the backend only lets a client download their own.
   downloadPdf(id: number): Observable<Blob> {
     return this.api.getBlob(`${this.endpoint}/${id}/pdf`);
@@ -81,5 +85,11 @@ export class InvoiceService {
   recordPayment(id: number, amount: number): Observable<void> {
     return this.api.post<void>(
       `${this.endpoint}/${id}/record-payment?amount=${encodeURIComponent(amount)}`, {});
+  }
+  issueCreditNote(payload: CreditNoteRequest): Observable<CreditNote> {
+    return this.api.post<CreditNote>(`${this.endpoint}/credit-notes`, payload);
+  }
+  listCreditNotes(invoiceId?: number, page = 0, size = 20): Observable<PagedResponse<CreditNote>> {
+    return this.api.getPaged<CreditNote>(`${this.endpoint}/credit-notes`, page, size, invoiceId ? { invoiceId } : undefined);
   }
 }

@@ -98,7 +98,7 @@
                 </div>
               </div>
               @if (!editingEmail) {
-                <button type="button" class="btn btn-outline-primary btn-sm px-4 rounded-pill fw-semibold" (click)="editingEmail = true; editingPassword = false">Change</button>
+                <button type="button" class="btn btn-outline-primary btn-sm px-4 rounded-pill fw-semibold" (click)="editEmail()">Change</button>
               }
             </div>
 
@@ -108,16 +108,24 @@
                 @if (success) { <div class="alert alert-success py-2 mb-3">{{ success }}</div> }
 
                 <form (ngSubmit)="saveEmail()">
-                  <div class="mb-4">
+                  <div class="mb-3">
+                    <label class="form-label fw-semibold small text-secondary">Current Email</label>
+                    <input type="email" class="form-control" [value]="(authService.currentUser$ | async)?.email" disabled />
+                  </div>
+                  <div class="mb-3">
                     <label class="form-label fw-semibold small text-secondary">New Email Address <span class="text-danger">*</span></label>
                     <input type="email" class="form-control" [(ngModel)]="emailForm.newEmail" name="newEmail" required placeholder="name@example.com" />
+                  </div>
+                  <div class="mb-4">
+                    <label class="form-label fw-semibold small text-secondary">Current Password <span class="text-danger">*</span></label>
+                    <input type="password" class="form-control" [(ngModel)]="emailForm.currentPassword" name="currentPasswordForEmail" required placeholder="Confirm with your password" autocomplete="current-password" />
                   </div>
                   <div class="d-flex gap-2">
                     <button type="submit" class="btn btn-primary px-4 rounded-3 d-flex align-items-center gap-2" [disabled]="changingEmail">
                       @if (changingEmail) { <span class="spinner-border spinner-border-sm"></span> }
                       <i class="bi bi-check-circle" *ngIf="!changingEmail"></i> Save Email
                     </button>
-                    <button type="button" class="btn btn-light border px-4 rounded-3" (click)="editingEmail = false">Cancel</button>
+                    <button type="button" class="btn btn-light border px-4 rounded-3" (click)="cancelEmail()">Cancel</button>
                   </div>
                 </form>
               </div>

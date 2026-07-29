@@ -311,8 +311,53 @@ public class ServicePackageServiceImpl implements ServicePackageService {
         sub.setCancellationReason(null);
         subscriptionRepository.save(sub);
 
-        
+
         return ServicePackageMapper.toSubscriptionResponse(sub);
+    }
+
+    // System entry points (scheduler) — no security/tenant context, mirrors activateForCompany().
+
+    @Override
+    @Transactional
+    public PackageSubscription renewSubscription(Long subscriptionId) {
+        PackageSubscription sub = subscriptionRepository.findById(subscriptionId)
+            .orElseThrow(() -> new ResourceNotFoundException("Subscription not found: " + subscriptionId));
+
+        if (sub.getStatus() != SubscriptionStatus.ACTIVE) {
+            throw new BadRequestException(
+                "Only ACTIVE subscriptions can be renewed. Current status: " + sub.getStatus());
+        }
+
+        LocalDate newStart = sub.getEndDate() != null ? sub.getEndDate() : LocalDate.now();
+        LocalDate newEnd = calculateEndDate(newStart, sub.getBillingCycle());
+
+        sub.setStartDate(newStart);
+        sub.setEndDate(newEnd);
+        sub.setNextBillingDate(newEnd);
+        // Re-price from the package's current effective price rather than keeping the
+        // old pricePaid — package price changes apply automatically at the client's next renewal.
+        sub.setPricePaid(sub.getServicePackage().getEffectivePrice());
+        sub.setRequestsUsed(0);
+        subscriptionRepository.save(sub);
+        return sub;
+    }
+
+    @Override
+    @Transactional
+    public PackageSubscription expireSubscription(Long subscriptionId) {
+        PackageSubscription sub = subscriptionRepository.findById(subscriptionId)
+            .orElseThrow(() -> new ResourceNotFoundException("Subscription not found: " + subscriptionId));
+
+        if (sub.getStatus() != SubscriptionStatus.ACTIVE) {
+            throw new BadRequestException(
+                "Only ACTIVE subscriptions can be expired. Current status: " + sub.getStatus());
+        }
+
+        sub.setStatus(SubscriptionStatus.EXPIRED);
+        sub.setCancelledAt(LocalDateTime.now());
+        sub.setCancellationReason("Subscription period ended");
+        subscriptionRepository.save(sub);
+        return sub;
     }
 
     @Override
@@ -458,12 +503,7 @@ public class ServicePackageServiceImpl implements ServicePackageService {
      //ONE_TIME returns null — the subscription never expires automatically.
 
     private LocalDate calculateEndDate(LocalDate start, com.businessos.enums.BillingCycle cycle) {
-        return switch (cycle) {
-            case MONTHLY   -> start.plusMonths(1);
-            case QUARTERLY -> start.plusMonths(3);
-            case YEARLY    -> start.plusYears(1);
-            case ONE_TIME  -> null;
-        };
+        return cycle.addTo(start);
     }
 
     private Long requireCompanyId() {

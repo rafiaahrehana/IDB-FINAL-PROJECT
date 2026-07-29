@@ -1,67 +1,72 @@
 <nav class="navbar appbar">
-  <div class="brand-container">
-    <button type="button" class="hamburger-btn" (click)="toggleSidebar()"
-      aria-label="Toggle menu">
-      <i class="bi bi-list"></i>
-    </button>
-    <a class="brand-logo" routerLink="/dashboard">
-      <div class="brand-icon">
-        <i class="bi bi-box"></i>
-      </div>
-      <span>BusinessOS</span>
-    </a>
-  </div>
-
+  <!-- Content: mobile menu toggle (left) + search / notifications / profile (right) -->
   <div class="navbar-content">
-    <div></div>
+    <button type="button" class="btn border-0 p-2 d-lg-none me-2 nav-hamburger" (click)="toggleSidebar()"
+      aria-label="Toggle menu">
+      <i class="bi bi-list fs-5"></i>
+    </button>
+    <!-- Right Section: Search, Notifications, and User Profile -->
+    <div class="d-flex align-items-center gap-3 justify-content-end flex-grow-1">
+      <!-- Search -->
+      <div class="search-wrapper">
+        <input name="searchQuery" class="form-control search-input" placeholder="Search"
+          [(ngModel)]="searchQuery" (keyup.enter)="goSearch()" />
+        <button type="button" class="search-icon" (click)="goSearch()" aria-label="Search">
+          <i class="bi bi-search"></i>
+        </button>
+      </div>
 
-    <div class="search-wrapper">
-      <i class="bi bi-search search-icon"></i>
-      <input name="searchQuery" class="form-control search-input" placeholder="Search modules, reports..."
-        [(ngModel)]="searchQuery" (keyup.enter)="goSearch()" />
-      <span class="kbd-shortcut">&#8984;K</span>
-    </div>
-
-      <div class="d-flex align-items-center gap-2 justify-content-end">
-      <button class="btn-nav-action" (click)="goSearchAi()" title="AI Search">
-        <i class="bi bi-stars"></i>
-      </button>
-
+      <!-- Notifications -->
       <app-notification-bell />
 
-      <button class="btn-nav-action" [routerLink]="settingsLink()" title="Settings">
-        <i class="bi bi-gear"></i>
-      </button>
-
-      <div class="dropdown">
-        <a class="user-chip dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-label="Profile">
+      <!-- User Profile -->
+      <div class="dropdown ms-2">
+        <a class="btn border-0 p-0 text-decoration-none d-flex align-items-center position-relative"
+          role="button" data-bs-toggle="dropdown" aria-label="Profile">
           @if ((auth.currentUser$ | async)?.profileImageUrl; as pic) {
-            <img [src]="pic" alt="Profile picture" class="user-avatar" />
+          <img [src]="pic" alt="Profile picture" class="rounded-circle shadow-sm"
+            style="width: 34px; height: 34px; object-fit: cover;" />
           } @else {
-            <span class="user-avatar user-avatar-initials">
+          <span class="d-flex align-items-center justify-content-center fw-bold rounded-circle shadow-sm"
+            style="width: 34px; height: 34px; font-size: 0.9rem; color: #1e1b4b !important; background-color: #e0d0f5 !important;">
+            {{ ((auth.currentUser$ | async)?.fullName || 'U').substring(0,1).toUpperCase() }}
+          </span>
+          }
+        </a>
+        <ul class="dropdown-menu dropdown-menu-end profile-menu border-0 shadow-sm mt-3">
+          <li class="profile-menu-header d-flex align-items-center gap-2 px-3 py-2">
+            @if ((auth.currentUser$ | async)?.profileImageUrl; as pic) {
+            <img [src]="pic" alt="Profile picture" class="rounded-circle"
+              style="width: 32px; height: 32px; object-fit: cover;" />
+            } @else {
+            <span class="d-flex align-items-center justify-content-center fw-bold rounded-circle"
+              style="width: 32px; height: 32px; font-size: 0.85rem; color: #1e1b4b !important; background-color: #e0d0f5 !important;">
               {{ ((auth.currentUser$ | async)?.fullName || 'U').substring(0,1).toUpperCase() }}
             </span>
-          }
-          <div class="user-info d-none d-md-flex">
-            <span class="user-name">{{ (auth.currentUser$ | async)?.fullName || 'User' }}</span>
-            <span class="user-role">{{ roleLabel((auth.currentUser$ | async)?.roles) }}</span>
-          </div>
-          <i class="bi bi-chevron-down ms-1" style="font-size:0.65rem; color:#6B7280;"></i>
-        </a>
-        <ul class="dropdown-menu dropdown-menu-end border-0 shadow-sm mt-2"
-          style="min-width: 220px; border-radius: 10px;">
-          <li class="px-3 py-2">
-            <div class="fw-bold" style="font-size: 0.875rem; color: #111827;">{{ ((auth.currentUser$ | async)?.fullName || 'User') }}</div>
-            <div class="text-muted" style="font-size: 0.78rem;">{{ roleLabel((auth.currentUser$ | async)?.roles) }}</div>
+            }
+            <div class="flex-grow-1 overflow-hidden">
+              <div class="fw-bold text-truncate" style="color: #1e1b4b; font-size: 0.9rem;">{{ ((auth.currentUser$ | async)?.fullName || 'User') }}</div>
+              <div class="text-muted text-truncate" style="font-size: 0.78rem;">{{ roleLabel((auth.currentUser$ | async)?.roles) }}</div>
+            </div>
           </li>
-          <li><hr class="dropdown-divider" style="margin: 0.3rem 0;"></li>
           <li>
-            <a class="dropdown-item d-flex align-items-center gap-2 py-2" [routerLink]="settingsLink()">
+            <hr class="dropdown-divider">
+          </li>
+          <li>
+            <a class="dropdown-item d-flex align-items-center gap-2" [routerLink]="settingsLink()">
+              <i class="bi bi-person opacity-75"></i>Profile
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item d-flex align-items-center gap-2" [routerLink]="accountSettingsLink()">
               <i class="bi bi-gear opacity-75"></i>Settings
             </a>
           </li>
           <li>
-            <a class="dropdown-item d-flex align-items-center gap-2 py-2 text-danger" role="button"
+            <hr class="dropdown-divider">
+          </li>
+          <li>
+            <a class="dropdown-item d-flex align-items-center gap-2 text-danger" role="button"
               (click)="auth.logout()">
               <i class="bi bi-box-arrow-right"></i>Logout
             </a>

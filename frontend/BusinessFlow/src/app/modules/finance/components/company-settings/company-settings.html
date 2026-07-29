@@ -1,0 +1,138 @@
+<div class="container-fluid py-3">
+  <div class="page-header mb-4 p-3 rounded-3 shadow-sm page-header-bar">
+    <div>
+      <h4 class="page-title mb-0">Company Billing Settings</h4>
+      <div class="page-subtitle mt-1">Shown on every invoice PDF sent to your clients</div>
+    </div>
+  </div>
+
+  @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
+  @if (success) { <div class="alert alert-success py-2">{{ success }}</div> }
+  @if (loading) { <app-loader /> }
+
+  @if (!loading) {
+  <form (ngSubmit)="save()">
+    <div class="card border-0 shadow-sm rounded-4 mb-3">
+      <div class="card-header bg-white fw-semibold">Company Details</div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label small text-muted">Company Name</label>
+            <input class="form-control form-control-sm" [(ngModel)]="form.companyName" name="companyName" />
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small text-muted">Phone</label>
+            <input class="form-control form-control-sm" [(ngModel)]="form.companyPhone" name="companyPhone" />
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small text-muted">Website</label>
+            <input class="form-control form-control-sm" [(ngModel)]="form.website" name="website" />
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small text-muted">Tax / VAT / BIN Registration Number</label>
+            <input class="form-control form-control-sm" [(ngModel)]="form.taxRegistrationNumber" name="taxRegistrationNumber" placeholder="e.g. BIN-000123456-0101" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 mb-3">
+      <div class="card-header bg-white fw-semibold">Accounting</div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label small text-muted">Fiscal Year Starts In</label>
+            <select class="form-select form-select-sm" [(ngModel)]="form.fiscalYearStartMonth" name="fiscalYearStartMonth">
+              <option [ngValue]="1">January</option>
+              <option [ngValue]="2">February</option>
+              <option [ngValue]="3">March</option>
+              <option [ngValue]="4">April</option>
+              <option [ngValue]="5">May</option>
+              <option [ngValue]="6">June</option>
+              <option [ngValue]="7">July</option>
+              <option [ngValue]="8">August</option>
+              <option [ngValue]="9">September</option>
+              <option [ngValue]="10">October</option>
+              <option [ngValue]="11">November</option>
+              <option [ngValue]="12">December</option>
+            </select>
+            <div class="form-text">Drives how your Accounting Periods are dated. Changing this doesn't move periods you've already generated.</div>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small text-muted">Base Currency</label>
+            <select class="form-select form-select-sm" [(ngModel)]="form.baseCurrency" name="baseCurrency">
+              <option value="BDT">BDT — Bangladeshi Taka</option>
+              <option value="USD">USD — US Dollar</option>
+              <option value="EUR">EUR — Euro</option>
+              <option value="GBP">GBP — British Pound</option>
+              <option value="INR">INR — Indian Rupee</option>
+            </select>
+            <div class="form-text">The currency your General Ledger keeps its books in. Foreign-currency invoices convert at their exchange rate.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 mb-3">
+      <div class="card-header bg-white fw-semibold">Business Address</div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label small text-muted">Street Address</label>
+            <input class="form-control form-control-sm" [(ngModel)]="form.locationDetail!.streetAddress" name="streetAddress" />
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small text-muted">City / Area (Level 3)</label>
+            <input class="form-control form-control-sm" [(ngModel)]="form.locationDetail!.level3" name="level3" />
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small text-muted">District / State (Level 2)</label>
+            <input class="form-control form-control-sm" [(ngModel)]="form.locationDetail!.level2" name="level2" />
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small text-muted">Division / Region (Level 1)</label>
+            <input class="form-control form-control-sm" [(ngModel)]="form.locationDetail!.level1" name="level1" />
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small text-muted">Postal Code</label>
+            <input class="form-control form-control-sm" [(ngModel)]="form.locationDetail!.postalCode" name="postalCode" />
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small text-muted">Country</label>
+            <input class="form-control form-control-sm" [(ngModel)]="form.locationDetail!.country" name="country" placeholder="e.g. Bangladesh" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 mb-3">
+      <div class="card-header bg-white fw-semibold">Bank Details for Invoice Payments</div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-3">
+            <label class="form-label small text-muted">Bank Name</label>
+            <input class="form-control form-control-sm" [(ngModel)]="form.bankName" name="bankName" />
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small text-muted">Account Name</label>
+            <input class="form-control form-control-sm" [(ngModel)]="form.bankAccountName" name="bankAccountName" />
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small text-muted">Account Number</label>
+            <input class="form-control form-control-sm" [(ngModel)]="form.bankAccountNumber" name="bankAccountNumber" />
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small text-muted">Branch</label>
+            <input class="form-control form-control-sm" [(ngModel)]="form.bankBranch" name="bankBranch" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary-bos btn-sm px-4 fw-semibold" [disabled]="saving">
+      @if (saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
+      Save Settings
+    </button>
+  </form>
+  }
+</div>

@@ -51,4 +51,13 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
 
     @Query("SELECT MAX(e.expenseNumber) FROM FinanceExpense e WHERE e.companyId IS NULL AND e.expenseNumber LIKE CONCAT(:prefix, '%')")
     Optional<String> findMaxExpenseNumberByPlatformAndPrefix(@Param("prefix") String prefix);
+
+    /** Actual spend in a category over a date window - used for budget-vs-actual. */
+    @Query("SELECT COALESCE(SUM(e.amount), 0) FROM FinanceExpense e " +
+           "WHERE e.companyId = :companyId AND LOWER(e.category) = LOWER(:category) " +
+           "AND e.expenseDate BETWEEN :start AND :end AND e.status IN :statuses")
+    java.math.BigDecimal sumByCategoryAndDateRange(
+            @Param("companyId") Long companyId, @Param("category") String category,
+            @Param("start") LocalDate start, @Param("end") LocalDate end,
+            @Param("statuses") List<ExpenseStatus> statuses);
 }

@@ -1,5 +1,6 @@
 import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ServiceCategory, CompanyService } from '../../../servicedesk/models/servicedesk.model';
 import { ServiceCategoryService } from '../../../servicedesk/services/service-category.service';
@@ -32,7 +33,7 @@ interface CategoryCard extends ServiceCategory {
 
 @Component({
   selector: 'app-client-categories',
-  imports: [CommonModule, Loader, EmptyState],
+  imports: [CommonModule, FormsModule, Loader, EmptyState],
   templateUrl: './client-categories.html',
   styleUrl: './client-categories.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -41,6 +42,17 @@ export class ClientCategories implements OnInit {
   categories: CategoryCard[] = [];
   loading = true;
   error = '';
+  searchTerm = '';
+
+  get filteredCategories(): CategoryCard[] {
+    const term = this.searchTerm.trim().toLowerCase();
+    if (!term) return this.categories;
+    return this.categories.filter((c) =>
+      c.name.toLowerCase().includes(term) ||
+      (c.description ?? '').toLowerCase().includes(term) ||
+      c.previewNames.some((n) => n.toLowerCase().includes(term))
+    );
+  }
 
   constructor(
     private categoryService: ServiceCategoryService,

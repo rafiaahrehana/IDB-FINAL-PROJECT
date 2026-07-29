@@ -197,4 +197,43 @@ export class SubscriptionManagement implements OnInit {
     };
     return classes[plan] || 'text-bg-secondary';
   }
+
+  getPlanBorderTop(code: string): string {
+    const borders: Record<string, string> = {
+      FREE: '4px solid #64748b',
+      STARTER: '4px solid #0d9488',
+      PRO: '4px solid #7c3aed',
+      ENTERPRISE: '4px solid #1e1b4b',
+      GROWTH: '4px solid #d97706',
+    };
+    return borders[code] || '4px solid #3b82f6';
+  }
+
+  getPlanBadgeStyle(code: string): { [key: string]: string } {
+    const styles: Record<string, { bg: string; color: string }> = {
+      FREE: { bg: '#f1f5f9', color: '#475569' },
+      STARTER: { bg: '#ccfbf1', color: '#0f766e' },
+      PRO: { bg: '#f3e8ff', color: '#6b21a8' },
+      ENTERPRISE: { bg: '#e0e7ff', color: '#3730a3' },
+      GROWTH: { bg: '#fef3c7', color: '#92400e' },
+    };
+    const s = styles[code] || { bg: '#e2e8f0', color: '#334155' };
+    return {
+      'background-color': s.bg,
+      'color': s.color,
+      'font-weight': '700',
+      'letter-spacing': '0.5px'
+    };
+  }
+
+  getSummaryCardTheme(code: string): { borderTop: string; iconBg: string; iconColor: string; icon: string } {
+    const themes: Record<string, { borderTop: string; iconBg: string; iconColor: string; icon: string }> = {
+      FREE: { borderTop: '4px solid #64748b', iconBg: '#f1f5f9', iconColor: '#475569', icon: 'bi-box' },
+      STARTER: { borderTop: '4px solid #0d9488', iconBg: '#ccfbf1', iconColor: '#0d9488', icon: 'bi-lightning-charge' },
+      PRO: { borderTop: '4px solid #7c3aed', iconBg: '#f3e8ff', iconColor: '#7c3aed', icon: 'bi-stars' },
+      ENTERPRISE: { borderTop: '4px solid #1e1b4b', iconBg: '#e0e7ff', iconColor: '#1e1b4b', icon: 'bi-shield-check' },
+      GROWTH: { borderTop: '4px solid #d97706', iconBg: '#fef3c7', iconColor: '#d97706', icon: 'bi-graph-up-arrow' },
+    };
+    return themes[code] || { borderTop: '4px solid #3b82f6', iconBg: '#dbeafe', iconColor: '#2563eb', icon: 'bi-box' };
+  }
 }

@@ -1,20 +1,21 @@
 <div class="container-fluid py-3">
-  <div class="page-hero">
-    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
-      <div>
-        <div class="page-hero-label">CRM</div>
-        <h4 class="page-hero-title underline-lavender">Clients</h4>
-        <div class="page-hero-subtitle">Manage your client accounts and relationships.</div>
-      </div>
-      <div class="page-hero-actions">
-        <select class="form-select form-select-sm" style="width: 160px" [(ngModel)]="statusFilter" (change)="page = 0; load()">
-          <option value="">All statuses</option>
-          @for (s of statuses; track s) { <option [value]="s">{{ s | titlecase }}</option> }
-        </select>
-        <button *appHasPermission="'CLIENT_CREATE'" class="btn-hero-primary" (click)="openCreate()">
-          <i class="bi bi-plus-circle"></i> Add Client
-        </button>
-      </div>
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <h4 class="mb-0">Client Management</h4>
+    <div class="d-flex gap-2">
+      <select class="form-select form-select-sm" style="width: 160px" [(ngModel)]="statusFilter" (change)="page = 0; load()">
+        <option value="">All statuses</option>
+        @for (s of statuses; track s) { <option [value]="s">{{ s | titlecase }}</option> }
+      </select>
+      <select class="form-select form-select-sm" style="width: 160px" [ngModel]="tagFilter" (ngModelChange)="setTagFilter($event)">
+        <option [ngValue]="null">All tags</option>
+        @for (t of tags; track t.id) { <option [ngValue]="t.id">{{ t.name }}</option> }
+      </select>
+      <button class="btn btn-outline-secondary btn-sm" routerLink="/crm/tags" title="Manage Tags">
+        <i class="bi bi-tags"></i>
+      </button>
+      <button *appHasPermission="'CLIENT_CREATE'" class="btn btn-primary btn-sm text-nowrap" (click)="openCreate()">
+        <i class="bi bi-person-plus me-1"></i>Add Client
+      </button>
     </div>
   </div>
 
@@ -23,22 +24,27 @@
   @if (loading) { <app-loader /> }
 
   @if (!loading && clients.length) {
-  <div class="card border-0 shadow-sm">
+  <div class="card">
     <div class="table-responsive">
       <table class="table table-hover table-sm align-middle mb-0">
         <thead class="table-light">
           <tr>
             <th>Account</th><th>Industry</th><th>Contact</th><th>Status</th>
-            <th>Portal</th><th>Account Manager</th><th>Onboarded</th><th></th>
+            <th>Tags</th><th>Portal</th><th>Account Manager</th><th>Onboarded</th><th></th>
           </tr>
         </thead>
         <tbody>
           @for (client of clients; track client.id) {
           <tr>
-            <td><a [routerLink]="['/crm/clients', client.id]" class="text-decoration-none fw-semibold" style="color: #4F46E5;">{{ client.clientCompanyName || (client.firstName + ' ' + client.lastName) }}</a></td>
+            <td><a [routerLink]="['/crm/clients', client.id]">{{ client.clientCompanyName || (client.firstName + ' ' + client.lastName) }}</a></td>
             <td>{{ client.industry || '-' }}</td>
             <td>{{ client.email || '-' }}</td>
             <td><span class="badge {{ statusClass(client.status) }}">{{ client.status }}</span></td>
+            <td>
+              @for (t of client.tagList; track t.id) {
+                <span class="badge rounded-pill me-1" [style.background-color]="t.color">{{ t.name }}</span>
+              }
+            </td>
             <td>
               @if (client.portalAccessEnabled) { <i class="bi bi-check-circle text-success"></i> }
               @else { <i class="bi bi-dash-circle text-muted"></i> }
@@ -58,7 +64,7 @@
         </tbody>
       </table>
     </div>
-    <div class="card-footer bg-white d-flex justify-content-end">
+    <div class="card-footer d-flex justify-content-end">
       <app-pagination [page]="page" [totalPages]="totalPages" (pageChange)="goToPage($event)" />
     </div>
   </div>
@@ -71,36 +77,19 @@
   <div class="modal d-block" style="background: rgba(0,0,0,.4)">
     <div class="modal-dialog modal-lg modal-dialog-centered">
       <div class="modal-content">
-        <div class="modal-header py-2" style="background: #4F46E5; color: #fff; border-radius: 0;">
-          <h5 class="modal-title fs-6 fw-semibold" style="color: #fff;">Add Client</h5>
-          <button class="btn-close btn-close-white" (click)="showCreate = false"></button>
+        <div class="modal-header py-2">
+          <h5 class="modal-title fs-6 fw-semibold">Add Client</h5>
+          <button class="btn-close" (click)="showCreate = false"></button>
         </div>
         <div class="modal-body">
-          <div class="section-label">Account Details</div>
           <div class="row g-2">
             <div class="col-md-6">
-              <label class="form-label small text-secondary mb-1">First Name <span class="text-danger">*</span></label>
-              <input class="form-control form-control-sm" [(ngModel)]="createForm.firstName" />
-            </div>
-            <div class="col-md-6">
-              <label class="form-label small text-secondary mb-1">Last Name <span class="text-danger">*</span></label>
-              <input class="form-control form-control-sm" [(ngModel)]="createForm.lastName" />
-            </div>
-            <div class="col-md-6">
-              <label class="form-label small text-secondary mb-1">Email <span class="text-danger">*</span></label>
-              <input type="email" class="form-control form-control-sm" [(ngModel)]="createForm.email" />
-            </div>
-            <div class="col-md-6">
-              <label class="form-label small text-secondary mb-1">Portal Password <span class="text-danger">*</span></label>
-              <input type="password" class="form-control form-control-sm" [(ngModel)]="createForm.password" autocomplete="new-password" />
+              <label class="form-label small text-secondary mb-1">Company Name <span class="text-danger">*</span></label>
+              <input class="form-control form-control-sm" [(ngModel)]="createForm.clientCompanyName" />
             </div>
             <div class="col-md-6">
               <label class="form-label small text-secondary mb-1">Phone</label>
               <input class="form-control form-control-sm" [(ngModel)]="createForm.phone" />
-            </div>
-            <div class="col-md-6">
-              <label class="form-label small text-secondary mb-1">Company Name</label>
-              <input class="form-control form-control-sm" [(ngModel)]="createForm.clientCompanyName" />
             </div>
             <div class="col-md-6">
               <label class="form-label small text-secondary mb-1">Industry</label>
@@ -141,12 +130,60 @@
               <label class="form-label small text-secondary mb-1">Tags <span class="text-muted">(comma-separated)</span></label>
               <input class="form-control form-control-sm" [(ngModel)]="createForm.tags" placeholder="vip, enterprise, renewal-risk" />
             </div>
+            <div class="col-12">
+              <label class="form-label small text-secondary mb-1">Tags</label>
+              <div class="d-flex flex-wrap gap-2">
+                @for (t of tags; track t.id) {
+                <label class="form-check form-check-inline m-0 px-2 py-1 rounded-pill border small"
+                       [style.border-color]="t.color" [class.text-white]="createForm.tagIds.includes(t.id)"
+                       [style.background-color]="createForm.tagIds.includes(t.id) ? t.color : 'transparent'">
+                  <input type="checkbox" class="form-check-input d-none" [value]="t.id"
+                         [checked]="createForm.tagIds.includes(t.id)"
+                         (change)="createForm.tagIds.includes(t.id) ? createForm.tagIds = createForm.tagIds.filter(id => id !== t.id) : createForm.tagIds = [...createForm.tagIds, t.id]" />
+                  {{ t.name }}
+                </label>
+                }
+                @if (!tags.length) { <span class="text-muted small">No tags yet - <a routerLink="/crm/tags">create one</a>.</span> }
+              </div>
+              <div class="d-flex align-items-center gap-2 mt-2">
+                <input type="color" class="form-control form-control-color form-control-sm p-1" style="width: 38px" [(ngModel)]="newTagColor" title="Tag color" />
+                <input class="form-control form-control-sm" style="max-width: 220px" placeholder="Write a new tag..."
+                       [(ngModel)]="newTagName" maxlength="50" (keyup.enter)="createTag(createForm)" />
+                <button type="button" class="btn btn-outline-secondary btn-sm text-nowrap" [disabled]="!newTagName.trim() || addingTag" (click)="createTag(createForm)">
+                  @if (addingTag) { <span class="spinner-border spinner-border-sm"></span> } @else { <i class="bi bi-plus-lg me-1"></i>Add Tag }
+                </button>
+              </div>
+            </div>
+            <div class="col-12 form-check mt-2 ms-1">
+              <input type="checkbox" class="form-check-input" id="provisionPortalLogin" [(ngModel)]="createForm.provisionPortalLogin" />
+              <label class="form-check-label small" for="provisionPortalLogin">Provision a portal login for this client now</label>
+            </div>
+            @if (createForm.provisionPortalLogin) {
+            <div class="col-md-6">
+              <label class="form-label small text-secondary mb-1">First Name <span class="text-danger">*</span></label>
+              <input class="form-control form-control-sm" [(ngModel)]="createForm.firstName" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small text-secondary mb-1">Last Name <span class="text-danger">*</span></label>
+              <input class="form-control form-control-sm" [(ngModel)]="createForm.lastName" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small text-secondary mb-1">Email <span class="text-danger">*</span></label>
+              <input type="email" class="form-control form-control-sm" [(ngModel)]="createForm.email" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small text-secondary mb-1">Portal Password <span class="text-danger">*</span></label>
+              <input type="password" class="form-control form-control-sm" [(ngModel)]="createForm.password" autocomplete="new-password" />
+            </div>
+            }
           </div>
-          <div class="form-text small mt-2">The email and password create the client's portal login.</div>
+          @if (!createForm.provisionPortalLogin) {
+          <div class="form-text small mt-2">No portal login will be created - the client record is created on its own. You can provision a login later from Edit.</div>
+          }
         </div>
         <div class="modal-footer py-2">
           <button class="btn btn-secondary btn-sm" (click)="showCreate = false">Cancel</button>
-          <button class="btn btn-primary btn-sm px-3 fw-semibold" (click)="saveCreate()" [disabled]="saving">
+          <button class="btn btn-primary btn-sm" (click)="saveCreate()" [disabled]="saving">
             @if (saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
             Create Client
           </button>
@@ -161,12 +198,11 @@
   <div class="modal d-block" style="background: rgba(0,0,0,.4)">
     <div class="modal-dialog modal-lg modal-dialog-centered">
       <div class="modal-content">
-        <div class="modal-header py-2" style="background: #4F46E5; color: #fff; border-radius: 0;">
-          <h5 class="modal-title fs-6 fw-semibold" style="color: #fff;">Edit Client</h5>
-          <button class="btn-close btn-close-white" (click)="editing = null"></button>
+        <div class="modal-header py-2">
+          <h5 class="modal-title fs-6 fw-semibold">Edit Client</h5>
+          <button class="btn-close" (click)="editing = null"></button>
         </div>
         <div class="modal-body">
-          <div class="section-label">Account Details</div>
           <div class="row g-2">
             <div class="col-12">
               <label class="form-label small text-secondary mb-1">Company Name</label>
@@ -217,6 +253,30 @@
               <label class="form-label small text-secondary mb-1">Tags <span class="text-muted">(comma-separated)</span></label>
               <input class="form-control form-control-sm" [(ngModel)]="editForm.tags" placeholder="vip, enterprise, renewal-risk" />
             </div>
+            <div class="col-12">
+              <label class="form-label small text-secondary mb-1">Tags</label>
+              <div class="d-flex flex-wrap gap-2">
+                @for (t of tags; track t.id) {
+                <label class="form-check form-check-inline m-0 px-2 py-1 rounded-pill border small"
+                       [style.border-color]="t.color" [class.text-white]="editForm.tagIds.includes(t.id)"
+                       [style.background-color]="editForm.tagIds.includes(t.id) ? t.color : 'transparent'">
+                  <input type="checkbox" class="form-check-input d-none" [value]="t.id"
+                         [checked]="editForm.tagIds.includes(t.id)"
+                         (change)="editForm.tagIds.includes(t.id) ? editForm.tagIds = editForm.tagIds.filter(id => id !== t.id) : editForm.tagIds = [...editForm.tagIds, t.id]" />
+                  {{ t.name }}
+                </label>
+                }
+                @if (!tags.length) { <span class="text-muted small">No tags yet - <a routerLink="/crm/tags">create one</a>.</span> }
+              </div>
+              <div class="d-flex align-items-center gap-2 mt-2">
+                <input type="color" class="form-control form-control-color form-control-sm p-1" style="width: 38px" [(ngModel)]="newTagColor" title="Tag color" />
+                <input class="form-control form-control-sm" style="max-width: 220px" placeholder="Write a new tag..."
+                       [(ngModel)]="newTagName" maxlength="50" (keyup.enter)="createTag(editForm)" />
+                <button type="button" class="btn btn-outline-secondary btn-sm text-nowrap" [disabled]="!newTagName.trim() || addingTag" (click)="createTag(editForm)">
+                  @if (addingTag) { <span class="spinner-border spinner-border-sm"></span> } @else { <i class="bi bi-plus-lg me-1"></i>Add Tag }
+                </button>
+              </div>
+            </div>
             <div class="col-12 form-check mt-2 ms-1">
               <input type="checkbox" class="form-check-input" id="portalAccess" [(ngModel)]="editForm.portalAccessEnabled" />
               <label class="form-check-label small" for="portalAccess">Portal access enabled</label>
@@ -225,7 +285,7 @@
         </div>
         <div class="modal-footer py-2">
           <button class="btn btn-secondary btn-sm" (click)="editing = null">Cancel</button>
-          <button class="btn btn-primary btn-sm px-3 fw-semibold" (click)="saveEdit()" [disabled]="saving">
+          <button class="btn btn-primary btn-sm" (click)="saveEdit()" [disabled]="saving">
             @if (saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
             Save Changes
           </button>
@@ -242,4 +302,6 @@
     confirmLabel="Delete"
     (confirmed)="confirmDelete()"
     (cancelled)="deleteTarget = null" />
+
+  <app-duplicate-warning-modal [match]="duplicateMatch" (dismissed)="duplicateMatch = null" />
 </div>

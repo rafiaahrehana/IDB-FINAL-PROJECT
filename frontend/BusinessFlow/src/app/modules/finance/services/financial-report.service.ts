@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService } from '../../../core/services/api.service';
-import { ProfitLossReport, BalanceSheetReport, TrialBalanceReport, AgeingReport, CashFlowReport } from '../models/finance.model';
+import { ProfitLossReport, BalanceSheetReport, TrialBalanceReport, AgeingReport, CashFlowReport, AccountLedgerReport } from '../models/finance.model';
 
 @Injectable({ providedIn: 'root' })
 export class FinancialReportService {
@@ -26,5 +26,9 @@ export class FinancialReportService {
 
   cashFlow(startDate: string, endDate: string): Observable<CashFlowReport> {
     return this.api.get<CashFlowReport>(`${this.endpoint}/cash-flow`, { startDate, endDate });
+  }
+
+  accountLedger(accountId: number, startDate: string, endDate: string): Observable<AccountLedgerReport> {
+    return this.api.get<AccountLedgerReport>(`${this.endpoint}/ledger`, { accountId, startDate, endDate });
   }
 }

@@ -9,13 +9,26 @@
         </a>
       </li>
       }
+      @if (showEmployeeDashboardLink) {
+      <li class="nav-item">
+        <a class="sidebar-link" routerLink="/employee-dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}">
+          <i class="bi bi-speedometer2"></i>My Dashboard
+        </a>
+      </li>
+      }
 
       @for (group of visibleGroups; track group.label) {
-        <div class="sidebar-group-header group-header-{{ group.label.toLowerCase().replace(' ', '-') }} px-3 mt-3 mb-1 text-uppercase fw-bold">{{ group.label }}</div>
-        @for (item of group.items; track item.link) {
-          <a class="sidebar-link group-{{ group.label.toLowerCase().replace(' ', '-') }}" [routerLink]="item.link" routerLinkActive="active">
-            <i class="bi {{ item.icon }}"></i>{{ item.label }}
-          </a>
+        <div class="sidebar-group-header group-header-{{ group.label.toLowerCase().replace(' ', '-') }} px-3 mt-3 mb-1 text-uppercase fw-bold d-flex align-items-center justify-content-between"
+             style="cursor: pointer;" (click)="toggleGroup(group.label)" role="button" [attr.aria-expanded]="isExpanded(group.label)">
+          <span>{{ group.label }}</span>
+          <i class="bi {{ isExpanded(group.label) ? 'bi-chevron-down' : 'bi-chevron-right' }}" style="font-size: 0.7rem;"></i>
+        </div>
+        @if (isExpanded(group.label)) {
+          @for (item of group.items; track item.link) {
+            <a class="sidebar-link group-{{ group.label.toLowerCase().replace(' ', '-') }}" [routerLink]="item.link" routerLinkActive="active">
+              <i class="bi {{ item.icon }}"></i>{{ item.label }}
+            </a>
+          }
         }
       }
     </ul>

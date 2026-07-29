@@ -1,49 +1,71 @@
 <section class="hero-section position-relative d-flex align-items-center overflow-hidden">
-  <!-- Dynamic Glow Backgrounds -->
+  <!-- Decorative layers -->
+  <div class="hero-grid"></div>
   <div class="glow glow-1"></div>
   <div class="glow glow-2"></div>
-  
+  <div class="glow glow-3"></div>
+  <div class="orbit-ring ring-1"></div>
+  <div class="orbit-ring ring-2"></div>
+
   <div class="container position-relative z-1">
     <div class="row align-items-center g-5 py-5 min-vh-100">
-      
+
       <!-- Left Content -->
       <div class="col-lg-6 hero-text pe-lg-5 pt-5 pt-lg-0">
-        <h1 class="display-3 fw-bold text-white mb-4 slide-up tracking-tight" style="animation-delay: 0.1s;">
+        <span class="eyebrow-badge on-dark fade-in" style="animation-delay: 0s;">
+          <span class="eyebrow-dot"></span>
+          AI-Powered Business Operating System
+        </span>
+
+        <h1 class="display-3 fw-bold text-white mb-4 mt-4 slide-up tracking-tight" style="animation-delay: 0.1s;">
           One Platform. <br />
           <span class="gradient-text">Every Business Operation.</span>
         </h1>
-        
+
         <p class="lead text-white-50 mb-5 slide-up" style="animation-delay: 0.3s; font-size: 1.15rem;">
-          BusinessOS helps companies manage HR, CRM, Finance, Service Desk, Procurement, Inventory, AI Automation, and Business Operations from a single secure cloud platform.
+          Zuhoo CMS helps companies manage HR, CRM, Finance, Service Desk, Procurement, Inventory, AI Automation, and Business Operations from a single secure cloud platform.
         </p>
-        
+
         <div class="d-flex flex-wrap gap-3 slide-up" style="animation-delay: 0.4s;">
           <a routerLink="/auth/register" class="btn-primary-bos btn-lg d-flex align-items-center gap-2">
             Start Free Trial
             <i class="bi bi-arrow-right"></i>
           </a>
-          <a href="#demo" class="btn btn-outline-light btn-lg d-flex align-items-center gap-2 px-4 py-2 border border-white-50 text-white hover-card-lift" style="border-radius: 8px;">
+          <a href="#demo" class="btn btn-glass-outline btn-lg d-flex align-items-center gap-2">
+            <i class="bi bi-play-circle"></i>
             Book Demo
           </a>
         </div>
-        
-        <div class="mt-5 pt-4 border-top border-secondary slide-up d-flex align-items-center gap-4" style="animation-delay: 0.5s;">
-          <div class="d-flex flex-column">
+
+        <div class="mt-5 pt-4 hero-stats slide-up d-flex flex-wrap align-items-center gap-4" style="animation-delay: 0.5s;">
+          <div class="stat-chip">
             <span class="text-white fs-4 fw-bold">99.9%</span>
             <span class="text-white-50 small">Uptime SLA</span>
           </div>
-          <div class="d-flex flex-column">
+          <div class="stat-divider"></div>
+          <div class="stat-chip">
             <span class="text-white fs-4 fw-bold">10k+</span>
             <span class="text-white-50 small">Teams Globally</span>
           </div>
+          <div class="stat-divider"></div>
+          <div class="stat-chip">
+            <span class="text-white fs-4 fw-bold">24/7</span>
+            <span class="text-white-50 small">Global Support</span>
+          </div>
         </div>
       </div>
-      
-      <!-- Right Mockups (Replaced with 3D WebGL Particle System) -->
+
+      <!-- Right Mockups (3D WebGL Particle System) -->
       <div class="col-lg-6 d-none d-lg-block position-relative fade-in" style="animation-delay: 0.5s;">
         <app-three-scene></app-three-scene>
       </div>
-      
+
     </div>
+  </div>
+
+  <!-- Scroll cue -->
+  <div class="scroll-cue d-none d-lg-flex flex-column align-items-center gap-2 fade-in" style="animation-delay: 1s;">
+    <span class="small text-white-50 tracking-widest text-uppercase">Scroll</span>
+    <div class="scroll-cue-line"></div>
   </div>
 </section>

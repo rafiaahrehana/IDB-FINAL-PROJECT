@@ -14,5 +14,8 @@ public class DesignationResponse {
     private int level;
     private String description;
     private boolean active;
+    private String employmentCategory;
+    private Long departmentId;
+    private String departmentName;
     private LocalDateTime createdAt;
 }

@@ -29,7 +29,11 @@ export class SalaryStructureService {
     return this.api.post<SalaryStructure>(this.endpoint, payload);
   }
 
+  update(id: number, payload: SalaryStructureRequest): Observable<SalaryStructure> {
+    return this.api.put<SalaryStructure>(`${this.endpoint}/${id}`, payload);
+  }
+
   delete(id: number): Observable<string> {
-    return this.api.delete<string>(`${this.endpoint}/${id}`);
+    return this.api.deleteText(`${this.endpoint}/${id}`);
   }
 }

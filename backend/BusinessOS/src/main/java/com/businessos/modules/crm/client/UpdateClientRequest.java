@@ -34,4 +34,6 @@ public class UpdateClientRequest {
 
     private Integer employeeCount;
     private BigDecimal annualRevenue;
+
+    private java.util.List<Long> tagIds;
 }

@@ -31,7 +31,7 @@ public class AiConversation extends BaseEntity {
     private String conversationUuid;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
+    @Column(nullable = false, length = 30)
     private AiFeature feature;
 
     @Enumerated(EnumType.STRING)

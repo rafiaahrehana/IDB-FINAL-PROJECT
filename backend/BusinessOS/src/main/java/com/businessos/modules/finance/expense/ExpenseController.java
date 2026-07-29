@@ -83,12 +83,17 @@ public class ExpenseController {
 
     @PostMapping("/{id}/approve")
     @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
-    @Operation(summary = "Approve Expense")
-    public ResponseEntity<Void> approve(
+    @Operation(summary = "Approve Expense - returns a budgetWarning when this pushes the category over/near its budget")
+    public ResponseEntity<java.util.Map<String, String>> approve(
             @PathVariable Long id,
             @RequestParam String notes) {
-        service.approveExpense(id, notes);
-        return ResponseEntity.ok().build();
+        String warning = service.approveExpense(id, notes);
+        java.util.Map<String, String> body = new java.util.HashMap<>();
+        body.put("message", "Expense approved");
+        if (warning != null) {
+            body.put("budgetWarning", warning);
+        }
+        return ResponseEntity.ok(body);
     }
 
     @PostMapping("/{id}/reject")

@@ -25,6 +25,15 @@ public interface AiService {
      */
     String generateFromPrompt(AiFeature feature, String prompt);
 
+    /**
+     * Like generateFromPrompt, but skips company Prompt Template merging.
+     * For callers whose prompt is already fully self-contained (e.g. a
+     * structured builder with explicit output-format instructions) where a
+     * saved template being silently prepended would break the expected
+     * output shape rather than add useful context.
+     */
+    String generateRaw(AiFeature feature, String prompt);
+
     /** OWNER / ADMIN: configure a custom AI provider for the company */
     AiProviderConfigResponse saveProviderConfig(AiProviderConfigRequest request);
 
@@ -51,4 +60,7 @@ public interface AiService {
 
     /** OWNER / ADMIN: list prompt templates for the company */
     Page<AiPromptTemplateResponse> listPromptTemplates(Pageable pageable);
+
+    /** OWNER / ADMIN: remove a company's saved prompt template */
+    void deletePromptTemplate(Long id);
 }

@@ -44,6 +44,11 @@ public class PerformanceController {
         return ResponseEntity.ok(performanceService.getById(id));
     }
 
+    @GetMapping("/{id}/summary")
+    public ResponseEntity<PerformanceReviewResponse> summarise(@PathVariable Long id) {
+        return ResponseEntity.ok(performanceService.summarise(id));
+    }
+
     @PatchMapping("/{id}")
     public ResponseEntity<PerformanceReviewResponse> update(
             @PathVariable Long id,

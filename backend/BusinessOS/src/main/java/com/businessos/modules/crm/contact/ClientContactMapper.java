@@ -6,6 +6,7 @@ public class ClientContactMapper {
         ClientContactResponse response = new ClientContactResponse();
         response.setId(contact.getId());
         response.setClientId(contact.getClient() != null ? contact.getClient().getId() : null);
+        response.setClientCompanyName(contact.getClient() != null ? contact.getClient().getClientCompanyName() : null);
         response.setFullName(contact.getFullName());
         response.setEmail(contact.getEmail());
         response.setPhone(contact.getPhone());

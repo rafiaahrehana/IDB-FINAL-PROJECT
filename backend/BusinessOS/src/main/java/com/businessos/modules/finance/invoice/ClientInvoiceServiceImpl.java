@@ -1,5 +1,8 @@
 package com.businessos.modules.finance.invoice;
 
+import com.businessos.modules.ai.enums.AiFeature;
+import com.businessos.modules.ai.prompt.InvoiceSummaryPromptBuilder;
+import com.businessos.modules.ai.service.AiService;
 import com.businessos.modules.company.Company;
 import com.businessos.modules.crm.client.Client;
 import com.businessos.modules.crm.client.ClientRepository;
@@ -7,6 +10,7 @@ import com.businessos.modules.finance.chartofaccounts.ChartOfAccount;
 import com.businessos.modules.finance.chartofaccounts.DefaultAccountResolver;
 import com.businessos.modules.finance.generalledger.GeneralLedgerService;
 import com.businessos.modules.finance.generalledger.GlReferenceType;
+import com.businessos.modules.finance.generalledger.LedgerLine;
 import com.businessos.auth.role.enums.PermissionCode;
 import com.businessos.auth.role.service.AuthorizationService;
 import com.businessos.security.SecurityUtil;
@@ -48,8 +52,10 @@ public class ClientInvoiceServiceImpl implements ClientInvoiceService {
     private final AuthorizationService authorizationService;
     private final ServiceRequestRepository serviceRequestRepository;
     private final RefundRepository refundRepository;
+    private final CreditNoteRepository creditNoteRepository;
     private final NotificationService notificationService;
     private final InvoicePdfService invoicePdfService;
+    private final AiService aiService;
 
     private Long requireCompanyId() {
         Long id = securityUtil.getCurrentCompanyId();
@@ -83,6 +89,10 @@ public class ClientInvoiceServiceImpl implements ClientInvoiceService {
         Client client = clientRepository.findById(request.getClientId())
                 .orElseThrow(() -> new ResourceNotFoundException("Client not found"));
 
+        String currency = request.getCurrency() != null && !request.getCurrency().isBlank()
+                ? request.getCurrency().trim().toUpperCase() : "BDT";
+        BigDecimal exchangeRate = resolveExchangeRate(client, currency, request.getExchangeRate());
+
         String invoiceNumber = generateInvoiceNumber(companyId);
 
         ClientInvoice invoice = ClientInvoice.builder()
@@ -95,6 +105,10 @@ public class ClientInvoiceServiceImpl implements ClientInvoiceService {
                 .invoiceDate(request.getInvoiceDate())
                 .dueDate(request.getDueDate())
                 .taxAmount(request.getTaxAmount() != null ? request.getTaxAmount() : BigDecimal.ZERO)
+                .taxRatePercent(request.getTaxRatePercent())
+                .discountAmount(request.getDiscountAmount() != null ? request.getDiscountAmount() : BigDecimal.ZERO)
+                .currency(currency)
+                .exchangeRate(exchangeRate)
                 .paymentTerms(request.getPaymentTerms())
                 .description(request.getDescription())
                 .notes(request.getNotes())
@@ -134,6 +148,32 @@ public class ClientInvoiceServiceImpl implements ClientInvoiceService {
 
     @Override
     @Transactional(readOnly = true)
+    public InvoiceSummaryDraftResponse draftSummaryWithAi(Long id) {
+        authorizationService.checkPermission(PermissionCode.INVOICE_VIEW);
+        ClientInvoice invoice = findInTenant(id);
+
+        String clientName = invoice.getClient() != null && invoice.getClient().getClientCompanyName() != null
+            ? invoice.getClient().getClientCompanyName()
+            : (invoice.getClient() != null && invoice.getClient().getUser() != null
+                ? invoice.getClient().getUser().getFullName() : "Client");
+        String serviceName = invoice.getServiceRequest() != null ? invoice.getServiceRequest().getTitle()
+            : invoice.getItems() != null && !invoice.getItems().isEmpty() ? invoice.getItems().get(0).getDescription()
+            : "Services rendered";
+
+        String prompt = InvoiceSummaryPromptBuilder.builder()
+            .setClientName(clientName)
+            .setServiceName(serviceName)
+            .setAmount(invoice.getTotalAmount())
+            .setPeriod(invoice.getInvoiceDate() + " to " + invoice.getDueDate())
+            .build();
+
+        InvoiceSummaryDraftResponse response = new InvoiceSummaryDraftResponse();
+        response.setSummary(aiService.generateRaw(AiFeature.INVOICE_SUMMARY, prompt));
+        return response;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public byte[] generatePdf(Long id) {
         ClientInvoice invoice = findInTenant(id);
         if (!authorizationService.hasPermission(PermissionCode.INVOICE_VIEW)) {
@@ -141,7 +181,7 @@ public class ClientInvoiceServiceImpl implements ClientInvoiceService {
         }
         Company company = invoice.getClient() != null ? invoice.getClient().getCompany() : null;
         EmailBranding.Data branding = emailBranding.from(company);
-        return invoicePdfService.generate(invoice, branding);
+        return invoicePdfService.generate(invoice, company, branding);
     }
 
     private void requireOwnInvoice(ClientInvoice invoice) {
@@ -233,6 +273,13 @@ public class ClientInvoiceServiceImpl implements ClientInvoiceService {
         invoice.setInvoiceDate(request.getInvoiceDate());
         invoice.setDueDate(request.getDueDate());
         invoice.setTaxAmount(request.getTaxAmount());
+        invoice.setTaxRatePercent(request.getTaxRatePercent());
+        invoice.setDiscountAmount(request.getDiscountAmount() != null ? request.getDiscountAmount() : BigDecimal.ZERO);
+        if (request.getCurrency() != null && !request.getCurrency().isBlank()) {
+            String currency = request.getCurrency().trim().toUpperCase();
+            invoice.setCurrency(currency);
+            invoice.setExchangeRate(resolveExchangeRate(invoice.getClient(), currency, request.getExchangeRate()));
+        }
         invoice.setPaymentTerms(request.getPaymentTerms());
         invoice.setDescription(request.getDescription());
         invoice.setNotes(request.getNotes());
@@ -298,30 +345,76 @@ public class ClientInvoiceServiceImpl implements ClientInvoiceService {
     }
 
     /**
+     * subtotal - discountAmount, floored at zero - what's actually recognized as
+     * revenue once a discount is applied. totalAmount = this + taxAmount, so using
+     * it (instead of raw subtotal) keeps every GL posting below balanced.
+     */
+    private BigDecimal recognizedRevenue(ClientInvoice invoice) {
+        BigDecimal discount = invoice.getDiscountAmount() != null ? invoice.getDiscountAmount() : BigDecimal.ZERO;
+        return invoice.getSubtotal().subtract(discount).max(BigDecimal.ZERO);
+    }
+
+    /** Rate = 1 for base-currency invoices; required from the request otherwise. */
+    private BigDecimal resolveExchangeRate(Client client, String currency, BigDecimal requestedRate) {
+        String base = client != null && client.getCompany() != null && client.getCompany().getBaseCurrency() != null
+                ? client.getCompany().getBaseCurrency() : "BDT";
+        if (currency.equalsIgnoreCase(base)) {
+            return BigDecimal.ONE;
+        }
+        if (requestedRate == null || requestedRate.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new BadRequestException("Exchange rate to " + base + " is required for a " + currency + " invoice");
+        }
+        return requestedRate;
+    }
+
+    /**
+     * Converts an invoice-currency amount into the company's base currency for GL
+     * posting - the ledger is single-currency; foreign invoices carry their issue-time
+     * rate. (FX gain/loss on payment-date rate differences is out of scope: payments
+     * convert at the invoice's own rate.)
+     */
+    private BigDecimal toBase(ClientInvoice invoice, BigDecimal amount) {
+        if (amount == null) return BigDecimal.ZERO;
+        BigDecimal rate = invoice.getExchangeRate() != null ? invoice.getExchangeRate() : BigDecimal.ONE;
+        if (rate.compareTo(BigDecimal.ONE) == 0) return amount;
+        return amount.multiply(rate).setScale(2, java.math.RoundingMode.HALF_UP);
+    }
+
+    /**
      * Revenue recognition: without this, invoices never touched the General Ledger at
      * all, so Profit & Loss / Balance Sheet showed no revenue even for fully paid
      * invoices - the two systems were completely disconnected.
-     * Dr Accounts Receivable (full total) / Cr Sales Revenue (subtotal) + Cr Tax
-     * Payable (tax, if any) - stays balanced since subtotal + tax = totalAmount.
+     * Dr Accounts Receivable (full total) / Cr Sales Revenue (subtotal - discount) +
+     * Cr Tax Payable (tax, if any) - stays balanced since revenue + tax = totalAmount.
      */
     private void postInvoiceToLedger(ClientInvoice invoice) {
         Long companyId = invoice.getCompanyId();
         String clientName = invoice.getClient() != null ? invoice.getClient().getClientCompanyName() : "client";
         String description = "Invoice " + invoice.getInvoiceNumber() + " issued to " + clientName;
+        // Revenue is recognized as of the invoice's own date, not whenever staff happened
+        // to click Send - otherwise a backdated invoice's revenue lands in the wrong period.
+        LocalDate transactionDate = invoice.getInvoiceDate() != null ? invoice.getInvoiceDate() : LocalDate.now();
 
         ChartOfAccount ar = accountResolver.accountsReceivable(companyId);
-        glService.recordTransaction(companyId, ar.getId(), invoice.getTotalAmount(), BigDecimal.ZERO,
-                description, GlReferenceType.INVOICE, invoice.getId(), invoice.getInvoiceNumber());
-
         ChartOfAccount revenue = accountResolver.salesRevenue(companyId);
-        glService.recordTransaction(companyId, revenue.getId(), BigDecimal.ZERO, invoice.getSubtotal(),
-                description, GlReferenceType.INVOICE, invoice.getId(), invoice.getInvoiceNumber());
 
-        if (invoice.getTaxAmount() != null && invoice.getTaxAmount().compareTo(BigDecimal.ZERO) > 0) {
+        // Convert each credit leg, then make the AR debit their exact sum - rounding
+        // totalAmount independently could drift a cent from revenue+tax and trip the
+        // balanced-batch check.
+        BigDecimal revenueBase = toBase(invoice, recognizedRevenue(invoice));
+        BigDecimal taxBase = invoice.getTaxAmount() != null && invoice.getTaxAmount().compareTo(BigDecimal.ZERO) > 0
+                ? toBase(invoice, invoice.getTaxAmount()) : BigDecimal.ZERO;
+
+        List<LedgerLine> lines = new java.util.ArrayList<>();
+        lines.add(LedgerLine.debit(ar.getId(), revenueBase.add(taxBase)));
+        lines.add(LedgerLine.credit(revenue.getId(), revenueBase));
+        if (taxBase.compareTo(BigDecimal.ZERO) > 0) {
             ChartOfAccount tax = accountResolver.taxPayable(companyId);
-            glService.recordTransaction(companyId, tax.getId(), BigDecimal.ZERO, invoice.getTaxAmount(),
-                    description, GlReferenceType.INVOICE, invoice.getId(), invoice.getInvoiceNumber());
+            lines.add(LedgerLine.credit(tax.getId(), taxBase));
         }
+
+        glService.recordBalancedTransaction(companyId, lines, description,
+                GlReferenceType.INVOICE, invoice.getId(), invoice.getInvoiceNumber(), transactionDate);
     }
 
     @Override
@@ -345,7 +438,8 @@ public class ClientInvoiceServiceImpl implements ClientInvoiceService {
             throw new com.businessos.shared.exception.BadRequestException("Cannot record payment for a cancelled invoice");
         }
 
-        BigDecimal outstanding = invoice.getTotalAmount().subtract(invoice.getPaidAmount());
+        BigDecimal credited = invoice.getCreditedAmount() != null ? invoice.getCreditedAmount() : BigDecimal.ZERO;
+        BigDecimal outstanding = invoice.getTotalAmount().subtract(invoice.getPaidAmount()).subtract(credited);
         if (amount.compareTo(outstanding) > 0) {
             throw new com.businessos.shared.exception.BadRequestException("Payment amount exceeds outstanding balance");
         }
@@ -353,7 +447,7 @@ public class ClientInvoiceServiceImpl implements ClientInvoiceService {
         BigDecimal newPaidAmount = invoice.getPaidAmount().add(amount);
         invoice.setPaidAmount(newPaidAmount);
 
-        if (newPaidAmount.compareTo(invoice.getTotalAmount()) >= 0) {
+        if (newPaidAmount.add(credited).compareTo(invoice.getTotalAmount()) >= 0) {
             invoice.setStatus(InvoiceStatus.PAID);
             invoice.setPaidDate(LocalDate.now());
         } else {
@@ -363,14 +457,16 @@ public class ClientInvoiceServiceImpl implements ClientInvoiceService {
         invoice.calculateTotals();
         invoiceRepository.save(invoice);
 
-        // Cash received against a receivable: Dr Cash / Cr Accounts Receivable.
+        // Cash received against a receivable: Dr Cash / Cr Accounts Receivable
+        // (converted at the invoice's issue-time rate for foreign-currency invoices).
         String description = "Payment received for invoice " + invoice.getInvoiceNumber();
+        BigDecimal amountBase = toBase(invoice, amount);
         ChartOfAccount cash = accountResolver.cash(companyId);
-        glService.recordTransaction(companyId, cash.getId(), amount, BigDecimal.ZERO,
-                description, GlReferenceType.INVOICE, invoice.getId(), invoice.getInvoiceNumber());
         ChartOfAccount ar = accountResolver.accountsReceivable(companyId);
-        glService.recordTransaction(companyId, ar.getId(), BigDecimal.ZERO, amount,
-                description, GlReferenceType.INVOICE, invoice.getId(), invoice.getInvoiceNumber());
+        glService.recordBalancedTransaction(companyId, List.of(
+                        LedgerLine.debit(cash.getId(), amountBase),
+                        LedgerLine.credit(ar.getId(), amountBase)),
+                description, GlReferenceType.INVOICE, invoice.getId(), invoice.getInvoiceNumber(), LocalDate.now());
     }
 
     @Override
@@ -428,26 +524,39 @@ public class ClientInvoiceServiceImpl implements ClientInvoiceService {
         String description = "Invoice " + invoice.getInvoiceNumber() + " " + reasonWord + " - reversal";
 
         ChartOfAccount ar = accountResolver.accountsReceivable(companyId);
-        glService.recordTransaction(companyId, ar.getId(), BigDecimal.ZERO, invoice.getTotalAmount(),
-                description, referenceType, invoice.getId(), invoice.getInvoiceNumber());
-
         ChartOfAccount revenue = accountResolver.salesRevenue(companyId);
-        glService.recordTransaction(companyId, revenue.getId(), invoice.getSubtotal(), BigDecimal.ZERO,
-                description, referenceType, invoice.getId(), invoice.getInvoiceNumber());
 
-        if (invoice.getTaxAmount() != null && invoice.getTaxAmount().compareTo(BigDecimal.ZERO) > 0) {
+        BigDecimal revenueBase = toBase(invoice, recognizedRevenue(invoice));
+        BigDecimal taxBase = invoice.getTaxAmount() != null && invoice.getTaxAmount().compareTo(BigDecimal.ZERO) > 0
+                ? toBase(invoice, invoice.getTaxAmount()) : BigDecimal.ZERO;
+
+        List<LedgerLine> lines = new java.util.ArrayList<>();
+        lines.add(LedgerLine.credit(ar.getId(), revenueBase.add(taxBase)));
+        lines.add(LedgerLine.debit(revenue.getId(), revenueBase));
+
+        if (taxBase.compareTo(BigDecimal.ZERO) > 0) {
             ChartOfAccount tax = accountResolver.taxPayable(companyId);
-            glService.recordTransaction(companyId, tax.getId(), invoice.getTaxAmount(), BigDecimal.ZERO,
-                    description, referenceType, invoice.getId(), invoice.getInvoiceNumber());
+            lines.add(LedgerLine.debit(tax.getId(), taxBase));
         }
 
         if (alreadyPaid != null && alreadyPaid.compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal paidBase = toBase(invoice, alreadyPaid);
             ChartOfAccount cash = accountResolver.cash(companyId);
-            glService.recordTransaction(companyId, cash.getId(), BigDecimal.ZERO, alreadyPaid,
-                    description, referenceType, invoice.getId(), invoice.getInvoiceNumber());
-            glService.recordTransaction(companyId, ar.getId(), alreadyPaid, BigDecimal.ZERO,
-                    description, referenceType, invoice.getId(), invoice.getInvoiceNumber());
+            lines.add(LedgerLine.credit(cash.getId(), paidBase));
+            lines.add(LedgerLine.debit(ar.getId(), paidBase));
         }
+
+        // Undo whatever credit note(s) already posted (Dr Revenue / Cr AR) - otherwise
+        // the blanket totalAmount reversal above double-reduces AR for that portion.
+        BigDecimal credited = invoice.getCreditedAmount() != null ? invoice.getCreditedAmount() : BigDecimal.ZERO;
+        if (credited.compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal creditedBase = toBase(invoice, credited);
+            lines.add(LedgerLine.credit(revenue.getId(), creditedBase));
+            lines.add(LedgerLine.debit(ar.getId(), creditedBase));
+        }
+
+        glService.recordBalancedTransaction(companyId, lines, description,
+                referenceType, invoice.getId(), invoice.getInvoiceNumber(), LocalDate.now());
     }
 
     @Override
@@ -560,6 +669,80 @@ public class ClientInvoiceServiceImpl implements ClientInvoiceService {
         } catch (Exception ex) {
             // Notification failure must not roll back the refund decision itself.
         }
+    }
+
+    @Override
+    @Transactional
+    public CreditNoteResponse issueCreditNote(CreditNoteRequest request) {
+        authorizationService.checkPermission(PermissionCode.INVOICE_CREDIT_NOTE);
+        Long companyId = requireCompanyId();
+        ClientInvoice invoice = invoiceRepository.findByIdAndCompanyId(request.getClientInvoiceId(), companyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Invoice not found: " + request.getClientInvoiceId()));
+
+        if (invoice.getStatus() == InvoiceStatus.DRAFT || invoice.getStatus() == InvoiceStatus.CANCELLED
+                || invoice.getStatus() == InvoiceStatus.VOIDED) {
+            throw new BadRequestException("Cannot issue a credit note against a " + invoice.getStatus() + " invoice");
+        }
+
+        BigDecimal alreadyCredited = invoice.getCreditedAmount() != null ? invoice.getCreditedAmount() : BigDecimal.ZERO;
+        BigDecimal outstanding = invoice.getTotalAmount().subtract(invoice.getPaidAmount()).subtract(alreadyCredited);
+        if (request.getAmount().compareTo(outstanding) > 0) {
+            throw new BadRequestException("Credit note amount exceeds the invoice's outstanding balance ("
+                    + outstanding + ")");
+        }
+
+        CreditNote creditNote = CreditNote.builder()
+                .companyId(companyId)
+                .creditNoteNumber(generateCreditNoteNumber(companyId))
+                .clientInvoice(invoice)
+                .amount(request.getAmount())
+                .reason(request.getReason())
+                .issuedBy(securityUtil.getCurrentUser())
+                .issuedAt(LocalDateTime.now())
+                .build();
+        creditNoteRepository.save(creditNote);
+
+        invoice.setCreditedAmount(alreadyCredited.add(request.getAmount()));
+        invoice.calculateTotals();
+        invoiceRepository.save(invoice);
+
+        // Dr Sales Revenue / Cr Accounts Receivable - the company recognizes less
+        // revenue and the client owes less, but no cash moves either direction.
+        String description = "Credit note " + creditNote.getCreditNoteNumber() + " for invoice " + invoice.getInvoiceNumber();
+        BigDecimal creditBase = toBase(invoice, request.getAmount());
+        ChartOfAccount revenue = accountResolver.salesRevenue(companyId);
+        ChartOfAccount ar = accountResolver.accountsReceivable(companyId);
+        glService.recordBalancedTransaction(companyId, List.of(
+                        LedgerLine.debit(revenue.getId(), creditBase),
+                        LedgerLine.credit(ar.getId(), creditBase)),
+                description, GlReferenceType.INVOICE_CREDIT_NOTE, invoice.getId(), creditNote.getCreditNoteNumber(), LocalDate.now());
+
+        return CreditNoteMapper.toResponse(creditNote);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<CreditNoteResponse> listCreditNotes(Long invoiceId, Pageable pageable) {
+        authorizationService.checkPermission(PermissionCode.INVOICE_VIEW);
+        Long companyId = requireCompanyId();
+        Page<CreditNote> page = invoiceId != null
+                ? creditNoteRepository.findByCompanyIdAndClientInvoiceId(companyId, invoiceId, pageable)
+                : creditNoteRepository.findByCompanyId(companyId, pageable);
+        return page.map(CreditNoteMapper::toResponse);
+    }
+
+    /**
+     * Same per-company, per-year sequential scheme as generateInvoiceNumber().
+     * Format: CN-YYYY-NNNNNN
+     */
+    private String generateCreditNoteNumber(Long companyId) {
+        int year = LocalDate.now().getYear();
+        String prefix = "CN-" + year + "-";
+        String maxNumber = creditNoteRepository
+            .findMaxCreditNoteNumberByCompanyAndPrefix(companyId, prefix)
+            .orElse(prefix + "000000");
+        long sequence = Long.parseLong(maxNumber.substring(prefix.length())) + 1;
+        return String.format("%s%06d", prefix, sequence);
     }
 
     @Override

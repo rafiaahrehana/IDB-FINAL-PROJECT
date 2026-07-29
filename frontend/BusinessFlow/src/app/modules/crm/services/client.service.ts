@@ -9,8 +9,11 @@ export class ClientService {
 
   constructor(private api: ApiService) {}
 
-  list(page = 0, size = 20, status?: string): Observable<PagedResponse<Client>> {
-    return this.api.getPaged<Client>(this.endpoint, page, size, status ? { status } : undefined);
+  list(page = 0, size = 20, status?: string, tagId?: number | null): Observable<PagedResponse<Client>> {
+    const params: any = {};
+    if (status) params.status = status;
+    if (tagId) params.tagId = tagId;
+    return this.api.getPaged<Client>(this.endpoint, page, size, Object.keys(params).length ? params : undefined);
   }
 
   // Lightweight, ungated - use this for pickers/dropdowns outside the Clients admin page.

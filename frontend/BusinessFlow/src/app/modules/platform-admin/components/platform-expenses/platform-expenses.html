@@ -1,17 +1,12 @@
 <div class="container-fluid py-3">
-  <div class="page-hero">
-    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
-      <div>
-        <div class="page-hero-label">PLATFORM</div>
-        <h4 class="page-hero-title underline-lime">Platform Expenses</h4>
-      </div>
-      <div class="page-hero-actions">
-        <select class="form-select form-select-sm" style="width:160px" [(ngModel)]="statusFilter" (change)="page=0;load()">
-          <option value="">All statuses</option>
-          @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
-        </select>
-        <button class="btn btn-hero-primary btn-sm" (click)="showForm = true; form = {}"><i class="bi bi-plus-circle"></i> Submit Platform Expense</button>
-      </div>
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <h4 class="mb-0">Platform Expenses</h4>
+    <div class="d-flex gap-2">
+      <select class="form-select form-select-sm" style="width:160px" [(ngModel)]="statusFilter" (change)="page=0;load()">
+        <option value="">All statuses</option>
+        @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
+      </select>
+      <button class="btn btn-primary btn-sm" (click)="showForm = true; form = {}"><i class="bi bi-plus"></i> Submit Platform Expense</button>
     </div>
   </div>
   @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
@@ -41,7 +36,7 @@
   <div class="card">
     <div class="table-responsive">
       <table class="table table-hover table-sm align-middle mb-0">
-        <thead>
+        <thead class="table-light">
           <tr><th>#</th><th>Description</th><th>Category</th><th>Vendor</th><th class="text-end">Amount</th><th>Date</th><th>Status</th><th>Submitted By</th><th></th></tr>
         </thead>
         <tbody>
@@ -51,7 +46,7 @@
             <td>{{ e.description }}</td>
             <td>{{ e.category || '-' }}</td>
             <td>{{ e.vendorName || '-' }}</td>
-            <td class="text-end">{{ e.amount | currency }}</td>
+            <td class="text-end">{{ e.amount | bosCurrency }}</td>
             <td>{{ e.expenseDate | date:'mediumDate' }}</td>
             <td><span class="badge {{ statusClass(e.status) }}">{{ e.status }}</span></td>
             <td>{{ e.submittedByName || '-' }}</td>
@@ -81,7 +76,7 @@
   <div class="modal d-block" style="background: rgba(0,0,0,.4)">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
-        <div class="modal-header py-2" style="background: linear-gradient(135deg, #111827, #4C1D95); color: #fff;"><h5 class="modal-title">{{ approvalAction === 'approve' ? 'Approve' : 'Reject' }} Expense</h5><button class="btn-close" (click)="approvalTarget = null"></button></div>
+        <div class="modal-header"><h5 class="modal-title">{{ approvalAction === 'approve' ? 'Approve' : 'Reject' }} Expense</h5><button class="btn-close" (click)="approvalTarget = null"></button></div>
         <div class="modal-body"><textarea class="form-control" rows="3" [placeholder]="approvalAction === 'reject' ? 'Rejection reason (required)' : 'Notes (optional)'" [(ngModel)]="approvalNotes"></textarea></div>
         <div class="modal-footer">
           <button class="btn btn-secondary btn-sm" (click)="approvalTarget = null">Cancel</button>
@@ -95,7 +90,7 @@
   <div class="modal d-block" style="background: rgba(0,0,0,.4)">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
-        <div class="modal-header py-2" style="background: linear-gradient(135deg, #111827, #4C1D95); color: #fff;"><h5 class="modal-title">Mark Expense as Paid</h5><button class="btn-close" (click)="payTarget = null"></button></div>
+        <div class="modal-header"><h5 class="modal-title">Mark Expense as Paid</h5><button class="btn-close" (click)="payTarget = null"></button></div>
         <div class="modal-body">
           <input class="form-control form-control-sm mb-2" placeholder="Payment method (e.g. BANK_TRANSFER)" [(ngModel)]="payMethod" />
           <input class="form-control form-control-sm" placeholder="Reference number (bank tx id, etc.)" [(ngModel)]="payReference" />

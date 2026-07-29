@@ -1,6 +1,11 @@
 package com.businessos.modules.hrm.leave.holiday;
 
+import com.businessos.enums.HolidayType;
+import com.businessos.modules.ai.enums.AiFeature;
+import com.businessos.modules.ai.prompt.HolidayDraftPromptBuilder;
+import com.businessos.modules.ai.service.AiService;
 import com.businessos.modules.company.Company;
+import com.businessos.modules.company.CompanyRepository;
 import com.businessos.modules.hrm.department.Department;
 import com.businessos.shared.exception.BadRequestException;
 import com.businessos.shared.exception.ResourceNotFoundException;
@@ -14,6 +19,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -25,6 +32,9 @@ public class HolidayServiceImpl implements HolidayService {
 
     private final HolidayRepository holidayRepository;
     private final DepartmentRepository departmentRepository;
+    private final CompanyRepository    companyRepository;
+    private final AiService            aiService;
+    private final ObjectMapper         objectMapper;
     private final SecurityUtil         securityUtil;
     private final AuthorizationService authorizationService;
 
@@ -47,6 +57,59 @@ public class HolidayServiceImpl implements HolidayService {
 
         holidayRepository.save(holiday);
         return HolidayMapper.toHolidayResponse(holiday);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public HolidayDraftResponse draftWithAi(HolidayDraftRequest request) {
+        authorizationService.checkPermission(PermissionCode.HOLIDAY_CREATE);
+        Long companyId = requireCompanyId();
+        Company company = companyRepository.findById(companyId)
+            .orElseThrow(() -> new ResourceNotFoundException("Company not found: " + companyId));
+
+        String prompt = HolidayDraftPromptBuilder.builder()
+            .setCompanyName(company.getCompanyName())
+            .setToday(LocalDate.now())
+            .setInstructions(request.getInstructions())
+            .build();
+
+        String raw = aiService.generateRaw(AiFeature.HOLIDAY_DRAFT, prompt);
+        return parseDraft(raw, request.getInstructions());
+    }
+
+    private HolidayDraftResponse parseDraft(String raw, String fallbackInstructions) {
+        HolidayDraftResponse response = new HolidayDraftResponse();
+        try {
+            String cleaned = raw.trim();
+            if (cleaned.startsWith("```")) {
+                cleaned = cleaned.replaceFirst("^```[a-zA-Z]*\\n?", "").replaceFirst("```\\s*$", "");
+            }
+            JsonNode node = objectMapper.readTree(cleaned);
+            response.setName(node.path("name").asText(null));
+            response.setDate(node.path("date").asText(null));
+            response.setType(node.path("type").asText(null));
+            response.setDescription(node.path("description").asText(null));
+        } catch (Exception ignored) {
+            // Model didn't return valid JSON despite instructions - fall back to a
+            // best-effort name rather than failing the whole request.
+        }
+        if (response.getName() == null || response.getName().isBlank()) {
+            response.setName(fallbackInstructions.length() > 150
+                ? fallbackInstructions.substring(0, 147) + "..." : fallbackInstructions);
+        }
+        if (response.getType() == null || !isValidHolidayType(response.getType())) {
+            response.setType(HolidayType.COMPANY.name());
+        }
+        return response;
+    }
+
+    private boolean isValidHolidayType(String type) {
+        try {
+            HolidayType.valueOf(type);
+            return true;
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
     }
 
     @Override

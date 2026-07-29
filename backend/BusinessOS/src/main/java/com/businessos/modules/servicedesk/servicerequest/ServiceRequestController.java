@@ -68,6 +68,12 @@ public class ServiceRequestController {
         return ResponseEntity.ok(serviceRequestService.getById(id));
     }
 
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
+    @GetMapping("/{id}/summary")
+    public ResponseEntity<ServiceRequestResponse> summarise(@PathVariable Long id) {
+        return ResponseEntity.ok(serviceRequestService.summarise(id));
+    }
+
     @PatchMapping("/{id}")
     public ResponseEntity<ServiceRequestResponse> update(
             @PathVariable Long id,

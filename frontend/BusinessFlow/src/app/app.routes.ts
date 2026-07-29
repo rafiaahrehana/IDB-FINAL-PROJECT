@@ -4,7 +4,9 @@ import { RoleGuard } from './core/guards/role.guard';
 import { ClientHomeRedirectGuard } from './core/guards/client-home-redirect.guard';
 import { DashboardAccessGuard } from './core/guards/dashboard-access.guard';
 import { DashboardComponent } from './modules/dashboard/components/dashboard.component';
+import { EmployeeDashboard } from './modules/dashboard/components/employee-dashboard/employee-dashboard';
 import { Welcome } from './shared/components/welcome/welcome';
+import { MyPayslips } from './modules/hrm/components/my-payslips/my-payslips';
 import { Login } from './modules/auth/login/login';
 import { Register } from './modules/auth/register/register';
 import { ClientRegister } from './modules/auth/client-register/client-register';
@@ -35,6 +37,13 @@ import { PaymentReceipts } from './modules/finance/components/payment-receipts/p
 import { GeneralLedger } from './modules/finance/components/general-ledger/general-ledger';
 import { BankReconciliationPage } from './modules/finance/components/bank-reconciliation/bank-reconciliation';
 import { JournalEntries } from './modules/finance/components/journal-entries/journal-entries';
+import { CompanySettings } from './modules/finance/components/company-settings/company-settings';
+import { AccountingPeriods } from './modules/finance/components/accounting-periods/accounting-periods';
+import { FiscalYears } from './modules/finance/components/fiscal-years/fiscal-years';
+import { Vendors } from './modules/finance/components/vendors/vendors';
+import { VendorBills } from './modules/finance/components/vendor-bills/vendor-bills';
+import { Budgets } from './modules/finance/components/budgets/budgets';
+import { FixedAssets } from './modules/finance/components/fixed-assets/fixed-assets';
 
 // Support
 import { Tickets } from './modules/support/components/tickets/tickets';
@@ -55,7 +64,6 @@ import { AssetImport } from './modules/itam/components/asset-import/asset-import
 // Attendance
 import { CheckInOut } from './modules/attendance/components/check-in-out/check-in-out';
 import { AttendanceList } from './modules/attendance/components/attendance-list/attendance-list';
-import { LeaveManagement } from './modules/attendance/components/leave-management/leave-management';
 import { Reports as AttendanceReports } from './modules/attendance/components/reports/reports';
 import { BiometricDataPage } from './modules/attendance/components/biometric-data/biometric-data';
 import { ShiftAssignments } from './modules/attendance/components/shift-assignments/shift-assignments';
@@ -65,6 +73,8 @@ export const routes: Routes = [
   { path: '', component: DashboardComponent, canActivate: [AuthGuard, ClientHomeRedirectGuard, DashboardAccessGuard] },
   { path: 'dashboard', redirectTo: '', pathMatch: 'full' },
   { path: 'my-profile', component: Welcome, canActivate: [AuthGuard] },
+  { path: 'employee-dashboard', component: EmployeeDashboard, canActivate: [AuthGuard] },
+  { path: 'hrm/my-payslips', component: MyPayslips, canActivate: [AuthGuard] },
   // Public pages - no auth
   { path: 'home', component: Landing },
   { path: 'contact', component: ContactSales },
@@ -145,6 +155,13 @@ export const routes: Routes = [
       { path: 'payment-receipts', component: PaymentReceipts, data: { requiredPermission: 'PAYMENT_RECEIPT_VIEW' } },
       { path: 'general-ledger', component: GeneralLedger, data: { requiredPermission: 'GENERAL_LEDGER_VIEW' } },
       { path: 'bank-reconciliation', component: BankReconciliationPage, data: { requiredPermission: 'BANK_RECONCILIATION_VIEW' } },
+      { path: 'company-settings', component: CompanySettings, data: { requiredPermission: 'COMPANY_SETTINGS' } },
+      { path: 'accounting-periods', component: AccountingPeriods, data: { requiredPermission: 'ACCOUNTING_PERIOD_VIEW' } },
+      { path: 'fiscal-years', component: FiscalYears, data: { requiredPermission: 'ACCOUNTING_PERIOD_VIEW' } },
+      { path: 'vendors', component: Vendors, data: { requiredPermission: 'VENDOR_VIEW' } },
+      { path: 'vendor-bills', component: VendorBills, data: { requiredPermission: 'VENDOR_BILL_VIEW' } },
+      { path: 'budgets', component: Budgets, data: { requiredPermission: 'BUDGET_VIEW' } },
+      { path: 'fixed-assets', component: FixedAssets, data: { requiredPermission: 'FIXED_ASSET_VIEW' } },
       { path: '', redirectTo: 'invoices', pathMatch: 'full' }
     ]
   },
@@ -158,8 +175,7 @@ export const routes: Routes = [
       { path: 'messages', component: Messages, data: { requiredPermission: 'SUPPORT_MESSAGE_VIEW' } },
       { path: 'sla-policies', component: SlaPolicies, data: { requiredPermission: 'SLA_POLICY_VIEW' } },
       { path: 'audit-logs', component: AuditLogs, data: { requiredPermission: 'AUDIT_LOG_VIEW' } },
-      // No dedicated PermissionCode yet for these - not surfaced in the sidebar either.
-      { path: 'agents', component: Agents },
+      { path: 'agents', component: Agents, data: { roles: ['SUPER_ADMIN', 'SUPPORT_MANAGER'] } },
       { path: 'context-switches', component: ContextSwitches },
       { path: '', redirectTo: 'tickets', pathMatch: 'full' }
     ]
@@ -186,7 +202,6 @@ export const routes: Routes = [
       { path: 'records', component: AttendanceList, data: { requiredPermission: 'ATTENDANCE_VIEW' } },
       { path: 'timesheets', component: Timesheets, data: { requiredPermission: 'TIMESHEET_VIEW' } },
       { path: 'shift-assignments', component: ShiftAssignments, data: { requiredPermission: 'SHIFT_ASSIGNMENT_VIEW' } },
-      { path: 'leaves', component: LeaveManagement, data: { requiredPermission: 'LEAVE_VIEW' } },
       { path: 'biometric-data', component: BiometricDataPage, data: { requiredPermission: 'BIOMETRIC_VIEW' } },
       { path: 'reports', component: AttendanceReports, data: { requiredPermission: 'ATTENDANCE_VIEW' } },
       { path: '', redirectTo: 'check-in', pathMatch: 'full' }

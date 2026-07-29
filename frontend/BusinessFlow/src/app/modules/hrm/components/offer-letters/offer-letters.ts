@@ -1,14 +1,18 @@
 import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { OfferLetter, OfferLetterRequest, LetterType, LETTER_TYPES, Employee } from '../../models/hrm.model';
+import { OfferLetter, OfferLetterRequest, LetterType, LETTER_TYPES, Employee, JobApplication } from '../../models/hrm.model';
 import { OfferLetterService } from '../../services/offer-letter.service';
 import { EmployeeService } from '../../services/employee.service';
+import { RecruitmentService } from '../../services/recruitment.service';
 import { Pagination } from '../../../../shared/components/pagination/pagination';
 import { Loader } from '../../../../shared/components/loader/loader';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
 import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/confirm-dialog';
 import { HasPermissionDirective } from '../../../../shared/directives/has-permission.directive';
+
+// Letter types addressed to a recruitment candidate (not yet an employee).
+const CANDIDATE_LETTER_TYPES: LetterType[] = ['OFFER', 'APPOINTMENT'];
 
 @Component({
   selector: 'app-offer-letters',
@@ -19,6 +23,7 @@ import { HasPermissionDirective } from '../../../../shared/directives/has-permis
 export class OfferLetters implements OnInit {
   letters: OfferLetter[] = [];
   employees: Employee[] = [];
+  candidates: JobApplication[] = [];
   totalPages = 0;
   page = 0;
   loading = false;
@@ -35,15 +40,52 @@ export class OfferLetters implements OnInit {
 
   letterTypes = LETTER_TYPES;
 
+  drafting = false;
+  draftError = '';
+
   constructor(
     private letterService: OfferLetterService,
     private employeeService: EmployeeService,
+    private recruitmentService: RecruitmentService,
     private cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit(): void {
     this.load();
     this.loadEmployees();
+    this.loadCandidates();
+  }
+
+  // OFFER/APPOINTMENT letters address a recruitment candidate, everything else an employee.
+  get isCandidateLetter(): boolean {
+    return !!this.form.letterType && CANDIDATE_LETTER_TYPES.includes(this.form.letterType);
+  }
+
+  // The selected recipient id for the current letter type (used for validation/enabling).
+  get recipientId(): number | undefined {
+    return this.isCandidateLetter ? this.form.jobApplicationId : this.form.employeeId;
+  }
+
+  // When the letter type flips between candidate/employee, drop the now-irrelevant recipient.
+  onLetterTypeChange(): void {
+    if (this.isCandidateLetter) {
+      this.form.employeeId = undefined;
+    } else {
+      this.form.jobApplicationId = undefined;
+    }
+  }
+
+  loadCandidates(): void {
+    this.recruitmentService.list(0, 200).subscribe({
+      next: (res) => {
+        // Exclude rejected/withdrawn — they're not letter recipients.
+        this.candidates = (res.content || []).filter(
+          (c) => c.status !== 'REJECTED' && c.status !== 'WITHDRAWN',
+        );
+        this.cdr.markForCheck();
+      },
+      error: () => { this.candidates = []; this.cdr.markForCheck(); },
+    });
   }
 
   load(): void {
@@ -74,7 +116,31 @@ export class OfferLetters implements OnInit {
   openCreate(): void {
     this.form = this.emptyForm();
     this.isEdit = false;
+    this.draftError = '';
     this.showForm = true;
+  }
+
+  draftWithAi(): void {
+    if (!this.recipientId || !this.form.letterType || this.drafting) return;
+    this.drafting = true;
+    this.draftError = '';
+    this.cdr.markForCheck();
+    this.letterService.draftWithAi({
+      letterType: this.form.letterType,
+      employeeId: this.isCandidateLetter ? undefined : this.form.employeeId,
+      jobApplicationId: this.isCandidateLetter ? this.form.jobApplicationId : undefined,
+    }).subscribe({
+      next: (res) => {
+        this.form.content = res.content;
+        this.drafting = false;
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        this.draftError = err?.error?.message || 'Failed to generate draft';
+        this.drafting = false;
+        this.cdr.markForCheck();
+      },
+    });
   }
 
   save(): void {
@@ -136,6 +202,7 @@ export class OfferLetters implements OnInit {
   private emptyForm(): OfferLetterRequest {
     return {
       employeeId: undefined,
+      jobApplicationId: undefined,
       letterType: 'OFFER',
       referenceNumber: '',
       issueDate: '',

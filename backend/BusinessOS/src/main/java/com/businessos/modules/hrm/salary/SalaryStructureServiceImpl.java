@@ -12,6 +12,7 @@ import com.businessos.auth.role.enums.PermissionCode;
 import com.businessos.auth.role.service.AuthorizationService;
 import com.businessos.security.SecurityUtil;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -21,9 +22,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
-
 public class SalaryStructureServiceImpl implements SalaryStructureService {
 
     private final SalaryStructureRepository salaryStructureRepository;
@@ -75,19 +76,63 @@ public class SalaryStructureServiceImpl implements SalaryStructureService {
         employee.setSalaryStructure(s);
         employeeRepository.save(employee);
 
+        // Best-effort notification — a failed email must NEVER roll back the salary
+        // structure that was just saved. (Previously this re-threw, aborting the whole
+        // @Transactional create, so structures silently never persisted.)
         if (employee.getUser() != null) {
             try {
-                Company fullCompany = companyRepository.findById(companyId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Company not found"));
-                EmailBranding.Data branding = emailBranding.from(fullCompany);
-                emailService.sendSalaryRevisionEmail(employee.getUser().getEmail(), employee.getUser().getFirstName(), branding);
-                
+                Company fullCompany = companyRepository.findById(companyId).orElse(null);
+                if (fullCompany != null) {
+                    EmailBranding.Data branding = emailBranding.from(fullCompany);
+                    emailService.sendSalaryRevisionEmail(
+                        employee.getUser().getEmail(), employee.getUser().getFirstName(), branding);
+                }
             } catch (Exception ex) {
-                throw new com.businessos.shared.exception.BadRequestException("Internal error during operation: " + ex.getMessage());
+                log.warn("Salary revision email failed for employee {} (structure was still saved): {}",
+                    employee.getId(), ex.getMessage());
             }
         }
 
-        
+        return SalaryStructureMapper.toSalaryStructureResponse(s);
+    }
+
+    @Override
+    @Transactional
+    public SalaryStructureResponse update(Long id, SalaryStructureRequest request) {
+        authorizationService.checkPermission(PermissionCode.SALARY_STRUCTURE_CREATE);
+        SalaryStructure s = findInTenant(id);
+
+        // Only the current (active) structure may be edited. Superseded historical
+        // structures are locked to preserve payroll history — supersede them with a
+        // new structure instead.
+        if (s.getEffectiveTo() != null) {
+            throw new BadRequestException(
+                "Only the current salary structure can be edited. Create a new one to supersede this.");
+        }
+
+        s.setEffectiveFrom(request.getEffectiveFrom());
+        s.setGrossSalary(request.getGrossSalary());
+        s.setBasicSalary(request.getBasicSalary());
+        s.setHouseRent(orZero(request.getHouseRent()));
+        s.setMedicalAllowance(orZero(request.getMedicalAllowance()));
+        s.setTransportAllowance(orZero(request.getTransportAllowance()));
+        s.setFoodAllowance(orZero(request.getFoodAllowance()));
+        s.setSpecialAllowance(orZero(request.getSpecialAllowance()));
+        s.setProvidentFund(orZero(request.getProvidentFund()));
+        s.setTaxDeduction(orZero(request.getTaxDeduction()));
+        s.setNotes(request.getNotes());
+        salaryStructureRepository.save(s);
+
+        // Keep the employee's denormalized salary fields in sync.
+        Employee employee = s.getEmployee();
+        if (employee != null) {
+            employee.setBasicSalary(request.getBasicSalary());
+            employee.setHouseRent(orZero(request.getHouseRent()));
+            employee.setMedicalAllowance(orZero(request.getMedicalAllowance()));
+            employee.setTransportAllowance(orZero(request.getTransportAllowance()));
+            employeeRepository.save(employee);
+        }
+
         return SalaryStructureMapper.toSalaryStructureResponse(s);
     }
 

@@ -85,6 +85,10 @@ export class ServiceRequestService {
     return this.api.get<ServiceRequest>(`${this.endpoint}/${id}`);
   }
 
+  summarise(id: number): Observable<ServiceRequest> {
+    return this.api.get<ServiceRequest>(`${this.endpoint}/${id}/summary`);
+  }
+
   update(id: number, payload: UpdateServiceRequestRequest): Observable<ServiceRequest> {
     return this.api.patch<ServiceRequest>(`${this.endpoint}/${id}`, payload);
   }

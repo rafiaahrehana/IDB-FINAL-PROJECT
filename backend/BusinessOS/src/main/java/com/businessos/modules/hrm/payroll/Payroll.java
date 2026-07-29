@@ -75,6 +75,20 @@ public class Payroll extends BaseEntity {
     @Column(precision = 12, scale = 2)
     private BigDecimal bonus = BigDecimal.ZERO;
 
+    // Billable pay: approved timesheet billableHours for this period * the employee's
+    // billableRate, added to gross/net on top of the fixed salary components above.
+    @Builder.Default
+    @Column(precision = 12, scale = 2)
+    private BigDecimal billableHours = BigDecimal.ZERO;
+
+    @Builder.Default
+    @Column(precision = 12, scale = 2)
+    private BigDecimal billableRate = BigDecimal.ZERO;
+
+    @Builder.Default
+    @Column(precision = 12, scale = 2)
+    private BigDecimal billablePay = BigDecimal.ZERO;
+
     // Deductions
     @Builder.Default
 
@@ -94,6 +108,20 @@ public class Payroll extends BaseEntity {
     @Builder.Default
     @Column(precision = 12, scale = 2)
     private BigDecimal providentFundDeduction = BigDecimal.ZERO;
+
+    /**
+     * Auto-calculated from attendance: (gross / calendar days in month) * unapproved
+     * absent days for the period. Kept separate from the manual `deductions` field so
+     * HR can see it wasn't hand-typed. Approved leave never counts as absent - see
+     * AbsenteeMarkingService.
+     */
+    @Builder.Default
+    @Column(precision = 12, scale = 2)
+    private BigDecimal attendanceDeduction = BigDecimal.ZERO;
+
+    @Builder.Default
+    @Column(name = "absent_days")
+    private Integer absentDays = 0;
 
     // GL / Finance integration fields
     private String glDebitAccount;

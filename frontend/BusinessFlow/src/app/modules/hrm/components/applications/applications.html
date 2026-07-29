@@ -1,18 +1,12 @@
 <div class="container-fluid py-3">
-  <div class="page-hero">
-    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
-      <div>
-        <div class="page-hero-label">HRM</div>
-        <h4 class="page-hero-title underline-mint">Job Applications</h4>
-        <div class="page-hero-subtitle">Review and manage incoming applications</div>
-      </div>
-      <div class="page-hero-actions">
-        <select class="form-select form-select-sm" style="width:180px" [(ngModel)]="statusFilter" (change)="page=0;load()">
-          <option value="">All statuses</option>
-          @for (s of statuses; track s) { <option [value]="s">{{ s | titlecase }}</option> }
-        </select>
-        <button *appHasPermission="'APPLICATION_CREATE'" class="btn btn-hero-primary" (click)="openApply()"><i class="bi bi-plus-circle"></i> New Application</button>
-      </div>
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <h4 class="mb-0">Job Applications</h4>
+    <div class="d-flex gap-2">
+      <select class="form-select form-select-sm" style="width:180px" [(ngModel)]="statusFilter" (change)="page=0;load()">
+        <option value="">All statuses</option>
+        @for (s of statuses; track s) { <option [value]="s">{{ s | titlecase }}</option> }
+      </select>
+      <button *appHasPermission="'APPLICATION_CREATE'" class="btn btn-primary btn-sm" (click)="openApply()"><i class="bi bi-plus"></i> New Application</button>
     </div>
   </div>
   @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
@@ -50,7 +44,7 @@
   <div class="card">
     <div class="table-responsive">
       <table class="table table-hover table-sm align-middle mb-0">
-        <thead>
+        <thead class="table-light">
           <tr><th>Applicant</th><th>Email</th><th>Job</th><th>Status</th><th>Applied</th><th>Reviewed By</th><th></th></tr>
         </thead>
         <tbody>
@@ -67,6 +61,12 @@
               <a class="btn btn-outline-secondary btn-sm me-1" [href]="a.resumeUrl" target="_blank" rel="noopener"><i class="bi bi-file-earmark-text"></i></a>
               }
               <button *appHasPermission="'APPLICATION_UPDATE'" class="btn btn-outline-primary btn-sm me-1" (click)="openStatusChange(a)">Update</button>
+              @if (a.status === 'OFFERED') {
+              <button *appHasPermission="'EMPLOYEE_CREATE'" class="btn btn-outline-success btn-sm me-1" (click)="openHire(a)">Hire</button>
+              }
+              @if (a.convertedEmployeeId) {
+              <a class="btn btn-outline-secondary btn-sm me-1" [routerLink]="['/hrm/employees']" title="Hired on {{ a.convertedAt | date:'mediumDate' }}"><i class="bi bi-person-check"></i></a>
+              }
               <button *appHasPermission="'APPLICATION_DELETE'" class="btn btn-outline-danger btn-sm" (click)="deleteTarget = a"><i class="bi bi-trash"></i></button>
             </td>
           </tr>
@@ -85,9 +85,9 @@
   <div class="modal d-block" style="background: rgba(0,0,0,.4)">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
-        <div class="modal-header py-2" style="background: #4F46E5; color:#fff;">
-          <h5 class="modal-title fs-6 fw-semibold" style="color:#fff;">Update Application</h5>
-          <button class="btn-close btn-close-white" (click)="statusTarget = null"></button>
+        <div class="modal-header py-2">
+          <h5 class="modal-title fs-6 fw-semibold">Update Application</h5>
+          <button class="btn-close" (click)="statusTarget = null"></button>
         </div>
         <div class="modal-body">
           <div class="text-muted small mb-2">{{ statusTarget.applicantName }} · {{ statusTarget.jobPostingTitle }}</div>
@@ -102,6 +102,150 @@
           <button class="btn btn-secondary btn-sm" (click)="statusTarget = null">Cancel</button>
           <button class="btn btn-primary btn-sm" (click)="doStatusChange()">Save</button>
         </div>
+      </div>
+    </div>
+  </div>
+  }
+
+  @if (hireTarget) {
+  <div class="modal d-block" style="background: rgba(0,0,0,.4)">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 700px;">
+      <div class="modal-content">
+        <div class="modal-header py-2">
+          <h5 class="modal-title fs-6 fw-semibold">Hire {{ hireTarget.applicantName }}</h5>
+          <button class="btn-close" (click)="hireTarget = null"></button>
+        </div>
+        <form #hireFormRef="ngForm" (ngSubmit)="hireFormRef.valid && doHire()">
+        <div class="modal-body">
+          <div class="text-muted small mb-3">{{ hireTarget.jobPostingTitle }} · {{ hireTarget.applicantEmail }}</div>
+
+          <div class="row g-2">
+            <div class="col-md-6">
+              <label class="form-label small text-muted mb-1">Portal password *</label>
+              <div class="input-group input-group-sm">
+                <input [type]="hireShowPassword ? 'text' : 'password'" class="form-control" name="hirePassword"
+                       required minlength="8" [(ngModel)]="hireForm.password" />
+                <button type="button" class="btn btn-outline-secondary" (click)="hireShowPassword = !hireShowPassword">
+                  <i class="bi" [class.bi-eye]="!hireShowPassword" [class.bi-eye-slash]="hireShowPassword"></i>
+                </button>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small text-muted mb-1">Confirm password *</label>
+              <input type="password" class="form-control form-control-sm" name="hireConfirmPassword"
+                     required [(ngModel)]="hireConfirmPassword" />
+              @if (hireForm.password && hireConfirmPassword && hireForm.password !== hireConfirmPassword) {
+              <div class="text-danger small mt-1">Passwords do not match</div>
+              }
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label small text-muted mb-1">Official email</label>
+              <input type="email" class="form-control form-control-sm" name="officialEmail" [(ngModel)]="hireForm.officialEmail" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small text-muted mb-1">Employment type</label>
+              <select class="form-select form-select-sm" name="employmentType" [(ngModel)]="hireForm.employmentType">
+                <option [ngValue]="undefined">- Use job posting's type -</option>
+                @for (t of types; track t) { <option [value]="t">{{ t }}</option> }
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label small text-muted mb-1">Department</label>
+              <select class="form-select form-select-sm" name="departmentId" [(ngModel)]="hireForm.departmentId">
+                <option [ngValue]="undefined">- None -</option>
+                @for (d of departments; track d.id) { <option [ngValue]="d.id">{{ d.name }}</option> }
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small text-muted mb-1">Designation</label>
+              <select class="form-select form-select-sm" name="designationId" [(ngModel)]="hireForm.designationId">
+                <option [ngValue]="undefined">- None -</option>
+                @for (d of designations; track d.id) { <option [ngValue]="d.id">{{ d.name }}</option> }
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label small text-muted mb-1">Reporting manager</label>
+              <select class="form-select form-select-sm" name="reportingManagerId" [(ngModel)]="hireForm.reportingManagerId">
+                <option [ngValue]="undefined">- None -</option>
+                @for (e of employees; track e.id) { <option [ngValue]="e.id">{{ e.firstName }} {{ e.lastName }}</option> }
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small text-muted mb-1">Shift</label>
+              <select class="form-select form-select-sm" name="shiftId" [(ngModel)]="hireForm.shiftId">
+                <option [ngValue]="undefined">- None -</option>
+                @for (s of shifts; track s.id) { <option [ngValue]="s.id">{{ s.name }}</option> }
+              </select>
+            </div>
+
+            <div class="col-md-3">
+              <label class="form-label small text-muted mb-1">Hire date</label>
+              <input type="date" class="form-control form-control-sm" name="hireDate" [(ngModel)]="hireForm.hireDate" />
+            </div>
+            <div class="col-md-3">
+              <label class="form-label small text-muted mb-1">Confirmation date</label>
+              <input type="date" class="form-control form-control-sm" name="confirmationDate" [(ngModel)]="hireForm.confirmationDate" />
+            </div>
+            <div class="col-md-3">
+              <label class="form-label small text-muted mb-1">Probation end</label>
+              <input type="date" class="form-control form-control-sm" name="probationEndDate" [(ngModel)]="hireForm.probationEndDate" />
+            </div>
+            <div class="col-md-3">
+              <label class="form-label small text-muted mb-1">Contract end</label>
+              <input type="date" class="form-control form-control-sm" name="contractEndDate" [(ngModel)]="hireForm.contractEndDate" />
+            </div>
+
+            <div class="col-md-3">
+              <label class="form-label small text-muted mb-1">Basic salary</label>
+              <input type="number" min="0" class="form-control form-control-sm" name="basicSalary" [(ngModel)]="hireForm.basicSalary" />
+            </div>
+            <div class="col-md-3">
+              <label class="form-label small text-muted mb-1">House rent</label>
+              <input type="number" min="0" class="form-control form-control-sm" name="houseRent" [(ngModel)]="hireForm.houseRent" />
+            </div>
+            <div class="col-md-3">
+              <label class="form-label small text-muted mb-1">Medical allowance</label>
+              <input type="number" min="0" class="form-control form-control-sm" name="medicalAllowance" [(ngModel)]="hireForm.medicalAllowance" />
+            </div>
+            <div class="col-md-3">
+              <label class="form-label small text-muted mb-1">Transport allowance</label>
+              <input type="number" min="0" class="form-control form-control-sm" name="transportAllowance" [(ngModel)]="hireForm.transportAllowance" />
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label small text-muted mb-1">Bank name</label>
+              <input class="form-control form-control-sm" name="bankName" [(ngModel)]="hireForm.bankName" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small text-muted mb-1">Bank account number</label>
+              <input class="form-control form-control-sm" name="bankAccountNumber" [(ngModel)]="hireForm.bankAccountNumber" />
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label small text-muted mb-1">Emergency contact name</label>
+              <input class="form-control form-control-sm" name="emergencyContactName" [(ngModel)]="hireForm.emergencyContactName" />
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small text-muted mb-1">Emergency contact phone</label>
+              <input class="form-control form-control-sm" name="emergencyContactPhone" [(ngModel)]="hireForm.emergencyContactPhone" />
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small text-muted mb-1">Relation</label>
+              <input class="form-control form-control-sm" name="emergencyContactRelation" [(ngModel)]="hireForm.emergencyContactRelation" />
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer py-2">
+          <button type="button" class="btn btn-secondary btn-sm" (click)="hireTarget = null">Cancel</button>
+          <button type="submit" class="btn btn-success btn-sm"
+                  [disabled]="hireFormRef.invalid || hireForm.password !== hireConfirmPassword || hiring">
+            {{ hiring ? 'Hiring…' : 'Hire & Create Employee' }}
+          </button>
+        </div>
+        </form>
       </div>
     </div>
   </div>

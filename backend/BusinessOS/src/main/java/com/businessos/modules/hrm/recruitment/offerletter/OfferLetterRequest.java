@@ -10,8 +10,11 @@ import java.time.LocalDate;
 
 @Data
 public class OfferLetterRequest {
-    @NotNull(message = "Employee ID is required")
+    // Recipient — supply employeeId for employment letters, or jobApplicationId for
+    // OFFER/APPOINTMENT letters (candidate). The service validates which is required
+    // based on the letter type.
     private Long employeeId;
+    private Long jobApplicationId;
     @NotNull(message = "Letter type is required")
     private LetterType letterType;
     @Size(max = 100)

@@ -100,6 +100,28 @@ public class AiServiceImpl implements AiService {
 
     @Override
     @Transactional
+    public String generateRaw(AiFeature feature, String prompt) {
+        authorizationService.checkPermission(PermissionCode.AI_CHAT);
+        User user       = securityUtil.getCurrentUser();
+        Long companyId  = securityUtil.getCurrentCompanyId();
+        Company company = companyRef(companyId);
+
+        enforceRateLimits(companyId, user.getId());
+
+        AiProviderAdapter adapter = resolver.resolve(companyId);
+
+        long start    = System.currentTimeMillis();
+        String result = generateWithRetry(adapter, prompt);
+        long elapsed  = System.currentTimeMillis() - start;
+
+        auditService.record(feature, adapter.getProviderType(), adapter.getModel(),
+            prompt, result, elapsed, user, company);
+
+        return result;
+    }
+
+    @Override
+    @Transactional
     public AiProviderConfigResponse saveProviderConfig(AiProviderConfigRequest request) {
         Long companyId = securityUtil.getCurrentCompanyId();
 
@@ -303,6 +325,20 @@ public class AiServiceImpl implements AiService {
             ? templateRepository.findByCompanyIdOrderByFeatureAscVersionDesc(companyId, pageable)
             : templateRepository.findByCompanyIsNullOrderByFeatureAscVersionDesc(pageable);
         return page.map(AiMapper::toTemplateResponse);
+    }
+
+    @Override
+    @Transactional
+    public void deletePromptTemplate(Long id) {
+        authorizationService.checkPermission(PermissionCode.AI_ADMIN);
+        Long companyId = securityUtil.getCurrentCompanyId();
+        AiPromptTemplate template = templateRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Prompt template not found: " + id));
+        Long templateCompanyId = template.getCompany() != null ? template.getCompany().getId() : null;
+        if (!java.util.Objects.equals(templateCompanyId, companyId)) {
+            throw new ResourceNotFoundException("Prompt template not found: " + id);
+        }
+        template.softDelete();
     }
 
     // ── Private helpers ───────────────────────────────────────────

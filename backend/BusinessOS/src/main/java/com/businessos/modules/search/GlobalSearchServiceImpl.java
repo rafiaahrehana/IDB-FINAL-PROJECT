@@ -15,6 +15,8 @@ import com.businessos.modules.support.ticket.SupportTicket;
 import com.businessos.modules.support.ticket.SupportTicketRepository;
 import com.businessos.modules.finance.invoice.ClientInvoice;
 import com.businessos.modules.finance.invoice.ClientInvoiceRepository;
+import com.businessos.modules.finance.invoice.Refund;
+import com.businessos.modules.finance.invoice.RefundRepository;
 import com.businessos.security.SecurityUtil;
 import com.businessos.shared.exception.BadRequestException;
 import lombok.RequiredArgsConstructor;
@@ -40,6 +42,7 @@ public class GlobalSearchServiceImpl implements GlobalSearchService {
     private final ServiceRequestRepository serviceRequestRepository;
     private final SupportTicketRepository supportTicketRepository;
     private final ClientInvoiceRepository invoiceRepository;
+    private final RefundRepository refundRepository;
     private final AiService aiService;
     private final SecurityUtil securityUtil;
 
@@ -99,6 +102,13 @@ public class GlobalSearchServiceImpl implements GlobalSearchService {
                 invoice.getStatus() + " · " + invoice.getTotalAmount(),
                 "/finance/invoices")));
 
+        Page<Refund> refundPage = refundRepository.searchRefunds(companyId, keyword, top);
+        totalMatches += refundPage.getTotalElements();
+        refundPage.forEach(refund -> results.add(new SearchResultItem("REFUND", refund.getId(),
+                "Refund · " + refund.getClientInvoice().getInvoiceNumber(),
+                refund.getStatus() + " · " + refund.getRequestedAmount(),
+                "/finance/refunds")));
+
         response.setTotalMatches(totalMatches);
         return response;
     }
@@ -127,7 +137,7 @@ public class GlobalSearchServiceImpl implements GlobalSearchService {
                 .setContext(context.isEmpty() ? null : context.toString())
                 .build();
 
-        String answer = aiService.generateFromPrompt(AiFeature.SEARCH_ANSWER, prompt);
+        String answer = aiService.generateRaw(AiFeature.SEARCH_ANSWER, prompt);
 
         AskResponse response = new AskResponse();
         response.setQuestion(request.getQuestion());

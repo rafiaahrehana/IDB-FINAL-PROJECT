@@ -17,7 +17,8 @@ public class OpportunityRequest {
 
     private String description;
 
-    @NotNull(message = "Client is required")
+    // Not @NotNull: required for direct create() (checked in OpportunityServiceImpl),
+    // but an Opportunity created from a Lead (createFromLead) has no Client until it's Won.
     private Long clientId;
 
     private Long contactId;
@@ -38,4 +39,6 @@ public class OpportunityRequest {
 
     @Size(max = 255)
     private String nextStep;
+
+    private java.util.List<Long> tagIds;
 }

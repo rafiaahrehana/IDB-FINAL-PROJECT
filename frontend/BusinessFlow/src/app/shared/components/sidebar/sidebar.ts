@@ -1,5 +1,6 @@
 import { ChangeDetectorRef, Component } from '@angular/core';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { RouterLink, RouterLinkActive, Router, NavigationEnd } from '@angular/router';
+import { filter } from 'rxjs';
 import { AuthService } from '../../../core/services/auth.service';
 import { PermissionService, PermissionCode } from '../../../core/services/permission.service';
 
@@ -19,14 +20,18 @@ export class Sidebar {
   isOwner = false;
   subscriptionPlan = 'FREE';
 
+  // Groups start collapsed (headers only); the group of the current page auto-expands.
+  expandedGroups = new Set<string>();
+
   constructor(
     private auth: AuthService,
     private permissions: PermissionService,
     private cdr: ChangeDetectorRef,
-    private portalService: PortalService
+    private portalService: PortalService,
+    private router: Router,
   ) {
 
-    this.permissions.permissions$.subscribe(() => this.cdr.markForCheck());
+    this.permissions.permissions$.subscribe(() => { this.syncActiveGroup(this.router.url); this.cdr.markForCheck(); });
     this.permissions.catalog$.subscribe(() => this.cdr.markForCheck());
     this.auth.currentUser$.subscribe((user) => {
       this.isOwner = this.auth.hasRole('COMPANY_OWNER');
@@ -35,18 +40,40 @@ export class Sidebar {
       }
       this.cdr.markForCheck();
     });
+
+    // Keep the active page's group open as the user navigates.
+    this.syncActiveGroup(this.router.url);
+    this.router.events
+      .pipe(filter((e) => e instanceof NavigationEnd))
+      .subscribe((e) => this.syncActiveGroup((e as NavigationEnd).urlAfterRedirects));
   }
 
-  /**
-   * The company dashboard is hidden from a plain EMPLOYEE role - it mostly shows
-   * empty/irrelevant cards for sections they can't access. Only the owner, or a
-   * custom role the owner deliberately granted every permission to, sees it
-   * (mirrors DashboardAccessGuard's redirect logic).
-   */
+  toggleGroup(label: string): void {
+    if (this.expandedGroups.has(label)) this.expandedGroups.delete(label);
+    else this.expandedGroups.add(label);
+  }
+
+  isExpanded(label: string): boolean {
+    return this.expandedGroups.has(label);
+  }
+
+  // Expand (never auto-collapse) whichever group contains the current route.
+  private syncActiveGroup(url: string): void {
+    const active = this.visibleGroups.find((g) => g.items.some((i) => url.startsWith(i.link)));
+    if (active && !this.expandedGroups.has(active.label)) {
+      this.expandedGroups.add(active.label);
+      this.cdr.markForCheck();
+    }
+  }
+
+
   get showDashboardLink(): boolean {
     if (this.isOwner) return true;
-    if (!this.auth.hasRole('EMPLOYEE')) return true;
-    return this.permissions.hasAllPermissions();
+    return !this.auth.hasRole('EMPLOYEE');
+  }
+
+  get showEmployeeDashboardLink(): boolean {
+    return this.auth.hasRole('EMPLOYEE') && !this.isOwner;
   }
 
   loadCompanyPlan(): void {
@@ -87,9 +114,11 @@ export class Sidebar {
       label: 'CRM',
       icon: 'bi-graph-up-arrow',
       items: [
+        { label: 'Dashboard', link: '/crm/dashboard', icon: 'bi-speedometer2', requiredPermission: 'OPPORTUNITY_VIEW' },
         { label: 'Leads', link: '/crm/leads', icon: 'bi-person-plus', requiredPermission: 'LEAD_VIEW' },
-        { label: 'Pipeline', link: '/crm/pipeline', icon: 'bi-kanban', requiredPermission: 'OPPORTUNITY_VIEW' },
-        { label: 'All Clients', link: '/crm/clients', icon: 'bi-building', requiredPermission: 'CLIENT_VIEW' },
+        { label: 'Opportunities', link: '/crm/pipeline', icon: 'bi-kanban', requiredPermission: 'OPPORTUNITY_VIEW' },
+        { label: 'Clients', link: '/crm/clients', icon: 'bi-building', requiredPermission: 'CLIENT_VIEW' },
+        { label: 'Contacts', link: '/crm/contacts', icon: 'bi-person-lines-fill', requiredPermission: 'CONTACT_VIEW' },
       ]
     },
     {
@@ -118,12 +147,9 @@ export class Sidebar {
         { label: 'Shifts', link: '/hrm/shifts', icon: 'bi-clock-history', requiredPermission: 'SHIFT_VIEW' },
         { label: 'Announcements', link: '/hrm/announcements', icon: 'bi-megaphone', requiredPermission: 'ANNOUNCEMENT_VIEW' },
         { label: 'Holidays', link: '/hrm/holidays', icon: 'bi-calendar-event', requiredPermission: 'HOLIDAY_VIEW' },
-        { label: 'Leaves', link: '/hrm/leaves', icon: 'bi-calendar-minus', requiredPermission: 'LEAVE_VIEW' },
-        { label: 'Leave Policies', link: '/hrm/leave-policies', icon: 'bi-shield-check', requiredPermission: 'LEAVE_POLICY_VIEW' },
         { label: 'Payroll', link: '/hrm/payroll', icon: 'bi-cash-coin', requiredPermission: 'PAYROLL_VIEW' },
         { label: 'Salary Structures', link: '/hrm/salary-structures', icon: 'bi-wallet2', requiredPermission: 'SALARY_STRUCTURE_VIEW' },
         { label: 'HR Expenses', link: '/hrm/expenses', icon: 'bi-receipt-cutoff', requiredPermission: 'EXPENSE_VIEW' },
-        { label: 'HR Assets', link: '/hrm/assets', icon: 'bi-box-seam', requiredPermission: 'ASSET_VIEW' },
         { label: 'Performance', link: '/hrm/performance', icon: 'bi-graph-up', requiredPermission: 'PERFORMANCE_VIEW' },
         { label: 'Job Postings', link: '/hrm/job-postings', icon: 'bi-briefcase', requiredPermission: 'JOB_POSTING_VIEW' },
         { label: 'Applications', link: '/hrm/applications', icon: 'bi-person-lines-fill', requiredPermission: 'APPLICATION_VIEW' },
@@ -138,7 +164,9 @@ export class Sidebar {
         { label: 'Records', link: '/attendance/records', icon: 'bi-calendar-check', requiredPermission: 'ATTENDANCE_VIEW' },
         { label: 'Timesheets', link: '/attendance/timesheets', icon: 'bi-clock', requiredPermission: 'TIMESHEET_VIEW' },
         { label: 'Shift Assignments', link: '/attendance/shift-assignments', icon: 'bi-diagram-3', requiredPermission: 'SHIFT_ASSIGNMENT_VIEW' },
-        { label: 'Leaves', link: '/attendance/leaves', icon: 'bi-calendar-x', requiredPermission: 'LEAVE_VIEW' },
+        { label: 'Leaves', link: '/hrm/leaves', icon: 'bi-calendar-minus', requiredPermission: 'LEAVE_VIEW' },
+        { label: 'Leave Balances', link: '/hrm/leave-balances', icon: 'bi-wallet2', requiredPermission: 'LEAVE_BALANCE_VIEW' },
+        { label: 'Leave Policies', link: '/hrm/leave-policies', icon: 'bi-shield-check', requiredPermission: 'LEAVE_POLICY_VIEW' },
         { label: 'Biometric Data', link: '/attendance/biometric-data', icon: 'bi-fingerprint', requiredPermission: 'BIOMETRIC_VIEW' },
         { label: 'Reports', link: '/attendance/reports', icon: 'bi-file-earmark-bar-graph', requiredPermission: 'ATTENDANCE_VIEW' },
       ]
@@ -147,25 +175,33 @@ export class Sidebar {
       label: 'Finance',
       icon: 'bi-cash-coin',
       items: [
-        { label: 'Invoices', link: '/finance/invoices', icon: 'bi-receipt', requiredPermission: 'INVOICE_VIEW' },
-        { label: 'Refunds', link: '/finance/refunds', icon: 'bi-arrow-counterclockwise', requiredPermission: 'INVOICE_VIEW' },
-        { label: 'Payment Receipts', link: '/finance/payment-receipts', icon: 'bi-receipt-cutoff', requiredPermission: 'PAYMENT_RECEIPT_VIEW' },
-        { label: 'General Ledger', link: '/finance/general-ledger', icon: 'bi-journal-text', requiredPermission: 'GENERAL_LEDGER_VIEW' },
-        { label: 'Bank Reconciliation', link: '/finance/bank-reconciliation', icon: 'bi-bank', requiredPermission: 'BANK_RECONCILIATION_VIEW' },
-        { label: 'Expenses', link: '/finance/expenses', icon: 'bi-cash-stack', requiredPermission: 'EXPENSE_VIEW' },
-        { label: 'Journal Entries', link: '/finance/journal-entries', icon: 'bi-journal-plus', requiredPermission: 'JOURNAL_ENTRY_VIEW' },
+        // Configuration first, then documents, then banking, then reports - mirrors
+        // the finance-workspace layout the owner asked for.
+        { label: 'Fiscal Years', link: '/finance/fiscal-years', icon: 'bi-calendar3', requiredPermission: 'ACCOUNTING_PERIOD_VIEW' },
+        { label: 'Accounting Periods', link: '/finance/accounting-periods', icon: 'bi-calendar-check', requiredPermission: 'ACCOUNTING_PERIOD_VIEW' },
         { label: 'Chart of Accounts', link: '/finance/coa', icon: 'bi-journal-bookmark', requiredPermission: 'CHART_OF_ACCOUNT_VIEW' },
+        { label: 'Journal Entries', link: '/finance/journal-entries', icon: 'bi-journal-plus', requiredPermission: 'JOURNAL_ENTRY_VIEW' },
+        { label: 'Invoices', link: '/finance/invoices', icon: 'bi-receipt', requiredPermission: 'INVOICE_VIEW' },
+        { label: 'Vendor Bills', link: '/finance/vendor-bills', icon: 'bi-file-earmark-text', requiredPermission: 'VENDOR_BILL_VIEW' },
+        { label: 'Vendors', link: '/finance/vendors', icon: 'bi-shop', requiredPermission: 'VENDOR_VIEW' },
+        { label: 'Payment Receipts', link: '/finance/payment-receipts', icon: 'bi-receipt-cutoff', requiredPermission: 'PAYMENT_RECEIPT_VIEW' },
+        { label: 'Refunds', link: '/finance/refunds', icon: 'bi-arrow-counterclockwise', requiredPermission: 'INVOICE_VIEW' },
+        { label: 'Expenses', link: '/finance/expenses', icon: 'bi-cash-stack', requiredPermission: 'EXPENSE_VIEW' },
+        { label: 'Budgets', link: '/finance/budgets', icon: 'bi-piggy-bank', requiredPermission: 'BUDGET_VIEW' },
+        { label: 'Fixed Assets', link: '/finance/fixed-assets', icon: 'bi-pc-display-horizontal', requiredPermission: 'FIXED_ASSET_VIEW' },
         { label: 'Wallet', link: '/finance/wallet', icon: 'bi-wallet2', requiredPermission: 'WALLET_VIEW' },
+        { label: 'Bank Reconciliation', link: '/finance/bank-reconciliation', icon: 'bi-bank', requiredPermission: 'BANK_RECONCILIATION_VIEW' },
+        { label: 'General Ledger', link: '/finance/general-ledger', icon: 'bi-journal-text', requiredPermission: 'GENERAL_LEDGER_VIEW' },
         { label: 'Reports', link: '/finance/reports', icon: 'bi-bar-chart', requiredPermission: 'FINANCIAL_REPORT_VIEW' },
+        { label: 'Billing Settings', link: '/finance/company-settings', icon: 'bi-building-gear', requiredPermission: 'COMPANY_SETTINGS' },
       ]
     },
     {
-      label: 'Support',
+      label: 'Platform Support',
       icon: 'bi-life-preserver',
       items: [
-        { label: 'Tickets', link: '/support/tickets', icon: 'bi-chat-left-dots', requiredPermission: 'TICKET_VIEW' },
-        { label: 'Messages', link: '/support/messages', icon: 'bi-chat-dots', requiredPermission: 'SUPPORT_MESSAGE_VIEW' },
-        { label: 'Categories', link: '/support/categories', icon: 'bi-tags', requiredPermission: 'SUPPORT_CATEGORY_VIEW' },
+        { label: 'Platform Tickets', link: '/support/tickets', icon: 'bi-chat-left-dots', requiredPermission: 'TICKET_VIEW' },
+        { label: 'Direct Messages', link: '/support/messages', icon: 'bi-chat-dots', requiredPermission: 'SUPPORT_MESSAGE_VIEW' },
         { label: 'SLA Policies', link: '/support/sla-policies', icon: 'bi-stopwatch', requiredPermission: 'SLA_POLICY_VIEW' },
         { label: 'Audit Logs', link: '/support/audit-logs', icon: 'bi-shield-check', requiredPermission: 'AUDIT_LOG_VIEW' },
       ]

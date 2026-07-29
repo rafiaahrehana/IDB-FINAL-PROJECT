@@ -23,6 +23,13 @@ public class CompanyResponse {
     private String tagline;
     private String portalAbout;
     private com.businessos.shared.address.AddressResponse locationDetail;
+    private String taxRegistrationNumber;
+    private String bankName;
+    private String bankAccountName;
+    private String bankAccountNumber;
+    private String bankBranch;
+    private Integer fiscalYearStartMonth;
+    private String baseCurrency;
     private CompanyStatus status;
     private String subscriptionPlan;
     private LocalDate subscriptionStart;

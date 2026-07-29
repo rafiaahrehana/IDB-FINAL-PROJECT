@@ -20,9 +20,10 @@ public class AttendanceReportController {
     @GetMapping("/daily")
     @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     public ResponseEntity<DailyAttendanceReport> getDailyReport(
-            @RequestParam(defaultValue = "#{T(java.time.LocalDate).now().toString()}") 
+            @RequestParam(required = false) 
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
-        return ResponseEntity.ok(attendanceReportService.generateDailyReport(date));
+        LocalDate reportDate = date != null ? date : LocalDate.now();
+        return ResponseEntity.ok(attendanceReportService.generateDailyReport(reportDate));
     }
 
     @GetMapping("/monthly")
@@ -46,16 +47,18 @@ public class AttendanceReportController {
     @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     public ResponseEntity<DepartmentAttendanceReport> getDepartmentReport(
             @RequestParam String department,
-            @RequestParam(defaultValue = "#{T(java.time.LocalDate).now().toString()}") 
+            @RequestParam(required = false) 
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
-        return ResponseEntity.ok(attendanceReportService.generateDepartmentReport(department, date));
+        LocalDate reportDate = date != null ? date : LocalDate.now();
+        return ResponseEntity.ok(attendanceReportService.generateDepartmentReport(department, reportDate));
     }
 
     @GetMapping("/late-absent")
     @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     public ResponseEntity<LateAndAbsentReport> getLateAndAbsentReport(
-            @RequestParam(defaultValue = "#{T(java.time.LocalDate).now().toString()}") 
+            @RequestParam(required = false) 
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
-        return ResponseEntity.ok(attendanceReportService.generateLateAbsentReport(date));
+        LocalDate reportDate = date != null ? date : LocalDate.now();
+        return ResponseEntity.ok(attendanceReportService.generateLateAbsentReport(reportDate));
     }
 }

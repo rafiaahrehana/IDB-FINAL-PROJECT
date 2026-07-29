@@ -8,6 +8,9 @@ public class UserProfileRequest {
     private String firstName;
     private String lastName;
     private String email;
+    // Required whenever email is being changed - verified against the account's
+    // actual password before the change is applied.
+    private String currentPassword;
     private String phone;
     private String image;
     private String languagePreference;

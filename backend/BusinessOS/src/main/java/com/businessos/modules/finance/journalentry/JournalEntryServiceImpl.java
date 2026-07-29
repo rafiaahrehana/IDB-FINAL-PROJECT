@@ -4,6 +4,7 @@ import com.businessos.modules.finance.chartofaccounts.ChartOfAccount;
 import com.businessos.modules.finance.chartofaccounts.ChartOfAccountRepository;
 import com.businessos.modules.finance.generalledger.GeneralLedgerService;
 import com.businessos.modules.finance.generalledger.GlReferenceType;
+import com.businessos.modules.finance.generalledger.LedgerLine;
 import com.businessos.auth.role.enums.PermissionCode;
 import com.businessos.auth.role.service.AuthorizationService;
 import com.businessos.security.SecurityUtil;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -33,22 +35,16 @@ public class JournalEntryServiceImpl implements JournalEntryService {
         authorizationService.checkPermission(PermissionCode.JOURNAL_ENTRY_CREATE);
         Long companyId = securityUtil.getCurrentCompanyId();
 
-        // Validate accounts exist
-        ChartOfAccount debitAccount = coaRepository.findByIdAndCompanyId(request.getDebitAccountId(), companyId)
-                .orElseThrow(() -> new ResourceNotFoundException("Debit account not found"));
-
-        ChartOfAccount creditAccount = coaRepository.findByIdAndCompanyId(request.getCreditAccountId(), companyId)
-                .orElseThrow(() -> new ResourceNotFoundException("Credit account not found"));
+        // Normalize to the multi-line form: an explicit lines list, or two lines
+        // synthesized from the legacy single debit/credit fields.
+        List<JournalEntryLineRequest> lineRequests = normalizeLines(request);
+        validateLines(lineRequests);
 
         String jeNumber = generateJENumber(companyId);
-
         JournalEntry je = JournalEntry.builder()
                 .companyId(companyId)
                 .journalEntryNumber(jeNumber)
                 .entryDate(request.getEntryDate() != null ? request.getEntryDate() : LocalDate.now())
-                .debitAccount(debitAccount)
-                .creditAccount(creditAccount)
-                .amount(request.getAmount())
                 .description(request.getDescription())
                 .notes(request.getNotes())
                 .createdBy(securityUtil.getCurrentUser().getUsername())
@@ -57,8 +53,89 @@ public class JournalEntryServiceImpl implements JournalEntryService {
                 .posted(false)
                 .build();
 
+        BigDecimal totalDebits = BigDecimal.ZERO;
+        ChartOfAccount firstDebitAccount = null;
+        ChartOfAccount firstCreditAccount = null;
+
+        for (JournalEntryLineRequest lineRequest : lineRequests) {
+            ChartOfAccount account = coaRepository.findByIdAndCompanyId(lineRequest.getAccountId(), companyId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Account not found: " + lineRequest.getAccountId()));
+
+            BigDecimal debit = nz(lineRequest.getDebitAmount());
+            BigDecimal credit = nz(lineRequest.getCreditAmount());
+            totalDebits = totalDebits.add(debit);
+            if (firstDebitAccount == null && debit.compareTo(BigDecimal.ZERO) > 0) firstDebitAccount = account;
+            if (firstCreditAccount == null && credit.compareTo(BigDecimal.ZERO) > 0) firstCreditAccount = account;
+
+            je.getLines().add(JournalEntryLine.builder()
+                    .journalEntry(je)
+                    .account(account)
+                    .debitAmount(debit)
+                    .creditAmount(credit)
+                    .lineDescription(lineRequest.getLineDescription())
+                    .build());
+        }
+
+        // Legacy NOT NULL columns - kept as a summary (see JournalEntry field comment).
+        je.setDebitAccount(firstDebitAccount);
+        je.setCreditAccount(firstCreditAccount);
+        je.setAmount(totalDebits);
+
         je = jeRepository.save(je);
         return JournalEntryMapper.toResponse(je);
+    }
+
+    /** Either the explicit lines list, or two lines built from the legacy 1:1 fields. */
+    private List<JournalEntryLineRequest> normalizeLines(JournalEntryRequest request) {
+        if (request.getLines() != null && !request.getLines().isEmpty()) {
+            return request.getLines();
+        }
+        if (request.getDebitAccountId() == null || request.getCreditAccountId() == null || request.getAmount() == null) {
+            throw new BadRequestException(
+                    "Provide either a lines list (at least 2 lines) or the legacy debitAccountId/creditAccountId/amount fields");
+        }
+        return List.of(
+                JournalEntryLineRequest.builder()
+                        .accountId(request.getDebitAccountId())
+                        .debitAmount(request.getAmount())
+                        .creditAmount(BigDecimal.ZERO)
+                        .build(),
+                JournalEntryLineRequest.builder()
+                        .accountId(request.getCreditAccountId())
+                        .debitAmount(BigDecimal.ZERO)
+                        .creditAmount(request.getAmount())
+                        .build());
+    }
+
+    private void validateLines(List<JournalEntryLineRequest> lines) {
+        if (lines.size() < 2) {
+            throw new BadRequestException("A journal entry needs at least 2 lines");
+        }
+        BigDecimal totalDebits = BigDecimal.ZERO;
+        BigDecimal totalCredits = BigDecimal.ZERO;
+        for (JournalEntryLineRequest line : lines) {
+            BigDecimal debit = nz(line.getDebitAmount());
+            BigDecimal credit = nz(line.getCreditAmount());
+            if (debit.compareTo(BigDecimal.ZERO) < 0 || credit.compareTo(BigDecimal.ZERO) < 0) {
+                throw new BadRequestException("Line amounts cannot be negative");
+            }
+            if (debit.compareTo(BigDecimal.ZERO) > 0 && credit.compareTo(BigDecimal.ZERO) > 0) {
+                throw new BadRequestException("A line can be a debit or a credit, not both");
+            }
+            if (debit.compareTo(BigDecimal.ZERO) == 0 && credit.compareTo(BigDecimal.ZERO) == 0) {
+                throw new BadRequestException("Every line needs a debit or credit amount");
+            }
+            totalDebits = totalDebits.add(debit);
+            totalCredits = totalCredits.add(credit);
+        }
+        if (totalDebits.subtract(totalCredits).abs().compareTo(new BigDecimal("0.01")) > 0) {
+            throw new BadRequestException("Journal entry does not balance: debits " + totalDebits
+                    + " vs credits " + totalCredits);
+        }
+    }
+
+    private static BigDecimal nz(BigDecimal value) {
+        return value != null ? value : BigDecimal.ZERO;
     }
 
     @Override
@@ -92,7 +169,15 @@ public class JournalEntryServiceImpl implements JournalEntryService {
             throw new BadRequestException("Journal entry is already approved");
         }
 
-        je.approve(securityUtil.getCurrentUser().getUsername());
+        // Maker-checker: the person who wrote an entry must not be the one who approves
+        // it - otherwise the approval step is theater and one compromised/mistaken user
+        // can move money through the books alone.
+        String approver = securityUtil.getCurrentUser().getUsername();
+        if (approver != null && approver.equalsIgnoreCase(je.getCreatedBy())) {
+            throw new BadRequestException("You created this journal entry - a different user must approve it");
+        }
+
+        je.approve(approver);
         jeRepository.save(je);
     }
 
@@ -110,29 +195,98 @@ public class JournalEntryServiceImpl implements JournalEntryService {
             throw new BadRequestException("Journal entry is already posted");
         }
 
-        // Post to GL
-        glService.recordTransaction(
-                je.getDebitAccount().getId(),
-                je.getAmount(),
-                BigDecimal.ZERO,
-                je.getDescription(),
-                GlReferenceType.JOURNAL_ENTRY,
-                je.getId(),
-                je.getJournalEntryNumber()
-        );
+        postToLedger(je);
+        jeRepository.save(je);
+    }
 
-        glService.recordTransaction(
-                je.getCreditAccount().getId(),
-                BigDecimal.ZERO,
-                je.getAmount(),
-                je.getDescription(),
-                GlReferenceType.JOURNAL_ENTRY,
-                je.getId(),
-                je.getJournalEntryNumber()
-        );
+    /**
+     * Records the entry's GL lines as one balanced batch (rejected up front if debits
+     * don't equal credits) and flips it to posted. Shared by {@link #post} and
+     * {@link #reverse}. Pre-lines entries fall back to the legacy 1:1 columns.
+     */
+    private void postToLedger(JournalEntry je) {
+        LocalDate transactionDate = je.getEntryDate() != null ? je.getEntryDate() : LocalDate.now();
+
+        List<LedgerLine> ledgerLines;
+        if (je.getLines() != null && !je.getLines().isEmpty()) {
+            ledgerLines = je.getLines().stream()
+                    .map(line -> new LedgerLine(line.getAccount().getId(),
+                            nz(line.getDebitAmount()), nz(line.getCreditAmount())))
+                    .collect(java.util.stream.Collectors.toList());
+        } else {
+            ledgerLines = List.of(
+                    LedgerLine.debit(je.getDebitAccount().getId(), je.getAmount()),
+                    LedgerLine.credit(je.getCreditAccount().getId(), je.getAmount()));
+        }
+
+        glService.recordBalancedTransaction(je.getCompanyId(), ledgerLines, je.getDescription(),
+                GlReferenceType.JOURNAL_ENTRY, je.getId(), je.getJournalEntryNumber(), transactionDate);
 
         je.post();
-        jeRepository.save(je);
+    }
+
+    @Override
+    @Transactional
+    public JournalEntryResponse reverse(Long id) {
+        authorizationService.checkPermission(PermissionCode.JOURNAL_ENTRY_POST);
+        JournalEntry original = findInTenant(id);
+
+        if (!original.isPosted()) {
+            throw new BadRequestException("Only posted journal entries can be reversed");
+        }
+        if (original.isReversed()) {
+            throw new BadRequestException("Journal entry is already reversed");
+        }
+
+        Long companyId = original.getCompanyId();
+        String actor = securityUtil.getCurrentUser().getUsername();
+        LocalDate today = LocalDate.now();
+
+        // Reversing entry mirrors the original with debit and credit swapped, so
+        // posting it produces the exact offsetting ledger movement. It's created
+        // pre-approved and posted immediately.
+        JournalEntry reversal = JournalEntry.builder()
+                .companyId(companyId)
+                .journalEntryNumber(generateJENumber(companyId))
+                .entryDate(today)
+                .debitAccount(original.getCreditAccount())
+                .creditAccount(original.getDebitAccount())
+                .amount(original.getAmount())
+                .description("Reversal of " + original.getJournalEntryNumber()
+                        + (original.getDescription() != null ? " — " + original.getDescription() : ""))
+                .notes("Auto-generated reversal")
+                .createdBy(actor)
+                .createdDate(today)
+                .reversedFromEntryId(original.getId())
+                .approved(true)
+                .approvedBy(actor)
+                .approvedDate(today)
+                .posted(false)
+                .build();
+
+        // Mirror every line of the original with debit/credit swapped - a multi-line
+        // original needs a matching multi-line reversal, not just the summary pair.
+        if (original.getLines() != null && !original.getLines().isEmpty()) {
+            for (JournalEntryLine line : original.getLines()) {
+                reversal.getLines().add(JournalEntryLine.builder()
+                        .journalEntry(reversal)
+                        .account(line.getAccount())
+                        .debitAmount(nz(line.getCreditAmount()))
+                        .creditAmount(nz(line.getDebitAmount()))
+                        .lineDescription(line.getLineDescription())
+                        .build());
+            }
+        }
+
+        reversal = jeRepository.save(reversal);
+
+        postToLedger(reversal);
+        reversal = jeRepository.save(reversal);
+
+        original.markReversed(reversal.getId());
+        jeRepository.save(original);
+
+        return JournalEntryMapper.toResponse(reversal);
     }
 
     @Override

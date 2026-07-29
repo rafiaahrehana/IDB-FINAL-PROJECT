@@ -70,6 +70,16 @@ export class ApiService {
   }
 
   /**
+   * POST a single file as multipart/form-data to any endpoint (field name "file").
+   * For endpoints that process the upload themselves rather than the generic /upload store.
+   */
+  postFile<T>(endpoint: string, file: File): Observable<T> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<T>(`${this.baseUrl}${endpoint}`, formData);
+  }
+
+  /**
    * Uploads a file to the generic file storage endpoint (POST /api/upload,
    * multipart/form-data). Returns { fileName, fileUrl, message }.
    */
@@ -109,9 +119,11 @@ export class ApiService {
    * Get paginated data
    */
   getPaged<T>(endpoint: string, page: number = 0, size: number = 20, params?: any): Observable<PagedResponse<T>> {
+    const validPage = (typeof page === 'number' && !isNaN(page) && page >= 0) ? Math.floor(page) : 0;
+    const validSize = (typeof size === 'number' && !isNaN(size) && size > 0) ? Math.floor(size) : 20;
     const httpParams = {
-      page,
-      size,
+      page: validPage,
+      size: validSize,
       ...params
     };
     // Backend returns Spring Data's Page<T>, whose JSON uses `number`/`size`

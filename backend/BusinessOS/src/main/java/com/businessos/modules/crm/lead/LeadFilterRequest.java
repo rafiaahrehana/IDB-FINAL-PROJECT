@@ -19,6 +19,8 @@ public class LeadFilterRequest {
     private Priority priority;
     
     private Long assignedToId;
+
+    private Long tagId;
     
     private LocalDate expectedCloseDateFrom;
     

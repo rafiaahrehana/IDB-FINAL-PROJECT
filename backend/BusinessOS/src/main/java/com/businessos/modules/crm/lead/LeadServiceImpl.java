@@ -3,39 +3,31 @@ package com.businessos.modules.crm.lead;
 import com.businessos.modules.ai.enums.AiFeature;
 import com.businessos.modules.ai.prompt.CrmSummaryPromptBuilder;
 import com.businessos.modules.ai.service.AiService;
-import com.businessos.auth.role.enums.Role;
 import com.businessos.auth.role.enums.PermissionCode;
 import com.businessos.auth.role.service.AuthorizationService;
-import com.businessos.modules.crm.client.Client;
 import com.businessos.modules.servicedesk.companyservice.CompanyServiceRepository;
 import com.businessos.modules.company.Company;
 import com.businessos.modules.hrm.employee.Employee;
 import com.businessos.modules.hrm.employee.EmployeeRepository;
-import com.businessos.auth.user.User;
-import com.businessos.auth.user.UserRepository;
 import com.businessos.enums.*;
 import com.businessos.shared.exception.BadRequestException;
 import com.businessos.shared.exception.ResourceNotFoundException;
-import com.businessos.modules.crm.client.ClientRepository;
 import com.businessos.security.SecurityUtil;
 import com.businessos.shared.notification.CreateNotificationRequest;
 import com.businessos.shared.notification.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import java.time.LocalDate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -45,9 +37,6 @@ public class LeadServiceImpl implements LeadService {
 
     private final EmployeeRepository employeeRepository;
     private final CompanyServiceRepository companyServiceRepository;
-    private final ClientRepository clientRepository;
-    private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
     private final SecurityUtil securityUtil;
     private final AuthorizationService authorizationService;
     private final AiService aiService;
@@ -55,6 +44,9 @@ public class LeadServiceImpl implements LeadService {
     private final com.businessos.modules.crm.activity.CrmActivityRepository leadActivityRepository;
     private final LeadMapper leadMapper;
     private final NotificationService notificationService;
+    private final com.businessos.modules.crm.duplicate.DuplicateDetectionService duplicateDetectionService;
+    private final com.businessos.modules.crm.tag.TagRepository tagRepository;
+    private final com.businessos.modules.crm.opportunity.OpportunityService opportunityService;
 
     @Override
     @Transactional
@@ -81,6 +73,7 @@ public class LeadServiceImpl implements LeadService {
                 .description(request.getDescription())
                 .status(request.getStatus() != null ? request.getStatus() : LeadStatus.NEW)
                 .source(request.getSource() != null ? request.getSource() : LeadSource.OTHER)
+                .sourceOther(request.getSourceOther())
                 .priority(request.getPriority() != null ? request.getPriority() : Priority.NORMAL)
                 .estimatedValue(request.getEstimatedValue())
                 .expectedCloseDate(request.getExpectedCloseDate())
@@ -99,9 +92,18 @@ public class LeadServiceImpl implements LeadService {
                                     "Service not found: " + request.getInterestedServiceId())));
         }
 
+        if (request.getTagIds() != null && !request.getTagIds().isEmpty()) {
+            lead.setTags(tagRepository.findByIdInAndCompanyId(request.getTagIds(), companyId));
+        }
+
         Lead saved = leadRepository.save(lead);
         notifyAssignee(saved);
-        return leadMapper.toLeadResponse(saved);
+
+        LeadResponse response = leadMapper.toLeadResponse(saved);
+        duplicateDetectionService
+                .findPossibleDuplicateClient(saved.getCompanyName(), saved.getEmail(), saved.getPhone())
+                .ifPresent(response::setPossibleDuplicate);
+        return response;
     }
 
     @Override
@@ -147,7 +149,7 @@ public class LeadServiceImpl implements LeadService {
         }
 
         // Prevent editing closed leads
-        if (lead.getStatus() == LeadStatus.WON || lead.getStatus() == LeadStatus.LOST) {
+        if (lead.isConverted() || lead.getStatus() == LeadStatus.DISQUALIFIED) {
             throw new BadRequestException("Cannot edit a closed lead");
         }
 
@@ -172,6 +174,8 @@ public class LeadServiceImpl implements LeadService {
             lead.setStatus(request.getStatus());
         if (request.getSource() != null)
             lead.setSource(request.getSource());
+        if (request.getSourceOther() != null)
+            lead.setSourceOther(request.getSourceOther());
         if (request.getPriority() != null)
             lead.setPriority(request.getPriority());
         if (request.getEstimatedValue() != null)
@@ -184,6 +188,12 @@ public class LeadServiceImpl implements LeadService {
             Employee assignee = findEmployee(request.getAssignedToId(), companyId);
             reassigned = lead.getAssignedTo() == null || !lead.getAssignedTo().getId().equals(assignee.getId());
             lead.setAssignedTo(assignee);
+        }
+
+        if (request.getTagIds() != null) {
+            lead.setTags(request.getTagIds().isEmpty()
+                    ? new java.util.ArrayList<>()
+                    : tagRepository.findByIdInAndCompanyId(request.getTagIds(), companyId));
         }
 
         Lead saved = leadRepository.save(lead);
@@ -250,6 +260,7 @@ public class LeadServiceImpl implements LeadService {
                 filter.getSource(),
                 filter.getPriority(),
                 filter.getAssignedToId(),
+                filter.getTagId(),
                 pageable).map(leadMapper::toLeadResponse);
     }
 
@@ -275,7 +286,7 @@ public class LeadServiceImpl implements LeadService {
         if (companyId == null) {
             companyId = requireCompanyId();
         }
-        List<LeadStatus> closedStatuses = List.of(LeadStatus.WON, LeadStatus.LOST);
+        List<LeadStatus> closedStatuses = List.of(LeadStatus.DISQUALIFIED);
         return leadRepository.findUnassignedLeads(companyId, closedStatuses, pageable)
                 .map(leadMapper::toLeadResponse);
     }
@@ -286,7 +297,7 @@ public class LeadServiceImpl implements LeadService {
         if (companyId == null) {
             companyId = requireCompanyId();
         }
-        List<LeadStatus> closedStatuses = List.of(LeadStatus.WON, LeadStatus.LOST);
+        List<LeadStatus> closedStatuses = List.of(LeadStatus.DISQUALIFIED);
         return leadRepository.findHighPriorityOpenLeads(companyId, closedStatuses, pageable)
                 .map(leadMapper::toLeadResponse);
     }
@@ -304,66 +315,46 @@ public class LeadServiceImpl implements LeadService {
     public Page<LeadResponse> findStalLeads(Pageable pageable) {
         Long companyId = requireCompanyId();
         LocalDateTime stalDateTime = LocalDateTime.now().minus(30, ChronoUnit.DAYS);
-        List<LeadStatus> closedStatuses = List.of(LeadStatus.WON, LeadStatus.LOST);
+        List<LeadStatus> closedStatuses = List.of(LeadStatus.DISQUALIFIED);
         return leadRepository.findStalLeads(companyId, stalDateTime, closedStatuses, pageable)
                 .map(leadMapper::toLeadResponse);
     }
 
     // ==================== Lead Conversion ====================
 
+    // Converts a Qualified Lead into an Opportunity - no Client or portal login is
+    // created here. A Client is created/linked later, when the Opportunity reaches Won
+    // (see OpportunityServiceImpl.changeStage).
     @Override
     @Transactional
-    public LeadResponse convertLead(Long id) {
+    public com.businessos.modules.crm.opportunity.OpportunityResponse convertToOpportunity(Long id, ConvertToOpportunityRequest request) {
         authorizationService.checkPermission(PermissionCode.LEAD_UPDATE);
-        Long companyId = requireCompanyId();
         Lead lead = findLeadInTenant(id);
 
-        if (lead.isConverted() || lead.getStatus() == LeadStatus.WON) {
+        if (lead.isConverted()) {
             throw new BadRequestException("Lead is already converted");
         }
-
-        if (lead.getEmail() == null || lead.getEmail().isBlank()) {
-            throw new BadRequestException("Lead must have an email address to be converted");
+        if (lead.getStatus() != LeadStatus.QUALIFIED) {
+            throw new BadRequestException("Only a Qualified lead can be converted to an opportunity");
         }
 
-        String normalizedEmail = lead.getEmail().toLowerCase().trim();
-        if (userRepository.existsByEmail(normalizedEmail)) {
-            throw new BadRequestException("A platformuser with this email already exists");
+        com.businessos.modules.crm.opportunity.OpportunityRequest opportunityRequest =
+                new com.businessos.modules.crm.opportunity.OpportunityRequest();
+        opportunityRequest.setName(request.getOpportunityName());
+        opportunityRequest.setAmount(request.getExpectedValue());
+        opportunityRequest.setExpectedCloseDate(request.getExpectedCloseDate());
+        if (lead.getAssignedTo() != null) {
+            opportunityRequest.setOwnerId(lead.getAssignedTo().getId());
         }
 
-        // Create portal platformuser for the lead
-        User user = User.builder()
-                .firstName(lead.getContactName().split(" ")[0])
-                .lastName(lead.getContactName().contains(" ")
-                        ? lead.getContactName().substring(lead.getContactName().indexOf(' ') + 1)
-                        : "")
-                .email(normalizedEmail)
-                .phone(lead.getPhone())
-                .password(passwordEncoder.encode(UUID.randomUUID().toString()))
-                .role(Role.CLIENT)
-                .active(true)
-                .emailVerified(false)
-                .build();
-        userRepository.save(user);
+        com.businessos.modules.crm.opportunity.OpportunityResponse opportunity =
+                opportunityService.createFromLead(id, opportunityRequest);
 
-        // Create client
-        Client client = Client.builder()
-                .clientCompanyName(lead.getCompanyName() != null ? lead.getCompanyName() : lead.getContactName())
-                .user(user)
-                .company(companyRef(companyId))
-                .status(ClientStatus.ACTIVE)
-                .industry(lead.getIndustry())
-                .onboardedAt(LocalDate.now())
-                .build();
-        clientRepository.save(client);
-
-        // Update lead
         lead.setConverted(true);
         lead.setConvertedAt(LocalDateTime.now());
-        lead.setConvertedClient(client);
-        lead.setStatus(LeadStatus.WON);
+        leadRepository.save(lead);
 
-        return leadMapper.toLeadResponse(leadRepository.save(lead));
+        return opportunity;
     }
 
     // ==================== Activity Management ====================
@@ -435,7 +426,7 @@ public class LeadServiceImpl implements LeadService {
     @Transactional(readOnly = true)
     public long countActiveLeads() {
         Long companyId = requireCompanyId();
-        List<LeadStatus> closedStatuses = List.of(LeadStatus.WON, LeadStatus.LOST);
+        List<LeadStatus> closedStatuses = List.of(LeadStatus.DISQUALIFIED);
         return leadRepository.countActiveByCompanyId(companyId, closedStatuses);
     }
 
@@ -445,7 +436,7 @@ public class LeadServiceImpl implements LeadService {
         Long companyId = requireCompanyId();
         Employee emp = employeeRepository.findByUserId(securityUtil.getCurrentUser().getId())
                 .orElseThrow(() -> new BadRequestException("Employee profile not found"));
-        List<LeadStatus> closedStatuses = List.of(LeadStatus.WON, LeadStatus.LOST);
+        List<LeadStatus> closedStatuses = List.of(LeadStatus.DISQUALIFIED);
         return leadRepository.countActiveByAssignee(companyId, emp.getId(), closedStatuses);
     }
 
@@ -463,7 +454,7 @@ public class LeadServiceImpl implements LeadService {
                     .setInterestedService(lead.getInterestedService() != null ? lead.getInterestedService().getName() : null)
                     .setActivityHistory("Activities count: " + lead.getActivities().size())
                     .build();
-            response.setAiSummary(aiService.generateFromPrompt(AiFeature.CRM_LEAD_SUMMARY, prompt));
+            response.setAiSummary(aiService.generateRaw(AiFeature.CRM_LEAD_SUMMARY, prompt));
         } catch (Exception e) {
             log.error("Failed to generate AI summary for lead with ID {}: {}", id, e.getMessage(), e);
             throw new BadRequestException("Failed to generate AI summary: " + e.getMessage());
@@ -476,7 +467,7 @@ public class LeadServiceImpl implements LeadService {
         Employee assignee = lead.getAssignedTo();
         if (assignee == null || assignee.getUser() == null) return;
         notificationService.send(CreateNotificationRequest.of(
-                NotificationType.GENERAL,
+                NotificationType.LEAD_ASSIGNED,
                 "Lead Assigned",
                 "Lead \"" + lead.getContactName() + "\" has been assigned to you.",
                 "/crm/leads",

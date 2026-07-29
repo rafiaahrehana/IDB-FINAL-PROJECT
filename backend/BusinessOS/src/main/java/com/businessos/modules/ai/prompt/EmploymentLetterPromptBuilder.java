@@ -43,21 +43,17 @@ public class EmploymentLetterPromptBuilder {
                 companyName,
                 employeeName,
                 designation,
-                department,
+                PromptSupport.orDefault(department, "General"),
                 joiningDate
             );
     }
 
     private void validateFields() {
-        if (companyName  == null || companyName.isBlank())
-            throw new AiPromptException("companyName is required for employment letter prompt");
-        if (employeeName == null || employeeName.isBlank())
-            throw new AiPromptException("employeeName is required for employment letter prompt");
-        if (designation  == null || designation.isBlank())
-            throw new AiPromptException("designation is required for employment letter prompt");
-        if (joiningDate  == null)
+        PromptSupport.requireNonBlank(companyName, "companyName", "employment letter");
+        PromptSupport.requireNonBlank(employeeName, "employeeName", "employment letter");
+        PromptSupport.requireNonBlank(designation, "designation", "employment letter");
+        if (joiningDate == null)
             throw new AiPromptException("joiningDate is required for employment letter prompt");
-        if (letterType   == null || letterType.isBlank())
-            throw new AiPromptException("letterType is required for employment letter prompt");
+        PromptSupport.requireNonBlank(letterType, "letterType", "employment letter");
     }
 }

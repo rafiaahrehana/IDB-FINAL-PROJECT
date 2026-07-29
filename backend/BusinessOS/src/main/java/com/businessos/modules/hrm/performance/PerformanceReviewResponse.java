@@ -29,4 +29,5 @@ public class PerformanceReviewResponse {
     private Long reviewedById;
     private String reviewedByName;
     private LocalDateTime createdAt;
+    private String aiSummary;
 }

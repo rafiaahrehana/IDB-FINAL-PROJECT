@@ -39,7 +39,7 @@ public class Opportunity extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
     @Builder.Default
-    private OpportunityStage stage = OpportunityStage.PROSPECTING;
+    private OpportunityStage stage = OpportunityStage.QUALIFICATION;
 
     @Enumerated(EnumType.STRING)
     @Column(length = 30)
@@ -52,7 +52,7 @@ public class Opportunity extends BaseEntity {
     // 0 - 100, defaults from stage, can be overridden per deal
     @Column(nullable = false)
     @Builder.Default
-    private Integer probability = OpportunityStage.PROSPECTING.getDefaultProbability();
+    private Integer probability = OpportunityStage.QUALIFICATION.getDefaultProbability();
 
     @Column(name = "expected_close_date")
     private LocalDate expectedCloseDate;
@@ -68,9 +68,10 @@ public class Opportunity extends BaseEntity {
     private LocalDateTime lastActivityAt;
     private LocalDateTime stageChangedAt;
 
-    // The account this deal belongs to
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "client_id", nullable = false)
+    // The account this deal belongs to. Null until the deal is Won and a Client is
+    // created/linked - an Opportunity can now exist for a prospect that isn't a Client yet.
+    @ManyToOne(fetch = FetchType.LAZY, optional = true)
+    @JoinColumn(name = "client_id", nullable = true)
     private Client client;
 
     // Primary contact person on the deal
@@ -92,10 +93,17 @@ public class Opportunity extends BaseEntity {
     @JoinColumn(name = "company_id", nullable = false)
     private Company company;
 
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(name = "opportunity_tags",
+        joinColumns = @JoinColumn(name = "opportunity_id"),
+        inverseJoinColumns = @JoinColumn(name = "tag_id"))
+    @Builder.Default
+    private java.util.List<com.businessos.modules.crm.tag.Tag> tags = new java.util.ArrayList<>();
+
     @PrePersist
     protected void onCreate() {
         if (this.stage == null) {
-            this.stage = OpportunityStage.PROSPECTING;
+            this.stage = OpportunityStage.QUALIFICATION;
         }
         if (this.probability == null) {
             this.probability = this.stage.getDefaultProbability();

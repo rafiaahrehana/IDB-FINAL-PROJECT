@@ -1,7 +1,10 @@
 package com.businessos.modules.hrm.recruitment;
 
+import com.businessos.modules.hrm.employee.EmployeeResponse;
+import com.businessos.modules.hrm.recruitment.jobapplication.HireApplicationRequest;
 import com.businessos.modules.hrm.recruitment.jobapplication.JobApplicationRequest;
 import com.businessos.modules.hrm.recruitment.jobapplication.JobApplicationResponse;
+import com.businessos.modules.hrm.recruitment.jobapplication.UpdateApplicationStatusRequest;
 import com.businessos.enums.ApplicationStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -53,9 +56,15 @@ public class RecruitmentController {
     @PatchMapping("/applications/{id}/status")
     public ResponseEntity<JobApplicationResponse> updateStatus(
             @PathVariable Long id,
-            @RequestParam ApplicationStatus status,
-            @RequestParam(required = false) String notes) {
-        return ResponseEntity.ok(recruitmentService.updateStatus(id, status, notes));
+            @RequestBody UpdateApplicationStatusRequest request) {
+        return ResponseEntity.ok(recruitmentService.updateStatus(id, request.getStatus(), request.getNotes()));
+    }
+
+    @PostMapping("/applications/{id}/hire")
+    public ResponseEntity<EmployeeResponse> hire(
+            @PathVariable Long id,
+            @RequestBody HireApplicationRequest request) {
+        return new ResponseEntity<>(recruitmentService.hire(id, request), HttpStatus.CREATED);
     }
 
     @DeleteMapping("/applications/{id}")

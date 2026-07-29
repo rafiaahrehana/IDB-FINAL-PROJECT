@@ -2,13 +2,15 @@
   width: 240px;
   flex-shrink: 0;
   height: 100%;
+  background-color: #0d0a23 !important;
+  display: block;
 }
 
 .sidebar-wrapper {
   transition: all 0.3s ease;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-family: 'Inter', sans-serif;
   user-select: none;
-  background-color: #0F1115;
+  background-color: #0d0a23;
   height: 100%;
   overflow-y: auto;
   overflow-x: hidden;
@@ -18,71 +20,70 @@
 
 .sidebar-scroll {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255,255,255,0.1) transparent;
+  scrollbar-color:rgb(168, 165, 165) transparent;
   
   &::-webkit-scrollbar {
     width: 4px;
   }
   
   &::-webkit-scrollbar-thumb {
-    background: rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.1);
     border-radius: 4px;
   }
 }
 
 .sidebar-link {
-  color: #B4B7BE !important;
-  transition: all 0.15s ease-in-out;
+  color: #ffffff !important;
+  transition: all 0.2s ease-in-out;
   cursor: pointer;
   text-decoration: none;
-  font-size: 0.875rem;
-  font-weight: 500;
-  padding: 0.55rem 12px;
-  border-radius: 6px;
-  margin: 1px 8px;
+  font-size: 0.85rem;
+  padding: 0.5rem 15px;
+  border-radius: 8px;
+  margin: 0.1rem 10px;
   display: flex;
   align-items: center;
   
   i {
-    transition: color 0.15s ease-in-out;
-    color: rgba(180, 183, 190, 0.55);
+    transition: transform 0.2s ease-in-out;
+    opacity: 0.8;
+    color: #ffffff;
     font-size: 1rem;
-    width: 18px;
-    text-align: center;
     margin-right: 0.6rem;
-    flex-shrink: 0;
   }
   
   &:hover {
-    background-color: rgba(255, 255, 255, 0.06);
-    color: #fff !important;
+    background-color: rgba(255, 255, 255, 0.08);
+    color: #ffffff !important;
     
     i {
-      color: rgba(255, 255, 255, 0.85) !important;
+      transform: scale(1.05);
+      color: #ffffff !important;
+      opacity: 1;
     }
   }
   
   &.active {
-    background: #4F46E5 !important;
-    color: #fff !important;
-    font-weight: 600;
-    
+    background: #9ca3af !important;
+    color: #111827 !important;
+    font-weight: 700 !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+
     i {
-      color: #fff !important;
+      color: #111827 !important;
       opacity: 1;
     }
   }
 }
 
 .sidebar-group-header {
-  font-size: 0.65rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  color: #F59E0B !important;
-  padding: 1.2rem 20px 0.3rem;
+  font-size: 0.6rem;
+  letter-spacing: 0.08em;
+  color: #c3a6f7 !important; /* Light purple for all groups */
+  padding: 0.5rem 15px 0.15rem;
 }
 
-// All groups use the same styling now
+// Default hover/active for all groups on dark navy
 .sidebar-link.group-crm,
 .sidebar-link.group-finance,
 .sidebar-link.group-hrm,
@@ -93,13 +94,14 @@
 .sidebar-link.group-ai,
 .sidebar-link.group-servicedesk {
   &:hover {
-    background-color: rgba(255, 255, 255, 0.06) !important;
-    color: #fff !important;
-    i { color: rgba(255, 255, 255, 0.85) !important; }
+    background-color: rgba(255, 255, 255, 0.08) !important;
+    color: #ffffff !important;
+    i { color: #ffffff !important; }
   }
   &.active {
-    background: #4F46E5 !important;
-    color: #fff !important;
-    i { color: #fff !important; }
+    background: #9ca3af !important;
+    color: #111827 !important;
+    i { color: #111827 !important; }
   }
 }
+

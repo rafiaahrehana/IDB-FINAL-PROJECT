@@ -72,4 +72,12 @@ export class Navbar {
     if (this.auth.isPlatformUser()) return '/profile';
     return '/my-profile';
   }
+
+  // Account Settings (notification preferences + security) - clients already
+  // manage those from within /client/profile, so only tenant/platform users
+  // get a distinct destination here.
+  accountSettingsLink(): string {
+    if (this.auth.hasRole('CLIENT')) return '/client/profile';
+    return '/profile';
+  }
 }

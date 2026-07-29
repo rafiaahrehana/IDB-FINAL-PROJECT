@@ -57,7 +57,7 @@ public class SupportAgentController {
     // SupportTicketController#assign) - COMPANY_OWNER/EMPLOYEE need this to populate
     // the assignee picker, not just to manage agent records.
     @GetMapping("/available")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'SUPPORT_MANAGER', 'COMPANY_OWNER', 'EMPLOYEE')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'SUPPORT_MANAGER', 'SUPPORT_AGENT', 'COMPANY_OWNER', 'EMPLOYEE')")
     public ResponseEntity<List<SupportAgentResponse>> getAvailable() {
         return ResponseEntity.ok(agentService.getAvailableAgents());
     }

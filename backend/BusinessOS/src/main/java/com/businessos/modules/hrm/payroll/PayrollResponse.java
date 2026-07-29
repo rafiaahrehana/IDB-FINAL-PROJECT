@@ -22,10 +22,15 @@ public class PayrollResponse {
     private BigDecimal foodAllowance;
     private BigDecimal specialAllowance;
     private BigDecimal bonus;
+    private BigDecimal billableHours;
+    private BigDecimal billableRate;
+    private BigDecimal billablePay;
     private BigDecimal deductions;
     private BigDecimal taxDeduction;
     private BigDecimal insuranceDeduction;
     private BigDecimal providentFundDeduction;
+    private BigDecimal attendanceDeduction;
+    private Integer absentDays;
     private BigDecimal netSalary;
     private PayrollStatus status;
     private String paymentReference;

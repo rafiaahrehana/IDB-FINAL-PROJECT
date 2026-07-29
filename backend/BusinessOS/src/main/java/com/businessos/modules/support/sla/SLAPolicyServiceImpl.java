@@ -26,7 +26,7 @@ public class SLAPolicyServiceImpl implements SLAPolicyService {
     @Override
     @Transactional
     public SLAPolicyResponse create(SLAPolicyRequest request) {
-        if (slaPolicyRepository.findByApplicablePriority(request.getApplicablePriority()).isPresent()) {
+        if (slaPolicyRepository.findByApplicablePriorityAndDeletedFalse(request.getApplicablePriority()).isPresent()) {
             throw new BadRequestException("SLA policy already exists for priority: " + request.getApplicablePriority());
         }
 

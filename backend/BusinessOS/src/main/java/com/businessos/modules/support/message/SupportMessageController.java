@@ -21,21 +21,21 @@ public class SupportMessageController {
     private final SupportMessageService service;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE', 'SUPPORT_AGENT')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE', 'SUPPORT_AGENT', 'SUPER_ADMIN', 'SYSTEM_ADMIN')")
     @Operation(summary = "Create Message")
     public ResponseEntity<SupportMessageResponse> create(@Valid @RequestBody SupportMessageRequest request) {
         return new ResponseEntity<>(service.create(request), HttpStatus.CREATED);
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE', 'SUPPORT_AGENT')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE', 'SUPPORT_AGENT', 'SUPER_ADMIN', 'SYSTEM_ADMIN')")
     @Operation(summary = "Get Message by ID")
     public ResponseEntity<SupportMessageResponse> getById(@PathVariable Long id) {
         return ResponseEntity.ok(service.getById(id));
     }
 
     @GetMapping("/ticket/{ticketId}")
-    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE', 'SUPPORT_AGENT')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE', 'SUPPORT_AGENT', 'SUPER_ADMIN', 'SYSTEM_ADMIN')")
     @Operation(summary = "Get Messages by Ticket")
     public ResponseEntity<Page<SupportMessageResponse>> getByTicket(
             @PathVariable Long ticketId,
@@ -45,14 +45,14 @@ public class SupportMessageController {
     }
 
     @GetMapping("/ticket/{ticketId}/external")
-    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE', 'SUPPORT_AGENT')")
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE', 'SUPPORT_AGENT', 'SUPER_ADMIN', 'SYSTEM_ADMIN')")
     @Operation(summary = "Get External Messages by Ticket")
     public ResponseEntity<List<SupportMessageResponse>> getExternalMessages(@PathVariable Long ticketId) {
         return ResponseEntity.ok(service.getExternalMessages(ticketId));
     }
 
     @GetMapping("/ticket/{ticketId}/internal")
-    @PreAuthorize("hasRole('SUPPORT_AGENT') or hasRole('SUPPORT_MANAGER')")
+    @PreAuthorize("hasAnyRole('SUPPORT_AGENT', 'SUPPORT_MANAGER', 'SUPER_ADMIN', 'SYSTEM_ADMIN')")
     @Operation(summary = "Get Internal Notes by Ticket")
     public ResponseEntity<List<SupportMessageResponse>> getInternalNotes(@PathVariable Long ticketId) {
         return ResponseEntity.ok(service.getInternalNotes(ticketId));

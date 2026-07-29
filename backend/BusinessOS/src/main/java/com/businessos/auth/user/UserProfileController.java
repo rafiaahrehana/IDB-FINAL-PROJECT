@@ -13,6 +13,7 @@ import com.businessos.shared.exception.UnauthorizedException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
@@ -31,6 +32,7 @@ public class UserProfileController {
     private final AuthorizationService authorizationService;
     private final CompanyRepository companyRepository;
     private final EmployeeRepository employeeRepository;
+    private final PasswordEncoder passwordEncoder;
 
     /**
      * The current user's fully-resolved permission set (COMPANY_OWNER gets every
@@ -78,6 +80,12 @@ public class UserProfileController {
         if (request.getEmail() != null && !request.getEmail().isBlank()) {
             String newEmail = request.getEmail().trim().toLowerCase();
             if (!newEmail.equalsIgnoreCase(user.getEmail())) {
+                if (request.getCurrentPassword() == null || request.getCurrentPassword().isBlank()) {
+                    throw new BadRequestException("Enter your current password to change your email.");
+                }
+                if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+                    throw new BadRequestException("Current password is incorrect.");
+                }
                 if (userRepository.existsByEmail(newEmail)) {
                     throw new BadRequestException("An account with this email already exists.");
                 }

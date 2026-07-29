@@ -28,6 +28,13 @@ public class WorkflowController {
     private final WorkflowService workflowService;
 
     @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
+    @PostMapping("/suggest")
+    public ResponseEntity<WorkflowSuggestionResponse> suggest(
+            @Valid @RequestBody WorkflowSuggestionRequest request) {
+        return ResponseEntity.ok(workflowService.suggest(request));
+    }
+
+    @PreAuthorize("hasAnyRole('COMPANY_OWNER', 'EMPLOYEE')")
     @PostMapping
     public ResponseEntity<WorkflowTemplateResponse> create(
             @Valid @RequestBody WorkflowTemplateRequest request) {

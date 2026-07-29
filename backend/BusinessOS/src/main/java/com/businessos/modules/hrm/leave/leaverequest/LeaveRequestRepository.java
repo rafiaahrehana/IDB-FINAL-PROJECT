@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 public interface LeaveRequestRepository extends JpaRepository<LeaveRequest, Long> {
@@ -69,4 +70,23 @@ public interface LeaveRequestRepository extends JpaRepository<LeaveRequest, Long
         @Param("employeeId") Long employeeId,
         @Param("date") LocalDate date,
         @Param("status") LeaveRequestStatus status);
+
+    /**
+     * Used by the employee dashboard's monthly summary - approved leave requests
+     * that overlap a given date range (e.g. the current month), so per-day overlap
+     * can be clamped/counted in Java.
+     */
+    @Query("""
+        SELECT lr FROM LeaveRequest lr
+        WHERE lr.employee.id = :employeeId
+          AND lr.status = :status
+          AND lr.startDate <= :rangeEnd
+          AND lr.endDate >= :rangeStart
+          AND lr.deleted = false
+        """)
+    List<LeaveRequest> findApprovedOverlapping(
+        @Param("employeeId") Long employeeId,
+        @Param("status") LeaveRequestStatus status,
+        @Param("rangeStart") LocalDate rangeStart,
+        @Param("rangeEnd") LocalDate rangeEnd);
 }

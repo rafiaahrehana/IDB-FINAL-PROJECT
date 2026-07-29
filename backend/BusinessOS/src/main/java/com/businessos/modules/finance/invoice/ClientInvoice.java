@@ -9,6 +9,7 @@ import org.hibernate.annotations.Filter;
 import org.hibernate.annotations.FilterDef;
 import org.hibernate.annotations.ParamDef;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.List;
 import com.businessos.enums.InvoiceStatus;
@@ -38,13 +39,38 @@ public class ClientInvoice extends BaseEntity {
 
     @Builder.Default
     private BigDecimal subtotal = BigDecimal.ZERO;
+
+    // If set, taxAmount is (re)computed from subtotal on every calculateTotals() call.
+    // Left null to keep the older "manually typed tax amount" behavior.
+    private BigDecimal taxRatePercent;
     @Builder.Default
     private BigDecimal taxAmount = BigDecimal.ZERO;
+
+    @Builder.Default
+    private BigDecimal discountAmount = BigDecimal.ZERO;
+
+    @Builder.Default
+    @Column(length = 10)
+    private String currency = "BDT";
+
+    // How many units of the company's base currency one unit of `currency` is worth
+    // at issue time. 1 for base-currency invoices. GL postings multiply by this so the
+    // ledger stays single-currency in base - see ClientInvoiceServiceImpl#toBase.
+    @Builder.Default
+    @Column(precision = 15, scale = 6)
+    private BigDecimal exchangeRate = BigDecimal.ONE;
+
     @Builder.Default
     private BigDecimal totalAmount = BigDecimal.ZERO;
 
     @Builder.Default
     private BigDecimal paidAmount = BigDecimal.ZERO;
+
+    // Cumulative amount written off via credit notes - reduces the balance owed
+    // without reversing revenue/cash the way a full refund does.
+    @Builder.Default
+    private BigDecimal creditedAmount = BigDecimal.ZERO;
+
     @Builder.Default
     private BigDecimal balanceAmount = BigDecimal.ZERO;
 
@@ -73,8 +99,18 @@ public class ClientInvoice extends BaseEntity {
                     .map(ClientInvoiceItem::getLineTotal)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
         }
-        totalAmount = subtotal.add(taxAmount != null ? taxAmount : BigDecimal.ZERO);
-        balanceAmount = totalAmount.subtract(paidAmount != null ? paidAmount : BigDecimal.ZERO);
+        BigDecimal discount = discountAmount != null ? discountAmount : BigDecimal.ZERO;
+        BigDecimal taxableBase = subtotal.subtract(discount).max(BigDecimal.ZERO);
+
+        if (taxRatePercent != null) {
+            taxAmount = taxableBase.multiply(taxRatePercent)
+                    .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+        }
+
+        totalAmount = taxableBase.add(taxAmount != null ? taxAmount : BigDecimal.ZERO);
+        BigDecimal paid = paidAmount != null ? paidAmount : BigDecimal.ZERO;
+        BigDecimal credited = creditedAmount != null ? creditedAmount : BigDecimal.ZERO;
+        balanceAmount = totalAmount.subtract(paid).subtract(credited);
     }
 
     public boolean isOverdue() {

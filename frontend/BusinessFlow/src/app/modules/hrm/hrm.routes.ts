@@ -13,8 +13,8 @@ import { PerformanceReviews } from './components/performance-reviews/performance
 import { JobPostings } from './components/job-postings/job-postings';
 import { OfferLetters } from './components/offer-letters/offer-letters';
 import { Leaves } from './components/leaves/leaves';
+import { LeaveBalances } from './components/leave-balances/leave-balances';
 import { Applications } from './components/applications/applications';
-import { Assets } from './components/assets/assets';
 import { Expenses } from './components/expenses/expenses';
 
 export const HRM_ROUTES: Routes = [
@@ -24,6 +24,7 @@ export const HRM_ROUTES: Routes = [
   { path: 'designations', component: Designations, data: { requiredPermission: 'DESIGNATION_VIEW' } },
   { path: 'payroll', component: PayrollPage, data: { requiredPermission: 'PAYROLL_VIEW' } },
   { path: 'leaves', component: Leaves, data: { requiredPermission: 'LEAVE_VIEW' } },
+  { path: 'leave-balances', component: LeaveBalances, data: { requiredPermission: 'LEAVE_BALANCE_VIEW' } },
   { path: 'expenses', component: Expenses, data: { requiredPermission: 'EXPENSE_VIEW' } },
   { path: 'salary-structures', component: SalaryStructures, data: { requiredPermission: 'SALARY_STRUCTURE_VIEW' } },
   { path: 'announcements', component: Announcements, data: { requiredPermission: 'ANNOUNCEMENT_VIEW' } },
@@ -34,6 +35,5 @@ export const HRM_ROUTES: Routes = [
   { path: 'job-postings', component: JobPostings, data: { requiredPermission: 'JOB_POSTING_VIEW' } },
   { path: 'letters', component: OfferLetters, data: { requiredPermission: 'LETTER_VIEW' } },
   { path: 'applications', component: Applications, data: { requiredPermission: 'APPLICATION_VIEW' } },
-  { path: 'assets', component: Assets, data: { requiredPermission: 'ASSET_VIEW' } },
   { path: '', redirectTo: 'employees', pathMatch: 'full' }
 ];

@@ -32,6 +32,9 @@ export class Departments implements OnInit {
   editingId: number | null = null;
   form: DepartmentRequest = { name: '' };
 
+  searchQuery = '';
+  statusFilter: 'ALL' | 'ACTIVE' | 'INACTIVE' = 'ALL';
+
   deleteTarget: Department | null = null;
 
   constructor(
@@ -42,7 +45,28 @@ export class Departments implements OnInit {
 
   ngOnInit(): void {
     this.load();
-    this.employeeService.list(0, 1000, undefined, 'ACTIVE').subscribe({ next: (res) => { this.employees = res.content; this.cdr.markForCheck(); } });
+    this.employeeService.list(0, 1000, undefined, undefined, false).subscribe({
+      next: (res) => {
+        this.employees = (res.content || []).filter(e => e.employmentStatus !== 'TERMINATED');
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  get filteredDepartments(): Department[] {
+    const q = this.searchQuery.trim().toLowerCase();
+    return this.departments.filter(d => {
+      const matchSearch = !q ||
+        (d.name && d.name.toLowerCase().includes(q)) ||
+        (d.code && d.code.toLowerCase().includes(q)) ||
+        (d.id && d.id.toString().includes(q));
+      
+      const matchStatus = this.statusFilter === 'ALL' ||
+        (this.statusFilter === 'ACTIVE' && d.active) ||
+        (this.statusFilter === 'INACTIVE' && !d.active);
+
+      return matchSearch && matchStatus;
+    });
   }
 
   load(): void {
@@ -136,5 +160,11 @@ export class Departments implements OnInit {
   goToPage(p: number): void {
     this.page = p;
     this.load();
+  }
+
+  // Rotating accent palette so each department card gets its own color.
+  private cardPalette = ['#2563EB', '#6B46FF', '#16A34A', '#D97706', '#0EA5E9', '#DC2626', '#DB2777', '#0D9488'];
+  cardColor(i: number): string {
+    return this.cardPalette[i % this.cardPalette.length];
   }
 }

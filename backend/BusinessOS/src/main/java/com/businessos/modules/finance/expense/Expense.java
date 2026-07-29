@@ -40,6 +40,13 @@ public class Expense extends BaseEntity {
 
     private String category; // TRAVEL, MEALS, OFFICE_SUPPLIES, LICENSING, etc.
 
+    // The COA expense account this posts to when paid. Optional - falls back to the
+    // generic Operating Expenses account, so the category label alone no longer
+    // decides (or rather, fails to decide) where the money lands in the P&L.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "expense_account_id")
+    private com.businessos.modules.finance.chartofaccounts.ChartOfAccount expenseAccount;
+
     private LocalDate expenseDate;
     private String receiptUrl;
 

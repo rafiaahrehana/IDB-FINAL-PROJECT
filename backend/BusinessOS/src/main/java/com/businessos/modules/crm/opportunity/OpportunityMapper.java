@@ -43,6 +43,9 @@ public class OpportunityMapper {
         response.setStageChangedAt(opportunity.getStageChangedAt());
         response.setCreatedAt(opportunity.getCreatedAt());
         response.setUpdatedAt(opportunity.getUpdatedAt());
+        response.setTags(opportunity.getTags() != null
+                ? com.businessos.modules.crm.tag.TagMapper.toResponseList(opportunity.getTags())
+                : java.util.List.of());
         return response;
     }
 

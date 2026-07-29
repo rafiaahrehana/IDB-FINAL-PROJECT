@@ -7,5 +7,7 @@ public enum LeaveType {
     MATERNITY,
     PATERNITY,
     UNPAID,
-    COMPENSATORY
+    COMPENSATORY,
+    EMERGENCY,
+    OTHER
 }

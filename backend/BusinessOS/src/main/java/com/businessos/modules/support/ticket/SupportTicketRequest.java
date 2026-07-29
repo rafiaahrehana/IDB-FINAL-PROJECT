@@ -12,7 +12,6 @@ public class SupportTicketRequest {
     @NotBlank(message = "Description is required")
     private String description;
 
-    @NotNull(message = "Category is required")
     private Long categoryId;
 
     @NotNull(message = "Priority is required")

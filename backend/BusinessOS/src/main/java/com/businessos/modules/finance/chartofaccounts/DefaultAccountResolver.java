@@ -38,10 +38,35 @@ public class DefaultAccountResolver {
     private static final String PAYROLL_PAYABLE_CODE = "2200";
     private static final String PAYROLL_PAYABLE_NAME = "Payroll Payable";
 
+    private static final String RETAINED_EARNINGS_CODE = "3900";
+    private static final String RETAINED_EARNINGS_NAME = "Retained Earnings";
+
+    private static final String ACCOUNTS_PAYABLE_CODE = "2000";
+    private static final String ACCOUNTS_PAYABLE_NAME = "Accounts Payable";
+
+    private static final String FIXED_ASSETS_CODE = "1400";
+    private static final String FIXED_ASSETS_NAME = "Fixed Assets";
+
+    private static final String ACCUMULATED_DEPRECIATION_CODE = "1500";
+    private static final String ACCUMULATED_DEPRECIATION_NAME = "Accumulated Depreciation";
+
+    private static final String DEPRECIATION_EXPENSE_CODE = "5200";
+    private static final String DEPRECIATION_EXPENSE_NAME = "Depreciation Expense";
+
+    private static final String OPENING_BALANCE_EQUITY_CODE = "3800";
+    private static final String OPENING_BALANCE_EQUITY_NAME = "Opening Balance Equity";
+
     private final ChartOfAccountRepository coaRepository;
 
     public ChartOfAccount cash(Long companyId) {
-        return resolve(companyId, CASH_CODE, CASH_NAME, AccountType.ASSET);
+        ChartOfAccount account = resolve(companyId, CASH_CODE, CASH_NAME, AccountType.ASSET);
+        // Ensure the system cash account is always flagged as reconcilable against a bank
+        // statement, even if it existed before isBankAccount was introduced.
+        if (!account.isBankAccount()) {
+            account.setBankAccount(true);
+            account = coaRepository.save(account);
+        }
+        return account;
     }
 
     public ChartOfAccount accountsReceivable(Long companyId) {
@@ -67,6 +92,33 @@ public class DefaultAccountResolver {
     /** Withheld tax + other payroll deductions the company still owes out (not yet remitted). */
     public ChartOfAccount payrollPayable(Long companyId) {
         return resolve(companyId, PAYROLL_PAYABLE_CODE, PAYROLL_PAYABLE_NAME, AccountType.LIABILITY);
+    }
+
+    /** Cumulative net income from all closed fiscal years - see AccountingPeriodServiceImpl.closeFiscalYear. */
+    public ChartOfAccount retainedEarnings(Long companyId) {
+        return resolve(companyId, RETAINED_EARNINGS_CODE, RETAINED_EARNINGS_NAME, AccountType.EQUITY);
+    }
+
+    /** What the company owes vendors on approved-but-unpaid bills - see VendorBillServiceImpl. */
+    public ChartOfAccount accountsPayable(Long companyId) {
+        return resolve(companyId, ACCOUNTS_PAYABLE_CODE, ACCOUNTS_PAYABLE_NAME, AccountType.LIABILITY);
+    }
+
+    public ChartOfAccount fixedAssets(Long companyId) {
+        return resolve(companyId, FIXED_ASSETS_CODE, FIXED_ASSETS_NAME, AccountType.ASSET);
+    }
+
+    public ChartOfAccount accumulatedDepreciation(Long companyId) {
+        return resolve(companyId, ACCUMULATED_DEPRECIATION_CODE, ACCUMULATED_DEPRECIATION_NAME, AccountType.CONTRA_ASSET);
+    }
+
+    public ChartOfAccount depreciationExpense(Long companyId) {
+        return resolve(companyId, DEPRECIATION_EXPENSE_CODE, DEPRECIATION_EXPENSE_NAME, AccountType.EXPENSE);
+    }
+
+    /** Offset side of opening-balance entries when migrating from a previous system. */
+    public ChartOfAccount openingBalanceEquity(Long companyId) {
+        return resolve(companyId, OPENING_BALANCE_EQUITY_CODE, OPENING_BALANCE_EQUITY_NAME, AccountType.EQUITY);
     }
 
     /**

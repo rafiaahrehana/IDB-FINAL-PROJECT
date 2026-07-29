@@ -63,4 +63,17 @@ public interface ClientInvoiceService {
 
     /** Leaves the invoice untouched (still PAID) - no money moves. */
     void rejectRefund(Long refundId, String reason);
+
+    /** Draft a concise invoice summary note with AI from the invoice's real client/amount/service data - not persisted */
+    InvoiceSummaryDraftResponse draftSummaryWithAi(Long id);
+
+    /**
+     * Issues a credit note against an invoice - a partial write-down of what's owed,
+     * without reversing cash/revenue like a refund. Posts Dr Sales Revenue / Cr
+     * Accounts Receivable for the credited amount. Amount must not exceed the
+     * invoice's current outstanding balance.
+     */
+    CreditNoteResponse issueCreditNote(CreditNoteRequest request);
+
+    Page<CreditNoteResponse> listCreditNotes(Long invoiceId, Pageable pageable);
 }

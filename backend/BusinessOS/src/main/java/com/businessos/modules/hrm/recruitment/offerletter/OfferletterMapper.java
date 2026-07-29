@@ -20,6 +20,9 @@ public class OfferletterMapper {
         r.setIssued(ol.isIssued());
         r.setEmployeeId(emp != null ? emp.getId() : null);
         r.setEmployeeName(empUser != null ? empUser.getFullName() : null);
+        r.setJobApplicationId(ol.getJobApplication() != null ? ol.getJobApplication().getId() : null);
+        r.setRecipientName(ol.getRecipientName());
+        r.setRecipientEmail(ol.getRecipientEmail());
         r.setCreatedById(createdBy != null ? createdBy.getId() : null);
         r.setCreatedByName(createdBy != null ? createdBy.getFullName() : null);
         r.setCreatedAt(ol.getCreatedAt());

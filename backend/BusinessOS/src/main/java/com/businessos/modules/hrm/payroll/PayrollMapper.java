@@ -20,10 +20,15 @@ public class PayrollMapper {
         r.setFoodAllowance(p.getFoodAllowance());
         r.setSpecialAllowance(p.getSpecialAllowance());
         r.setBonus(p.getBonus());
+        r.setBillableHours(p.getBillableHours());
+        r.setBillableRate(p.getBillableRate());
+        r.setBillablePay(p.getBillablePay());
         r.setDeductions(p.getDeductions());
         r.setTaxDeduction(p.getTaxDeduction());
         r.setInsuranceDeduction(p.getInsuranceDeduction());
         r.setProvidentFundDeduction(p.getProvidentFundDeduction());
+        r.setAttendanceDeduction(p.getAttendanceDeduction());
+        r.setAbsentDays(p.getAbsentDays());
         r.setNetSalary(p.getNetSalary());
         r.setStatus(p.getStatus());
         r.setPaymentReference(p.getPaymentReference());

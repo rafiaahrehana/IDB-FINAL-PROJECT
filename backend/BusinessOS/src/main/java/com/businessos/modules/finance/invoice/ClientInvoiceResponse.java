@@ -28,9 +28,14 @@ public class ClientInvoiceResponse {
     private LocalDate dueDate;
     private List<ClientInvoiceItemResponse> items;
     private BigDecimal subtotal;
+    private BigDecimal taxRatePercent;
     private BigDecimal taxAmount;
+    private BigDecimal discountAmount;
+    private String currency;
+    private BigDecimal exchangeRate;
     private BigDecimal totalAmount;
     private BigDecimal paidAmount;
+    private BigDecimal creditedAmount;
     private BigDecimal balanceAmount;
     private InvoiceStatus status;
     private PaymentTerms paymentTerms;

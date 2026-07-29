@@ -11,7 +11,7 @@ import { CommonModule } from '@angular/common';
 export class TestimonialsComponent {
   testimonials = signal([
     {
-      quote: "BusinessOS has fundamentally changed how we operate. We replaced five different tools with one unified platform.",
+      quote: "Zuhoo CMS has fundamentally changed how we operate. We replaced five different tools with one unified platform.",
       author: "Sarah Jenkins",
       role: "COO, TechFlow Inc.",
       initials: "SJ",
@@ -27,7 +27,7 @@ export class TestimonialsComponent {
       textColor: "text-purple"
     },
     {
-      quote: "Security and compliance were our top priorities. BusinessOS exceeded our expectations on both fronts.",
+      quote: "Security and compliance were our top priorities. Zuhoo CMS exceeded our expectations on both fronts.",
       author: "Emily Rodriguez",
       role: "CTO, FinServ Global",
       initials: "ER",

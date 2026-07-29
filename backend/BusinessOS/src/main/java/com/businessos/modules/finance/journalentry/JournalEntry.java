@@ -29,6 +29,10 @@ public class JournalEntry extends BaseEntity {
 
     private LocalDate entryDate;
 
+    // Legacy 1:1 columns. The lines collection below is now authoritative; these stay
+    // populated (first debit line's account / first credit line's account / total amount)
+    // because the existing DB columns are NOT NULL and ddl-auto=update never drops
+    // constraints - and they keep old pre-lines entries displayable.
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "debit_account_id", nullable = false)
     private ChartOfAccount debitAccount;
@@ -37,7 +41,11 @@ public class JournalEntry extends BaseEntity {
     @JoinColumn(name = "credit_account_id", nullable = false)
     private ChartOfAccount creditAccount;
 
-    private BigDecimal amount;
+    private BigDecimal amount; // total debits (= total credits)
+
+    @OneToMany(mappedBy = "journalEntry", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    @Builder.Default
+    private java.util.List<JournalEntryLine> lines = new java.util.ArrayList<>();
 
     private String description;
     private String notes;
@@ -55,6 +63,22 @@ public class JournalEntry extends BaseEntity {
     private boolean posted = false;
 
     private LocalDate postedDate;
+
+    // ── Reversal ──────────────────────────────────────────────
+    // A posted entry can be reversed once. The reversal is a second entry with
+    // debit/credit swapped; these fields link the two together.
+    @Builder.Default
+    private boolean reversed = false;
+
+    private Long reversalEntryId;      // on the original: the entry that reverses it
+    private Long reversedFromEntryId;  // on the reversal: the original it reverses
+    private LocalDate reversedDate;
+
+    public void markReversed(Long reversalEntryId) {
+        this.reversed = true;
+        this.reversalEntryId = reversalEntryId;
+        this.reversedDate = LocalDate.now();
+    }
 
     public void approve(String approverName) {
         this.approved = true;

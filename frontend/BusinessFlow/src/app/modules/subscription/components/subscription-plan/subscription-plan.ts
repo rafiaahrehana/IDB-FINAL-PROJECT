@@ -14,7 +14,18 @@ import { Loader } from '../../../../shared/components/loader/loader';
   styleUrls: ['./subscription-plan.scss'],
 })
 export class SubscriptionPlan implements OnInit {
-  trustBadges = ['No setup fees', 'Cancel anytime', 'Secure & reliable', '24/7 Support'];
+  trustBadges = [
+    { icon: 'bi-tag', label: 'No setup fees' },
+    { icon: 'bi-x-circle', label: 'Cancel anytime' },
+    { icon: 'bi-shield-check', label: 'Secure & reliable' },
+    { icon: 'bi-headset', label: '24/7 Support' },
+  ];
+  private static readonly PLAN_ICONS: Record<string, string> = {
+    FREE: 'bi-gift',
+    STARTER: 'bi-rocket-takeoff',
+    PRO: 'bi-lightning-charge-fill',
+    ENTERPRISE: 'bi-building',
+  };
 
   loading = false;
   error = '';
@@ -60,6 +71,26 @@ export class SubscriptionPlan implements OnInit {
 
   isCurrent(plan: SubscriptionPlanOption): boolean {
     return plan.code === this.currentPlanCode;
+  }
+
+  isPopular(plan: SubscriptionPlanOption): boolean {
+    return plan.code?.toUpperCase() === 'PRO';
+  }
+
+  planIcon(plan: SubscriptionPlanOption): string {
+    return SubscriptionPlan.PLAN_ICONS[plan.code?.toUpperCase()] || 'bi-box-seam';
+  }
+
+  // Seeded descriptions are comma-separated phrases (e.g. "Email support, up
+  // to 10 users, standard integrations.") - split into a feature checklist.
+  planFeatures(plan: SubscriptionPlanOption): string[] {
+    if (!plan.description) return [];
+    return plan.description
+      .replace(/\.$/, '')
+      .split(',')
+      .map(f => f.trim())
+      .filter(f => f.length > 0)
+      .map(f => f.charAt(0).toUpperCase() + f.slice(1));
   }
 
   // A plan the company isn't already on and that costs more - matches the

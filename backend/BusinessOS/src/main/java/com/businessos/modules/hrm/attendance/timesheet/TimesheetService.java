@@ -13,6 +13,8 @@ public interface TimesheetService {
     Page<TimesheetResponse> listForEmployee(Long employeeId, Pageable pageable);
     List<TimesheetResponse> listByDateRange(Long employeeId, LocalDate from, LocalDate to);
     TimesheetResponse update(Long id, TimesheetRequest request);
+    /** EMPLOYEE (self-service): submits all of the caller's own not-yet-submitted, not-yet-approved entries for review. Returns how many were submitted. */
+    int submitForReview();
     TimesheetResponse approve(Long id);
     void delete(Long id);
 }

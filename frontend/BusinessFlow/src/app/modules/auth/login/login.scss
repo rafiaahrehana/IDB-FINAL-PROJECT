@@ -1,28 +1,23 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
-// ══════════════════════════════════════════════════════
-//  BusinessOS — Auth Pages
-//  Pixel-faithful to the provided reference image:
-//  lavender gradient bg · 3D angled mockup left
-//  clean white card right · dark purple typography
-// ══════════════════════════════════════════════════════
 
-$indigo:        #4F46E5;
-$indigo-hover:  #4338CA;
-$indigo-dark:   #3730A3;
-$lavender:      #818CF8;
-$lavender-lt:   #EEF2FF;
-$text-main:     #111827;
-$text-sub:      #4F46E5;
+
+$purple:        #6B46FF;
+$purple-hover:  #5535E0;
+$purple-dark:   #1E1B4B;
+$lavender:      #A78BFA;
+$lavender-lt:   #EDE9FE;
+$text-main:     #1E1B4B;
+$text-sub:      #6366F1;
 $text-muted:    #8B8FA8;
 $border:        #E5E7EB;
 
-// ── Page shell ──────────────────────────────────────────
+
 .auth-page {
   display: flex;
   min-height: 100vh;
   font-family: 'Inter', sans-serif;
-  background: #EEF2FF;
+  background: #F0EEFF;
   position: relative;
   overflow: hidden;
 
@@ -32,15 +27,15 @@ $border:        #E5E7EB;
     position: fixed;
     inset: 0;
     background: 
-      radial-gradient(ellipse 60% 50% at 20% 50%, rgba(129,140,248,0.28) 0%, transparent 70%),
-      radial-gradient(ellipse 50% 40% at 80% 80%, rgba(79,70,229,0.12) 0%, transparent 60%),
-      linear-gradient(155deg, #EEF2FF 0%, #EEF2FF 50%, #EEF2FF 100%);
+      radial-gradient(ellipse 60% 50% at 20% 50%, rgba(167,139,250,0.28) 0%, transparent 70%),
+      radial-gradient(ellipse 50% 40% at 80% 80%, rgba(107,70,255,0.12) 0%, transparent 60%),
+      linear-gradient(155deg, #F3F0FF 0%, #EEF2FF 50%, #F0EEFF 100%);
     pointer-events: none;
     z-index: 0;
   }
 }
 
-// ── LEFT PANEL ─────────────────────────────────────────
+
 .left-panel {
   position: relative;
   z-index: 1;
@@ -52,7 +47,7 @@ $border:        #E5E7EB;
   @media (max-width: 991px) { display: none; }
 }
 
-// Logo bar
+
 .logo-bar {
   display: flex;
   align-items: center;
@@ -62,15 +57,9 @@ $border:        #E5E7EB;
   .logo-icon {
     width: 38px;
     height: 38px;
-    background: #fff;
     border-radius: 10px;
-    display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 2px 8px rgba(79,70,229,0.15);
-    
-    i {
-      font-size: 1.1rem;
-      color: $indigo;
-    }
+    object-fit: cover;
+    box-shadow: 0 2px 8px rgba(107,70,255,0.15);
   }
 
   .logo-text {
@@ -81,7 +70,6 @@ $border:        #E5E7EB;
   }
 }
 
-// Hero text
 .hero-content {
   max-width: 420px;
   margin-bottom: 2rem;
@@ -96,7 +84,7 @@ $border:        #E5E7EB;
   margin-bottom: 1.2rem;
 
   .hero-highlight {
-    color: $indigo;
+    color: $purple;
     display: block;
   }
 }
@@ -110,7 +98,6 @@ $border:        #E5E7EB;
   margin-bottom: 2rem;
 }
 
-// Feature bullets
 .feature-list {
   display: flex;
   flex-direction: column;
@@ -130,10 +117,10 @@ $border:        #E5E7EB;
   .feature-icon {
     flex: 0 0 36px;
     width: 36px; height: 36px;
-    background: rgba(79,70,229,0.1);
+    background: rgba(107,70,255,0.1);
     border-radius: 10px;
     display: flex; align-items: center; justify-content: center;
-    color: $indigo;
+    color: $purple;
     font-size: 1rem;
   }
 
@@ -146,329 +133,10 @@ $border:        #E5E7EB;
 
   .feature-desc {
     font-size: 0.78rem;
-    color: #4F46E5;
+    color: #6366F1;
     opacity: 0.8;
     margin-top: 1px;
   }
-}
-
-// ── MOCKUP AREA ─────────────────────────────────────────
-.mockup-area {
-  position: absolute;
-  right: -60px;
-  bottom: 0;
-  top: 120px;
-  width: 65%;
-  pointer-events: none;
-  z-index: 2;
-}
-
-// Floating chips
-.float-chip {
-  position: absolute;
-  width: 56px;
-  height: 56px;
-  border-radius: 16px;
-  display: flex; align-items: center; justify-content: center;
-  background: #fff;
-  box-shadow: 0 8px 24px rgba(79,70,229,0.18);
-  font-size: 1.5rem;
-  color: $indigo;
-
-  &.float-chart {
-    top: 5%;
-    right: 28%;
-    animation: float-y 4s ease-in-out infinite;
-  }
-
-  &.float-pie {
-    top: 18%;
-    right: 4%;
-    animation: float-y 4s ease-in-out 1s infinite;
-    background: #fff;
-  }
-
-  &.float-shield {
-    bottom: 14%;
-    left: 2%;
-    animation: float-y 4s ease-in-out 0.5s infinite;
-    background: $indigo;
-    color: #fff;
-    width: 68px;
-    height: 68px;
-    border-radius: 20px;
-    font-size: 2rem;
-  }
-}
-
-// Decorative orbs
-.orb {
-  position: absolute;
-  border-radius: 50%;
-  opacity: 0.55;
-
-  &.orb1 {
-    width: 18px; height: 18px;
-    background: $lavender;
-    top: 48%;
-    left: 5%;
-    animation: float-y 5s ease-in-out 0.3s infinite;
-  }
-  &.orb2 {
-    width: 12px; height: 12px;
-    background: $indigo;
-    top: 30%;
-    right: 20%;
-    animation: float-y 4s ease-in-out 1.5s infinite;
-  }
-}
-
-// The 3D angled mockup window
-.mockup-window {
-  position: absolute;
-  left: 10%;
-  top: 8%;
-  width: 86%;
-  background: rgba(255,255,255,0.96);
-  border-radius: 20px;
-  box-shadow: 
-    -24px 32px 60px rgba(79,70,229,0.22),
-    0 0 0 1px rgba(255,255,255,0.9);
-  transform: perspective(1400px) rotateY(-16deg) rotateX(6deg) rotateZ(-1.5deg);
-  animation: float-3d 6s ease-in-out infinite;
-  overflow: hidden;
-}
-
-.mockup-titlebar {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 10px 16px;
-  background: #fff;
-  border-bottom: 1px solid #F1F5F9;
-
-  .dot { width: 9px; height: 9px; border-radius: 50%; }
-  .dot-red    { background: #FF5F57; }
-  .dot-yellow { background: #FEBC2E; }
-  .dot-green  { background: #28C840; }
-
-  .titlebar-text {
-    font-size: 9px;
-    font-weight: 700;
-    color: $text-main;
-    margin-left: 6px;
-  }
-
-  .titlebar-spacer { flex: 1; }
-
-  .titlebar-avatar {
-    width: 20px; height: 20px;
-    border-radius: 50%;
-    background: $indigo;
-    color: #fff;
-    font-size: 9px;
-    font-weight: 700;
-    display: flex; align-items: center; justify-content: center;
-  }
-}
-
-.mockup-body {
-  display: flex;
-  height: 360px;
-  background: #F8FAFC;
-}
-
-.mockup-sidebar {
-  width: 14%;
-  background: $indigo-dark;
-  padding: 1rem 0.6rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-
-  .sb-dot {
-    height: 8px;
-    border-radius: 4px;
-    background: rgba(255,255,255,0.15);
-    
-    &.active { background: $indigo; }
-  }
-}
-
-.mockup-main {
-  flex: 1;
-  padding: 0.9rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.7rem;
-  overflow: hidden;
-}
-
-// KPI cards row
-.mock-kpi-row {
-  display: flex;
-  gap: 0.6rem;
-}
-
-.mock-kpi {
-  flex: 1;
-  background: #fff;
-  border-radius: 8px;
-  padding: 0.55rem 0.65rem;
-  border: 1px solid #F1F5F9;
-  min-height: 62px;
-
-  .mock-kpi-label {
-    font-size: 7px;
-    color: #94A3B8;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-  }
-
-  .mock-kpi-val {
-    font-size: 14px;
-    font-weight: 800;
-    color: $text-main;
-    margin: 2px 0 1px;
-    line-height: 1;
-  }
-
-  .mock-kpi-delta {
-    font-size: 6.5px;
-    font-weight: 600;
-    &.pos { color: #16A34A; }
-    &.neg { color: #DC2626; }
-  }
-}
-
-// Charts
-.mock-charts-row {
-  display: flex;
-  gap: 0.6rem;
-  flex: 1;
-}
-
-.mock-chart-card {
-  background: #fff;
-  border-radius: 8px;
-  padding: 0.55rem 0.65rem;
-  border: 1px solid #F1F5F9;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-
-  .mock-chart-title {
-    font-size: 7.5px;
-    font-weight: 700;
-    color: $text-main;
-    margin-bottom: 4px;
-  }
-}
-
-.mock-line-chart {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-
-  svg { flex: 1; width: 100%; }
-
-  .mock-xaxis {
-    display: flex;
-    justify-content: space-around;
-    font-size: 5.5px;
-    color: #94A3B8;
-    padding: 0 4px;
-  }
-}
-
-.mock-donut-wrap {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  flex: 1;
-
-  svg { width: 60px; height: 60px; flex: 0 0 60px; }
-
-  .mock-donut-legend {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      font-size: 6px;
-      color: $text-main;
-      font-weight: 500;
-    }
-
-    .dot-on, .dot-ov, .dot-na {
-      width: 6px; height: 6px; border-radius: 50%;
-    }
-    .dot-on { background: $indigo; }
-    .dot-ov { background: #EF4444; }
-    .dot-na { background: #E5E7EB; }
-  }
-}
-
-// Team performance
-.mock-team-row {
-  background: #fff;
-  border-radius: 8px;
-  padding: 0.5rem 0.65rem;
-  border: 1px solid #F1F5F9;
-}
-
-.mock-bar-row {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  margin-bottom: 4px;
-
-  .mock-bar-name {
-    width: 22px;
-    font-size: 6.5px;
-    color: #94A3B8;
-    font-weight: 600;
-  }
-
-  .mock-bar-track {
-    flex: 1;
-    height: 5px;
-    background: #F1F5F9;
-    border-radius: 3px;
-    overflow: hidden;
-  }
-
-  .mock-bar-fill {
-    height: 100%;
-    background: linear-gradient(90deg, $indigo, $lavender);
-    border-radius: 3px;
-  }
-
-  .mock-bar-val {
-    width: 22px;
-    text-align: right;
-    font-size: 6.5px;
-    color: $text-main;
-    font-weight: 700;
-  }
-}
-
-// Glowing ring under mockup
-.mockup-glow-ring {
-  position: absolute;
-  bottom: -20px;
-  left: 14%;
-  right: 14%;
-  height: 100px;
-  border: 3px solid rgba(79,70,229,0.35);
-  border-radius: 50%;
-  transform: rotateX(78deg);
-  box-shadow: 0 0 30px rgba(79,70,229,0.5), inset 0 0 30px rgba(79,70,229,0.3);
 }
 
 // ── RIGHT PANEL ─────────────────────────────────────────
@@ -480,18 +148,44 @@ $border:        #E5E7EB;
   align-items: center;
   justify-content: center;
   padding: 2rem;
+  box-sizing: border-box;
   
-  @media (max-width: 991px) { flex: 0 0 100%; }
+  @media (max-width: 991px) {
+    flex: 0 0 100%;
+    width: 100%;
+    padding: 1rem 0;
+    margin: 0 auto;
+  }
 }
 
 // Auth card (white card)
 .auth-card {
   background: #fff;
   border-radius: 24px;
-  box-shadow: 0 20px 48px rgba(17,24,39,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  box-shadow: 0 20px 48px rgba(30,27,75,0.08), 0 1px 2px rgba(0,0,0,0.04);
   padding: 2.8rem 2.8rem;
   width: 100%;
   max-width: 520px;
+  box-sizing: border-box;
+}
+
+.mobile-logo-bar {
+  margin-bottom: 1.25rem;
+
+  .logo-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    object-fit: cover;
+    box-shadow: 0 2px 8px rgba(107,70,255,0.25);
+  }
+
+  .logo-text {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: $text-main;
+    letter-spacing: -0.3px;
+  }
 }
 
 .auth-title {
@@ -560,7 +254,7 @@ $border:        #E5E7EB;
     font-size: 0.95rem;
     line-height: 1;
     
-    &:hover { color: $indigo; }
+    &:hover { color: $purple; }
   }
 }
 
@@ -580,9 +274,9 @@ $border:        #E5E7EB;
   &::placeholder { color: #B0B7C3; }
 
   &:focus {
-    border-color: $indigo;
+    border-color: $purple;
     background: #fff;
-    box-shadow: 0 0 0 4px rgba(79,70,229,0.1);
+    box-shadow: 0 0 0 4px rgba(107,70,255,0.1);
   }
 
   &.invalid {
@@ -619,7 +313,7 @@ $border:        #E5E7EB;
       width: 15px;
       height: 15px;
       border-radius: 4px;
-      accent-color: $indigo;
+      accent-color: $purple;
       cursor: pointer;
     }
   }
@@ -627,10 +321,10 @@ $border:        #E5E7EB;
   .forgot-link {
     font-size: 0.85rem;
     font-weight: 600;
-    color: $indigo;
+    color: $purple;
     text-decoration: none;
     
-    &:hover { color: $indigo-hover; text-decoration: underline; }
+    &:hover { color: $purple-hover; text-decoration: underline; }
   }
 }
 
@@ -638,7 +332,7 @@ $border:        #E5E7EB;
 .btn-signin {
   width: 100%;
   height: 50px;
-  background: $indigo;
+  background: $purple;
   color: #fff;
   border: none;
   border-radius: 12px;
@@ -646,8 +340,8 @@ $border:        #E5E7EB;
   font-weight: 700;
   letter-spacing: 0.2px;
   cursor: pointer;
-  transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
-  box-shadow: 0 8px 20px rgba(79,70,229,0.3);
+  transition:  0.2s, transform 0.15s, box-shadow 0.2s;
+  box-shadow: 0 8px 20px rgba(107,70,255,0.3);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -655,9 +349,9 @@ $border:        #E5E7EB;
   margin-bottom: 1.5rem;
 
   &:hover:not(:disabled) {
-    background: $indigo-hover;
+    background: $purple-hover;
     transform: translateY(-1px);
-    box-shadow: 0 12px 24px rgba(79,70,229,0.35);
+    box-shadow: 0 12px 24px rgba(107,70,255,0.35);
   }
 
   &:active:not(:disabled) { transform: translateY(0); }
@@ -669,7 +363,6 @@ $border:        #E5E7EB;
   }
 }
 
-// Or divider
 .or-divider {
   display: flex;
   align-items: center;
@@ -729,7 +422,7 @@ $border:        #E5E7EB;
   margin: 0;
 
   a {
-    color: $indigo;
+    color: $purple;
     font-weight: 700;
     text-decoration: none;
     
@@ -737,15 +430,3 @@ $border:        #E5E7EB;
   }
 }
 
-// ── Animations ──────────────────────────────────────────
-@keyframes float-y {
-  0%   { transform: translateY(0px); }
-  50%  { transform: translateY(-10px); }
-  100% { transform: translateY(0px); }
-}
-
-@keyframes float-3d {
-  0%   { transform: perspective(1400px) rotateY(-16deg) rotateX(6deg) rotateZ(-1.5deg) translateY(0px); }
-  50%  { transform: perspective(1400px) rotateY(-16deg) rotateX(6deg) rotateZ(-1.5deg) translateY(-12px); }
-  100% { transform: perspective(1400px) rotateY(-16deg) rotateX(6deg) rotateZ(-1.5deg) translateY(0px); }
-}

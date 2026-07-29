@@ -120,4 +120,28 @@ export class PlatformUsers implements OnInit {
   roleLabel(role: string): string {
     return role.replace(/_/g, ' ').toLowerCase();
   }
+
+  roleBadgeStyle(role: string): { [key: string]: string } {
+    const styles: Record<string, { bg: string; color: string; border: string }> = {
+      SUPER_ADMIN: { bg: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)', color: '#ffffff', border: '#5b21b6' },
+      SYSTEM_ADMIN: { bg: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)', color: '#ffffff', border: '#1e40af' },
+      SUPPORT_AGENT: { bg: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: '#075985' },
+      SUPPORT_MANAGER: { bg: 'linear-gradient(135deg, #059669 0%, #047857 100%)', color: '#ffffff', border: '#065f46' },
+      MARKETING_MANAGER: { bg: 'linear-gradient(135deg, #d97706 0%, #b45309 100%)', color: '#ffffff', border: '#92400e' },
+      PLATFORM_ACCOUNTANT: { bg: 'linear-gradient(135deg, #475569 0%, #334155 100%)', color: '#ffffff', border: '#1e293b' },
+      SALES_MANAGER: { bg: 'linear-gradient(135deg, #e11d48 0%, #be123c 100%)', color: '#ffffff', border: '#9f1239' },
+    };
+    const s = styles[role] || { bg: 'linear-gradient(135deg, #64748b 0%, #475569 100%)', color: '#ffffff', border: '#334155' };
+    return {
+      'background': s.bg,
+      'color': s.color,
+      'border': `1px solid ${s.border}`,
+      'font-weight': '600',
+      'font-size': '0.75rem',
+      'padding': '0.35em 0.75em',
+      'border-radius': '6px',
+      'box-shadow': '0 2px 4px rgba(0,0,0,0.1)',
+      'display': 'inline-block'
+    };
+  }
 }

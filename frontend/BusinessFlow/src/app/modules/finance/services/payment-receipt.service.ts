@@ -34,6 +34,11 @@ export class PaymentReceiptService {
     return this.api.post<void>(`${this.endpoint}/${id}/deposit?bank=${encodeURIComponent(bank)}`, {});
   }
 
+  // NSF/chargeback: unwinds the GL and restores the invoice balance
+  reverse(id: number, reason?: string): Observable<void> {
+    return this.api.post<void>(`${this.endpoint}/${id}/reverse${reason ? '?reason=' + encodeURIComponent(reason) : ''}`, {});
+  }
+
   delete(id: number): Observable<void> {
     return this.api.delete<void>(`${this.endpoint}/${id}`);
   }

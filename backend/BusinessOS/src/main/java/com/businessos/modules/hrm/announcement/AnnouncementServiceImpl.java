@@ -96,7 +96,9 @@ public class AnnouncementServiceImpl implements AnnouncementService {
     @Override
     @Transactional(readOnly = true)
     public List<AnnouncementResponse> listActive() {
-        authorizationService.checkPermission(PermissionCode.ANNOUNCEMENT_VIEW);
+        // Read-only "notice board" feed - any logged-in employee can see active
+        // announcements for their own company, regardless of ANNOUNCEMENT_VIEW.
+        // Creating/editing/publishing announcements stays permission-gated.
         return announcementRepository.findActiveByCompanyId(requireCompanyId(), LocalDateTime.now())
             .stream().map(AnnouncementMapper::toAnnouncementResponse).toList();
     }
@@ -192,7 +194,7 @@ public class AnnouncementServiceImpl implements AnnouncementService {
             .setInstructions(request.getInstructions())
             .build();
 
-        String raw = aiService.generateFromPrompt(AiFeature.ANNOUNCEMENT_DRAFT, prompt);
+        String raw = aiService.generateRaw(AiFeature.ANNOUNCEMENT_DRAFT, prompt);
         return parseDraft(raw, request.getInstructions());
     }
 

@@ -25,6 +25,37 @@ export interface MyCompany extends CompanyPublic {
   status: string;
   subscriptionPlan: string;
   locationDetail?: LocationResponse;
+  taxRegistrationNumber?: string;
+  bankName?: string;
+  bankAccountName?: string;
+  bankAccountNumber?: string;
+  bankBranch?: string;
+  fiscalYearStartMonth?: number;
+  baseCurrency?: string;
+}
+
+export interface UpdateMyCompanyRequest {
+  companyName?: string;
+  companyPhone?: string;
+  website?: string;
+  portalAbout?: string;
+  locationDetail?: {
+    country?: string;
+    level1?: string;
+    level2?: string;
+    level3?: string;
+    level4?: string;
+    postalCode?: string;
+    streetAddress?: string;
+    apartment?: string;
+  };
+  taxRegistrationNumber?: string;
+  bankName?: string;
+  bankAccountName?: string;
+  bankAccountNumber?: string;
+  bankBranch?: string;
+  fiscalYearStartMonth?: number;
+  baseCurrency?: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -43,5 +74,9 @@ export class PortalService {
   // Owner (COMPANY_OWNER) - website view / subdomain lookup
   getMyCompany(): Observable<MyCompany> {
     return this.api.get<MyCompany>('/companies/me');
+  }
+
+  updateMyCompany(payload: UpdateMyCompanyRequest): Observable<MyCompany> {
+    return this.api.patch<MyCompany>('/companies/me', payload);
   }
 }

@@ -24,4 +24,6 @@ public interface CompanyLeavePolicyService {
     /** ADMIN / OWNER: soft-delete a leave policy */
     void delete(Long id);
 
+    /** ADMIN / OWNER: draft a leave policy document with AI from the company's real configured entitlements */
+    LeavePolicyDraftResponse draftWithAi(LeavePolicyDraftRequest request);
 }

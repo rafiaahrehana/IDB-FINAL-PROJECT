@@ -39,6 +39,12 @@ export class LeavePolicies implements OnInit {
   leaveTypes = LEAVE_TYPES;
   employmentTypes = EMPLOYMENT_TYPES;
 
+  draftRemoteAllowed = false;
+  draftContext = '';
+  draftDocument = '';
+  drafting = false;
+  draftError = '';
+
   constructor(private policyService: LeavePolicyService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
@@ -130,6 +136,25 @@ export class LeavePolicies implements OnInit {
   goToPage(p: number): void {
     this.page = p;
     this.load();
+  }
+
+  draftWithAi(): void {
+    if (this.drafting) return;
+    this.drafting = true;
+    this.draftError = '';
+    this.cdr.markForCheck();
+    this.policyService.draftWithAi(this.draftRemoteAllowed, this.draftContext.trim()).subscribe({
+      next: (res) => {
+        this.draftDocument = res.document;
+        this.drafting = false;
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        this.draftError = err?.error?.message || 'Failed to generate draft';
+        this.drafting = false;
+        this.cdr.markForCheck();
+      },
+    });
   }
 
   private emptyForm(): LeavePolicyRequest {

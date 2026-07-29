@@ -36,9 +36,10 @@ public class ClientController {
     @GetMapping
     public ResponseEntity<Page<ClientResponse>> listAll(
             @RequestParam(required = false) ClientStatus status,
+            @RequestParam(required = false) Long tagId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        return ResponseEntity.ok(clientService.listAll(status,
+        return ResponseEntity.ok(clientService.listAll(status, tagId,
                 PageRequest.of(page, size, Sort.by("createdAt").descending())));
     }
 

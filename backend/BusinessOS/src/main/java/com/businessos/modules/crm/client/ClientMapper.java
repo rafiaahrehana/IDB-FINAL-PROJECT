@@ -32,6 +32,9 @@ public class ClientMapper {
         response.setAnnualRevenue(client.getAnnualRevenue());
         response.setLifetimeValue(client.getLifetimeValue());
         response.setTotalRequests(client.getTotalRequests());
+        response.setTagList(client.getTagEntities() != null
+                ? com.businessos.modules.crm.tag.TagMapper.toResponseList(client.getTagEntities())
+                : java.util.List.of());
         return response;
     }
 }

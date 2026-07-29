@@ -44,4 +44,19 @@ public interface GeneralLedgerRepository extends JpaRepository<GeneralLedger, Lo
     @Query("SELECT gl FROM GeneralLedger gl WHERE gl.companyId = :companyId AND gl.account.id = :accountId AND gl.transactionDate < :date")
     List<GeneralLedger> findByCompanyIdAndAccountIdBeforeDate(
         @Param("companyId") Long companyId, @Param("accountId") Long accountId, @Param("date") LocalDate date);
+
+    /**
+     * Candidate "outstanding" lines for bank reconciliation: transactions posted to
+     * this account, dated on or before the reconciliation's as-of date, that haven't
+     * cleared the bank yet (isReconciled = false).
+     */
+    List<GeneralLedger> findByCompanyIdAndAccountIdAndIsReconciledFalseAndTransactionDateLessThanEqualOrderByTransactionDateAsc(
+        Long companyId, Long accountId, LocalDate asOfDate);
+
+    /**
+     * Used by year-end closing (AccountingPeriodServiceImpl) to compute one revenue/
+     * expense account's movement for exactly the fiscal year being closed.
+     */
+    List<GeneralLedger> findByCompanyIdAndAccountIdAndTransactionDateBetween(
+        Long companyId, Long accountId, LocalDate start, LocalDate end);
 }

@@ -52,6 +52,7 @@ public class EmployeeResponse {
     private BigDecimal houseRent;
     private BigDecimal medicalAllowance;
     private BigDecimal transportAllowance;
+    private BigDecimal billableRate;
     private String bankName;
     private String emergencyContactName;
     private String emergencyContactPhone;

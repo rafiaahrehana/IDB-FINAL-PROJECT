@@ -24,6 +24,8 @@ public class RecruitmentMapper {
         r.setJobPostingTitle(jp != null ? jp.getTitle() : null);
         r.setReviewedById(reviewerUser != null ? reviewerUser.getId() : null);
         r.setReviewedByName(reviewerUser != null ? reviewerUser.getFullName() : null);
+        r.setConvertedEmployeeId(a.getConvertedEmployee() != null ? a.getConvertedEmployee().getId() : null);
+        r.setConvertedAt(a.getConvertedAt());
         r.setCreatedAt(a.getCreatedAt());
         return r;
     }

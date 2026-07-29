@@ -3,7 +3,7 @@ package com.businessos.core.automation;
 import lombok.Getter;
 
 /**
- * Published when an Opportunity moves to CLOSED_WON.
+ * Published when an Opportunity moves to WON.
  * Allows cross-module automation (e.g. auto-create a service request intake).
  */
 @Getter

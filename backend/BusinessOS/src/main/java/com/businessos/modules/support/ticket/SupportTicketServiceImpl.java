@@ -157,6 +157,9 @@ public class SupportTicketServiceImpl implements SupportTicketService {
     @Override
     @Transactional(readOnly = true)
     public Page<SupportTicketResponse> getAssignedToMe(Long agentId, Pageable pageable) {
+        if (agentId == null) {
+            return Page.empty(pageable);
+        }
         return ticketRepository.findByAssignedToAgentId(agentId, pageable)
                 .map(SupportTicketMapper::toResponse);
     }
@@ -165,7 +168,8 @@ public class SupportTicketServiceImpl implements SupportTicketService {
     @Transactional(readOnly = true)
     public Page<SupportTicketResponse> getMyTickets(Long userId, Pageable pageable) {
         authorizationService.checkPermission(PermissionCode.TICKET_VIEW);
-        return ticketRepository.findByCreatedById(userId, pageable)
+        Long targetUserId = userId != null ? userId : securityUtil.getCurrentUser().getId();
+        return ticketRepository.findByCreatedById(targetUserId, pageable)
                 .map(SupportTicketMapper::toResponse);
     }
 

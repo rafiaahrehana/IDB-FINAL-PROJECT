@@ -1,25 +1,23 @@
-<div class="container-fluid py-3">
-  <div class="page-hero">
-    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+<div class="workspace-page">
+  <!-- Header -->
+  <div class="page-topbar">
+    <div class="page-topbar-left">
       <div>
-        <div class="page-hero-label">FINANCE</div>
-        <h4 class="page-hero-title underline-peach">Chart of Accounts</h4>
-        <div class="page-hero-subtitle">Define and manage your account structure.</div>
-      </div>
-      <div class="page-hero-actions">
-        <button *appHasPermission="'CHART_OF_ACCOUNT_CREATE'" class="btn-hero-primary" (click)="openCreate()"><i class="bi bi-plus-circle"></i> New Account</button>
+        <h1 class="page-topbar-title">Chart of Accounts</h1>
+        <p class="page-subtitle mt-1 mb-0">Manage your workspace ledger and financial classification categories.</p>
       </div>
     </div>
+    <button *appHasPermission="'CHART_OF_ACCOUNT_CREATE'" class="btn btn-primary-bos" (click)="openCreate()"><i class="bi bi-plus-lg me-1"></i> New Account</button>
   </div>
+
   @if (error) { <div class="alert alert-danger py-2">{{ error }}</div> }
   @if (success) { <div class="alert alert-success py-2">{{ success }}</div> }
   @if (loading) { <app-loader /> }
 
   @if (showForm) {
-  <div class="card border-0 shadow-sm mb-3">
-    <div class="card-header bg-white py-2 fw-semibold">{{ editId ? 'Edit' : 'New' }} Account</div>
+  <div class="card mb-3">
+    <div class="card-header py-2 fw-semibold">{{ editId ? 'Edit' : 'New' }} Account</div>
     <div class="card-body">
-      <div class="section-label">Account Details</div>
       <div class="row g-2">
         <div class="col-md-2"><input class="form-control form-control-sm" placeholder="Code *" [(ngModel)]="form.accountCode" /></div>
         <div class="col-md-4"><input class="form-control form-control-sm" placeholder="Name *" [(ngModel)]="form.accountName" /></div>
@@ -30,10 +28,20 @@
           </select>
         </div>
         <div class="col-md-4"><input class="form-control form-control-sm" placeholder="Description" [(ngModel)]="form.description" /></div>
+        @if (!editId) {
+        <div class="col-md-3">
+          <input type="number" min="0" step="0.01" class="form-control form-control-sm" placeholder="Opening balance (optional)" [(ngModel)]="form.openingBalance" />
+          <div class="form-text">For migrating from a previous system - posts against Opening Balance Equity.</div>
+        </div>
+        <div class="col-md-3">
+          <input type="date" class="form-control form-control-sm" [(ngModel)]="form.openingBalanceDate" title="As-of date for the opening balance" />
+        </div>
+        }
         <div class="col-12 d-flex gap-2">
           <div class="form-check form-check-inline"><input class="form-check-input" type="checkbox" id="active" [(ngModel)]="form.active" /><label class="form-check-label small" for="active">Active</label></div>
           <div class="form-check form-check-inline"><input class="form-check-input" type="checkbox" id="headerAccount" [(ngModel)]="form.isHeaderAccount" /><label class="form-check-label small" for="headerAccount">Header/Grouping account</label></div>
-          <button class="btn btn-primary btn-sm px-3 fw-semibold" (click)="save()">Save</button>
+          <div class="form-check form-check-inline"><input class="form-check-input" type="checkbox" id="bankAccount" [(ngModel)]="form.isBankAccount" /><label class="form-check-label small" for="bankAccount">Bank account (reconcilable)</label></div>
+          <button class="btn btn-primary btn-sm" (click)="save()">Save</button>
           <button class="btn btn-secondary btn-sm" (click)="showForm = false">Cancel</button>
         </div>
       </div>
@@ -42,32 +50,52 @@
   }
 
   @if (!loading && accounts.length) {
-  <div class="card border-0 shadow-sm">
-    <div class="table-responsive">
-      <table class="table table-hover table-sm align-middle mb-0">
-        <thead class="table-light">
-          <tr><th>Code</th><th>Name</th><th>Type</th><th class="text-end">Balance</th><th>Active</th><th></th></tr>
-        </thead>
-        <tbody>
-          @for (a of accounts; track a.id) {
-          <tr>
-            <td class="fw-mono" style="color: #4F46E5;">{{ a.accountCode }}</td>
-            <td [class.fw-semibold]="a.isHeaderAccount">{{ a.accountName }}</td>
-            <td><span class="badge text-bg-light border">{{ a.type }}</span></td>
-            <td class="text-end">{{ a.balance | currency }}</td>
-            <td><span class="badge" [class.text-bg-success]="a.active" [class.text-bg-secondary]="!a.active">{{ a.active ? 'Active' : 'Inactive' }}</span></td>
-            <td class="text-end">
-              <button *appHasPermission="'CHART_OF_ACCOUNT_UPDATE'" class="btn btn-outline-secondary btn-sm me-1" (click)="openEdit(a)"><i class="bi bi-pencil"></i></button>
-              <button *appHasPermission="'CHART_OF_ACCOUNT_DELETE'" class="btn btn-outline-danger btn-sm" (click)="confirmDelete(a)"><i class="bi bi-trash"></i></button>
-            </td>
-          </tr>
+  <!-- Summary bar -->
+  <div class="coa-summary">
+    <div class="coa-summary-left">
+      <span><span class="coa-dot"></span>{{ activeCount }} Accounts Active</span>
+      <span>Last entry: {{ lastEntryLabel }}</span>
+    </div>
+    <div>Net Balance Position: <span class="coa-net">{{ netBalance | bosCurrency:'BDT':'symbol-narrow':'1.2-2' }}</span></div>
+  </div>
+
+  <!-- Account cards -->
+  <div class="coa-grid">
+    @for (a of accounts; track a.id) {
+    <div class="coa-card" [style.--coa-c]="typeColor(a.type)">
+      <div class="coa-card-head">
+        <span class="coa-code">{{ a.accountCode }}</span>
+        <div class="coa-card-actions">
+          <button *appHasPermission="'CHART_OF_ACCOUNT_UPDATE'" class="btn-action btn-action-primary" (click)="openEdit(a)"><i class="bi bi-pencil"></i></button>
+          <button *appHasPermission="'CHART_OF_ACCOUNT_DELETE'" class="btn-action btn-action-danger" (click)="confirmDelete(a)"><i class="bi bi-trash"></i></button>
+        </div>
+      </div>
+
+      <h3 class="coa-name">{{ a.accountName }}</h3>
+
+      <div class="coa-badges">
+        <span class="badge {{ typeBadgeClass(a.type) }}">{{ typeLabel(a.type) }}</span>
+        <span class="badge {{ a.active ? 'badge-soft-success' : 'badge-soft-secondary' }}">{{ a.active ? 'ACTIVE' : 'INACTIVE' }}</span>
+      </div>
+
+      <hr class="coa-divider" />
+
+      <div class="coa-foot">
+        <span class="coa-balance-label">Current Balance</span>
+        <span class="coa-balance" [class.text-danger]="(a.balance || 0) < 0">
+          @if ((a.balance || 0) < 0) {
+            ({{ (a.balance || 0) * -1 | bosCurrency:'BDT':'symbol-narrow':'1.2-2' }})
+          } @else {
+            {{ (a.balance || 0) | bosCurrency:'BDT':'symbol-narrow':'1.2-2' }}
           }
-        </tbody>
-      </table>
+        </span>
+      </div>
     </div>
-    <div class="card-footer bg-white d-flex justify-content-end">
-      <app-pagination [page]="page" [totalPages]="totalPages" (pageChange)="goToPage($event)" />
-    </div>
+    }
+  </div>
+
+  <div class="d-flex justify-content-end mt-3">
+    <app-pagination [page]="page" [totalPages]="totalPages" (pageChange)="goToPage($event)" />
   </div>
   }
   @if (!loading && !accounts.length && !showForm) { <app-empty-state icon="bi-journal-bookmark" message="No accounts yet." /> }

@@ -109,6 +109,20 @@ public class CompanyServiceImpl implements CompanyService {
         if (request.getCompanyPhone() != null) company.setCompanyPhone(request.getCompanyPhone());
         if (request.getWebsite() != null) company.setWebsite(request.getWebsite());
         if (request.getPortalAbout() != null) company.setPortalAbout(request.getPortalAbout());
+        if (request.getTaxRegistrationNumber() != null) company.setTaxRegistrationNumber(request.getTaxRegistrationNumber());
+        if (request.getBankName() != null) company.setBankName(request.getBankName());
+        if (request.getBankAccountName() != null) company.setBankAccountName(request.getBankAccountName());
+        if (request.getBankAccountNumber() != null) company.setBankAccountNumber(request.getBankAccountNumber());
+        if (request.getBankBranch() != null) company.setBankBranch(request.getBankBranch());
+        if (request.getFiscalYearStartMonth() != null) {
+            if (request.getFiscalYearStartMonth() < 1 || request.getFiscalYearStartMonth() > 12) {
+                throw new BadRequestException("Fiscal year start month must be between 1 and 12");
+            }
+            company.setFiscalYearStartMonth(request.getFiscalYearStartMonth());
+        }
+        if (request.getBaseCurrency() != null && !request.getBaseCurrency().isBlank()) {
+            company.setBaseCurrency(request.getBaseCurrency().trim().toUpperCase());
+        }
 
         if (request.getLogo() != null || request.getPrimaryColor() != null
                 || request.getSecondaryColor() != null || request.getTagline() != null) {
@@ -168,8 +182,9 @@ public class CompanyServiceImpl implements CompanyService {
         company.setOwner(owner);
         company.setStatus(CompanyStatus.ACTIVE);
         company.setSubscriptionPlan("FREE");
-        company.setActive(true);
-        company.setEmailVerified(true);
+        if (request.getLocationDetail() != null) {
+            company.setLocationDetail(addressMapper.toEntity(request.getLocationDetail()));
+        }
 
         company = companyRepository.save(company);
         return CompanyMapper.toResponse(company);

@@ -1,5 +1,6 @@
 package com.businessos.modules.hrm.leave.holiday;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -25,6 +26,12 @@ public class HolidayController {
     @PostMapping
     public ResponseEntity<HolidayResponse> create(@RequestBody HolidayRequest request) {
         return new ResponseEntity<>(holidayService.create(request), HttpStatus.CREATED);
+    }
+
+    /** Ask AI to draft a holiday for review - not persisted until the user saves it via POST above. */
+    @PostMapping("/ai-draft")
+    public ResponseEntity<HolidayDraftResponse> draftWithAi(@Valid @RequestBody HolidayDraftRequest request) {
+        return ResponseEntity.ok(holidayService.draftWithAi(request));
     }
 
     @GetMapping

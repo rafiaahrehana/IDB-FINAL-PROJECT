@@ -10,6 +10,9 @@ public interface HolidayService {
     // ADMIN/OWNER: create a company holiday
     HolidayResponse create(HolidayRequest request);
 
+    // ADMIN/OWNER: ask AI to draft a holiday for review - not persisted until saved via create()
+    HolidayDraftResponse draftWithAi(HolidayDraftRequest request);
+
     HolidayResponse getById(Long id);
 
     // ADMIN/OWNER: list all holidays with pagination

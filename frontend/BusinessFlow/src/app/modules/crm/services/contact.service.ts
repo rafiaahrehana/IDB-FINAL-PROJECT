@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { ApiService } from '../../../core/services/api.service';
+import { ApiService, PagedResponse } from '../../../core/services/api.service';
 import { ClientContact } from '../models/crm.model';
 
 @Injectable({ providedIn: 'root' })
@@ -9,6 +9,11 @@ export class ContactService {
 
   listByClient(clientId: number): Observable<ClientContact[]> {
     return this.api.get<ClientContact[]>(`/clients/${clientId}/contacts`);
+  }
+
+  // Cross-client global list, for the standalone Contacts page.
+  listAll(page = 0, size = 20, keyword?: string): Observable<PagedResponse<ClientContact>> {
+    return this.api.getPaged<ClientContact>('/crm/contacts', page, size, keyword ? { keyword } : undefined);
   }
 
   create(clientId: number, payload: Partial<ClientContact>): Observable<ClientContact> {

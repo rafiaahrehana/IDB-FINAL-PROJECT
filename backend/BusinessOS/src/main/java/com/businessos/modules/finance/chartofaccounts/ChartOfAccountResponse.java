@@ -24,6 +24,8 @@ public class ChartOfAccountResponse {
     // isHeaderAccount field - force the full name explicitly.
     @JsonProperty("isHeaderAccount")
     private boolean isHeaderAccount;
+    @JsonProperty("isBankAccount")
+    private boolean isBankAccount;
     private boolean allowDirectPosting;
     private boolean active;
     private String description;

@@ -4,16 +4,26 @@
 
 @import '../login/login.scss';
 
-// ── Register-specific additions ──────────────────────────
+// Register-specific additions
 .field-row-2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.9rem;
+
+  @media (max-width: 575.98px) {
+    grid-template-columns: 1fr;
+    gap: 0.6rem;
+  }
 }
 
 .field-row-subdomain {
   display: flex;
   gap: 0.9rem;
+
+  @media (max-width: 575.98px) {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
 }
 
 .subdomain-wrap {
@@ -45,7 +55,7 @@
   gap: 0.75rem;
   font-size: 0.78rem;
   font-weight: 700;
-  color: #4F46E5;
+  color: #6B46FF;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   margin: 1.2rem 0 1rem;

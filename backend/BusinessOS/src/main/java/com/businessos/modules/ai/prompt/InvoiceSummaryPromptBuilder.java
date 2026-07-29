@@ -39,17 +39,15 @@ public class InvoiceSummaryPromptBuilder {
                 clientName,
                 serviceName,
                 amount.toPlainString(),
-                currency != null ? currency : "BDT",
-                period   != null ? period   : "Current period"
+                PromptSupport.orDefault(currency, "BDT"),
+                PromptSupport.orDefault(period, "Current period")
             );
     }
 
 
     private void validateFields() {
-        if (clientName  == null || clientName.isBlank())
-            throw new AiPromptException("clientName is required for invoice summary prompt");
-        if (serviceName == null || serviceName.isBlank())
-            throw new AiPromptException("serviceName is required for invoice summary prompt");
+        PromptSupport.requireNonBlank(clientName, "clientName", "invoice summary");
+        PromptSupport.requireNonBlank(serviceName, "serviceName", "invoice summary");
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0)
             throw new AiPromptException("amount must be greater than zero for invoice summary prompt");
     }

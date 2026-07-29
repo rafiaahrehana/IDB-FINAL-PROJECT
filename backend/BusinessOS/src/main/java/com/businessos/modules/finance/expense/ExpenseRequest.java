@@ -22,6 +22,9 @@ public class ExpenseRequest {
     private String vendorName;
     private String category;
 
+    // Optional COA account (must be EXPENSE type) this expense posts to when paid.
+    private Long expenseAccountId;
+
     @NotNull(message = "Expense date is required")
     private LocalDate expenseDate;
 

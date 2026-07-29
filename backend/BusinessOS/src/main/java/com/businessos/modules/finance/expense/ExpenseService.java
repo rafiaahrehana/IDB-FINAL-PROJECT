@@ -12,7 +12,8 @@ public interface ExpenseService {
     Page<ExpenseResponse> getByVendorName(String vendorName, Pageable pageable);
     Page<ExpenseResponse> getMyExpenses(Long employeeId, Pageable pageable);
     ExpenseResponse update(Long id, ExpenseRequest request);
-    void approveExpense(Long id, String approvalNotes);
+    /** Returns a non-blocking budget warning (or null) - see BudgetService.warningFor. */
+    String approveExpense(Long id, String approvalNotes);
     void rejectExpense(Long id, String reason);
     void markAsPaid(Long id, String reimbursementMethod, String referenceNumber);
     void delete(Long id);

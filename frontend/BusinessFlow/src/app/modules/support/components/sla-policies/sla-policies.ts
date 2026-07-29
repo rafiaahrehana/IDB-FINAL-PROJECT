@@ -1,6 +1,7 @@
 import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { AuthService } from '../../../../core/services/auth.service';
 import { SLAPolicy, SLAPolicyRequest } from '../../models/support.model';
 import { SLAPolicyService } from '../../services/sla-policy.service';
 import { Loader } from '../../../../shared/components/loader/loader';
@@ -22,12 +23,19 @@ export class SlaPolicies implements OnInit {
   form: SLAPolicyRequest = this.emptyForm();
   editingId: number | null = null;
   deleteTarget: SLAPolicy | null = null;
+  canManageSla = false;
 
   priorities = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'];
 
-  constructor(private slaService: SLAPolicyService, private cdr: ChangeDetectorRef) {}
+  constructor(
+    private slaService: SLAPolicyService,
+    public auth: AuthService,
+    private cdr: ChangeDetectorRef
+  ) {}
 
   ngOnInit(): void {
+    const roles = this.auth.getCurrentUser()?.roles ?? [];
+    this.canManageSla = roles.some(r => r === 'SUPER_ADMIN' || r === 'SYSTEM_ADMIN');
     this.load();
   }
 

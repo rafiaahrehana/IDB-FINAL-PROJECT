@@ -24,7 +24,7 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
     /**
      * Duplicate check — ensures only one attendance record per employee per day.
      */
-    Optional<Attendance> findByEmployeeIdAndAttendanceDate(Long employeeId, LocalDate date);
+    List<Attendance> findByEmployeeIdAndAttendanceDate(Long employeeId, LocalDate date);
 
     /**
      * Employee's own attendance history (paginated).
@@ -34,14 +34,110 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
     /**
      * Admin: all attendance in the company (paginated).
      */
-    Page<Attendance> findByCompanyIdAndDeletedFalse(Long companyId, Pageable pageable);
+    @Query(value = "SELECT a FROM Attendance a LEFT JOIN FETCH a.employee e WHERE a.companyId = :companyId AND a.deleted = false",
+           countQuery = "SELECT COUNT(a) FROM Attendance a WHERE a.companyId = :companyId AND a.deleted = false")
+    Page<Attendance> findByCompanyId(@Param("companyId") Long companyId, Pageable pageable);
+
+    @Query(value = "SELECT a FROM Attendance a " +
+           "LEFT JOIN FETCH a.employee e " +
+           "LEFT JOIN e.user u " +
+           "WHERE a.companyId = :companyId " +
+           "AND a.status = :status " +
+           "AND a.attendanceDate BETWEEN :startDate AND :endDate " +
+           "AND (" +
+           "    LOWER(u.firstName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "    LOWER(u.lastName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "    LOWER(CONCAT(u.firstName, ' ', u.lastName)) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "    LOWER(e.employeeNumber) LIKE LOWER(CONCAT('%', :search, '%'))" +
+           ")",
+           countQuery = "SELECT COUNT(a) FROM Attendance a " +
+           "LEFT JOIN a.employee e " +
+           "LEFT JOIN e.user u " +
+           "WHERE a.companyId = :companyId " +
+           "AND a.status = :status " +
+           "AND a.attendanceDate BETWEEN :startDate AND :endDate " +
+           "AND (" +
+           "    LOWER(u.firstName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "    LOWER(u.lastName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "    LOWER(CONCAT(u.firstName, ' ', u.lastName)) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "    LOWER(e.employeeNumber) LIKE LOWER(CONCAT('%', :search, '%'))" +
+           ")")
+    Page<Attendance> searchAttendanceRecordsWithStatusAndDate(
+            @Param("companyId") Long companyId,
+            @Param("status") AttendanceStatus status,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate,
+            @Param("search") String search,
+            Pageable pageable);
+
+    @Query(value = "SELECT a FROM Attendance a " +
+           "LEFT JOIN FETCH a.employee e " +
+           "LEFT JOIN e.user u " +
+           "WHERE a.companyId = :companyId " +
+           "AND a.attendanceDate BETWEEN :startDate AND :endDate " +
+           "AND (" +
+           "    LOWER(u.firstName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "    LOWER(u.lastName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "    LOWER(CONCAT(u.firstName, ' ', u.lastName)) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "    LOWER(e.employeeNumber) LIKE LOWER(CONCAT('%', :search, '%'))" +
+           ")",
+           countQuery = "SELECT COUNT(a) FROM Attendance a " +
+           "LEFT JOIN a.employee e " +
+           "LEFT JOIN e.user u " +
+           "WHERE a.companyId = :companyId " +
+           "AND a.attendanceDate BETWEEN :startDate AND :endDate " +
+           "AND (" +
+           "    LOWER(u.firstName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "    LOWER(u.lastName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "    LOWER(CONCAT(u.firstName, ' ', u.lastName)) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "    LOWER(e.employeeNumber) LIKE LOWER(CONCAT('%', :search, '%'))" +
+           ")")
+    Page<Attendance> searchAttendanceRecordsWithoutStatusAndDate(
+            @Param("companyId") Long companyId,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate,
+            @Param("search") String search,
+            Pageable pageable);
 
     /**
-     * Admin: all attendance in the company for a date range.
+     * Admin: all attendance in the company for a date range (paginated).
      */
+    @Query(value = "SELECT a FROM Attendance a LEFT JOIN FETCH a.employee e WHERE a.companyId = :companyId AND a.attendanceDate BETWEEN :start AND :end AND a.deleted = false",
+           countQuery = "SELECT COUNT(a) FROM Attendance a WHERE a.companyId = :companyId AND a.attendanceDate BETWEEN :start AND :end AND a.deleted = false")
     Page<Attendance> findByCompanyIdAndAttendanceDateBetween(
-        Long companyId, LocalDate start, LocalDate end, Pageable pageable
+        @Param("companyId") Long companyId,
+        @Param("start") LocalDate start,
+        @Param("end") LocalDate end,
+        Pageable pageable
     );
+
+    /**
+     * Admin: all attendance in the company for a date range (list for reports).
+     */
+    @Query("SELECT a FROM Attendance a LEFT JOIN FETCH a.employee e WHERE a.companyId = :companyId AND a.attendanceDate BETWEEN :start AND :end AND a.deleted = false")
+    List<Attendance> findListByCompanyIdAndAttendanceDateBetween(
+        @Param("companyId") Long companyId,
+        @Param("start") LocalDate start,
+        @Param("end") LocalDate end
+    );
+
+    @Query(value = "SELECT a FROM Attendance a " +
+           "LEFT JOIN FETCH a.employee e " +
+           "WHERE a.companyId = :companyId " +
+           "AND a.status = :status " +
+           "AND a.attendanceDate BETWEEN :start AND :end " +
+           "AND a.deleted = false",
+           countQuery = "SELECT COUNT(a) FROM Attendance a " +
+           "WHERE a.companyId = :companyId " +
+           "AND a.status = :status " +
+           "AND a.attendanceDate BETWEEN :start AND :end " +
+           "AND a.deleted = false")
+    Page<Attendance> searchByStatusAndDateRange(
+            @Param("companyId") Long companyId,
+            @Param("status") AttendanceStatus status,
+            @Param("start") LocalDate start,
+            @Param("end") LocalDate end,
+            Pageable pageable);
 
     /**
      * Admin: filter by attendance status.

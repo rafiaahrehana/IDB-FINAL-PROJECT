@@ -123,20 +123,22 @@
           @if (usage.requestsByFeature && usage.tokensByFeature) {
           <div class="mt-3">
             <div class="small text-muted mb-1">By Feature</div>
-            <table class="table table-sm">
-              <thead>
-                <tr><th>Feature</th><th>Requests</th><th>Tokens</th></tr>
-              </thead>
-              <tbody>
-                @for (key of objectKeys(usage.requestsByFeature!); track key) {
-                <tr>
-                  <td>{{ key }}</td>
-                  <td>{{ usage.requestsByFeature![key] }}</td>
-                  <td>{{ usage.tokensByFeature![key] }}</td>
-                </tr>
-                }
-              </tbody>
-            </table>
+            <div class="table-responsive">
+              <table class="table table-sm">
+                <thead>
+                  <tr><th>Feature</th><th>Requests</th><th>Tokens</th></tr>
+                </thead>
+                <tbody>
+                  @for (key of objectKeys(usage.requestsByFeature!); track key) {
+                  <tr>
+                    <td>{{ key }}</td>
+                    <td>{{ usage.requestsByFeature![key] }}</td>
+                    <td>{{ usage.tokensByFeature![key] }}</td>
+                  </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
           </div>
           }
           }
@@ -177,9 +179,13 @@
       <ul class="list-group list-group-flush">
         @for (t of templates; track t.id) {
         <li class="list-group-item py-2">
-          <div class="d-flex justify-content-between">
+          <div class="d-flex justify-content-between align-items-start">
             <span class="fw-semibold">{{ t.name }}</span>
-            <span class="text-muted small">{{ t.feature }} · v{{ t.version }}</span>
+            <div class="d-flex align-items-center gap-2">
+              <span class="text-muted small">{{ t.feature }} · v{{ t.version }}</span>
+              @if (t.active) { <span class="badge rounded-pill text-bg-success">Active</span> }
+              <button class="btn btn-outline-danger btn-sm py-0 px-1" (click)="deleteTemplate(t)" title="Delete"><i class="bi bi-trash"></i></button>
+            </div>
           </div>
           <div class="small text-truncate">{{ t.template }}</div>
           @if (t.changeNotes) { <div class="small text-muted mt-1">{{ t.changeNotes }}</div> }

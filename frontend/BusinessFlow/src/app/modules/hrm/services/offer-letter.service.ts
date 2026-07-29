@@ -25,11 +25,15 @@ export class OfferLetterService {
     return this.api.post<OfferLetter>(this.endpoint, payload);
   }
 
+  draftWithAi(payload: { employeeId?: number; jobApplicationId?: number; letterType: string }): Observable<{ content: string }> {
+    return this.api.post<{ content: string }>(`${this.endpoint}/draft`, payload);
+  }
+
   issue(id: number): Observable<OfferLetter> {
     return this.api.patch<OfferLetter>(`${this.endpoint}/${id}/issue`, {});
   }
 
   delete(id: number): Observable<string> {
-    return this.api.delete<string>(`${this.endpoint}/${id}`);
+    return this.api.deleteText(`${this.endpoint}/${id}`);
   }
 }

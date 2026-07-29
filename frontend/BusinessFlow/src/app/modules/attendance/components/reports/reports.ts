@@ -3,10 +3,11 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ReportService } from '../../services/report.service';
 import { Loader } from '../../../../shared/components/loader/loader';
+import { StatCard } from '../../../../shared/components/stat-card/stat-card';
 
 @Component({
   selector: 'app-attendance-reports',
-  imports: [CommonModule, FormsModule, Loader],
+  imports: [CommonModule, FormsModule, Loader, StatCard],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './reports.html',
 })
@@ -58,9 +59,5 @@ export class Reports implements OnInit {
         this.cdr.markForCheck();
       },
     });
-  }
-
-  objectKeys(obj: any): string[] {
-    return obj ? Object.keys(obj) : [];
   }
 }

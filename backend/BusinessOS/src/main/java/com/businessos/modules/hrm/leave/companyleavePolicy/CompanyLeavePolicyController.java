@@ -23,6 +23,11 @@ public class CompanyLeavePolicyController {
         return new ResponseEntity<>(policyService.create(request), HttpStatus.CREATED);
     }
 
+    @PostMapping("/draft")
+    public ResponseEntity<LeavePolicyDraftResponse> draftWithAi(@RequestBody LeavePolicyDraftRequest request) {
+        return ResponseEntity.ok(policyService.draftWithAi(request));
+    }
+
     @GetMapping
     public ResponseEntity<Page<CompanyLeavePolicyResponse>> listAll(
             @RequestParam(defaultValue = "0") int page,

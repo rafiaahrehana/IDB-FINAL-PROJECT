@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService, PagedResponse } from '../../../core/services/api.service';
-import { CrmActivity, Lead } from '../models/crm.model';
+import { CrmActivity, ConvertToOpportunityRequest, Opportunity, Lead } from '../models/crm.model';
 
 @Injectable({ providedIn: 'root' })
 export class LeadService {
@@ -61,8 +61,10 @@ export class LeadService {
     return this.api.get<number>(`${this.endpoint}/stats/my-active`);
   }
 
-  convert(id: number): Observable<Lead> {
-    return this.api.patch<Lead>(`${this.endpoint}/${id}/convert`, {});
+  // Converts a Qualified lead into an Opportunity - no Client is created at this point
+  // (that happens when the Opportunity reaches Won). Returns the created Opportunity.
+  convertToOpportunity(id: number, payload: ConvertToOpportunityRequest): Observable<Opportunity> {
+    return this.api.patch<Opportunity>(`${this.endpoint}/${id}/convert-to-opportunity`, payload);
   }
 
   update(id: number, payload: Partial<Lead>): Observable<Lead> {
@@ -86,5 +88,9 @@ export class LeadService {
 
   deleteActivity(leadId: number, activityId: number): Observable<void> {
     return this.api.delete<void>(`${this.endpoint}/${leadId}/activities/${activityId}`);
+  }
+
+  downloadPdf(status?: string): Observable<Blob> {
+    return this.api.getBlob(`${this.endpoint}/pdf${status ? '?status=' + status : ''}`);
   }
 }

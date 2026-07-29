@@ -27,10 +27,18 @@ public class BankReconciliation extends BaseEntity {
 
     private BigDecimal glBalance;
     private BigDecimal bankStatementBalance;
+
+    // glBalance - adjustedBankBalance, where adjustedBankBalance = bankStatementBalance
+    // + outstandingDepositsTotal - outstandingChecksTotal. Must be (near) zero before
+    // this can be marked reconciled - see BankReconciliationServiceImpl.markAsReconciled.
     private BigDecimal difference;
 
-    private String outstandingDeposits; // JSON list
-    private String outstandingChecks; // JSON list
+    // Computed live from GeneralLedger entries for this account that are still
+    // isReconciled=false as of reconciliationDate - not hand-typed.
+    @Builder.Default
+    private BigDecimal outstandingDepositsTotal = BigDecimal.ZERO;
+    @Builder.Default
+    private BigDecimal outstandingChecksTotal = BigDecimal.ZERO;
 
     @Builder.Default
     private boolean reconciled = false;
@@ -38,6 +46,12 @@ public class BankReconciliation extends BaseEntity {
     private String discrepancyNotes;
     private LocalDate reconciledDate;
     private String reconciledBy;
+
+    // The actual bank statement (PDF/image) this reconciliation was matched against -
+    // audit trail for "what did the bank say at the time," not derivable from the GL.
+    private String statementFileName;
+    private String statementFileUrl;
+    private java.time.LocalDateTime statementUploadedAt;
 
     public void markAsReconciled(String reconciledByName) {
         this.reconciled = true;

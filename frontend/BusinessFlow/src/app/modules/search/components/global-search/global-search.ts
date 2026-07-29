@@ -32,6 +32,7 @@ export class GlobalSearch implements OnInit {
     SERVICE_REQUEST: 'bi-ticket',
     TICKET: 'bi-life-preserver',
     INVOICE: 'bi-receipt',
+    REFUND: 'bi-arrow-counterclockwise',
   };
 
   constructor(

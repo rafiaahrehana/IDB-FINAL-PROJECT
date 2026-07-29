@@ -38,18 +38,17 @@ public class LeavePolicyPromptBuilder {
             - Return only the policy document — no preamble, no explanation.
             """.formatted(
                 companyName,
-                industry != null ? industry : "General",
+                PromptSupport.orDefault(industry, "General"),
                 annualLeaveDays,
                 sickLeaveDays,
                 remoteWorkAllowed ? "Yes" : "No",
-                additionalContext != null ? additionalContext : "None"
+                PromptSupport.orDefault(additionalContext, "None")
             );
     }
 
 
     private void validateFields() {
-        if (companyName == null || companyName.isBlank())
-            throw new AiPromptException("companyName is required for leave policy prompt");
+        PromptSupport.requireNonBlank(companyName, "companyName", "leave policy");
         if (annualLeaveDays <= 0)
             throw new AiPromptException("annualLeaveDays must be greater than zero");
     }
